@@ -118,7 +118,7 @@ A browser-first research organization tool that helps users save, categorize, an
 ## 🎯 **Phase 2: Core MVP Features** (Tasks 11-17)
 
 ### ✅ Task 11: Implement Board Management
-- **Status:** Pending
+- **Status:** Completed
 - **Dependencies:** Task 10
 - **Description:** Create board creation, editing, deletion, and listing functionality
 - **Details:**
@@ -128,7 +128,7 @@ A browser-first research organization tool that helps users save, categorize, an
   - Implement board deletion with confirmation
 
 ### ✅ Task 12: Implement Link Management
-- **Status:** Pending
+- **Status:** Completed
 - **Dependencies:** Task 11
 - **Description:** Create link adding, editing, deletion, and display functionality
 - **Details:**
@@ -138,7 +138,7 @@ A browser-first research organization tool that helps users save, categorize, an
   - Implement link deletion and status updates
 
 ### ✅ Task 13: Create Metadata Extractor
-- **Status:** Pending
+- **Status:** Completed
 - **Dependencies:** Task 12
 - **Description:** Implement URL metadata extraction (title, favicon, description)
 - **Details:**
