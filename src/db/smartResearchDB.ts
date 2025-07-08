@@ -3,12 +3,14 @@ import { Board } from '../types/Board';
 import { Link } from '../types/Link';
 import { AISummary } from '../types/AISummary';
 import { ChatMessage } from '../types/ChatMessage';
+import { Settings } from '../types/Settings';
 
 export class SmartResearchDB extends Dexie {
   boards!: Table<Board, string>;
   links!: Table<Link, string>;
   summaries!: Table<AISummary, string>;
   chatMessages!: Table<ChatMessage, string>;
+  settings!: Table<Settings, string>;
 
   constructor() {
     super('SmartResearchDB');
@@ -19,6 +21,7 @@ export class SmartResearchDB extends Dexie {
       links: 'id, url, labels, priority, status, createdAt',
       summaries: 'id, types, createdAt',
       chatMessages: 'id, senderId, timestamp',
+      settings: 'id',
     });
 
     // Future migrations can be added like this:
@@ -68,6 +71,14 @@ export class SmartResearchDB extends Dexie {
   }
   getChatMessages() {
     return this.chatMessages.toArray();
+  }
+
+  // Settings
+  upsertSettings(settings: Settings) {
+    return this.settings.put(settings);
+  }
+  getSettings(id = 'user') {
+    return this.settings.get(id);
   }
 }
 
