@@ -38,6 +38,7 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
       setMessages(hist.map((m) => ({ id: m.id, role: m.role, content: m.content })));
 
       let ctx = 'You are a helpful research assistant. The user selected multiple pages. Use the info below. Unless the user explicitly requests otherwise (e.g. asks for a translation), respond in English.\n';
+      setSystemPrompt(ctx); // show UI immediately
       await Promise.all(
         links.map(async (link) => {
           ctx += '----\n';
