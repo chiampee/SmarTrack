@@ -83,7 +83,7 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
         {loading ? <LoadingSpinner /> : 'Send'}
       </Button>
       <Button variant="secondary" onClick={endChat} disabled={loading}>
-        End Chat
+        End & New
       </Button>
     </div>
   );
