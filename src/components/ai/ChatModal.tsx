@@ -144,7 +144,13 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
             <div ref={bottomRef} />
           </div>
         </div>
-        <PastChatsSidebar />
+        <PastChatsSidebar
+          onSelect={async (conv) => {
+            setConversation(conv);
+            const hist = await chatService.getMessages(conv.id);
+            setMessages(hist);
+          }}
+        />
       </div>
     </Modal>
   );

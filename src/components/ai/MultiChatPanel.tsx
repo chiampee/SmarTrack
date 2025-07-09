@@ -216,7 +216,17 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
             </Button>
           </div>
         </div>
-        <PastChatsSidebar />
+        <PastChatsSidebar
+          onSelect={async (conv) => {
+            setConversation(conv);
+            const hist = await chatService.getMessages(conv.id);
+            setMessages(
+              hist
+                .filter((m) => m.role !== 'system')
+                .map((m) => ({ id: m.id, role: m.role as 'user' | 'assistant', content: m.content }))
+            );
+          }}
+        />
       </div>
     </div>
   );

@@ -3,7 +3,11 @@ import { Conversation } from '../../types/Conversation';
 import { chatService } from '../../services/chatService';
 import { useNavigate } from 'react-router-dom';
 
-export const PastChatsSidebar: React.FC = () => {
+interface Props {
+  onSelect?: (conv: Conversation) => void;
+}
+
+export const PastChatsSidebar: React.FC<Props> = ({ onSelect }) => {
   const [convs, setConvs] = useState<Conversation[]>([]);
   const navigate = useNavigate();
 
@@ -20,10 +24,18 @@ export const PastChatsSidebar: React.FC = () => {
         {convs
           .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
           .map((conv) => (
-            <li key={conv.id} className="cursor-pointer" onClick={() => {
-              localStorage.setItem('openConversationId', conv.id);
-              navigate('/links');
-            }}>
+            <li
+              key={conv.id}
+              className="cursor-pointer hover:text-blue-600"
+              onClick={() => {
+                if (onSelect) {
+                  onSelect(conv);
+                } else {
+                  localStorage.setItem('openConversationId', conv.id);
+                  navigate('/links');
+                }
+              }}
+            >
               <div className="truncate font-medium text-gray-700 text-xs">
                 {conv.linkIds.length} link{conv.linkIds.length === 1 ? '' : 's'} – {new Date(conv.startedAt).toLocaleDateString()}
               </div>
