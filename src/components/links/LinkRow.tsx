@@ -11,6 +11,9 @@ import { ChatModal } from '../ai/ChatModal';
 interface Props {
   link: LinkType;
   columns: string[];
+  selectable?: boolean;
+  selected?: boolean;
+  onSelect?: (checked: boolean) => void;
 }
 
 const priorityVariant = {
@@ -25,7 +28,7 @@ const statusVariant = {
   deleted: 'danger',
 } as const;
 
-export const LinkRow: React.FC<Props> = ({ link, columns }) => {
+export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, selected = false, onSelect }) => {
   const { updateLink, deleteLink } = useLinkStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -76,7 +79,9 @@ export const LinkRow: React.FC<Props> = ({ link, columns }) => {
   };
 
   const gridTemplate = {
-    gridTemplateColumns: `repeat(${columns.length + 1}, minmax(0, 1fr))`,
+    gridTemplateColumns: selectable
+      ? `40px repeat(${columns.length + 1}, minmax(0, 1fr))`
+      : `repeat(${columns.length + 1}, minmax(0, 1fr))`,
   } as React.CSSProperties;
 
   const renderCell = (col: string) => {
@@ -270,6 +275,15 @@ export const LinkRow: React.FC<Props> = ({ link, columns }) => {
       className="relative grid items-center gap-3 border-b border-gray-100 px-4 py-1.5 text-sm even:bg-gray-50 hover:bg-gray-100"
       style={gridTemplate}
     >
+      {selectable && (
+        <div className="flex items-center justify-center px-2 border-r">
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(e) => onSelect?.(e.target.checked)}
+          />
+        </div>
+      )}
       {columns.map((c) => (
         <React.Fragment key={c}>{renderCell(c)}</React.Fragment>
       ))}

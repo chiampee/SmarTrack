@@ -1,6 +1,8 @@
 import { Skeleton } from '../Skeleton';
 import { ErrorBanner } from '../ErrorBanner';
 import { LinkRow } from './LinkRow';
+import { Button } from '../Button';
+import { MultiChatPanel } from '../ai/MultiChatPanel';
 import { useLinkStore } from '../../stores/linkStore';
 import React, { useEffect, useState } from 'react';
 
@@ -39,6 +41,28 @@ export const LinkList: React.FC = () => {
     });
   };
 
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [chatLinks, setChatLinks] = useState<typeof links | null>(null);
+
+  const toggleSelectAll = (checked: boolean, visibleLinks: typeof links) => {
+    if (checked) {
+      setSelectedIds((prev) => [
+        ...prev,
+        ...visibleLinks.map((l) => l.id).filter((id) => !prev.includes(id)),
+      ]);
+    } else {
+      setSelectedIds((prev) => prev.filter((id) => !visibleLinks.some((l) => l.id === id)));
+    }
+  };
+
+  const startChat = () => {
+    const selected = links.filter((l) => selectedIds.includes(l.id));
+    if (selected.length) {
+      setChatLinks(selected);
+      setSelectedIds([]);
+    }
+  };
+
   useEffect(() => {
     loadLinks();
   }, [loadLinks]);
@@ -73,7 +97,7 @@ export const LinkList: React.FC = () => {
     );
 
     const gridTemplate = {
-      gridTemplateColumns: `repeat(${columns.length + 1}, minmax(0, 1fr))`,
+      gridTemplateColumns: `40px repeat(${columns.length + 1}, minmax(0, 1fr))`,
     } as React.CSSProperties;
 
     const labelMap: Record<string, string> = {
@@ -97,6 +121,18 @@ export const LinkList: React.FC = () => {
               className="grid border-b border-gray-200 bg-gray-50 text-xs font-semibold uppercase text-gray-600"
               style={gridTemplate}
             >
+              {/* select all checkbox */}
+              <div className="px-2 py-2 border-r flex items-center justify-center">
+                <input
+                  type="checkbox"
+                  onChange={(e) => toggleSelectAll(e.target.checked, groups[label])}
+                  checked={groups[label].every((l) => selectedIds.includes(l.id)) && groups[label].length > 0}
+                  indeterminate={
+                    !groups[label].every((l) => selectedIds.includes(l.id)) &&
+                    groups[label].some((l) => selectedIds.includes(l.id))
+                  }
+                />
+              </div>
               {columns.map((col) => (
                 <div key={col} className="px-3 py-2 border-r last:border-r-0">
                   {labelMap[col]}
@@ -105,7 +141,19 @@ export const LinkList: React.FC = () => {
               <div className="px-3 py-2">&nbsp;</div>
             </div>
             {groups[label].map((l) => (
-              <LinkRow key={l.id} link={l} columns={columns} />
+              <LinkRow
+                key={l.id}
+                link={l}
+                columns={columns}
+                selectable
+                selected={selectedIds.includes(l.id)}
+                onSelect={(c) =>
+                  setSelectedIds((prev) => {
+                    if (c) return [...prev, l.id];
+                    return prev.filter((id) => id !== l.id);
+                  })
+                }
+              />
             ))}
           </div>
         ))}
@@ -114,7 +162,7 @@ export const LinkList: React.FC = () => {
   }
 
   const gridTemplate = {
-    gridTemplateColumns: `repeat(${columns.length + 1}, minmax(0, 1fr))`,
+    gridTemplateColumns: `40px repeat(${columns.length + 1}, minmax(0, 1fr))`,
   } as React.CSSProperties;
 
   const labelMap: Record<string, string> = {
@@ -128,10 +176,25 @@ export const LinkList: React.FC = () => {
 
   return (
     <div className="border border-gray-200">
+      {/* Action bar */}
+      <div className="flex items-center justify-between mb-2">
+        <Button variant="secondary" size="sm" disabled={!selectedIds.length} onClick={startChat}>
+          Start Chat with {selectedIds.length} link{selectedIds.length === 1 ? '' : 's'}
+        </Button>
+      </div>
+
       <div
         className="grid bg-gray-50 px-4 py-1.5 text-xs font-semibold text-gray-500 select-none"
         style={gridTemplate}
       >
+        {/* select all checkbox header */}
+        <div className="flex items-center justify-center px-2 border-r">
+          <input
+            type="checkbox"
+            onChange={(e) => toggleSelectAll(e.target.checked, links)}
+            checked={links.length > 0 && links.every((l) => selectedIds.includes(l.id))}
+          />
+        </div>
         {columns.map((col) => (
           <div
             key={col}
@@ -150,12 +213,29 @@ export const LinkList: React.FC = () => {
         <div>&nbsp;</div>
       </div>
       {links.map((l) => (
-        <LinkRow key={l.id} link={l} columns={columns} />
+        <LinkRow
+          key={l.id}
+          link={l}
+          columns={columns}
+          selectable
+          selected={selectedIds.includes(l.id)}
+          onSelect={(c) =>
+            setSelectedIds((prev) => {
+              if (c) return [...prev, l.id];
+              return prev.filter((id) => id !== l.id);
+            })
+          }
+        />
       ))}
       {links.length === 0 && (
         <p className="px-4 py-6 text-center text-sm text-gray-500">
           No links yet
         </p>
+      )}
+      {chatLinks && (
+        <div className="mt-6">
+          <MultiChatPanel links={chatLinks} onClose={() => setChatLinks(null)} />
+        </div>
       )}
     </div>
   );
