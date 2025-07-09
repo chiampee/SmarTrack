@@ -64,7 +64,14 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
     setMessages((prev) => [...prev, assistantMsg]);
 
     await aiService.chatStream(
-      [{ role: 'system', content: 'You are a helpful research assistant.' }, ...aiMessages],
+      [
+        {
+          role: 'system',
+          content:
+            'You are a helpful research assistant. Unless the user explicitly requests otherwise (e.g. asking for a translation), respond in English.',
+        },
+        ...aiMessages,
+      ],
       (partial) => {
         assistantMsg.content = partial;
         setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: partial } : m)));

@@ -82,7 +82,7 @@ export const chatService = {
     }
 
     pageContext +=
-      'Use this information to answer the user\'s questions as accurately as possible.\n';
+      "Use this information to answer the user's questions as accurately as possible. Unless the user explicitly requests otherwise (e.g. asks for a translation), respond in English.\n";
 
     // ---------------------------------------------------------------------------------
     // 3. Fetch readable summary/content (up to ~3000 chars) and append
