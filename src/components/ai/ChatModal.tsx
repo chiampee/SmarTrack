@@ -57,6 +57,14 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
     </div>
   );
 
+  const quickPrompts = [
+    'Summarise this page in 5 bullet points',
+    'What are the key takeaways?',
+    'Give me PM insights',
+    'Translate the content to Hebrew',
+    'List pros and cons mentioned here',
+  ];
+
   return (
     <Modal
       isOpen={isOpen}
@@ -65,6 +73,21 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
       footer={footer}
       size="lg"
     >
+      {/* Quick prompt chips */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        {quickPrompts.map((p) => (
+          <button
+            key={p}
+            onClick={() => {
+              setInput(p);
+              document.querySelector<HTMLInputElement>('input[placeholder="Ask a question..."]')?.focus();
+            }}
+            className="rounded-full bg-gray-100 px-3 py-1 text-xs hover:bg-gray-200 transition"
+          >
+            {p}
+          </button>
+        ))}
+      </div>
       <div className="max-h-96 overflow-y-auto space-y-3">
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
