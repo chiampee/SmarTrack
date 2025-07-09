@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from '../../types/Link';
 import { aiService, ChatMessage as AIChatMessage } from '../../services/aiService';
+import { chatService } from '../../services/chatService';
+import { ChatMessage } from '../../types/ChatMessage';
+import { Conversation } from '../../types/Conversation';
+import { useNavigate } from 'react-router-dom';
 import { aiSummaryService } from '../../services/aiSummaryService';
 import { LoadingSpinner, Input, Button } from '..';
 import { getPageText } from '../../utils/pageCache';
@@ -21,10 +25,18 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState('');
+  const [conversation, setConversation] = useState<Conversation | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const buildContext = async () => {
+      const conv = await chatService.startConversation(links.map((l) => l.id));
+      setConversation(conv);
+      // load existing messages (if any)
+      const hist = await chatService.getMessages(conv.id);
+      setMessages(hist.map((m) => ({ id: m.id, role: m.role, content: m.content })));
+
       let ctx = 'You are a helpful research assistant. The user selected multiple pages. Use the info below. Unless the user explicitly requests otherwise (e.g. asks for a translation), respond in English.\n';
       await Promise.all(
         links.map(async (link) => {
@@ -69,14 +81,18 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
   }
 
   const send = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !conversation) return;
     setLoading(true);
-    const userMsg: LocalMsg = {
+    const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
+      linkId: links[0].id,
+      conversationId: conversation.id,
       content: input.trim(),
+      timestamp: new Date(),
     };
-    setMessages((prev) => [...prev, userMsg]);
+    await chatService.addMessage(userMsg);
+    setMessages((prev) => [...prev, { id: userMsg.id, role: 'user', content: userMsg.content }]);
     setInput('');
 
     const aiHistory: AIChatMessage[] = [
@@ -86,19 +102,42 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
     ];
 
     const assistantId = crypto.randomUUID();
-    let assistantMsg: LocalMsg = {
+    let assistantContent = '';
+    const assistantLocal: LocalMsg = {
       id: assistantId,
       role: 'assistant',
       content: '',
     };
-    setMessages((prev) => [...prev, assistantMsg]);
+    setMessages((prev) => [...prev, assistantLocal]);
 
     await aiService.chatStream(aiHistory, (partial) => {
-      assistantMsg.content = partial;
+      assistantContent = partial;
+      assistantLocal.content = partial;
       setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: partial } : m)));
     });
 
+    const assistantMsg: ChatMessage = {
+      id: assistantId,
+      role: 'assistant',
+      linkId: links[0].id,
+      conversationId: conversation.id,
+      content: assistantContent,
+      timestamp: new Date(),
+    };
+    await chatService.addMessage(assistantMsg);
+
     setLoading(false);
+  };
+
+  const endChat = async () => {
+    if (conversation) await chatService.endConversation(conversation.id);
+    // reset
+    setMessages([]);
+    setInput('');
+    setSystemPrompt('');
+    // rebuild context to start new conversation
+    const conv = await chatService.startConversation(links.map((l) => l.id));
+    setConversation(conv);
   };
 
   const quickPrompts = [
@@ -112,7 +151,10 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
     <div className="border border-blue-300 rounded p-4">
       <div className="flex justify-between items-center mb-2">
         <h3 className="font-semibold text-sm">Multi-link Chat ({links.length} pages)</h3>
-        <button onClick={onClose} className="text-xs text-gray-500 hover:underline">Close</button>
+        <div className="space-x-3 text-xs">
+          <button onClick={() => navigate('/chat-history')} className="text-gray-500 hover:underline">Past chats</button>
+          <button onClick={onClose} className="text-gray-500 hover:underline">Close</button>
+        </div>
       </div>
       <div className="flex flex-wrap gap-2 mb-3">
         {quickPrompts.map((p) => (
@@ -152,6 +194,9 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
         />
         <Button onClick={send} disabled={loading || !input.trim()} size="sm">
           {loading ? <LoadingSpinner /> : 'Send'}
+        </Button>
+        <Button variant="secondary" onClick={endChat} disabled={loading} size="sm">
+          End & New
         </Button>
       </div>
     </div>

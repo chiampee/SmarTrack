@@ -3,6 +3,7 @@ import { chatService } from '../services/chatService';
 import { Conversation } from '../types/Conversation';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../db/smartResearchDB';
+import { Link as LinkType } from '../types/Link';
 
 export const ChatHistoryPage: React.FC = () => {
   const [convs, setConvs] = useState<Conversation[]>([]);
@@ -18,6 +19,24 @@ export const ChatHistoryPage: React.FC = () => {
     localStorage.setItem('openConversationId', conv.id);
     navigate('/links');
   };
+
+  const [linksMap, setLinksMap] = useState<Record<string, LinkType>>({});
+
+  useEffect(() => {
+    const fetchLinks = async () => {
+      const map: Record<string, LinkType> = {};
+      for (const conv of convs) {
+        for (const id of conv.linkIds) {
+          if (!map[id]) {
+            const l = await db.getLink(id);
+            if (l) map[id] = l as LinkType;
+          }
+        }
+      }
+      setLinksMap(map);
+    };
+    if (convs.length) void fetchLinks();
+  }, [convs]);
 
   return (
     <div className="p-4">
@@ -38,7 +57,16 @@ export const ChatHistoryPage: React.FC = () => {
                   {new Date(conv.startedAt).toLocaleString()}
                 </div>
                 <div className="text-xs text-gray-600 truncate">
-                  {conv.linkIds.length} link(s)
+                  {conv.linkIds
+                    .map((id) => linksMap[id]?.metadata?.title || linksMap[id]?.url || 'link')
+                    .join(', ')}
+                </div>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {conv.linkIds.flatMap((id) => linksMap[id]?.labels || []).map((lbl) => (
+                    <span key={lbl} className="bg-gray-200 text-gray-700 rounded-full px-2 py-0.5 text-[10px]">
+                      {lbl}
+                    </span>
+                  ))}
                 </div>
               </li>
             ))}

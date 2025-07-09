@@ -39,6 +39,12 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
             <p className="text-xs text-gray-500">No boards</p>
           )}
         </nav>
+        <hr className="my-3" />
+        <nav className="flex flex-col gap-1 text-sm">
+          <Link to="/chat-history" className="rounded px-2 py-1 hover:bg-gray-200" onClick={onClose}>
+            Chat History
+          </Link>
+        </nav>
       </aside>
     </>
   );
