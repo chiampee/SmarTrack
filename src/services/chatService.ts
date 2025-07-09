@@ -4,6 +4,7 @@ import { aiService, ChatMessage as AIChatMessage } from './aiService';
 import { Link } from '../types/Link';
 import { aiSummaryService } from './aiSummaryService';
 import { getPageText } from '../utils/pageCache';
+import { Conversation } from '../types/Conversation';
 
 // Lightweight helper to fetch readable summary via jina.ai
 async function fetchPageSummary(url: string): Promise<string> {
@@ -21,79 +22,82 @@ async function fetchPageSummary(url: string): Promise<string> {
 }
 
 export const chatService = {
+  /** Conversations */
+  async startConversation(linkIds: string[]): Promise<Conversation> {
+    // try reuse active conversation first
+    const existing = await db.getActiveConversationByLinks(linkIds);
+    if (existing) return existing as Conversation;
+    const conv: Conversation = {
+      id: crypto.randomUUID(),
+      linkIds,
+      startedAt: new Date(),
+      endedAt: null,
+    };
+    await db.addConversation(conv);
+    return conv;
+  },
+  async endConversation(id: string) {
+    return db.endConversation(id);
+  },
+  async getMessages(conversationId: string): Promise<ChatMessage[]> {
+    return db.getChatMessagesByConversation(conversationId);
+  },
+
   async getByLink(linkId: string): Promise<ChatMessage[]> {
     return db.getChatMessagesByLink(linkId);
   },
   async addMessage(msg: ChatMessage) {
     return db.addChatMessage(msg);
   },
-  async sendUserMessage(link: Link, content: string): Promise<ChatMessage[]> {
-    // ---------------------------------------------------------------------------------
-    // 1. Persist the user message first so history stays in order
-    // ---------------------------------------------------------------------------------
+  // Maintained for backward compatibility; new code should use sendMessage (below)
+  async sendMessage(conv: Conversation, content: string): Promise<ChatMessage[]> {
+    // For now assume single-link conversation for prompt building
+    const primaryLinkId = conv.linkIds[0];
+    const link = await db.getLink(primaryLinkId);
+    if (!link) throw new Error('Primary link not found');
+
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
-      linkId: link.id,
+      linkId: primaryLinkId,
+      conversationId: conv.id,
       role: 'user',
       content,
       timestamp: new Date(),
     };
     await this.addMessage(userMsg);
 
-    // Build history
-    const history = await this.getByLink(link.id);
+    const history = await this.getMessages(conv.id);
     const aiMessages: AIChatMessage[] = history.map((m) => ({
       role: m.role === 'assistant' ? 'assistant' : 'user',
       content: m.content,
     }));
 
-    // ---------------------------------------------------------------------------------
-    // 2. Build a rich system prompt with page context so GPT has the necessary info
-    // ---------------------------------------------------------------------------------
+    // Build system prompt similar to existing logic
     let pageContext = `You are a helpful research assistant. The conversation is about the following web page.\n`;
     pageContext += `URL: ${link.url}\n`;
-    if (link.metadata?.title) {
-      pageContext += `Title: ${link.metadata.title}\n`;
-    }
-    if (link.metadata?.description) {
-      pageContext += `Description: ${link.metadata.description}\n`;
-    }
+    if (link.metadata?.title) pageContext += `Title: ${link.metadata.title}\n`;
+    if (link.metadata?.description) pageContext += `Description: ${link.metadata.description}\n`;
+    if (link.labels?.length) pageContext += `Labels: ${link.labels.join(', ')}\n`;
+    // @ts-ignore optional notes
+    if (link.notes) pageContext += `User notes: ${link.notes}\n`;
 
-    if (link.labels?.length) {
-      pageContext += `Labels: ${link.labels.join(', ')}\n`;
-    }
-
-    // @ts-ignore optional notes property
-    if (link.notes) {
-      pageContext += `User notes: ${link.notes}\n`;
-    }
-
-    // If we already have an AI-generated summary, include the first one (TL;DR, etc.)
     try {
       const summaries = await aiSummaryService.getByLink(link.id);
       if (summaries.length) {
-        // prefer tldr, otherwise first
-        const preferred =
-          summaries.find((s) => s.kind === 'tldr') ?? summaries[0];
+        const preferred = summaries.find((s) => s.kind === 'tldr') ?? summaries[0];
         pageContext += `Summary: ${preferred.content}\n`;
       }
-    } catch {
-      /* non-fatal */
-    }
+    } catch {}
 
     pageContext +=
       "Use this information to answer the user's questions as accurately as possible. Unless the user explicitly requests otherwise (e.g. asks for a translation), respond in English.\n";
 
-    // ---------------------------------------------------------------------------------
-    // 3. Fetch readable summary/content (up to ~3000 chars) and append
-    // ---------------------------------------------------------------------------------
-    const summaryText = await getPageText(link.url).then((t)=>{
+    const summaryText = await getPageText(link.url).then((t) => {
       const [, ...rest] = t.split('\n');
       return rest.join('\n').trim();
     });
     if (summaryText) {
-      const maxChars = 3000;
-      const trimmed = summaryText.slice(0, maxChars);
+      const trimmed = summaryText.slice(0, 3000);
       pageContext += `\nPage content summary (truncated):\n${trimmed}`;
     }
 
@@ -104,7 +108,8 @@ export const chatService = {
 
     const assistantMsg: ChatMessage = {
       id: crypto.randomUUID(),
-      linkId: link.id,
+      linkId: primaryLinkId,
+      conversationId: conv.id,
       role: 'assistant',
       content: assistantContent,
       timestamp: new Date(),

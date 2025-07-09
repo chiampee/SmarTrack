@@ -11,6 +11,7 @@ export class SmartResearchDB extends Dexie {
   links!: Table<Link, string>;
   summaries!: Table<AISummary, string>;
   chatMessages!: Table<ChatMessage, string>;
+  conversations!: Table<import('../types/Conversation').Conversation, string>;
   settings!: Table<Settings, string>;
   tasks!: Table<Task, string>;
 
@@ -54,6 +55,18 @@ export class SmartResearchDB extends Dexie {
       links: 'id, url, labels, priority, status, createdAt',
       summaries: 'id, linkId, kind, createdAt',
       chatMessages: 'id, linkId, timestamp',
+      settings: 'id',
+      tasks: 'id, status, priority, dueDate, createdAt, boardId, parentId',
+      // conversations table added in v5
+    });
+
+    // Version 5 – conversations and conversationId index on chatMessages
+    this.version(5).stores({
+      boards: 'id, title, color, createdAt',
+      links: 'id, url, labels, priority, status, createdAt',
+      summaries: 'id, linkId, kind, createdAt',
+      chatMessages: 'id, linkId, conversationId, timestamp',
+      conversations: 'id, startedAt, endedAt',
       settings: 'id',
       tasks: 'id, status, priority, dueDate, createdAt, boardId, parentId',
     });
@@ -105,6 +118,30 @@ export class SmartResearchDB extends Dexie {
   }
   getChatMessagesByLink(linkId: string) {
     return this.chatMessages.where('linkId').equals(linkId).toArray();
+  }
+  getChatMessagesByConversation(conversationId: string) {
+    return this.chatMessages.where('conversationId').equals(conversationId).toArray();
+  }
+
+  // Conversations
+  addConversation(conv: import('../types/Conversation').Conversation) {
+    return this.conversations.add(conv);
+  }
+  getConversation(id: string) {
+    return this.conversations.get(id);
+  }
+  getActiveConversationByLinks(linkIds: string[]) {
+    return this.conversations
+      .where('endedAt')
+      .equals(null as any)
+      .filter((c) =>
+        c.linkIds.length === linkIds.length &&
+        c.linkIds.every((id) => linkIds.includes(id))
+      )
+      .first();
+  }
+  endConversation(id: string) {
+    return this.conversations.update(id, { endedAt: new Date() });
   }
 
   // Settings

@@ -6,4 +6,6 @@ export interface ChatMessage {
   role: ChatRole;
   content: string;
   timestamp: Date;
+  // Conversation this message belongs to (null for legacy data)
+  conversationId?: string;
 }
