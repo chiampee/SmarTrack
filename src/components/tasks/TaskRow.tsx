@@ -41,8 +41,8 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task }) => {
     if (!editing.field) return;
     const changes: Partial<Task> = {};
     if (editing.field === 'name') changes.name = draft;
-    if (editing.field === 'priority') changes.priority = draft;
-    if (editing.field === 'status') changes.status = draft;
+    if (editing.field === 'priority') changes.priority = draft as Task['priority'];
+    if (editing.field === 'status') changes.status = draft as Task['status'];
     if (editing.field === 'dueDate')
       changes.dueDate = draft ? new Date(draft) : undefined;
     await updateTask(task.id, changes);

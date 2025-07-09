@@ -36,7 +36,11 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
         conv = await chatService.startConversation(links.map((l) => l.id));
         setConversation(conv);
         const hist = await chatService.getMessages(conv.id);
-        setMessages(hist.map((m) => ({ id: m.id, role: m.role, content: m.content })));
+        setMessages(
+          hist
+            .filter((m) => m.role !== 'system')
+            .map((m) => ({ id: m.id, role: m.role as 'user' | 'assistant', content: m.content }))
+        );
       } catch (err) {
         console.error('Failed to start conversation', err);
       }

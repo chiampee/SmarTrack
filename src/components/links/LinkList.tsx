@@ -127,6 +127,7 @@ export const LinkList: React.FC = () => {
                   type="checkbox"
                   onChange={(e) => toggleSelectAll(e.target.checked, groups[label])}
                   checked={groups[label].every((l) => selectedIds.includes(l.id)) && groups[label].length > 0}
+                  // @ts-ignore – set by browser, TS doesn't know this prop
                   indeterminate={
                     !groups[label].every((l) => selectedIds.includes(l.id)) &&
                     groups[label].some((l) => selectedIds.includes(l.id))

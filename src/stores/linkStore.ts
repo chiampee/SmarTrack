@@ -22,6 +22,7 @@ interface LinkState {
   setSortKey: (key: SortKey) => void;
   setSearchTerm: (term: string) => void;
   applyFilters: () => void;
+  fetchLinks: () => Promise<void>;
 }
 
 export const useLinkStore = create<LinkState>()((set, get) => ({

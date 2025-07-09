@@ -106,7 +106,6 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
       onClose={onClose}
       title={`Chat – ${link.metadata.title || link.url}`}
       footer={footer}
-      size="lg"
     >
       <div className="text-right mb-2">
         <button
