@@ -4,6 +4,7 @@ import { Link } from '../../types/Link';
 import { chatService } from '../../services/chatService';
 import { Conversation } from '../../types/Conversation';
 import { useNavigate } from 'react-router-dom';
+import { PastChatsSidebar } from './PastChatsSidebar';
 import { ChatMessage } from '../../types/ChatMessage';
 
 interface Props {
@@ -106,46 +107,44 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
       onClose={onClose}
       title={`Chat – ${link.metadata.title || link.url}`}
       footer={footer}
+      maxWidthClass="max-w-5xl"
     >
-      <div className="text-right mb-2">
-        <button
-          onClick={() => navigate('/chat-history')}
-          className="text-xs text-gray-500 hover:underline"
-        >
-          Past chats
-        </button>
-      </div>
-      {/* Quick prompt chips */}
-      <div className="flex flex-wrap gap-2 mb-3">
-        {quickPrompts.map((p) => (
-          <button
-            key={p}
-            onClick={() => {
-              setInput(p);
-              document.querySelector<HTMLTextAreaElement>('textarea[placeholder="Ask a question..."]')?.focus();
-            }}
-            className="rounded-full bg-gray-100 px-3 py-1 text-xs hover:bg-gray-200 transition"
-          >
-            {p}
-          </button>
-        ))}
-      </div>
-      <div className="max-h-96 overflow-y-auto space-y-3">
-        {messages.map((m) => (
-          <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className={`rounded px-3 py-2 text-sm whitespace-pre-wrap max-w-[70%] ${
-                m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100'
-              }`}
-            >
-              {m.content}
-            </div>
+      <div className="flex gap-6">
+        <div className="flex-1">
+          {/* Quick prompt chips */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {quickPrompts.map((p) => (
+              <button
+                key={p}
+                onClick={() => {
+                  setInput(p);
+                  document.querySelector<HTMLTextAreaElement>('textarea[placeholder="Ask a question..."]')?.focus();
+                }}
+                className="rounded-full bg-gray-100 px-3 py-1 text-xs hover:bg-gray-200 transition"
+              >
+                {p}
+              </button>
+            ))}
           </div>
-        ))}
-        {loading && (
-          <div className="text-center text-gray-500 text-sm">Thinking...</div>
-        )}
-        <div ref={bottomRef} />
+          <div className="max-h-96 overflow-y-auto space-y-3">
+            {messages.map((m) => (
+              <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className={`rounded px-3 py-2 text-sm whitespace-pre-wrap max-w-[70%] ${
+                    m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100'
+                  }`}
+                >
+                  {m.content}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="text-center text-gray-500 text-sm">Thinking...</div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+        </div>
+        <PastChatsSidebar />
       </div>
     </Modal>
   );

@@ -8,6 +8,7 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  maxWidthClass?: string; // tailwind max-w-* class
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -16,6 +17,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   footer,
+  maxWidthClass = 'max-w-lg',
 }) => (
   <Transition show={isOpen} as={Fragment}>
     <Dialog onClose={onClose} className="fixed inset-0 z-50 overflow-y-auto">
@@ -41,7 +43,7 @@ export const Modal: React.FC<ModalProps> = ({
           leaveFrom="opacity-100 scale-100"
           leaveTo="opacity-0 scale-95"
         >
-          <div className="relative w-full max-w-lg transform overflow-hidden rounded bg-white p-6 text-left align-middle shadow-xl transition-all">
+          <div className={`relative w-full ${maxWidthClass} transform overflow-hidden rounded bg-white p-6 text-left align-middle shadow-xl transition-all`}>
             {title && (
               <Dialog.Title className="text-lg font-medium text-gray-900">
                 {title}

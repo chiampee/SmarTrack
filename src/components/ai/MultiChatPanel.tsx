@@ -7,6 +7,7 @@ import { Conversation } from '../../types/Conversation';
 import { useNavigate } from 'react-router-dom';
 import { aiSummaryService } from '../../services/aiSummaryService';
 import { LoadingSpinner, Button } from '..';
+import { PastChatsSidebar } from './PastChatsSidebar';
 import { getPageText } from '../../utils/pageCache';
 
 interface Props {
@@ -176,41 +177,46 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
           </button>
         ))}
       </div>
-      <div className="max-h-80 overflow-y-auto space-y-3 mb-3">
-        {messages.map((m) => (
-          <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className={`rounded px-3 py-2 text-sm whitespace-pre-wrap max-w-[70%] ${
-                m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100'
-              }`}
-            >
-              {m.content}
-            </div>
+      <div className="flex gap-6">
+        <div className="flex-1">
+          <div className="max-h-80 overflow-y-auto space-y-3 mb-3">
+            {messages.map((m) => (
+              <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className={`rounded px-3 py-2 text-sm whitespace-pre-wrap max-w-[70%] ${
+                    m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100'
+                  }`}
+                >
+                  {m.content}
+                </div>
+              </div>
+            ))}
+            {loading && <div className="text-center text-gray-500 text-sm">Thinking…</div>}
+            <div ref={bottomRef} />
           </div>
-        ))}
-        {loading && <div className="text-center text-gray-500 text-sm">Thinking…</div>}
-        <div ref={bottomRef} />
-      </div>
-      <div className="flex items-center gap-2">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              send();
-            }
-          }}
-          placeholder="Ask a question…"
-          rows={2}
-          className="flex-1 rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y min-h-[3rem]"
-        />
-        <Button onClick={send} disabled={loading || !input.trim()} size="sm">
-          {loading ? <LoadingSpinner /> : 'Send'}
-        </Button>
-        <Button variant="secondary" onClick={endChat} disabled={loading} size="sm">
-          End & New
-        </Button>
+          <div className="flex items-center gap-2">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  send();
+                }
+              }}
+              placeholder="Ask a question…"
+              rows={2}
+              className="flex-1 rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y min-h-[3rem]"
+            />
+            <Button onClick={send} disabled={loading || !input.trim()} size="sm">
+              {loading ? <LoadingSpinner /> : 'Send'}
+            </Button>
+            <Button variant="secondary" onClick={endChat} disabled={loading} size="sm">
+              End & New
+            </Button>
+          </div>
+        </div>
+        <PastChatsSidebar />
       </div>
     </div>
   );
