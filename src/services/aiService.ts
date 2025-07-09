@@ -146,4 +146,74 @@ export const aiService = {
     // Otherwise directly call Mistral
     return safeCall('mistral');
   },
+
+  /**
+   * Streamed chat – calls onDelta each time new text chunk arrives.
+   * Returns full accumulated assistant message when stream completes.
+   */
+  async chatStream(
+    messages: ChatMessage[],
+    onDelta: (partial: string) => void,
+    opts: ChatOptions = {},
+  ): Promise<string> {
+    const model = opts.model || 'gpt-3.5-turbo';
+    const openaiKey = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
+    if (!openaiKey) {
+      // fallback to non-stream
+      const full = await this.chat(messages, opts);
+      onDelta(full);
+      return full;
+    }
+
+    const body = {
+      model,
+      messages,
+      stream: true,
+      max_tokens: opts.maxTokens ?? 512,
+      temperature: opts.temperature ?? 0.7,
+    } as Record<string, unknown>;
+
+    const res = await fetchWithTimeout(OPENAI_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${openaiKey}`,
+      },
+      body: JSON.stringify(body),
+      timeout: 60000,
+    });
+
+    if (!res.ok || !res.body) {
+      throw new Error(`OpenAI stream error ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let done = false;
+    let acc = '';
+    while (!done) {
+      const { value, done: d } = await reader.read();
+      done = d;
+      if (value) {
+        const txt = decoder.decode(value, { stream: true });
+        const lines = txt.split('\n');
+        for (const l of lines) {
+          const m = l.trim();
+          if (m.startsWith('data: ')) {
+            const json = m.replace('data: ', '').trim();
+            if (json === '[DONE]') continue;
+            try {
+              const chunk = JSON.parse(json);
+              const delta = chunk.choices?.[0]?.delta?.content;
+              if (delta) {
+                acc += delta;
+                onDelta(acc);
+              }
+            } catch {}
+          }
+        }
+      }
+    }
+    return acc.trim();
+  },
 }; 

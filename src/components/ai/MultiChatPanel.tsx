@@ -85,13 +85,19 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
       { role: 'user', content: userMsg.content },
     ];
 
-    const assistantContent = await aiService.chat(aiHistory);
-    const assistantMsg: LocalMsg = {
-      id: crypto.randomUUID(),
+    const assistantId = crypto.randomUUID();
+    let assistantMsg: LocalMsg = {
+      id: assistantId,
       role: 'assistant',
-      content: assistantContent,
+      content: '',
     };
     setMessages((prev) => [...prev, assistantMsg]);
+
+    await aiService.chatStream(aiHistory, (partial) => {
+      assistantMsg.content = partial;
+      setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: partial } : m)));
+    });
+
     setLoading(false);
   };
 

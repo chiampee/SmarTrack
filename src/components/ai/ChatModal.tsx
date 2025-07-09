@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Button, Input, LoadingSpinner } from '..';
 import { Link } from '../../types/Link';
 import { chatService } from '../../services/chatService';
+import { aiService } from '../../services/aiService';
 import { ChatMessage } from '../../types/ChatMessage';
 
 interface Props {
@@ -34,9 +35,46 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
   const send = async () => {
     if (!input.trim()) return;
     setLoading(true);
-    const newMsgs = await chatService.sendUserMessage(link, input.trim());
+    const userContent = input.trim();
     setInput('');
-    setMessages((prev) => [...prev, ...newMsgs]);
+
+    const userMsg: ChatMessage = {
+      id: crypto.randomUUID(),
+      linkId: link.id,
+      role: 'user',
+      content: userContent,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+
+    // Build history (no GPT yet)
+    const history = await chatService.getByLink(link.id);
+    const aiMessages = history
+      .concat(userMsg)
+      .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
+
+    let assistantId = crypto.randomUUID();
+    let assistantMsg: ChatMessage = {
+      id: assistantId,
+      linkId: link.id,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, assistantMsg]);
+
+    await aiService.chatStream(
+      [{ role: 'system', content: 'You are a helpful research assistant.' }, ...aiMessages],
+      (partial) => {
+        assistantMsg.content = partial;
+        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: partial } : m)));
+      },
+    );
+
+    // Persist both messages
+    await chatService.addMessage(userMsg);
+    await chatService.addMessage(assistantMsg);
+
     setLoading(false);
   };
 
