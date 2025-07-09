@@ -4,6 +4,21 @@ import { aiService, ChatMessage as AIChatMessage } from './aiService';
 import { Link } from '../types/Link';
 import { aiSummaryService } from './aiSummaryService';
 
+// Lightweight helper to fetch readable summary via jina.ai
+async function fetchPageSummary(url: string): Promise<string> {
+  try {
+    const clean = url.replace(/^https?:\/\//, '');
+    const res = await fetch(`https://r.jina.ai/http://${clean}`);
+    if (!res.ok) return '';
+    const text = await res.text();
+    // Remove first line (title) because we already include title separately
+    const [, ...rest] = text.split('\n');
+    return rest.join('\n').trim();
+  } catch {
+    return '';
+  }
+}
+
 export const chatService = {
   async getByLink(linkId: string): Promise<ChatMessage[]> {
     return db.getChatMessagesByLink(linkId);
@@ -43,6 +58,15 @@ export const chatService = {
       pageContext += `Description: ${link.metadata.description}\n`;
     }
 
+    if (link.labels?.length) {
+      pageContext += `Labels: ${link.labels.join(', ')}\n`;
+    }
+
+    // @ts-ignore optional notes property
+    if (link.notes) {
+      pageContext += `User notes: ${link.notes}\n`;
+    }
+
     // If we already have an AI-generated summary, include the first one (TL;DR, etc.)
     try {
       const summaries = await aiSummaryService.getByLink(link.id);
@@ -57,7 +81,17 @@ export const chatService = {
     }
 
     pageContext +=
-      'Use this information to answer the user\'s questions as accurately as possible.';
+      'Use this information to answer the user\'s questions as accurately as possible.\n';
+
+    // ---------------------------------------------------------------------------------
+    // 3. Fetch readable summary/content (up to ~3000 chars) and append
+    // ---------------------------------------------------------------------------------
+    const summaryText = await fetchPageSummary(link.url);
+    if (summaryText) {
+      const maxChars = 3000;
+      const trimmed = summaryText.slice(0, maxChars);
+      pageContext += `\nPage content summary (truncated):\n${trimmed}`;
+    }
 
     const assistantContent = await aiService.chat([
       { role: 'system', content: pageContext },
