@@ -16,6 +16,7 @@ export const Header: React.FC<{ onMenu: () => void }> = ({ onMenu }) => (
       <Link to="/">Boards</Link>
       <Link to="/links">Links</Link>
       <Link to="/tasks">Tasks</Link>
+      <Link to="/chat-history">Chat History</Link>
     </nav>
   </header>
 );

@@ -42,6 +42,9 @@ export const chatService = {
   async getMessages(conversationId: string): Promise<ChatMessage[]> {
     return db.getChatMessagesByConversation(conversationId);
   },
+  async getAllConversations() {
+    return db.getAllConversations();
+  },
 
   async getByLink(linkId: string): Promise<ChatMessage[]> {
     return db.getChatMessagesByLink(linkId);

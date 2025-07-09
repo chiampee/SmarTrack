@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Button, Input, LoadingSpinner } from '..';
 import { Link } from '../../types/Link';
 import { chatService } from '../../services/chatService';
-import { aiService } from '../../services/aiService';
+import { Conversation } from '../../types/Conversation';
+import { useNavigate } from 'react-router-dom';
 import { ChatMessage } from '../../types/ChatMessage';
 
 interface Props {
@@ -15,16 +16,20 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [conversation, setConversation] = useState<Conversation | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
-  const loadHistory = async () => {
-    const hist = await chatService.getByLink(link.id);
+  const initConversation = async () => {
+    const conv = await chatService.startConversation([link.id]);
+    setConversation(conv);
+    const hist = await chatService.getMessages(conv.id);
     setMessages(hist);
   };
 
   useEffect(() => {
     if (isOpen) {
-      void loadHistory();
+      void initConversation();
     }
   }, [isOpen]);
 
@@ -38,51 +43,29 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
     const userContent = input.trim();
     setInput('');
 
+    if (!conversation) return;
+
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       linkId: link.id,
+      conversationId: conversation.id,
       role: 'user',
       content: userContent,
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMsg]);
 
-    // Build history (no GPT yet)
-    const history = await chatService.getByLink(link.id);
-    const aiMessages = history
-      .concat(userMsg)
-      .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
-
-    let assistantId = crypto.randomUUID();
-    let assistantMsg: ChatMessage = {
-      id: assistantId,
-      linkId: link.id,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, assistantMsg]);
-
-    await aiService.chatStream(
-      [
-        {
-          role: 'system',
-          content:
-            'You are a helpful research assistant. Unless the user explicitly requests otherwise (e.g. asking for a translation), respond in English.',
-        },
-        ...aiMessages,
-      ],
-      (partial) => {
-        assistantMsg.content = partial;
-        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: partial } : m)));
-      },
-    );
-
-    // Persist both messages
-    await chatService.addMessage(userMsg);
-    await chatService.addMessage(assistantMsg);
+    const result = await chatService.sendMessage(conversation, userContent);
+    setMessages((prev) => [...prev.filter((m) => m.id !== userMsg.id), ...result]);
 
     setLoading(false);
+  };
+
+  const endChat = async () => {
+    if (conversation) {
+      await chatService.endConversation(conversation.id);
+    }
+    await initConversation();
   };
 
   const footer = (
@@ -98,6 +81,9 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
       />
       <Button onClick={send} disabled={loading || !input.trim()}>
         {loading ? <LoadingSpinner /> : 'Send'}
+      </Button>
+      <Button variant="secondary" onClick={endChat} disabled={loading}>
+        End Chat
       </Button>
     </div>
   );
@@ -118,6 +104,14 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
       footer={footer}
       size="lg"
     >
+      <div className="text-right mb-2">
+        <button
+          onClick={() => navigate('/chat-history')}
+          className="text-xs text-gray-500 hover:underline"
+        >
+          Past chats
+        </button>
+      </div>
       {/* Quick prompt chips */}
       <div className="flex flex-wrap gap-2 mb-3">
         {quickPrompts.map((p) => (

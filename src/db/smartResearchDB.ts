@@ -143,6 +143,9 @@ export class SmartResearchDB extends Dexie {
   endConversation(id: string) {
     return this.conversations.update(id, { endedAt: new Date() });
   }
+  getAllConversations() {
+    return this.conversations.toArray();
+  }
 
   // Settings
   upsertSettings(settings: Settings) {
