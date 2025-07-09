@@ -45,6 +45,9 @@ export const chatService = {
   async getAllConversations() {
     return db.getAllConversations();
   },
+  async deleteConversation(id: string) {
+    return db.deleteConversation(id);
+  },
 
   async getByLink(linkId: string): Promise<ChatMessage[]> {
     return db.getChatMessagesByLink(linkId);

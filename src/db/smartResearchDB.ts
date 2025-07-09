@@ -146,6 +146,12 @@ export class SmartResearchDB extends Dexie {
   getAllConversations() {
     return this.conversations.toArray();
   }
+  async deleteConversation(id: string) {
+    await this.transaction('rw', this.conversations, this.chatMessages, async () => {
+      await this.conversations.delete(id);
+      await this.chatMessages.where('conversationId').equals(id).delete();
+    });
+  }
 
   // Settings
   upsertSettings(settings: Settings) {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Conversation } from '../../types/Conversation';
 import { chatService } from '../../services/chatService';
 import { useNavigate } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 
 interface Props {
   onSelect?: (conv: Conversation) => void;
@@ -26,7 +27,7 @@ export const PastChatsSidebar: React.FC<Props> = ({ onSelect }) => {
           .map((conv) => (
             <li
               key={conv.id}
-              className="cursor-pointer hover:text-blue-600"
+              className="cursor-pointer hover:text-blue-600 flex justify-between items-center group"
               onClick={() => {
                 if (onSelect) {
                   onSelect(conv);
@@ -36,9 +37,21 @@ export const PastChatsSidebar: React.FC<Props> = ({ onSelect }) => {
                 }
               }}
             >
-              <div className="truncate font-medium text-gray-700 text-xs">
+              <div className="truncate font-medium text-gray-700 text-xs group-hover:underline">
                 {conv.linkIds.length} link{conv.linkIds.length === 1 ? '' : 's'} – {new Date(conv.startedAt).toLocaleDateString()}
               </div>
+              <button
+                className="text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (confirm('Delete this conversation?')) {
+                    await chatService.deleteConversation(conv.id);
+                    setConvs((prev) => prev.filter((c) => c.id !== conv.id));
+                  }
+                }}
+              >
+                <Trash2 size={14} />
+              </button>
             </li>
           ))}
       </ul>
