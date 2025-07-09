@@ -6,7 +6,7 @@ import { ChatMessage } from '../../types/ChatMessage';
 import { Conversation } from '../../types/Conversation';
 import { useNavigate } from 'react-router-dom';
 import { aiSummaryService } from '../../services/aiSummaryService';
-import { LoadingSpinner, Input, Button } from '..';
+import { LoadingSpinner, Button } from '..';
 import { getPageText } from '../../utils/pageCache';
 
 interface Props {
@@ -188,14 +188,18 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
         <div ref={bottomRef} />
       </div>
       <div className="flex items-center gap-2">
-        <Input
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') send();
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              send();
+            }
           }}
           placeholder="Ask a question…"
-          className="flex-1"
+          rows={2}
+          className="flex-1 rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y min-h-[3rem]"
         />
         <Button onClick={send} disabled={loading || !input.trim()} size="sm">
           {loading ? <LoadingSpinner /> : 'Send'}

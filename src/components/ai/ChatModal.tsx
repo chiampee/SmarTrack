@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal, Button, Input, LoadingSpinner } from '..';
+import { Modal, Button, LoadingSpinner } from '..';
 import { Link } from '../../types/Link';
 import { chatService } from '../../services/chatService';
 import { Conversation } from '../../types/Conversation';
@@ -70,14 +70,18 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
 
   const footer = (
     <div className="flex items-center gap-2">
-      <Input
+      <textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') send();
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            send();
+          }
         }}
         placeholder="Ask a question..."
-        className="flex-1"
+        rows={2}
+        className="flex-1 rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y min-h-[3rem]"
       />
       <Button onClick={send} disabled={loading || !input.trim()}>
         {loading ? <LoadingSpinner /> : 'Send'}
@@ -119,7 +123,7 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
             key={p}
             onClick={() => {
               setInput(p);
-              document.querySelector<HTMLInputElement>('input[placeholder="Ask a question..."]')?.focus();
+              document.querySelector<HTMLTextAreaElement>('textarea[placeholder="Ask a question..."]')?.focus();
             }}
             className="rounded-full bg-gray-100 px-3 py-1 text-xs hover:bg-gray-200 transition"
           >
