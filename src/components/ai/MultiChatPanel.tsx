@@ -3,6 +3,7 @@ import { Link } from '../../types/Link';
 import { aiService, ChatMessage as AIChatMessage } from '../../services/aiService';
 import { aiSummaryService } from '../../services/aiSummaryService';
 import { LoadingSpinner, Input, Button } from '..';
+import { getPageText } from '../../utils/pageCache';
 
 interface Props {
   links: Link[];
@@ -25,33 +26,31 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
   useEffect(() => {
     const buildContext = async () => {
       let ctx = 'You are a helpful research assistant. The user selected multiple pages. Use the info below.\n';
-      for (const link of links) {
-        ctx += '----\n';
-        ctx += `URL: ${link.url}\n`;
-        if (link.metadata?.title) ctx += `Title: ${link.metadata.title}\n`;
-        if (link.metadata?.description) ctx += `Description: ${link.metadata.description}\n`;
-        if (link.labels?.length) ctx += `Labels: ${link.labels.join(', ')}\n`;
-        // @ts-ignore optional notes
-        if (link.notes) ctx += `User notes: ${link.notes}\n`;
-        try {
-          const summaries = await aiSummaryService.getByLink(link.id);
-          if (summaries.length) {
-            const preferred = summaries.find((s) => s.kind === 'tldr') ?? summaries[0];
-            ctx += `Existing summary: ${preferred.content}\n`;
-          }
-        } catch {}
-        // fetch jina.ai page text
-        try {
-          const clean = link.url.replace(/^https?:\/\//, '');
-          const res = await fetch(`https://r.jina.ai/http://${clean}`);
-          if (res.ok) {
-            const text = await res.text();
-            const [, ...rest] = text.split('\n');
-            const content = rest.join('\n').trim().slice(0, 3000);
+      await Promise.all(
+        links.map(async (link) => {
+          ctx += '----\n';
+          ctx += `URL: ${link.url}\n`;
+          if (link.metadata?.title) ctx += `Title: ${link.metadata.title}\n`;
+          if (link.metadata?.description) ctx += `Description: ${link.metadata.description}\n`;
+          if (link.labels?.length) ctx += `Labels: ${link.labels.join(', ')}\n`;
+          // @ts-ignore optional notes
+          if (link.notes) ctx += `User notes: ${link.notes}\n`;
+          try {
+            const summaries = await aiSummaryService.getByLink(link.id);
+            if (summaries.length) {
+              const preferred = summaries.find((s) => s.kind === 'tldr') ?? summaries[0];
+              ctx += `Existing summary: ${preferred.content}\n`;
+            }
+          } catch {}
+          // fetch cached page text
+          const text = await getPageText(link.url);
+          if (text) {
+            const [, ...rest2] = text.split('\n');
+            const content = rest2.join('\n').trim().slice(0, 3000);
             ctx += `Page text (truncated):\n${content}\n`;
           }
-        } catch {}
-      }
+        })
+      );
       setSystemPrompt(ctx);
     };
     void buildContext();

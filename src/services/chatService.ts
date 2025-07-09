@@ -3,6 +3,7 @@ import { ChatMessage, ChatRole } from '../types/ChatMessage';
 import { aiService, ChatMessage as AIChatMessage } from './aiService';
 import { Link } from '../types/Link';
 import { aiSummaryService } from './aiSummaryService';
+import { getPageText } from '../utils/pageCache';
 
 // Lightweight helper to fetch readable summary via jina.ai
 async function fetchPageSummary(url: string): Promise<string> {
@@ -86,7 +87,10 @@ export const chatService = {
     // ---------------------------------------------------------------------------------
     // 3. Fetch readable summary/content (up to ~3000 chars) and append
     // ---------------------------------------------------------------------------------
-    const summaryText = await fetchPageSummary(link.url);
+    const summaryText = await getPageText(link.url).then((t)=>{
+      const [, ...rest] = t.split('\n');
+      return rest.join('\n').trim();
+    });
     if (summaryText) {
       const maxChars = 3000;
       const trimmed = summaryText.slice(0, maxChars);
