@@ -1,6 +1,8 @@
 import React from 'react';
 
-export const LoadingSpinner: React.FC<{ className?: string }> = ({ className = '' }) => (
+export const LoadingSpinner: React.FC<{ className?: string }> = ({
+  className = '',
+}) => (
   <svg
     className={`h-5 w-5 animate-spin text-blue-600 ${className}`}
     xmlns="http://www.w3.org/2000/svg"
@@ -23,4 +25,4 @@ export const LoadingSpinner: React.FC<{ className?: string }> = ({ className = '
   </svg>
 );
 
-export default LoadingSpinner; 
+export default LoadingSpinner;

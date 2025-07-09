@@ -11,4 +11,4 @@ export interface Link {
   status: 'active' | 'archived' | 'deleted';
   createdAt: Date;
   updatedAt: Date;
-} 
+}

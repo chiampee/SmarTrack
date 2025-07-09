@@ -5,4 +5,4 @@ export interface Settings {
   language: string;
   createdAt: Date;
   updatedAt: Date;
-} 
+}

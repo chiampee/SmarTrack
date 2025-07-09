@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useBoardStore } from '../stores/boardStore';
 import { Button, Modal } from '../components';
 import { BoardForm } from '../components/boards/BoardForm';
-import { BoardGrid } from '../components/boards/BoardGrid';
+import { BoardList } from '../components/boards/BoardList';
 
 export const BoardsPage: React.FC = () => {
-  const { boards, loadBoards } = useBoardStore();
+  const { loadBoards } = useBoardStore();
   const [isModalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
@@ -18,8 +18,12 @@ export const BoardsPage: React.FC = () => {
         <h1 className="text-2xl font-semibold">Boards</h1>
         <Button onClick={() => setModalOpen(true)}>New Board</Button>
       </div>
-      <BoardGrid boards={boards} />
-      <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title="Create Board">
+      <BoardList />
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Create Board"
+      >
         <BoardForm
           onSuccess={() => {
             setModalOpen(false);
@@ -29,4 +33,4 @@ export const BoardsPage: React.FC = () => {
       </Modal>
     </div>
   );
-}; 
+};

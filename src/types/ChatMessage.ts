@@ -1,7 +1,9 @@
+export type ChatRole = 'user' | 'assistant' | 'system';
+
 export interface ChatMessage {
   id: string;
-  senderId: string;
+  linkId: string;
+  role: ChatRole;
   content: string;
   timestamp: Date;
-  isRead: boolean;
-} 
+}

@@ -30,13 +30,26 @@ export const BoardForm: React.FC<Props> = ({ initial = {}, onSuccess }) => {
         onSuccess();
       }}
     >
-      <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-      <Input label="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+      <Input
+        label="Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        required
+      />
+      <Input
+        label="Description"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
       <div className="flex items-center gap-2">
         <label className="text-sm font-medium text-gray-700">Color</label>
-        <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+        <input
+          type="color"
+          value={color}
+          onChange={(e) => setColor(e.target.value)}
+        />
       </div>
       <Button type="submit">Save</Button>
     </form>
   );
-}; 
+};

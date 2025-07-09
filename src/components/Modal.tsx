@@ -7,9 +7,16 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
+  footer?: React.ReactNode;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => (
+export const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  footer,
+}) => (
   <Transition show={isOpen} as={Fragment}>
     <Dialog onClose={onClose} className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4 text-center">
@@ -22,7 +29,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <Dialog.Overlay className="fixed inset-0 bg-black/30" />
+          <div className="fixed inset-0 bg-black/30" />
         </Transition.Child>
 
         <Transition.Child
@@ -35,14 +42,21 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
           leaveTo="opacity-0 scale-95"
         >
           <div className="relative w-full max-w-lg transform overflow-hidden rounded bg-white p-6 text-left align-middle shadow-xl transition-all">
-            {title && <Dialog.Title className="text-lg font-medium text-gray-900">{title}</Dialog.Title>}
+            {title && (
+              <Dialog.Title className="text-lg font-medium text-gray-900">
+                {title}
+              </Dialog.Title>
+            )}
             <button
               className="absolute right-3 top-3 rounded p-1 text-gray-500 hover:bg-gray-100"
               onClick={onClose}
             >
               <X size={20} />
             </button>
-            <div className="mt-4">{children}</div>
+            <div className="mt-4 space-y-4">
+              {children}
+              {footer && <div className="pt-2 border-t border-gray-100">{footer}</div>}
+            </div>
           </div>
         </Transition.Child>
       </div>
@@ -50,4 +64,4 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
   </Transition>
 );
 
-export default Modal; 
+export default Modal;

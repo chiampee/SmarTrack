@@ -15,8 +15,16 @@ const variantClasses: Record<BadgeVariant, string> = {
   danger: 'bg-red-100 text-red-800',
 };
 
-export const Badge: React.FC<BadgeProps> = ({ variant = 'default', children, className = '' }) => (
-  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${variantClasses[variant]} ${className}`}>{children}</span>
+export const Badge: React.FC<BadgeProps> = ({
+  variant = 'default',
+  children,
+  className = '',
+}) => (
+  <span
+    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${variantClasses[variant]} ${className}`}
+  >
+    {children}
+  </span>
 );
 
-export default Badge; 
+export default Badge;

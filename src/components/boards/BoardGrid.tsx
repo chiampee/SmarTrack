@@ -8,4 +8,4 @@ export const BoardGrid: React.FC<{ boards: Board[] }> = ({ boards }) => (
       <BoardCard key={b.id} board={b} />
     ))}
   </div>
-); 
+);

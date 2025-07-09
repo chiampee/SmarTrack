@@ -5,4 +5,4 @@ export interface Board {
   color: string;
   createdAt: Date;
   updatedAt: Date;
-} 
+}

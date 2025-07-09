@@ -599,3 +599,24 @@ Quality assurance and launch:
 **Total Tasks: 50**  
 **Estimated Completion: 6-8 weeks**  
 **Success Metric: Fully functional MVP with all core features** 
+
+---
+
+## 🧪 **Playwright E2E Tests**
+
+### **Link Filtering**
+
+Flow:
+1. Clears `SmartResearchDB` before each run.
+2. Adds three links via UI.
+3. Applies Status and Priority filters, asserting row counts at each step.
+4. Clears filters and verifies full list returns.
+
+Run with:
+```
+npm run e2e
+```
+
+Ensure dev server is running on http://localhost:5173 before executing.
+
+This validates full stack—from Dexie persistence through store filtering to UI updates. 

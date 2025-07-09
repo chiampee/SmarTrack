@@ -1,7 +1,6 @@
 import React from 'react';
 import { Board } from '../../types/Board';
 import { Badge, Button } from '..';
-import { boardService } from '../../services/boardService';
 import { useBoardStore } from '../../stores/boardStore';
 
 interface Props {
@@ -33,4 +32,4 @@ export const BoardCard: React.FC<Props> = ({ board }) => {
       </div>
     </div>
   );
-}; 
+};

@@ -4,6 +4,7 @@ import { Link } from '../types/Link';
 import { AISummary } from '../types/AISummary';
 import { ChatMessage } from '../types/ChatMessage';
 import { Settings } from '../types/Settings';
+import { Task } from '../types/Task';
 
 export class SmartResearchDB extends Dexie {
   boards!: Table<Board, string>;
@@ -11,6 +12,9 @@ export class SmartResearchDB extends Dexie {
   summaries!: Table<AISummary, string>;
   chatMessages!: Table<ChatMessage, string>;
   settings!: Table<Settings, string>;
+  tasks!: Table<Task, string>;
+
+  // (helper methods defined later in class)
 
   constructor() {
     super('SmartResearchDB');
@@ -22,6 +26,36 @@ export class SmartResearchDB extends Dexie {
       summaries: 'id, types, createdAt',
       chatMessages: 'id, senderId, timestamp',
       settings: 'id',
+    });
+
+    // Version 2 – add tasks
+    this.version(2).stores({
+      boards: 'id, title, color, createdAt',
+      links: 'id, url, labels, priority, status, createdAt',
+      summaries: 'id, types, createdAt',
+      chatMessages: 'id, senderId, timestamp',
+      settings: 'id',
+      tasks: 'id, status, priority, dueDate, createdAt, boardId, parentId',
+    });
+
+    // Version 3 – refine summaries schema with linkId & kind
+    this.version(3).stores({
+      boards: 'id, title, color, createdAt',
+      links: 'id, url, labels, priority, status, createdAt',
+      summaries: 'id, linkId, kind, createdAt',
+      chatMessages: 'id, linkId, timestamp',
+      settings: 'id',
+      tasks: 'id, status, priority, dueDate, createdAt, boardId, parentId',
+    });
+
+    // Version 4 – chat messages include linkId index
+    this.version(4).stores({
+      boards: 'id, title, color, createdAt',
+      links: 'id, url, labels, priority, status, createdAt',
+      summaries: 'id, linkId, kind, createdAt',
+      chatMessages: 'id, linkId, timestamp',
+      settings: 'id',
+      tasks: 'id, status, priority, dueDate, createdAt, boardId, parentId',
     });
 
     // Future migrations can be added like this:
@@ -69,8 +103,8 @@ export class SmartResearchDB extends Dexie {
   addChatMessage(message: ChatMessage) {
     return this.chatMessages.add(message);
   }
-  getChatMessages() {
-    return this.chatMessages.toArray();
+  getChatMessagesByLink(linkId: string) {
+    return this.chatMessages.where('linkId').equals(linkId).toArray();
   }
 
   // Settings
@@ -80,6 +114,20 @@ export class SmartResearchDB extends Dexie {
   getSettings(id = 'user') {
     return this.settings.get(id);
   }
+
+  // Tasks
+  addTask(task: Task) {
+    return this.tasks.add(task);
+  }
+  getTask(id: string) {
+    return this.tasks.get(id);
+  }
+  updateTask(id: string, changes: Partial<Task>) {
+    return this.tasks.update(id, changes);
+  }
+  deleteTask(id: string) {
+    return this.tasks.delete(id);
+  }
 }
 
-export const db = new SmartResearchDB(); 
+export const db = new SmartResearchDB();

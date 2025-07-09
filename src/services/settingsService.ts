@@ -10,4 +10,4 @@ export const settingsService = {
     if (!settings.createdAt) settings.createdAt = new Date();
     return db.upsertSettings(settings);
   },
-}; 
+};

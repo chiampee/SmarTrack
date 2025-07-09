@@ -12,7 +12,7 @@ interface BoardState {
   deleteBoard: (id: string) => Promise<void>;
 }
 
-export const useBoardStore = create<BoardState>()((set) => ({
+export const useBoardStore = create<BoardState>()((set, get) => ({
   boards: [],
   loading: false,
   async loadBoards() {
@@ -26,14 +26,14 @@ export const useBoardStore = create<BoardState>()((set) => ({
   },
   async addBoard(board) {
     await boardService.create(board);
-    await this.loadBoards();
+    await get().loadBoards();
   },
   async updateBoard(id, changes) {
     await boardService.update(id, changes);
-    await this.loadBoards();
+    await get().loadBoards();
   },
   async deleteBoard(id) {
     await boardService.remove(id);
-    await this.loadBoards();
+    await get().loadBoards();
   },
-})); 
+}));

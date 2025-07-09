@@ -21,4 +21,4 @@ export const useSettingsStore = create<SettingsState>()((set) => ({
     await settingsService.save(settings);
     set({ settings });
   },
-})); 
+}));

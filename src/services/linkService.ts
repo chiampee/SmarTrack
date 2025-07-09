@@ -26,4 +26,4 @@ export const linkService = {
   async filterByPriority(priority: Link['priority']) {
     return db.links.where('priority').equals(priority).toArray();
   },
-}; 
+};

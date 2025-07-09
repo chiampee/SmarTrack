@@ -20,4 +20,4 @@ export const boardService = {
   async remove(id: string) {
     return db.deleteBoard(id);
   },
-}; 
+};
