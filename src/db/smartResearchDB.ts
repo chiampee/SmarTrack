@@ -132,11 +132,11 @@ export class SmartResearchDB extends Dexie {
   }
   getActiveConversationByLinks(linkIds: string[]) {
     return this.conversations
-      .where('endedAt')
-      .equals(null as any)
-      .filter((c) =>
-        c.linkIds.length === linkIds.length &&
-        c.linkIds.every((id) => linkIds.includes(id))
+      .filter(
+        (c) =>
+          (c.endedAt === null || c.endedAt === undefined) &&
+          c.linkIds.length === linkIds.length &&
+          c.linkIds.every((id) => linkIds.includes(id))
       )
       .first();
   }
