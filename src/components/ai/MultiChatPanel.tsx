@@ -30,52 +30,54 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const buildContext = async () => {
-      let conv: Conversation | null = null;
-      try {
-        conv = await chatService.startConversation(links.map((l) => l.id));
-        setConversation(conv);
-        const hist = await chatService.getMessages(conv.id);
-        setMessages(
-          hist
-            .filter((m) => m.role !== 'system')
-            .map((m) => ({ id: m.id, role: m.role as 'user' | 'assistant', content: m.content }))
-        );
-      } catch (err) {
-        console.error('Failed to start conversation', err);
-      }
-
-      let ctx = 'You are a helpful research assistant. The user selected multiple pages. Use the info below. Unless the user explicitly requests otherwise (e.g. asks for a translation), respond in English.\n';
-      setSystemPrompt(ctx); // show UI immediately
-      await Promise.all(
-        links.map(async (link) => {
-          ctx += '----\n';
-          ctx += `URL: ${link.url}\n`;
-          if (link.metadata?.title) ctx += `Title: ${link.metadata.title}\n`;
-          if (link.metadata?.description) ctx += `Description: ${link.metadata.description}\n`;
-          if (link.labels?.length) ctx += `Labels: ${link.labels.join(', ')}\n`;
-          // @ts-ignore optional notes
-          if (link.notes) ctx += `User notes: ${link.notes}\n`;
-          try {
-            const summaries = await aiSummaryService.getByLink(link.id);
-            if (summaries.length) {
-              const preferred = summaries.find((s) => s.kind === 'tldr') ?? summaries[0];
-              ctx += `Existing summary: ${preferred.content}\n`;
-            }
-          } catch {}
-          // fetch cached page text
-          const text = await getPageText(link.url);
-          if (text) {
-            const [, ...rest2] = text.split('\n');
-            const content = rest2.join('\n').trim().slice(0, 3000);
-            ctx += `Page text (truncated):\n${content}\n`;
-          }
-        })
+  const buildContext = async (selectedLinks: Link[]) => {
+    let conv: Conversation | null = null;
+    try {
+      conv = await chatService.startConversation(selectedLinks.map((l) => l.id));
+      setConversation(conv);
+      const hist = await chatService.getMessages(conv.id);
+      setMessages(
+        hist
+          .filter((m) => m.role !== 'system')
+          .map((m) => ({ id: m.id, role: m.role as 'user' | 'assistant', content: m.content }))
       );
-      setSystemPrompt(ctx);
-    };
-    void buildContext();
+    } catch (err) {
+      console.error('Failed to start conversation', err);
+    }
+
+    let ctx = 'You are a helpful research assistant. The user selected multiple pages. Use the info below. Unless the user explicitly requests otherwise (e.g. asks for a translation), respond in English.\n';
+    setSystemPrompt(ctx); // show UI immediately
+    await Promise.all(
+      selectedLinks.map(async (link) => {
+        ctx += '----\n';
+        ctx += `URL: ${link.url}\n`;
+        if (link.metadata?.title) ctx += `Title: ${link.metadata.title}\n`;
+        if (link.metadata?.description) ctx += `Description: ${link.metadata.description}\n`;
+        if (link.labels?.length) ctx += `Labels: ${link.labels.join(', ')}\n`;
+        // @ts-ignore optional notes
+        if (link.notes) ctx += `User notes: ${link.notes}\n`;
+        try {
+          const summaries = await aiSummaryService.getByLink(link.id);
+          if (summaries.length) {
+            const preferred = summaries.find((s) => s.kind === 'tldr') ?? summaries[0];
+            ctx += `Existing summary: ${preferred.content}\n`;
+          }
+        } catch {}
+        // fetch cached page text
+        const text = await getPageText(link.url);
+        if (text) {
+          const [, ...rest2] = text.split('\n');
+          const content = rest2.join('\n').trim().slice(0, 3000);
+          ctx += `Page text (truncated):\n${content}\n`;
+        }
+      })
+    );
+    setSystemPrompt(ctx);
+  };
+
+  useEffect(() => {
+    void buildContext(links);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [links]);
 
   useEffect(() => {
@@ -146,8 +148,7 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
     setInput('');
     setSystemPrompt('');
     // rebuild context to start new conversation
-    const conv = await chatService.startConversation(links.map((l) => l.id));
-    setConversation(conv);
+    await buildContext(links);
   };
 
   const quickPrompts = [
