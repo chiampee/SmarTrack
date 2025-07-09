@@ -31,11 +31,15 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
 
   useEffect(() => {
     const buildContext = async () => {
-      const conv = await chatService.startConversation(links.map((l) => l.id));
-      setConversation(conv);
-      // load existing messages (if any)
-      const hist = await chatService.getMessages(conv.id);
-      setMessages(hist.map((m) => ({ id: m.id, role: m.role, content: m.content })));
+      let conv: Conversation | null = null;
+      try {
+        conv = await chatService.startConversation(links.map((l) => l.id));
+        setConversation(conv);
+        const hist = await chatService.getMessages(conv.id);
+        setMessages(hist.map((m) => ({ id: m.id, role: m.role, content: m.content })));
+      } catch (err) {
+        console.error('Failed to start conversation', err);
+      }
 
       let ctx = 'You are a helpful research assistant. The user selected multiple pages. Use the info below. Unless the user explicitly requests otherwise (e.g. asks for a translation), respond in English.\n';
       setSystemPrompt(ctx); // show UI immediately
