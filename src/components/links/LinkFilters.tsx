@@ -21,7 +21,7 @@ export const LinkFilters: React.FC = () => {
   }, [search, setSearchTerm]);
 
   return (
-    <div className="flex flex-wrap gap-3 bg-gray-50 px-4 py-3 sticky top-0 z-10 border-b border-gray-200">
+    <div className="flex flex-wrap gap-3 bg-gray-50 px-4 py-3 sticky top-12 z-10 border-b border-gray-200">
       <Input
         placeholder="Search title or URL..."
         value={search}

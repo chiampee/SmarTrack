@@ -13,7 +13,7 @@ export const BoardsPage: React.FC = () => {
   }, [loadBoards]);
 
   return (
-    <div className="p-4">
+    <div className="pt-0 px-4 pb-4 space-y-4">
       <div className="mb-4 flex justify-between">
         <h1 className="text-2xl font-semibold">Boards</h1>
         <Button onClick={() => setModalOpen(true)}>New Board</Button>

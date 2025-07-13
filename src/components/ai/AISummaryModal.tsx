@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Modal, Button, LoadingSpinner, Select, Input } from '..';
+import { Modal, Button, LoadingSpinner } from '..';
 import { Link } from '../../types/Link';
-import { SummaryKind } from '../../types/AISummary';
 import { aiSummaryService } from '../../services/aiSummaryService';
 
 interface Props {
@@ -10,26 +9,31 @@ interface Props {
   onClose: () => void;
 }
 
-const KIND_LABELS: Record<SummaryKind, string> = {
-  tldr: 'TL;DR',
-  bullets: 'Bullets',
-  quotes: 'Quotes',
-  insights: 'PM Insights',
-  custom: 'Custom',
-};
-
 export const AISummaryModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
-  const [kind, setKind] = useState<SummaryKind>('tldr');
-  const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [content, setContent] = useState<string>('');
 
-  const generate = async () => {
+  // Load existing summaries when the modal opens
+  React.useEffect(() => {
+    if (!isOpen) return;
+    (async () => {
+      try {
+        const summaries = await aiSummaryService.getByLink(link.id);
+        const raw = summaries.find((s) => s.kind === 'raw');
+        if (raw) setContent(raw.content);
+      } catch (err) {
+        console.error('Failed to load cached summaries', err);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, link.id]);
+
+  const refresh = async () => {
     setLoading(true);
     setError(null);
     try {
-      const summary = await aiSummaryService.generate(link, kind, prompt);
+      const summary = await aiSummaryService.generate(link, 'raw');
       setContent(summary.content);
     } catch (err: any) {
       setError(err.message || 'Failed to generate summary');
@@ -43,8 +47,18 @@ export const AISummaryModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
       <Button variant="secondary" onClick={onClose} disabled={loading}>
         Close
       </Button>
-      <Button onClick={generate} disabled={loading}>
-        {loading ? <LoadingSpinner /> : 'Generate'}
+      {content && (
+        <Button
+          variant="secondary"
+          onClick={() => {
+            navigator.clipboard.writeText(content).catch(() => {});
+          }}
+        >
+          Copy
+        </Button>
+      )}
+      <Button onClick={refresh} disabled={loading}>
+        {loading ? <LoadingSpinner /> : 'Refresh'}
       </Button>
     </div>
   );
@@ -52,26 +66,16 @@ export const AISummaryModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`AI Summary – ${link.metadata.title || link.url}`} footer={footer}>
       <div className="flex flex-col gap-4">
-        <Select value={kind} onChange={(e) => setKind(e.target.value as SummaryKind)}>
-          {Object.entries(KIND_LABELS).map(([k, label]) => (
-            <option key={k} value={k}>
-              {label}
-            </option>
-          ))}
-        </Select>
-        {kind === 'custom' && (
-          <Input
-            label="Custom Prompt"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Enter your custom prompt..."
-          />
-        )}
+        {/* Show error if any */}
         {error && <div className="text-sm text-red-600">{error}</div>}
+        {/* Always show the raw full text if available */}
         {content && (
-          <pre className="whitespace-pre-wrap rounded border border-gray-200 p-3 text-sm bg-gray-50 max-h-80 overflow-y-auto">
-            {content}
-          </pre>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-semibold text-gray-600">Full Text</span>
+            <pre className="whitespace-pre-wrap rounded border border-gray-200 p-3 text-sm bg-gray-50 max-h-80 overflow-y-auto">
+              {content}
+            </pre>
+          </div>
         )}
       </div>
     </Modal>

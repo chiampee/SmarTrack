@@ -39,7 +39,7 @@ export const ChatHistoryPage: React.FC = () => {
   }, [convs]);
 
   return (
-    <div className="p-4">
+    <div className="pt-0 px-4 pb-4">
       <h1 className="text-xl font-semibold mb-4">Chat History</h1>
       {convs.length === 0 ? (
         <p className="text-sm text-gray-500">No conversations yet.</p>

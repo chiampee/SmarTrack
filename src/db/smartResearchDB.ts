@@ -71,6 +71,36 @@ export class SmartResearchDB extends Dexie {
       tasks: 'id, status, priority, dueDate, createdAt, boardId, parentId',
     });
 
+    // Version 6 – add boardId index to links store
+    this.version(6).stores({
+      boards: 'id, title, color, createdAt',
+      links: 'id, url, labels, priority, status, boardId, createdAt',
+      summaries: 'id, linkId, kind, createdAt',
+      chatMessages: 'id, linkId, conversationId, timestamp',
+      conversations: 'id, startedAt, endedAt',
+      settings: 'id',
+      tasks: 'id, status, priority, dueDate, createdAt, boardId, parentId',
+    });
+
+    // Version 7 – add summary field index on links for AI context
+    this.version(7).stores({
+      boards: 'id, title, color, createdAt',
+      links: 'id, url, summary, labels, priority, status, boardId, createdAt',
+      summaries: 'id, linkId, kind, createdAt',
+      chatMessages: 'id, linkId, conversationId, timestamp',
+      conversations: 'id, startedAt, endedAt',
+      settings: 'id',
+      tasks: 'id, status, priority, dueDate, createdAt, boardId, parentId',
+    });
+
+    this.version(7).upgrade(async (tx) => {
+      // ensure summary field exists on existing links
+      const linksTable = tx.table('links');
+      await linksTable.toCollection().modify((l: any) => {
+        if (l.summary === undefined) l.summary = '';
+      });
+    });
+
     // Future migrations can be added like this:
     // this.version(2).upgrade(tx => { /* migration code */ });
   }

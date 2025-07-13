@@ -1,12 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useBoardStore } from '../../stores/boardStore';
+import { useLinkStore } from '../../stores/linkStore';
 import { Link } from 'react-router-dom';
+import { Modal, Button } from '..';
 
 export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
   open,
   onClose,
 }) => {
   const { boards, loadBoards } = useBoardStore();
+  const { clearAll, rawLinks } = useLinkStore();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     loadBoards();
@@ -21,7 +25,7 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
         />
       )}
       <aside
-        className={`fixed top-12 inset-y-0 left-0 z-20 w-64 transform bg-gray-50 p-4 shadow-lg transition-transform md:static md:translate-x-0 md:top-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed top-12 inset-y-0 left-0 z-20 w-64 transform bg-gray-50 p-4 shadow-lg transition-transform md:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
         <h2 className="mb-2 text-sm font-semibold text-gray-600">Boards</h2>
         <nav className="flex flex-col gap-1 text-sm">
@@ -44,7 +48,43 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
           <Link to="/chat-history" className="rounded px-2 py-1 hover:bg-gray-200" onClick={onClose}>
             Chat History
           </Link>
+          {rawLinks.length > 0 && (
+            <button
+              className="rounded px-2 py-1 text-red-600 hover:bg-red-50 hover:text-red-700 text-left"
+              onClick={() => setConfirmOpen(true)}
+            >
+              Delete All Links
+            </button>
+          )}
         </nav>
+        {/* Confirm modal */}
+        <Modal
+          isOpen={confirmOpen}
+          onClose={() => setConfirmOpen(false)}
+          title="Delete All Links"
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={async () => {
+                  await clearAll();
+                  setConfirmOpen(false);
+                  onClose();
+                }}
+              >
+                Delete All
+              </Button>
+            </div>
+          }
+          maxWidthClass="max-w-md"
+        >
+          <p className="text-sm text-gray-700">
+            Are you sure you want to permanently delete <strong>all</strong> links and their summaries? This action cannot be undone.
+          </p>
+        </Modal>
       </aside>
     </>
   );

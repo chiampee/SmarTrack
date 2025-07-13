@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link as LinkType } from '../../types/Link';
 import { Badge } from '..';
-import { Circle, CheckCircle, MoreVertical } from 'lucide-react';
+import { Circle, CheckCircle, MoreVertical, Info } from 'lucide-react';
+import { ContextInspectorModal } from '../ai/ContextInspectorModal';
 import { AISummaryModal } from '../ai/AISummaryModal';
 import { Modal } from '..';
 import { useLinkStore } from '../../stores/linkStore';
 import { LinkForm } from './LinkForm';
 import { ChatModal } from '../ai/ChatModal';
+import { aiSummaryService } from '../../services/aiSummaryService';
 
 interface Props {
   link: LinkType;
@@ -34,10 +36,32 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
   const [editOpen, setEditOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [summaryStatus, setSummaryStatus] = useState<string>('');
+  const [contextOpen, setContextOpen] = useState(false);
   const [editing, setEditing] = useState<{
     field?: 'title' | 'labels' | 'priority' | 'status';
   }>({});
   const [draft, setDraft] = useState<string>('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const summaries = await aiSummaryService.getByLink(link.id);
+        const kinds = summaries.map((s) => s.kind);
+        const parts: string[] = [];
+        if (kinds.includes('raw')) {
+          const raw = summaries.find((s) => s.kind === 'raw');
+          const len = raw?.content?.length ?? 0;
+          const kb = Math.round(len / 1000);
+          parts.push(`Raw: ✔ (${kb} kB)`);
+        } else {
+          parts.push('Raw: ✖');
+        }
+        parts.push(`TL;DR: ${kinds.includes('tldr') ? '✔' : '✖'}`);
+        setSummaryStatus(parts.join('  '));
+      } catch {}
+    })();
+  }, [link.id]);
 
   const startEdit = (
     field: 'title' | 'labels' | 'priority' | 'status',
@@ -289,6 +313,19 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
       ))}
       {/* Actions column */}
       <div className="text-right text-gray-400 hover:text-gray-600 relative">
+        {summaryStatus && (
+          <button
+            type="button"
+            title={summaryStatus + ' – Click to view context'}
+            className="mr-1 text-gray-400 hover:text-blue-600 focus:outline-none"
+            onClick={(e) => {
+              e.stopPropagation();
+              setContextOpen(true);
+            }}
+          >
+            <Info size={14} className="inline" />
+          </button>
+        )}
         <button onClick={() => setMenuOpen(!menuOpen)}>
           <MoreVertical size={16} />
         </button>
@@ -335,6 +372,11 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
       </Modal>
       <AISummaryModal link={link} isOpen={summaryOpen} onClose={() => setSummaryOpen(false)} />
       <ChatModal link={link} isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+      <ContextInspectorModal
+        linkIds={[link.id]}
+        isOpen={contextOpen}
+        onClose={() => setContextOpen(false)}
+      />
     </div>
   );
 };

@@ -10,6 +10,17 @@ export const aiSummaryService = {
   async create(summary: AISummary) {
     summary.createdAt = new Date();
     summary.updatedAt = new Date();
+
+    // Auto-generate embedding if missing and content is short enough
+    if (!summary.embedding) {
+      try {
+        const textForEmb = summary.content.slice(0, 1000);
+        summary.embedding = await aiService.embed(textForEmb, 'text-embedding-3-small');
+      } catch (err) {
+        console.debug?.('Embedding generation failed', err);
+      }
+    }
+
     await db.addSummary(summary);
   },
   async generate(link: Link, kind: SummaryKind, customPrompt?: string): Promise<AISummary> {
@@ -18,6 +29,7 @@ export const aiSummaryService = {
       tldr: `Provide a concise TL;DR (max 3 sentences) of the content at ${url}.`,
       bullets: `Summarize the content at ${url} into bullet points.`,
       quotes: `Provide 3 notable direct quotes from the content at ${url}.`,
+      raw: `Provide the full raw text of the page at ${url}.`,
       insights: `As a product manager, highlight key insights from ${url}.`,
       custom: customPrompt || `Summarize the content at ${url}.`,
     };

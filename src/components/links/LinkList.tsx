@@ -4,7 +4,9 @@ import { LinkRow } from './LinkRow';
 import { Button } from '../Button';
 import { MultiChatPanel } from '../ai/MultiChatPanel';
 import { useLinkStore } from '../../stores/linkStore';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Link } from '../../types/Link';
+import { aiSummaryService } from '../../services/aiSummaryService';
 
 const DEFAULT_COLUMNS = ['name', 'url', 'labels', 'status', 'priority', 'created'] as const;
 
@@ -43,6 +45,19 @@ export const LinkList: React.FC = () => {
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [chatLinks, setChatLinks] = useState<typeof links | null>(null);
+  const [anchorLabel, setAnchorLabel] = useState<string | null>(null);
+  const [pendingSummaries, setPendingSummaries] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      let count = 0;
+      for (const l of links) {
+        const sums = await aiSummaryService.getByLink(l.id);
+        if (!sums.some((s) => s.kind === 'tldr')) count++;
+      }
+      setPendingSummaries(count);
+    })();
+  }, [links]);
 
   const toggleSelectAll = (checked: boolean, visibleLinks: typeof links) => {
     if (checked) {
@@ -58,6 +73,15 @@ export const LinkList: React.FC = () => {
   const startChat = () => {
     const selected = links.filter((l) => selectedIds.includes(l.id));
     if (selected.length) {
+      // determine anchor label from last selected link
+      const lastId = selectedIds[selectedIds.length - 1];
+      const lastLink = links.find((l) => l.id === lastId);
+      let lbl: string | null = null;
+      if (lastLink) {
+        lbl = lastLink.labels.length ? lastLink.labels[0] : 'Unlabeled';
+      }
+      setAnchorLabel(lbl);
+
       setChatLinks(selected);
       setSelectedIds([]);
     }
@@ -111,6 +135,17 @@ export const LinkList: React.FC = () => {
 
     return (
       <div className="space-y-6">
+        {/* Action bar for grouped view */}
+        <div className="flex items-center justify-between mb-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={!selectedIds.length}
+            onClick={startChat}
+          >
+            Start Chat with {selectedIds.length} link{selectedIds.length === 1 ? '' : 's'}
+          </Button>
+        </div>
         {sortedLabelKeys.map((label) => (
           <div key={label} className="border border-gray-200 rounded">
             <div className="bg-gray-100 px-3 py-2 text-sm font-semibold">
@@ -123,15 +158,10 @@ export const LinkList: React.FC = () => {
             >
               {/* select all checkbox */}
               <div className="px-2 py-2 border-r flex items-center justify-center">
-                <input
-                  type="checkbox"
-                  onChange={(e) => toggleSelectAll(e.target.checked, groups[label])}
-                  checked={groups[label].every((l) => selectedIds.includes(l.id)) && groups[label].length > 0}
-                  // @ts-ignore – set by browser, TS doesn't know this prop
-                  indeterminate={
-                    !groups[label].every((l) => selectedIds.includes(l.id)) &&
-                    groups[label].some((l) => selectedIds.includes(l.id))
-                  }
+                <HeaderCheckbox
+                  groupLinks={groups[label] as any}
+                  selectedIds={selectedIds}
+                  toggleSelectAll={toggleSelectAll}
                 />
               </div>
               {columns.map((col) => (
@@ -156,8 +186,21 @@ export const LinkList: React.FC = () => {
                 }
               />
             ))}
+
+            {/* Chat panel anchored under this label group */}
+            {chatLinks && anchorLabel === label && (
+              <div className="px-3 py-4 bg-gray-50 border-t">
+                <MultiChatPanel links={chatLinks} onClose={() => setChatLinks(null)} />
+              </div>
+            )}
           </div>
         ))}
+        {/* fallback: if anchor label missing (e.g., selection cleared) render at end */}
+        {chatLinks && !anchorLabel && (
+          <div className="mt-6">
+            <MultiChatPanel links={chatLinks} onClose={() => setChatLinks(null)} />
+          </div>
+        )}
       </div>
     );
   }
@@ -185,7 +228,7 @@ export const LinkList: React.FC = () => {
       </div>
 
       <div
-        className="grid bg-gray-50 px-4 py-1.5 text-xs font-semibold text-gray-500 select-none"
+        className="grid bg-gray-50 sticky top-12 z-10 shadow-sm px-4 py-1.5 text-xs font-semibold text-gray-500 select-none"
         style={gridTemplate}
       >
         {/* select all checkbox header */}
@@ -238,6 +281,36 @@ export const LinkList: React.FC = () => {
           <MultiChatPanel links={chatLinks} onClose={() => setChatLinks(null)} />
         </div>
       )}
+      {pendingSummaries > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded shadow">
+          AI is generating summaries for {pendingSummaries} link{pendingSummaries === 1 ? '' : 's'}…
+        </div>
+      )}
     </div>
   );
 };
+
+function HeaderCheckbox({
+  groupLinks,
+  selectedIds,
+  toggleSelectAll,
+}: {
+  groupLinks: Link[];
+  selectedIds: string[];
+  toggleSelectAll: (checked: boolean, visibleLinks: Link[]) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const isChecked = groupLinks.every((l) => selectedIds.includes(l.id)) && groupLinks.length > 0;
+  const isIndeterminate = !isChecked && groupLinks.some((l) => selectedIds.includes(l.id));
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = isIndeterminate;
+  }, [isIndeterminate]);
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      onChange={(e) => toggleSelectAll(e.target.checked, groupLinks)}
+      checked={isChecked}
+    />
+  );
+}

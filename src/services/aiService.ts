@@ -25,6 +25,9 @@ interface ChatOptions {
 const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 const MISTRAL_ENDPOINT = 'https://api.mistral.ai/v1/chat/completions';
 
+// Default chat model – can be overridden via env
+const DEFAULT_CHAT_MODEL = import.meta.env.VITE_OPENAI_MODEL || 'gpt-4.5-preview';
+
 // ----- Rate limiting -----
 const MAX_CONCURRENT = 2;
 const queue: (() => Promise<void>)[] = [];
@@ -84,9 +87,19 @@ async function retry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   }
 }
 
+const cryptoSubtle = typeof crypto !== 'undefined' && crypto.subtle;
+const embedCache = new Map<string, number[]>();
+
+async function hashText(text: string): Promise<string> {
+  if (!cryptoSubtle) return text; // fallback
+  const enc = new TextEncoder().encode(text);
+  const buf = await cryptoSubtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export const aiService = {
   async chat(messages: ChatMessage[], opts: ChatOptions = {}): Promise<string> {
-    const model = opts.model || 'gpt-3.5-turbo';
+    const model = opts.model || DEFAULT_CHAT_MODEL;
     const openaiKey = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
     const mistralKey = import.meta.env.VITE_MISTRAL_API_KEY as string | undefined;
 
@@ -156,7 +169,7 @@ export const aiService = {
     onDelta: (partial: string) => void,
     opts: ChatOptions = {},
   ): Promise<string> {
-    const model = opts.model || 'gpt-3.5-turbo';
+    const model = opts.model || DEFAULT_CHAT_MODEL;
     const openaiKey = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
     if (!openaiKey) {
       // fallback to non-stream
@@ -216,4 +229,66 @@ export const aiService = {
     }
     return acc.trim();
   },
+
+  async embed(text: string, model = import.meta.env.VITE_OPENAI_EMBED_MODEL || "text-embedding-3-small"): Promise<number[]> {
+     const key = await hashText(text + "|" + model);
+     if (embedCache.has(key)) return embedCache.get(key)!;
+
+     // localStorage persistent cache
+     try {
+       const cachedRaw = localStorage.getItem("emb_" + key);
+       if (cachedRaw) {
+         const arr = JSON.parse(cachedRaw) as number[];
+         embedCache.set(key, arr);
+         return arr;
+       }
+     } catch {}
+
+     const openaiKey = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
+     if (!openaiKey) {
+       throw new Error("OpenAI key missing for embeddings");
+     }
+
+     const fetchEmbedding = async () => {
+      const attempt = async (mdl: string) => {
+        const res = await fetchWithTimeout("https://api.openai.com/v1/embeddings", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${openaiKey}`,
+          },
+          body: JSON.stringify({ model: mdl, input: text }),
+          timeout: 30000,
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          const isModelErr = res.status === 404 || errText.includes("model");
+          if (isModelErr && mdl !== "text-embedding-ada-002") {
+            // retry with universally available Ada model
+            console.warn(`Embedding model ${mdl} not available, falling back to ada-002`);
+            return attempt("text-embedding-ada-002");
+          }
+          throw new Error(`OpenAI embeddings error ${res.status}: ${errText}`);
+        }
+
+        const data = await res.json();
+        const vector = data.data?.[0]?.embedding as number[];
+        if (!vector) throw new Error("No embedding returned");
+        return vector;
+      };
+
+      return attempt(model);
+    };
+
+     // Enforce concurrency limit of 3
+     const embedding = await withRateLimit(() => fetchEmbedding());
+
+     embedCache.set(key, embedding);
+     try {
+       localStorage.setItem("emb_" + key, JSON.stringify(embedding));
+     } catch {}
+
+     return embedding;
+   },
 }; 
