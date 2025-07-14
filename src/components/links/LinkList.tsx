@@ -4,7 +4,7 @@ import { LinkRow } from './LinkRow';
 import { Button } from '../Button';
 import { MultiChatPanel } from '../ai/MultiChatPanel';
 import { useLinkStore } from '../../stores/linkStore';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from '../../types/Link';
 import { aiSummaryService } from '../../services/aiSummaryService';
@@ -83,6 +83,21 @@ export const LinkList: React.FC = () => {
   const onGroupDrop = (e: React.DragEvent<HTMLDivElement>, targetGrp: string) => {
     const src = e.dataTransfer.getData('text/plain');
     if (src) reorderGroup(src, targetGrp);
+  };
+
+  const moveGroup = (label: string, dir: 'up' | 'down') => {
+    setGroupOrder((prev) => {
+      const keys = prev.length ? [...prev] : [...groupKeysRef.current];
+      const idx = keys.indexOf(label);
+      if (idx === -1) return prev;
+      const nxt = dir === 'up' ? idx - 1 : idx + 1;
+      if (nxt < 0 || nxt >= keys.length) return prev;
+      const _tmp = keys[idx];
+      keys[idx] = keys[nxt];
+      keys[nxt] = _tmp;
+      localStorage.setItem('linkGroupOrder', JSON.stringify(keys));
+      return keys;
+    });
   };
 
   // ---------------------- Drag & Drop column reordering --------------------
@@ -259,8 +274,26 @@ export const LinkList: React.FC = () => {
             onDragOver={onDragOver}
             onDrop={(e) => onGroupDrop(e, label)}
           >
-            <div className="bg-gray-100 px-3 py-2 text-sm font-semibold">
-              {label.charAt(0).toUpperCase() + label.slice(1)}
+            <div className="bg-gray-100 px-3 py-2 text-sm font-semibold flex items-center justify-between group-header">
+              <span>{label.charAt(0).toUpperCase() + label.slice(1)}</span>
+              <span className="flex gap-1 opacity-0 group-hover:opacity-100">
+                <button
+                  type="button"
+                  aria-label="Move up"
+                  className="p-1 hover:bg-gray-200 rounded"
+                  onClick={() => moveGroup(label, 'up')}
+                >
+                  <ChevronUp size={14} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Move down"
+                  className="p-1 hover:bg-gray-200 rounded"
+                  onClick={() => moveGroup(label, 'down')}
+                >
+                  <ChevronDown size={14} />
+                </button>
+              </span>
             </div>
             {/* Header */}
             <div
