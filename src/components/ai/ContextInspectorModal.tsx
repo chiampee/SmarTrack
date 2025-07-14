@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, LoadingSpinner } from '..';
+import { Modal, LoadingSpinner, Button } from '..';
 import { chatService } from '../../services/chatService';
 
 interface Props {
@@ -11,6 +11,8 @@ interface Props {
 export const ContextInspectorModal: React.FC<Props> = ({ linkIds, isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<Awaited<ReturnType<typeof chatService.getContextSnippets>>>([]);
+  const [wrap, setWrap] = useState(true);
+  const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -22,13 +24,40 @@ export const ContextInspectorModal: React.FC<Props> = ({ linkIds, isOpen, onClos
   }, [isOpen, linkIds]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="AI Context" maxWidthClass="max-w-4xl">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <div className="flex items-center justify-between gap-3">
+          <span>AI Context</span>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setWrap((w) => !w)}
+              title={wrap ? 'Disable text wrap' : 'Enable text wrap'}
+            >
+              {wrap ? 'No-Wrap' : 'Wrap'}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setFullscreen((f) => !f)}
+              title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            >
+              {fullscreen ? 'Window' : 'Full'}
+            </Button>
+          </div>
+        </div>
+      }
+      maxWidthClass={fullscreen ? 'max-w-none w-screen h-screen' : 'max-w-6xl'}
+    >
       {loading ? (
         <div className="flex justify-center py-10">
           <LoadingSpinner />
         </div>
       ) : (
-        <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+        <div className={`space-y-6 ${fullscreen ? 'max-h-[calc(100vh-8rem)]' : 'max-h-[70vh]'} overflow-y-auto`}>
           {items.map(({ link, summaries }) => (
             <div key={link.id} className="border rounded p-3">
               <h3 className="text-sm font-semibold mb-2">
@@ -41,7 +70,7 @@ export const ContextInspectorModal: React.FC<Props> = ({ linkIds, isOpen, onClos
                   {summaries.map((s, idx) => (
                     <li key={idx} className="border rounded bg-gray-50 p-2">
                       <div className="text-xs font-semibold mb-1">{s.kind}</div>
-                      <pre className="whitespace-pre-wrap text-xs max-h-40 overflow-y-auto">{s.content}</pre>
+                      <pre className={`${wrap ? 'whitespace-pre-wrap' : 'whitespace-pre'} font-mono text-xs max-h-60 overflow-y-auto`}>{s.content}</pre>
                     </li>
                   ))}
                 </ul>

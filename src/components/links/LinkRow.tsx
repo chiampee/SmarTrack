@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link as LinkType } from '../../types/Link';
 import { Badge } from '..';
-import { Circle, CheckCircle, MoreVertical, Info } from 'lucide-react';
+import { Square, CheckSquare, CheckCircle, Info, MessageSquare, Edit2, Trash } from 'lucide-react';
 import { ContextInspectorModal } from '../ai/ContextInspectorModal';
 import { AISummaryModal } from '../ai/AISummaryModal';
 import { Modal } from '..';
@@ -36,6 +36,7 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
   const [editOpen, setEditOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [summaryStatus, setSummaryStatus] = useState<string>('');
   const [contextOpen, setContextOpen] = useState(false);
   const [editing, setEditing] = useState<{
@@ -127,26 +128,7 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
         })();
         return (
           <div className="flex items-center gap-2 truncate">
-            <button
-              type="button"
-              aria-label={
-                link.status === 'archived' ? 'Mark as active' : 'Mark as done'
-              }
-              onClick={toggleDone}
-              className="group flex-shrink-0 rounded-full p-1 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {link.status === 'archived' ? (
-                <CheckCircle
-                  size={18}
-                  className="text-green-600 transition-colors group-hover:text-green-700"
-                />
-              ) : (
-                <Circle
-                  size={18}
-                  className="text-gray-400 transition-colors group-hover:text-gray-600"
-                />
-              )}
-            </button>
+            {/* status icon removed – merged into tri-state selector */}
             {editing.field === 'title' ? (
               <input
                 className="w-full rounded border border-gray-300 px-1 text-sm"
@@ -177,6 +159,11 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
                     onDoubleClick={() => startEdit('title', link.metadata.title || '')}
                   >
                     {limited}
+                    {link.status === 'archived' && (
+                      <Badge variant="warning" className="ml-2 hidden sm:inline-flex">
+                        Archived
+                      </Badge>
+                    )}
                   </a>
                 );
               })()
@@ -207,21 +194,39 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
           </div>
         );
       case 'created':
-        return (
-          <div className="text-xs text-gray-600">
-            {new Date(link.createdAt).toLocaleDateString(undefined, {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </div>
-        );
+        return (() => {
+          // Prefer createdAt but gracefully fall back to updatedAt when missing.
+          const raw = link.createdAt ?? (link as any).updatedAt;
+          const d = raw ? new Date(raw) : new Date('');
+
+          if (isNaN(d as any)) {
+            return <span className="text-xs text-gray-400">—</span>;
+          }
+
+          return (
+            <time
+              dateTime={d.toISOString()}
+              title={d.toLocaleString()}
+              className="text-xs text-gray-600"
+            >
+              {d.toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })}
+            </time>
+          );
+        })();
       case 'labels':
+        const hashColor = (str: string) => {
+          let h = 0;
+          for (let i = 0; i < str.length; i++) h = (h << 5) - h + str.charCodeAt(i);
+          const hue = Math.abs(h) % 360;
+          return `hsl(${hue} 70% 85%)`;
+        };
         return (
           <div
-            className="text-xs text-gray-600 truncate cursor-pointer"
+            className="flex flex-wrap gap-1 cursor-pointer"
             onDoubleClick={() => startEdit('labels', link.labels.join(', '))}
           >
             {editing.field === 'labels' ? (
@@ -237,7 +242,15 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
                 }}
               />
             ) : (
-              link.labels.join(', ')
+              link.labels.map((lab) => (
+                <span
+                  key={lab}
+                  className="rounded-full px-2 py-0.5 text-[10px]"
+                  style={{ backgroundColor: hashColor(lab), color: '#333' }}
+                >
+                  {lab}
+                </span>
+              ))
             )}
           </div>
         );
@@ -296,76 +309,82 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
 
   return (
     <div
-      className="relative grid items-center gap-3 border-b border-gray-100 px-4 py-1.5 text-sm even:bg-gray-50 hover:bg-gray-100"
+      className="group relative grid items-center gap-3 border-b border-gray-100 px-4 py-1.5 text-sm even:bg-gray-50 hover:bg-blue-50"
       style={gridTemplate}
     >
       {selectable && (
         <div className="flex items-center justify-center px-2 border-r">
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={(e) => onSelect?.(e.target.checked)}
-          />
+          <button
+            type="button"
+            onClick={(e) => {
+              // regular click: toggle selection
+              onSelect?.(!selected);
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              void toggleDone();
+            }}
+            title={
+              link.status === 'archived'
+                ? 'Done – right-click to mark active / left-click to select'
+                : selected
+                ? 'Selected – right-click to mark done'
+                : 'Left-click to select / right-click to mark done'
+            }
+            className="p-1 focus:outline-none"
+          >
+            {link.status === 'archived' ? (
+              <CheckCircle size={18} className="text-green-600" />
+            ) : selected ? (
+              <CheckSquare size={18} className="text-blue-600" />
+            ) : (
+              <Square size={18} className="text-gray-400" />
+            )}
+          </button>
         </div>
       )}
       {columns.map((c) => (
         <React.Fragment key={c}>{renderCell(c)}</React.Fragment>
       ))}
       {/* Actions column */}
-      <div className="text-right text-gray-400 hover:text-gray-600 relative">
+      <div className="flex items-center gap-2 pl-2">
         {summaryStatus && (
           <button
             type="button"
-            title={summaryStatus + ' – Click to view context'}
-            className="mr-1 text-gray-400 hover:text-blue-600 focus:outline-none"
+            title={summaryStatus + ' – View context'}
+            className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-600 transition"
             onClick={(e) => {
               e.stopPropagation();
               setContextOpen(true);
             }}
           >
-            <Info size={14} className="inline" />
+            <Info size={16} />
           </button>
         )}
-        <button onClick={() => setMenuOpen(!menuOpen)}>
-          <MoreVertical size={16} />
+        <button
+          type="button"
+          title="Chat"
+          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-600 transition"
+          onClick={() => setChatOpen(true)}
+        >
+          <MessageSquare size={16} />
         </button>
-        {menuOpen && (
-          <div className="absolute right-0 mt-1 w-28 rounded border border-gray-200 bg-white shadow-lg z-20">
-            <button
-              className="block w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100"
-              onClick={() => {
-                setEditOpen(true);
-                setMenuOpen(false);
-              }}
-            >
-              Edit
-            </button>
-            <button
-              className="block w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100"
-              onClick={() => {
-                setSummaryOpen(true);
-                setMenuOpen(false);
-              }}
-            >
-              AI Summary
-            </button>
-            <button
-              className="block w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100"
-              onClick={() => {
-                setChatOpen(true);
-                setMenuOpen(false);
-              }}
-            >
-              Chat
-            </button>
-            <button
-              className="block w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-gray-100"
-              onClick={handleDelete}
-            >
-              Delete
-            </button>
-          </div>
-        )}
+        <button
+          type="button"
+          title="Edit"
+          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-600 transition"
+          onClick={() => setEditOpen(true)}
+        >
+          <Edit2 size={16} />
+        </button>
+        <button
+          type="button"
+          title="Delete"
+          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600 transition"
+          onClick={handleDelete}
+        >
+          <Trash size={16} />
+        </button>
       </div>
       <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Link">
         <LinkForm existing={link} onSuccess={() => setEditOpen(false)} />
@@ -377,6 +396,9 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
         isOpen={contextOpen}
         onClose={() => setContextOpen(false)}
       />
+      {historyOpen && (
+        <ChatModal link={link} isOpen={historyOpen} onClose={() => setHistoryOpen(false)} />
+      )}
     </div>
   );
 };

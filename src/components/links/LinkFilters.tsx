@@ -21,12 +21,13 @@ export const LinkFilters: React.FC = () => {
   }, [search, setSearchTerm]);
 
   return (
-    <div className="flex flex-wrap gap-3 bg-gray-50 px-4 py-3 sticky top-12 z-10 border-b border-gray-200">
+    <div className="flex flex-wrap gap-3 bg-gray-50/90 backdrop-blur px-4 py-3 sticky top-12 z-30 border-b border-gray-200 shadow-sm">
       <Input
         placeholder="Search title or URL..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="w-48"
+        id="searchInput"
       />
       <Select
         value={statusFilter || ''}
@@ -69,6 +70,7 @@ export const LinkFilters: React.FC = () => {
         <option value="priority">Priority</option>
         <option value="title">Title</option>
         <option value="labels">Labels</option>
+        <option value="status">Status</option>
       </Select>
     </div>
   );

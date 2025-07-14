@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -11,7 +12,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
       <Header onMenu={() => setOpen(!open)} />
       <Sidebar open={open} onClose={() => setOpen(false)} />
       <main className="pt-12 px-0 pb-0 transition-all duration-300 md:ml-64">
-        {children}
+        <ErrorBoundary>{children}</ErrorBoundary>
       </main>
     </div>
   );
