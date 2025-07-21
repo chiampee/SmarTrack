@@ -33,45 +33,60 @@ Smart Research Tracker is your personal research assistant that helps you save, 
 - A web browser (Chrome works best)
 - An OpenAI API key (optional, but needed for the smart features)
 
-### Step-by-step setup
+### 🎯 Super Easy Installation
 
-1. **Download the project**
+**Option 1: One-command install (Recommended)**
+```bash
+# On Mac/Linux:
+./install.sh
+
+# On Windows:
+install.bat
+```
+
+**Option 2: Manual setup**
+```bash
+# 1. Download the project
+git clone <your-repo-url>
+cd smart-research-tracker
+
+# 2. Run the setup wizard
+pnpm setup
+
+# 3. Install dependencies
+pnpm install
+
+# 4. Start the app
+pnpm dev
+```
+
+### 🤖 Setting up AI features (Optional)
+
+The setup wizard will guide you through this, but if you prefer to do it manually:
+
+1. **Get an OpenAI API key** (free to start):
+   - Go to [OpenAI API Keys](https://platform.openai.com/api-keys)
+   - Sign up or log in
+   - Click "Create new secret key"
+   - Copy the key (starts with "sk-")
+
+2. **Add it to your configuration**:
    ```bash
-   git clone <your-repo-url>
-   cd smart-research-tracker
+   # The setup wizard will do this for you, or you can:
+   cp .env.example .env.local
+   # Then edit .env.local and add your API key
    ```
 
-2. **Install the required software**
+### 🌐 Start using the app
+
+After installation:
+1. **Start the app**: `pnpm dev`
+2. **Open your browser**: Go to [http://localhost:5173](http://localhost:5173)
+3. **Optional**: Build the browser extension
    ```bash
-   pnpm install
+   pnpm build:extension
    ```
-
-3. **Add your AI key** (optional - skip this if you just want to try the basic features)
-   
-   Create a file called `.env.local` and add:
-   ```env
-   VITE_OPENAI_API_KEY=sk-your-openai-key-here
-   ```
-   
-   Don't have an OpenAI key? [Get one here](https://platform.openai.com/api-keys) (it's free to start)
-
-4. **Start the app**
-   ```bash
-   pnpm dev
-   ```
-   
-   Open your browser and go to [http://localhost:5173](http://localhost:5173)
-
-5. **Add the browser extension** (optional but recommended)
-   ```bash
-   pnpm run build:extension
-   ```
-   
-   Then in Chrome:
-   - Go to `chrome://extensions/`
-   - Turn on "Developer mode"
-   - Click "Load unpacked"
-   - Select the `dist-extension/` folder
+   Then load the `dist-extension/` folder in Chrome's developer mode
 
 ---
 
@@ -220,7 +235,24 @@ We'd love your help making Smart Research Tracker even better! Here's how you ca
 
 ## 🐛 Having trouble?
 
-### Common problems and solutions
+### Installation problems
+
+**The install script won't run**
+- Make sure you have Node.js installed (version 18 or higher)
+- On Mac/Linux, make the script executable: `chmod +x install.sh`
+- On Windows, right-click `install.bat` and "Run as administrator"
+
+**Dependencies won't install**
+- Try clearing npm cache: `npm cache clean --force`
+- Make sure you have enough disk space
+- Try using npm instead: `npm install`
+
+**Setup wizard isn't working**
+- Run the setup manually: `node scripts/setup.js`
+- Check that you have write permissions in the project folder
+- Try running as administrator (Windows) or with sudo (Mac/Linux)
+
+### App problems
 
 **The AI features aren't working**
 - Make sure your OpenAI API key is correct

@@ -6,10 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:extension": "vite build --config vite.extension.config.ts",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "preview": "vite preview",
     "test": "vitest",
-    "e2e": "playwright test"
+    "test:watch": "vitest --watch",
+    "e2e": "playwright test",
+    "setup": "node scripts/setup.js",
+    "postinstall": "node scripts/postinstall.js"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
