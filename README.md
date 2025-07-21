@@ -244,27 +244,6 @@ We'd love your help making Smart Research Tracker even better! Here's how you ca
 
 ---
 
-## 📋 What's coming next?
-
-### 🚧 We're working on
-- [ ] A mobile app to use on your phone
-- [ ] Better search to find things faster
-- [ ] More ways to export your research
-
-### 🔮 Coming soon
-- [ ] Work together with others on research
-- [ ] Automatic citation generation
-- [ ] Templates for different types of research
-- [ ] See insights about your research habits
-- [ ] Work offline when you don't have internet
-
-### 💡 Ideas we're thinking about
-- [ ] Connect with other research tools you use
-- [ ] Support for more AI models
-- [ ] Let you customize how the AI works
-- [ ] Automate your research workflow
-
----
 
 ## 📄 License
 
