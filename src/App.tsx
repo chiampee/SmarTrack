@@ -23,9 +23,13 @@ function App() {
       embedModel: import.meta.env.VITE_OPENAI_EMBED_MODEL
     });
     
-    // Run one-off migrations (non-blocking)
-    migrationService.backfillConversations().catch((err) => console.error('Migration failed', err));
-    migrationService.backfillSummaryEmbeddings().catch((err) => console.error('Embedding migration failed', err));
+    // Run migrations in a safer way
+    try {
+      migrationService.backfillConversations().catch((err) => console.error('Migration failed', err));
+      migrationService.backfillSummaryEmbeddings().catch((err) => console.error('Embedding migration failed', err));
+    } catch (error) {
+      console.error('Migration service error:', error);
+    }
   }, []);
 
   // Show onboarding for new users (no links and haven't seen onboarding)
