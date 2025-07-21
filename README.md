@@ -1,247 +1,289 @@
 # Smart Research Tracker
 
-> **Your AI-powered research companion** - Save web pages, get instant summaries, and chat with your research collection.
+<div align="center">
 
-Transform how you research by automatically extracting key insights from web pages and enabling intelligent conversations with your saved content.
+**Your AI-powered research companion** - Save web pages, get instant summaries, and chat with your research collection.
 
-## ✨ What Makes This Special
+[🚀 Quick Start](#-quick-start) • [📖 Features](#-features) • [🛠️ Development](#️-development) • [🤝 Contributing](#-contributing)
 
-### 🧠 **AI-Powered Research Assistant**
-- **Instant Summaries**: Every saved page gets an AI-generated TL;DR in seconds
-- **Smart Chat**: Ask questions about your research and get contextual answers
-- **Semantic Search**: Find relevant content across your entire research library
-
-### 📚 **Organized Research Management**
-- **Smart Categorization**: Auto-group pages by labels, status, or priority
-- **Drag & Drop**: Reorder categories and columns with intuitive controls
-- **Visual Context**: See exactly what AI can access for each page
-
-### 🔒 **Privacy-First Design**
-- **Local Storage**: All your data stays on your device (IndexedDB)
-- **No Cloud Database**: Your research remains private and secure
-- **Optional AI**: Only uses AI services when you explicitly request summaries
+</div>
 
 ---
 
-## 🚀 Quick Start
+## 📖 What is Smart Research Tracker?
 
-### 1. Install Dependencies
-```bash
-# Clone the repository
-git clone <your-repo-url>
-cd smart-research-tracker
+Smart Research Tracker is your personal research assistant that helps you save, organize, and understand web content. Think of it as a smart bookmark manager that not only saves your favorite web pages but also summarizes them and lets you chat with your research collection.
 
-# Install dependencies
-pnpm install
-```
+### ✨ What makes it special?
 
-### 2. Set Up AI Services (Optional)
-Create a `.env.local` file in the project root:
-```bash
-# Required for AI features
-VITE_OPENAI_API_KEY=sk-your-openai-key-here
-
-# Optional: Customize AI models
-VITE_OPENAI_MODEL=gpt-4.5-preview
-VITE_OPENAI_EMBED_MODEL=text-embedding-3-small
-
-# Optional: Fallback AI provider
-VITE_MISTRAL_API_KEY=your-mistral-key-here
-```
-
-**Get API Keys:**
-- [OpenAI API Key](https://platform.openai.com/api-keys) (required for summaries & chat)
-- [Mistral API Key](https://console.mistral.ai/) (optional fallback)
-
-### 3. Start the Dashboard
-```bash
-pnpm dev
-```
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-### 4. Install Browser Extension
-```bash
-# Build the extension
-pnpm run build:extension
-
-# Load in Chrome:
-# 1. Go to chrome://extensions/
-# 2. Enable "Developer mode"
-# 3. Click "Load unpacked"
-# 4. Select the `dist-extension/` folder
-```
+- 🧠 **Smart Summaries** - Get instant summaries of any web page you save
+- 💬 **Chat with Your Research** - Ask questions about your saved content
+- 🔍 **Find Anything** - Search through all your research easily
+- 🏷️ **Stay Organized** - Automatically categorize and organize your research
+- 🔒 **Your Data, Your Control** - Everything stays on your device
+- 🎯 **Easy to Use** - Simple setup and helpful guidance throughout
 
 ---
 
-## 🎯 How to Use
+## 🚀 Get Started in 5 Minutes
 
-### **Saving Pages**
-1. **Browse to any webpage** you want to research
-2. **Click the extension icon** in your browser toolbar
-3. **Add labels** and set priority (optional)
-4. **Click "Save"** - the page is instantly captured with full text
+### What you'll need
 
-### **Organizing Research**
-- **View by Labels**: See all pages grouped by topic
-- **Filter by Status**: Active, Archived, or Deleted
-- **Sort by Priority**: High, Medium, or Low importance
-- **Search**: Find pages by title or URL
+- A computer with Node.js installed (version 18 or higher)
+- A web browser (Chrome works best)
+- An OpenAI API key (optional, but needed for the smart features)
 
-### **AI-Powered Insights**
-- **Automatic Summaries**: Each page gets a 3-sentence TL;DR
-- **Context Viewer**: Click the ℹ️ icon to see what AI can access
-- **Smart Chat**: Select multiple pages and start a conversation
-- **Semantic Search**: Find related content across your library
+### Step-by-step setup
 
-### **Advanced Features**
-- **Drag & Drop**: Reorder categories and columns
-- **Bulk Actions**: Select multiple pages for archiving or chat
-- **Export Ready**: All data stored locally for easy backup
+1. **Download the project**
+   ```bash
+   git clone <your-repo-url>
+   cd smart-research-tracker
+   ```
 
----
+2. **Install the required software**
+   ```bash
+   pnpm install
+   ```
 
-## 🏗️ Architecture
+3. **Add your AI key** (optional - skip this if you just want to try the basic features)
+   
+   Create a file called `.env.local` and add:
+   ```env
+   VITE_OPENAI_API_KEY=sk-your-openai-key-here
+   ```
+   
+   Don't have an OpenAI key? [Get one here](https://platform.openai.com/api-keys) (it's free to start)
 
-### **Frontend (React + Vite)**
-- **Dashboard**: Main research interface with filtering and chat
-- **Real-time Updates**: Instant sync between extension and dashboard
-- **Responsive Design**: Works on desktop and mobile
+4. **Start the app**
+   ```bash
+   pnpm dev
+   ```
+   
+   Open your browser and go to [http://localhost:5173](http://localhost:5173)
 
-### **Browser Extension**
-- **Content Extraction**: Captures full page text (up to 500KB)
-- **Background Processing**: Queues summaries even when dashboard is closed
-- **Resilient Sync**: Retries failed operations automatically
-
-### **AI Services**
-- **OpenAI Integration**: GPT-4 for summaries, embeddings for search
-- **Fallback Support**: Mistral as backup AI provider
-- **Rate Limiting**: Smart queuing to avoid API limits
-
-### **Data Storage**
-- **IndexedDB**: Local browser storage for all research data
-- **No Server Required**: Everything runs in your browser
-- **Export Friendly**: Easy to backup or migrate data
-
----
-
-## 🔧 Configuration
-
-### **Environment Variables**
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VITE_OPENAI_API_KEY` | OpenAI API key (required) | - |
-| `VITE_OPENAI_MODEL` | Chat model | `gpt-4.5-preview` |
-| `VITE_OPENAI_EMBED_MODEL` | Embedding model | `text-embedding-3-small` |
-| `VITE_MISTRAL_API_KEY` | Fallback AI provider | - |
-
-### **Extension Settings**
-- **API Endpoint**: Override default enrichment endpoint
-- **Custom Labels**: Pre-configure common research topics
-- **Auto-save**: Enable automatic page capture
+5. **Add the browser extension** (optional but recommended)
+   ```bash
+   pnpm run build:extension
+   ```
+   
+   Then in Chrome:
+   - Go to `chrome://extensions/`
+   - Turn on "Developer mode"
+   - Click "Load unpacked"
+   - Select the `dist-extension/` folder
 
 ---
 
-## 🛠️ Development
+## 📖 What can you do with it?
 
-### **Available Scripts**
+### 🧠 Smart Research Assistant
+
+- **Get instant summaries** of any web page you save
+- **Chat with your research** - ask questions about your saved content
+- **Find related information** across all your saved pages
+- **See what the AI knows** about each page you've saved
+
+### 📚 Keep Everything Organized
+
+- **Auto-categorize** your research by topic or project
+- **Drag and drop** to organize your research boards
+- **Multiple views** - see your research as boards, lists, or grids
+- **Bulk actions** - work with multiple pages at once
+
+### 🔒 Your Data, Your Control
+
+- **Everything stays on your device** - no cloud storage required
+- **Your research is private** - we can't see your data
+- **AI is optional** - use it only when you want summaries
+- **Easy backup** - export your data whenever you want
+
+### 🎯 Designed for You
+
+- **Simple setup** - get started in minutes
+- **Helpful guidance** - tips and hints as you use the app
+- **Easy to use** - intuitive interface that just works
+- **Keyboard shortcuts** - power users can work faster
+
+---
+
+## 🛠️ For Developers
+
+### Quick commands
+
 ```bash
-pnpm dev          # Start development server
+pnpm dev          # Start the app for development
 pnpm build        # Build for production
-pnpm test         # Run unit tests
+pnpm preview      # Preview the production build
+pnpm test         # Run tests
+pnpm test:watch   # Run tests and watch for changes
 pnpm lint         # Check code quality
+pnpm lint:fix     # Fix code formatting issues
 pnpm e2e          # Run end-to-end tests
 ```
 
-### **Project Structure**
+### How the code is organized
+
 ```
 src/
-├── components/     # React components
-├── pages/         # Main application views
-├── services/      # Business logic & API calls
-├── stores/        # State management (Zustand)
-├── types/         # TypeScript definitions
-└── utils/         # Helper functions
+├── components/          # All the UI components
+│   ├── ai/             # AI-related features
+│   ├── boards/         # Research board management
+│   ├── links/          # Link and page management
+│   ├── layout/         # Page layout components
+│   └── ui/             # Reusable UI elements
+├── pages/              # Main app pages
+├── services/           # Business logic and API calls
+├── stores/             # Data management (Zustand)
+├── types/              # TypeScript type definitions
+├── utils/              # Helper functions
+└── db/                 # Database setup
 
-extension/         # Browser extension files
-api/              # Serverless functions
-tests/            # Test files
+extension/              # Browser extension code
+api/                   # Backend API functions
+tests/                 # Test files
 ```
 
-### **Key Technologies**
-- **React 18** with TypeScript
-- **Vite** for fast development
-- **Zustand** for state management
-- **Dexie** for IndexedDB wrapper
-- **Tailwind CSS** for styling
-- **OpenAI API** for AI features
+### What we use to build this
+
+- **Frontend**: React 18, TypeScript, Vite
+- **Styling**: Tailwind CSS, Headless UI
+- **Data Management**: Zustand
+- **Database**: Dexie (for local storage)
+- **AI**: OpenAI API, with Mistral as backup
+- **Testing**: Vitest, Playwright
+- **Code Quality**: ESLint, Prettier
+
+### Configuration options
+
+| Setting | What it does | Required? | Default |
+|---------|-------------|-----------|---------|
+| `VITE_OPENAI_API_KEY` | Your OpenAI API key | Yes (for AI features) | - |
+| `VITE_OPENAI_MODEL` | Which AI model to use | No | `gpt-4.5-preview` |
+| `VITE_OPENAI_EMBED_MODEL` | Model for search features | No | `text-embedding-3-small` |
+| `VITE_MISTRAL_API_KEY` | Backup AI provider | No | - |
 
 ---
 
-## 🤝 Contributing
+## 🤝 Want to help?
 
-We welcome contributions! Here's how to get started:
+We'd love your help making Smart Research Tracker even better! Here's how you can contribute:
 
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b my-feature`
-3. **Make your changes** and add tests
-4. **Run quality checks**: `pnpm lint && pnpm test`
-5. **Submit a pull request**
+### How to get started
 
-### **Development Guidelines**
-- Follow TypeScript best practices
+1. **Fork this project** (click the fork button on GitHub)
+2. **Download your copy**
+   ```bash
+   git clone https://github.com/your-username/smart-research-tracker.git
+   cd smart-research-tracker
+   ```
+3. **Create a new branch** for your changes
+   ```bash
+   git checkout -b feature/your-awesome-idea
+   ```
+4. **Set up the project**
+   ```bash
+   pnpm install
+   ```
+5. **Make your changes** and test them
+6. **Check everything works**
+   ```bash
+   pnpm lint && pnpm test
+   ```
+7. **Save your changes**
+   ```bash
+   git commit -m "feat: add your awesome feature"
+   ```
+8. **Share your work**
+   ```bash
+   git push origin feature/your-awesome-idea
+   ```
+9. **Create a pull request** on GitHub
+
+### What we're looking for
+
+- **Bug fixes** - help us squash those pesky bugs
+- **New features** - add something cool and useful
+- **Documentation** - make things clearer for everyone
+- **UI improvements** - make it look and feel better
+- **Performance** - make it faster and more efficient
+
+### Our coding standards
+
+- Write clear, readable code
 - Add tests for new features
-- Update documentation for API changes
-- Ensure accessibility compliance
+- Follow our existing code style
+- Make sure it works for everyone (accessibility)
+- Write helpful commit messages
 
 ---
 
-## 📋 Roadmap
+## 🐛 Having trouble?
 
-### **Coming Soon**
-- [ ] **Mobile App**: Native iOS/Android companion
-- [ ] **Collaborative Research**: Share collections with teams
-- [ ] **Advanced Search**: Full-text search across all content
-- [ ] **Export Options**: PDF, Markdown, and citation formats
-- [ ] **Integration APIs**: Connect with other research tools
+### Common problems and solutions
 
-### **Planned Features**
-- [ ] **Citation Management**: Automatic reference generation
-- [ ] **Research Templates**: Pre-configured workflows
-- [ ] **Analytics Dashboard**: Research insights and trends
-- [ ] **Offline Mode**: Work without internet connection
+**The AI features aren't working**
+- Make sure your OpenAI API key is correct
+- Check if you have enough credits in your OpenAI account
+- Look at the browser console for error messages
+
+**The browser extension won't save pages**
+- Make sure you've loaded the extension in Chrome
+- Check that the app is running on localhost:5173
+- Try refreshing the page you're trying to save
+
+**The app won't build or start**
+- Try deleting `node_modules` and reinstalling: `rm -rf node_modules pnpm-lock.yaml && pnpm install`
+- Check for TypeScript errors: `pnpm tsc --noEmit`
+- Make sure all the required software is installed
+
+**The app is slow or not working well**
+- Check the browser console for error messages
+- Try clearing your browser cache and storage
+- Make sure you have enough disk space
 
 ---
 
-## 🆘 Support
+## 📋 What's coming next?
 
-### **Common Issues**
+### 🚧 We're working on
+- [ ] A mobile app to use on your phone
+- [ ] Better search to find things faster
+- [ ] More ways to export your research
 
-**"AI is generating summaries" appears frequently**
-- Check your OpenAI API key is valid
-- Verify internet connection
-- Review browser console for errors
+### 🔮 Coming soon
+- [ ] Work together with others on research
+- [ ] Automatic citation generation
+- [ ] Templates for different types of research
+- [ ] See insights about your research habits
+- [ ] Work offline when you don't have internet
 
-**Extension not saving pages**
-- Ensure extension is loaded in Chrome
-- Check if dashboard is running on localhost:5173
-- Verify page content is accessible
-
-**Chat not working**
-- Confirm OpenAI API key is set
-- Check browser console for API errors
-- Try refreshing the dashboard
-
-### **Getting Help**
-- **GitHub Issues**: Report bugs or request features
-- **Discussions**: Ask questions and share tips
-- **Documentation**: Check the `/docs` folder for detailed guides
+### 💡 Ideas we're thinking about
+- [ ] Connect with other research tools you use
+- [ ] Support for more AI models
+- [ ] Let you customize how the AI works
+- [ ] Automate your research workflow
 
 ---
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+This project is free to use under the MIT License - see the [LICENSE](LICENSE) file for the full details.
 
 ---
 
-**Built with ❤️ for researchers, students, and knowledge workers everywhere.**
+## 🙏 Thanks
+
+- Built for researchers, students, and anyone who loves learning
+- Inspired by the need for better ways to organize research
+- Made possible by the amazing open source community
+
+---
+
+<div align="center">
+
+**Made with ❤️ for curious minds everywhere**
+
+[⭐ Star this repo](https://github.com/your-username/smart-research-tracker) • [🐛 Report issues](https://github.com/your-username/smart-research-tracker/issues) • [💬 Join the discussion](https://github.com/your-username/smart-research-tracker/discussions)
+
+</div>

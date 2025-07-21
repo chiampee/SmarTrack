@@ -27,29 +27,7 @@ export const ContextInspectorModal: React.FC<Props> = ({ linkIds, isOpen, onClos
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={
-        <div className="flex items-center justify-between gap-3">
-          <span>AI Context</span>
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setWrap((w) => !w)}
-              title={wrap ? 'Disable text wrap' : 'Enable text wrap'}
-            >
-              {wrap ? 'No-Wrap' : 'Wrap'}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setFullscreen((f) => !f)}
-              title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-            >
-              {fullscreen ? 'Window' : 'Full'}
-            </Button>
-          </div>
-        </div>
-      }
+      title="AI Context"
       maxWidthClass={fullscreen ? 'max-w-none w-screen h-screen' : 'max-w-6xl'}
     >
       {loading ? (

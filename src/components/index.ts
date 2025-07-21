@@ -4,3 +4,8 @@ export * from './Select';
 export * from './Badge';
 export * from './LoadingSpinner';
 export * from './Modal';
+export { OnboardingModal } from './OnboardingModal';
+export { EmptyState } from './EmptyState';
+export { Tooltip, HelpTooltip } from './Tooltip';
+export { QuickStartGuide } from './QuickStartGuide';
+export { WelcomeBanner } from './WelcomeBanner';

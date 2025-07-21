@@ -33,11 +33,7 @@ export const BoardList: React.FC = () => {
       {boards.map((b) => (
         <BoardRow key={b.id} board={b} />
       ))}
-      {boards.length === 0 && (
-        <p className="px-4 py-6 text-center text-sm text-gray-500">
-          No boards yet
-        </p>
-      )}
+      {/* Empty state is now handled by the parent component */}
     </div>
   );
 };

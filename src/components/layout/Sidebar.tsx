@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useBoardStore } from '../../stores/boardStore';
 import { useLinkStore } from '../../stores/linkStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { Link } from 'react-router-dom';
-import { Modal, Button } from '..';
+import { Modal, Button, QuickStartGuide } from '..';
 import { LinkForm } from '../links/LinkForm';
 
 export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
@@ -11,12 +12,15 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
 }) => {
   const { boards, loadBoards } = useBoardStore();
   const { clearAll, rawLinks } = useLinkStore();
+  const { hasSeenOnboarding } = useSettingsStore();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
     loadBoards();
   }, [loadBoards]);
+
+  const isNewUser = rawLinks.length === 0 && !hasSeenOnboarding;
 
   return (
     <>
@@ -29,6 +33,9 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
       <aside
         className={`fixed top-12 inset-y-0 left-0 z-20 w-64 transform bg-gray-50 p-4 shadow-lg transition-transform md:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
+        {/* Quick Start Guide for new users */}
+        {isNewUser && <QuickStartGuide />}
+
         {boards.length > 0 && (
           <>
             <h2 className="mb-2 text-sm font-semibold text-gray-600">Boards</h2>
@@ -101,11 +108,8 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
               </Button>
             </div>
           }
-          maxWidthClass="max-w-md"
         >
-          <p className="text-sm text-gray-700">
-            Are you sure you want to permanently delete <strong>all</strong> links and their summaries? This action cannot be undone.
-          </p>
+          <p>Are you sure you want to delete all links? This action cannot be undone.</p>
         </Modal>
       </aside>
     </>

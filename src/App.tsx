@@ -1,19 +1,38 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { BoardsPage } from './pages/BoardsPage';
 import { LinksPage } from './pages/LinksPage';
 import { TasksPage } from './pages/TasksPage';
 import { Layout } from './components/layout/Layout';
 import { ChatHistoryPage } from './pages/ChatHistoryPage';
+import { OnboardingModal } from './components/OnboardingModal';
 import { migrationService } from './services/migrationService';
+import { useSettingsStore } from './stores/settingsStore';
+import { useLinkStore } from './stores/linkStore';
 import './index.css';
 
 function App() {
-  React.useEffect(() => {
+  const { showOnboarding, setShowOnboarding, setHasSeenOnboarding, hasSeenOnboarding } = useSettingsStore();
+  const { rawLinks } = useLinkStore();
+
+  useEffect(() => {
     // Run one-off migrations (non-blocking)
     migrationService.backfillConversations().catch((err) => console.error('Migration failed', err));
     migrationService.backfillSummaryEmbeddings().catch((err) => console.error('Embedding migration failed', err));
   }, []);
+
+  // Show onboarding for new users (no links and haven't seen onboarding)
+  useEffect(() => {
+    if (rawLinks.length === 0 && !hasSeenOnboarding && !showOnboarding) {
+      setShowOnboarding(true);
+    }
+  }, [rawLinks.length, hasSeenOnboarding, showOnboarding, setShowOnboarding]);
+
+  const handleOnboardingClose = () => {
+    setShowOnboarding(false);
+    setHasSeenOnboarding(true);
+  };
+
   return (
     <Router>
       <Layout>
@@ -24,6 +43,11 @@ function App() {
           <Route path="/chat-history" element={<ChatHistoryPage />} />
         </Routes>
       </Layout>
+      
+      <OnboardingModal 
+        isOpen={showOnboarding} 
+        onClose={handleOnboardingClose} 
+      />
     </Router>
   );
 }

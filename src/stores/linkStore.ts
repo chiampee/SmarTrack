@@ -142,7 +142,7 @@ const linkStore = create<LinkState>()((set, get) => ({
   },
   toggleSort(key) {
     set((state) => {
-      const dir = state.sortKey === key ? (state.sortDir === 'asc' ? 'desc' : 'asc') : 'asc';
+      const dir: SortDir = state.sortKey === key ? (state.sortDir === 'asc' ? 'desc' : 'asc') : 'asc';
       const obj = { sortKey: key, sortDir: dir };
       localStorage.setItem('linkSort', JSON.stringify({ key, dir }));
       return obj;

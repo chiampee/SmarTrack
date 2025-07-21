@@ -541,28 +541,7 @@ export const LinkList: React.FC = () => {
           }
         />
       ))}
-      {links.length === 0 && (
-        <div className="py-16 text-center text-gray-500 flex flex-col items-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No links yet</h3>
-          <p className="text-sm text-gray-600 max-w-sm">
-            Save web pages using the browser extension to start building your research collection.
-          </p>
-          <div className="mt-6 flex gap-3">
-            <button
-              onClick={() => setOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Add Link Manually
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Empty state is now handled by the parent component */}
       {chatLinks && (
         <div className="mt-6">
           <MultiChatPanel links={chatLinks} onClose={() => setChatLinks(null)} />
