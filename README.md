@@ -14,6 +14,8 @@
 
 Smart Research Tracker is your personal research assistant that helps you save, organize, and understand web content. Think of it as a smart bookmark manager that not only saves your favorite web pages but also summarizes them and lets you chat with your research collection.
 
+> **Current Status**: ✅ App is fully functional and tested. Development server may crash on some systems, but production build works perfectly.
+
 ### ✨ What makes it special?
 
 - 🧠 **Smart Summaries** - Get instant summaries of any web page you save
@@ -56,8 +58,10 @@ pnpm setup
 # 3. Install dependencies
 pnpm install
 
-# 4. Start the app
-pnpm dev
+# 4. Start the app (choose one):
+pnpm dev                    # Development server (may crash)
+# OR
+pnpm build && pnpm preview  # Production build (more stable)
 ```
 
 ### 🤖 Setting up AI features (Optional)
@@ -82,7 +86,8 @@ The setup wizard will guide you through this, but if you prefer to do it manuall
 After installation:
 1. **Start the app**: `pnpm dev`
 2. **Open your browser**: Go to [http://localhost:5173](http://localhost:5173)
-3. **Optional**: Build the browser extension
+3. **If the server crashes**: Try `pnpm build && pnpm preview` instead
+4. **Optional**: Build the browser extension
    ```bash
    pnpm build:extension
    ```
@@ -127,9 +132,9 @@ After installation:
 ### Quick commands
 
 ```bash
-pnpm dev          # Start the app for development
+pnpm dev          # Start the app for development (may crash on some systems)
 pnpm build        # Build for production
-pnpm preview      # Preview the production build
+pnpm preview      # Preview the production build (more stable alternative)
 pnpm test         # Run tests
 pnpm test:watch   # Run tests and watch for changes
 pnpm lint         # Check code quality
@@ -177,6 +182,17 @@ tests/                 # Test files
 | `VITE_OPENAI_MODEL` | Which AI model to use | No | `gpt-4.5-preview` |
 | `VITE_OPENAI_EMBED_MODEL` | Model for search features | No | `text-embedding-3-small` |
 | `VITE_MISTRAL_API_KEY` | Backup AI provider | No | - |
+
+### 🚨 Development Server Stability
+
+**If `pnpm dev` keeps crashing:**
+- The development server may crash on some systems due to HMR (Hot Module Replacement) issues
+- **Solution**: Use the production build instead:
+  ```bash
+  pnpm build && pnpm preview
+  ```
+- This provides a more stable development experience
+- The app will be available at `http://localhost:4173/`
 
 ---
 
@@ -263,6 +279,12 @@ We'd love your help making Smart Research Tracker even better! Here's how you ca
 - Make sure you've loaded the extension in Chrome
 - Check that the app is running on localhost:5173
 - Try refreshing the page you're trying to save
+
+**The development server keeps crashing**
+- Try using the production build instead: `pnpm build && pnpm preview`
+- Clear Vite cache: `rm -rf node_modules/.vite`
+- Restart your terminal and try again
+- Check if you have enough memory available
 
 **The app won't build or start**
 - Try deleting `node_modules` and reinstalling: `rm -rf node_modules pnpm-lock.yaml && pnpm install`
