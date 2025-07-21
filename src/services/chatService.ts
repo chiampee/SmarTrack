@@ -1,9 +1,25 @@
+/**
+ * chatService.ts
+ * --------------
+ * Orchestrates chat conversations tied to saved research links.
+ * Responsibilities:
+ *   • Manage Conversation & ChatMessage records in IndexedDB (via db layer).
+ *   • Build rich, context-aware prompts by harvesting TL;DRs, raw page text and
+ *     similarity-matched snippets for each link.
+ *   • Invoke aiService.chat/chatStream() with fallback logic and push assistant
+ *     replies back into Dexie.
+ *   • Provide helper utilities (`getContextSnippets`) for UI inspection.
+ *
+ * NOTE: This file contains many defensive fallbacks so the assistant always has
+ *       some context to work with even if enrichment failed.
+ */
 import { db } from '../db/smartResearchDB';
 import { ChatMessage, ChatRole } from '../types/ChatMessage';
 import { aiService, ChatMessage as AIChatMessage } from './aiService';
 import { Link } from '../types/Link';
 import { aiSummaryService } from './aiSummaryService';
 import { Conversation } from '../types/Conversation';
+import { logError } from '../utils/logger';
 
 // Lightweight helper to fetch readable summary via jina.ai with caching to avoid repeated 451 errors
 const jinaCacheKey = 'jina_summary_cache_v1';
@@ -12,11 +28,17 @@ function loadJinaCache(): Record<string, { text: string; fetchedAt: number }> {
   try {
     const raw = localStorage.getItem(jinaCacheKey);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch (err) {
+    logError('chatService.loadJinaCache', err);
+  }
   return {};
 }
 function saveJinaCache(obj: Record<string, { text: string; fetchedAt: number }>) {
-  try { localStorage.setItem(jinaCacheKey, JSON.stringify(obj)); } catch {}
+  try {
+    localStorage.setItem(jinaCacheKey, JSON.stringify(obj));
+  } catch (err) {
+    logError('chatService.saveJinaCache', err);
+  }
 }
 const jinaStore = loadJinaCache();
 const JINA_TTL = 24 * 60 * 60 * 1000; // 1 day
@@ -43,11 +65,12 @@ async function fetchPageSummary(url: string): Promise<string> {
     jinaStore[key] = entry;
     saveJinaCache(jinaStore);
     return txt;
-  } catch {
+  } catch (err) {
     const entry = { text: '', fetchedAt: now };
     jinaMemCache.set(key, entry);
     jinaStore[key] = entry;
     saveJinaCache(jinaStore);
+    logError('chatService.fetchPageSummary', err);
     return '';
   }
 }

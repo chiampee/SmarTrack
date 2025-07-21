@@ -1,15 +1,28 @@
-// Basic AI service that talks to OpenAI (and optionally Mistral) chat completion endpoints.
-// API keys are expected in Vite env variables (see README):
-//   VITE_OPENAI_API_KEY
-//   VITE_MISTRAL_API_KEY
-// The caller should supply the model name; defaults to gpt-3.5-turbo.
-//
-// This file purposefully avoids importing the heavy `openai` npm package and instead
-// uses the Fetch API available in the browser/runtime. It implements:
-// 1. Exponential-backoff retries for transient errors / 429 / 5xx.
-// 2. Simple in-memory rate-limiting (max N concurrent, delay queue).
-// 3. Fallback to the Mistral endpoint if OpenAI fails (optional key required).
-// 4. 30-second request timeout.
+/**
+ * aiService.ts
+ * -------------
+ * Universal client-side wrapper around OpenAI (and optionally Mistral) HTTP endpoints.
+ * The goals of this layer:
+ *   1. Hide vendor differences behind a single chat() / chatStream() / embed() API.
+ *   2. Provide sensible production-ready features (retries, timeouts, rate-limit, caching).
+ *   3. Remain lightweight – no large official SDKs, only fetch() is used so it runs
+ *      in browsers, service-workers and Node test runners alike.
+ *
+ * Environment variables required (see README):
+ *   VITE_OPENAI_API_KEY       – mandatory for OpenAI chat & embeddings
+ *   VITE_MISTRAL_API_KEY      – optional fallback provider for chat
+ *   VITE_OPENAI_MODEL         – defaults to gpt-4.5-preview if absent
+ *   VITE_OPENAI_EMBED_MODEL   – defaults to text-embedding-3-small if absent
+ *
+ * Public API:
+ *   • chat(messages, opts?)         → Promise<string>
+ *   • chatStream(messages, cb, opts?) → Promise<string> (delta callback)
+ *   • embed(text, model?)           → Promise<number[]>
+ *
+ * All functions throw rich Error objects – callers are expected to handle/display.
+ */
+
+import { logError } from '../utils/logger';
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -242,7 +255,9 @@ export const aiService = {
          embedCache.set(key, arr);
          return arr;
        }
-     } catch {}
+     } catch (err) {
+       logError('aiService.embed.readCache', err);
+     }
 
      const openaiKey = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
      if (!openaiKey) {
@@ -287,7 +302,9 @@ export const aiService = {
      embedCache.set(key, embedding);
      try {
        localStorage.setItem("emb_" + key, JSON.stringify(embedding));
-     } catch {}
+     } catch (err) {
+       logError('aiService.embed.writeCache', err);
+     }
 
      return embedding;
    },
