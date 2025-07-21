@@ -16,6 +16,13 @@ function App() {
   const { rawLinks } = useLinkStore();
 
   useEffect(() => {
+    console.log('🚀 App starting up...');
+    console.log('📊 Environment check:', {
+      hasOpenAIKey: !!import.meta.env.VITE_OPENAI_API_KEY,
+      model: import.meta.env.VITE_OPENAI_MODEL,
+      embedModel: import.meta.env.VITE_OPENAI_EMBED_MODEL
+    });
+    
     // Run one-off migrations (non-blocking)
     migrationService.backfillConversations().catch((err) => console.error('Migration failed', err));
     migrationService.backfillSummaryEmbeddings().catch((err) => console.error('Embedding migration failed', err));
@@ -23,6 +30,7 @@ function App() {
 
   // Show onboarding for new users (no links and haven't seen onboarding)
   useEffect(() => {
+    console.log('👥 Onboarding check:', { rawLinksLength: rawLinks.length, hasSeenOnboarding, showOnboarding });
     if (rawLinks.length === 0 && !hasSeenOnboarding && !showOnboarding) {
       setShowOnboarding(true);
     }
@@ -32,6 +40,8 @@ function App() {
     setShowOnboarding(false);
     setHasSeenOnboarding(true);
   };
+
+  console.log('🎨 Rendering App component');
 
   return (
     <Router>
