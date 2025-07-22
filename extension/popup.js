@@ -29,9 +29,9 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         titleInput.placeholder = 'Page title';
       }
       
-      // Show current URL info
+      // Show current URL info in ready status
       const url = new URL(tab.url);
-      showStatus(`📄 Ready to save: ${url.hostname}`, 'info');
+      document.getElementById('currentUrl').textContent = url.hostname;
     });
   }
 });
