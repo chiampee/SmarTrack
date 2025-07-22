@@ -12,7 +12,7 @@
       "128": "icons/icon.svg"
     }
   },
-  "permissions": ["storage", "activeTab", "scripting", "tabs", "contextMenus"],
+  "permissions": ["storage", "activeTab", "scripting", "tabs", "contextMenus", "notifications"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js",

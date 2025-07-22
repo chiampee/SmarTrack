@@ -5,109 +5,311 @@
     <title>Smart Research Tracker</title>
     <style>
       body {
-        font-family: system-ui, sans-serif;
-        width: 320px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        width: 360px;
         margin: 0;
-        padding: 14px 16px 18px;
+        padding: 16px;
+        background: #fafafa;
+        color: #1f2937;
       }
+      
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #e5e7eb;
+      }
+      
+      .header h1 {
+        margin: 0 0 4px 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #111827;
+      }
+      
+      .header p {
+        margin: 0;
+        font-size: 13px;
+        color: #6b7280;
+      }
+      
+      .section {
+        margin-bottom: 20px;
+        padding: 16px;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      }
+      
+      .section-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      
       h3 {
-        margin-top: 0;
-        margin-bottom: 8px;
+        margin: 0 0 12px 0;
         font-size: 16px;
+        font-weight: 600;
+        color: #111827;
       }
+      
       input, select, textarea {
         width: 100%;
-        padding: 7px 10px;
-        margin-bottom: 10px;
+        padding: 8px 12px;
+        margin-bottom: 12px;
         border: 1px solid #d1d5db;
         border-radius: 6px;
         font-size: 14px;
         background: #fff;
         box-sizing: border-box;
+        transition: border-color 0.2s, box-shadow 0.2s;
       }
+      
       input:focus, select:focus, textarea:focus {
         outline: none;
-        border-color: #2563eb;
-        box-shadow: 0 0 0 2px rgba(37,99,235,.2);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
       }
-      button {
+      
+      .category-tabs {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 16px;
+        background: #f3f4f6;
+        padding: 4px;
+        border-radius: 6px;
+      }
+      
+      .cat {
+        flex: 1;
+        padding: 8px 12px;
+        border-radius: 4px;
+        background: transparent;
+        color: #6b7280;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s;
+        border: none;
+      }
+      
+      .cat:hover {
+        background: #e5e7eb;
+        color: #374151;
+      }
+      
+      .cat.active {
+        background: #3b82f6;
+        color: white;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      }
+      
+      .btn {
         display: block;
         width: 100%;
-        height: 36px;
-        background: #2563eb;
-        color: #fff;
+        padding: 10px 16px;
         border: none;
         border-radius: 6px;
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
-        box-shadow: 0 2px 4px rgba(0,0,0,.08);
-        transition: background .15s, box-shadow .15s;
+        transition: all 0.2s;
+        text-align: center;
+        text-decoration: none;
+        box-sizing: border-box;
       }
-      button:hover:not(:disabled) {
-        background: #1e4ed8;
-        box-shadow: 0 3px 6px rgba(0,0,0,.12);
+      
+      .btn-primary {
+        background: #3b82f6;
+        color: white;
+        box-shadow: 0 1px 3px rgba(59,130,246,0.3);
       }
-      button:disabled {
-        opacity: 0.5;
-        cursor: default;
-      }
-      .cat {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 9999px;
-        background: #f3f4f6;
-        color: #374151;
-        font-size: 13px;
-        cursor: pointer;
-        margin-right: 6px;
-        transition: background .15s, color .15s;
-      }
-      .cat:hover {
-        background: #e5e7eb;
-      }
-      .cat.active {
+      
+      .btn-primary:hover:not(:disabled) {
         background: #2563eb;
-        color: #fff;
+        box-shadow: 0 2px 4px rgba(59,130,246,0.4);
+      }
+      
+      .btn-primary:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+      
+      .btn-secondary {
+        background: #10b981;
+        color: white;
+        margin-bottom: 8px;
+      }
+      
+      .btn-secondary:hover {
+        background: #059669;
+      }
+      
+      .btn-tertiary {
+        background: #6b7280;
+        color: white;
+      }
+      
+      .btn-tertiary:hover {
+        background: #4b5563;
+      }
+      
+      .status {
+        display: block;
+        margin-top: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        text-align: center;
+        padding: 8px;
+        border-radius: 4px;
+      }
+      
+      .status.success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+      }
+      
+      .status.error {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+      }
+      
+      .status.info {
+        background: #dbeafe;
+        color: #1e40af;
+        border: 1px solid #93c5fd;
+      }
+      
+      .field-group {
+        margin-bottom: 16px;
+      }
+      
+      .field-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        color: #6b7280;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .priority-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+      }
+      
+      .priority-low { background: #10b981; }
+      .priority-medium { background: #f59e0b; }
+      .priority-high { background: #ef4444; }
+      
+      .divider {
+        margin: 20px 0;
+        border: none;
+        border-top: 1px solid #e5e7eb;
+      }
+      
+      .quick-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
       }
     </style>
     <script type="module" crossorigin src="/popup.js"></script>
   </head>
   <body>
-    <h3>Save this page</h3>
-    <!-- Category -->
-    <div id="catBar" style="margin-bottom:8px;">
-      <span class="cat active" data-cat="link">Link</span>
-      <span class="cat" data-cat="task">Task</span>
-      <span class="cat" data-cat="board">Board</span>
+    <div class="header">
+      <h1>📚 Smart Research Tracker</h1>
+      <p>Save and organize your research with AI insights</p>
     </div>
 
-    <!-- Board (for link) -->
-    <select id="board" style="width:100%;padding:6px 8px;margin-bottom:8px;border:1px solid #ccc;border-radius:4px;font-size:14px;"></select>
+    <div class="section">
+      <div class="section-title">
+        <span>💾</span>
+        Save Current Page
+      </div>
+      
+      <!-- Category Tabs -->
+      <div class="category-tabs">
+        <button class="cat active" data-cat="link">📄 Link</button>
+        <button class="cat" data-cat="task">✅ Task</button>
+        <button class="cat" data-cat="board">📋 Board</button>
+      </div>
 
-    <div id="linkFields">
-      <input id="title" placeholder="Page title" />
-      <select id="labelSelect" style="width:100%;padding:6px 8px;margin-bottom:8px;border:1px solid #ccc;border-radius:4px;font-size:14px;display:none;"></select>
-      <input id="labelInput" placeholder="New label" style="width:100%;padding:6px 8px;margin-bottom:8px;border:1px solid #ccc;border-radius:4px;font-size:14px;display:none;" />
-      <textarea id="desc" placeholder="Description (optional)" style="width:100%;min-height:60px;padding:6px 8px;margin-bottom:8px;border:1px solid #ccc;border-radius:4px;font-size:14px;resize:vertical;"></textarea>
-      <select id="priority" style="width:100%;padding:6px 8px;margin-bottom:8px;border:1px solid #ccc;border-radius:4px;font-size:14px;">
-        <option value="low">Low Priority</option>
-        <option value="medium">Medium Priority</option>
-        <option value="high">High Priority</option>
-      </select>
+      <!-- Board Selection -->
+      <div class="field-group">
+        <label class="field-label">Board</label>
+        <select id="board"></select>
+      </div>
+
+      <div id="linkFields">
+        <div class="field-group">
+          <label class="field-label">Title</label>
+          <input id="title" placeholder="Page title (auto-filled)" />
+        </div>
+        
+        <div class="field-group">
+          <label class="field-label">Label</label>
+          <select id="labelSelect" style="display:none;"></select>
+          <input id="labelInput" placeholder="Add a label (optional)" style="display:none;" />
+        </div>
+        
+        <div class="field-group">
+          <label class="field-label">Description</label>
+          <textarea id="desc" placeholder="Add notes or description (optional)" rows="3"></textarea>
+        </div>
+        
+        <div class="field-group">
+          <label class="field-label">Priority</label>
+          <select id="priority">
+            <option value="low"><span class="priority-indicator priority-low"></span>Low Priority</option>
+            <option value="medium"><span class="priority-indicator priority-medium"></span>Medium Priority</option>
+            <option value="high"><span class="priority-indicator priority-high"></span>High Priority</option>
+          </select>
+        </div>
+      </div>
+
+      <button id="saveBtn" class="btn btn-primary" disabled>
+        💾 Save to Research
+      </button>
+      
+      <div id="status" class="status" style="display:none;"></div>
     </div>
 
-    <button id="saveBtn" disabled>Save</button>
-    <span id="status" style="display:block;margin-top:6px;font-size:12px;color:#4caf50;"></span>
+    <hr class="divider">
     
-    <hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;">
-    
-    <button id="openDashboardBtn" style="background: #10b981; margin-bottom: 8px;">
-      📊 Open Dashboard
-    </button>
-    <button id="openSettingsBtn" style="background: #6b7280;">
-      ⚙️ Settings
-    </button>
+    <div class="section">
+      <div class="section-title">
+        <span>🚀</span>
+        Quick Actions
+      </div>
+      
+      <div class="quick-actions">
+        <button id="openDashboardBtn" class="btn btn-secondary">
+          📊 Dashboard
+        </button>
+        <button id="openSettingsBtn" class="btn btn-tertiary">
+          ⚙️ Settings
+        </button>
+      </div>
+      
+      <div style="margin-top: 12px; font-size: 12px; color: #6b7280; text-align: center;">
+        💡 Tip: Use Ctrl+Shift+R to quickly open this popup
+      </div>
+    </div>
 
   </body>
 </html> 

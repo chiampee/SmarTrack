@@ -1,8 +1,35 @@
+// Initialize popup with welcome message
+console.log('🚀 Smart Research Tracker Extension Popup Loaded');
+
 // Replace old categorySelect logic
 let selectedCat = 'link';
 const boardSelect = document.getElementById('board');
 const linkFields = document.getElementById('linkFields');
 const statusEl = document.getElementById('status');
+
+// Show welcome message on first load
+chrome.storage.local.get(['firstLoad'], (result) => {
+  if (!result.firstLoad) {
+    showStatus('👋 Welcome! Click "Save to Research" to save this page.', 'info');
+    chrome.storage.local.set({ firstLoad: true });
+  }
+});
+
+// Get current tab info and pre-fill title
+chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+  const tab = tabs[0];
+  if (tab && tab.url && !tab.url.startsWith('chrome://')) {
+    const titleInput = document.getElementById('title');
+    if (titleInput && tab.title) {
+      titleInput.value = tab.title;
+      titleInput.placeholder = 'Page title (auto-filled)';
+    }
+    
+    // Show current URL info
+    const url = new URL(tab.url);
+    showStatus(`📄 Ready to save: ${url.hostname}`, 'info');
+  }
+});
 
 // label elements
 const labelSelect = document.getElementById('labelSelect');
@@ -259,6 +286,13 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       (res) => {
         const pageData = res?.[0]?.result || { title: '', description: '', text: '' };
 
+        const saveBtn = document.getElementById('saveBtn');
+        const originalText = saveBtn.textContent;
+        
+        // Show saving state
+        saveBtn.textContent = '🔄 Saving...';
+        saveBtn.disabled = true;
+        
         chrome.runtime.sendMessage(
           {
             type: 'SAVE_LINK',
@@ -273,9 +307,14 @@ document.getElementById('saveBtn').addEventListener('click', () => {
               pageText: pageData.text,
             },
           },
-          () => {
-            statusEl.textContent = 'Saved!';
-            setTimeout(() => window.close(), 800);
+          (response) => {
+            if (chrome.runtime.lastError) {
+              showStatus('❌ Failed to save. Please try again.', 'error');
+              resetButton(saveBtn, originalText);
+            } else {
+              showStatus('✅ Page saved successfully!', 'success');
+              setTimeout(() => window.close(), 2000);
+            }
           },
         );
       },
@@ -285,21 +324,75 @@ document.getElementById('saveBtn').addEventListener('click', () => {
 
 // Dashboard and Settings buttons
 document.getElementById('openDashboardBtn').addEventListener('click', () => {
+  const btn = document.getElementById('openDashboardBtn');
+  const originalText = btn.textContent;
+  
+  // Show loading state
+  btn.textContent = '🔄 Opening...';
+  btn.disabled = true;
+  
   // Try to open the dashboard in a new tab
   chrome.tabs.create({ url: 'http://localhost:5173/' }, (tab) => {
     // If localhost fails, try the production URL
     if (chrome.runtime.lastError) {
-      chrome.tabs.create({ url: 'https://smartresearchtracker.vercel.app/' });
+      chrome.tabs.create({ url: 'https://smartresearchtracker.vercel.app/' }, (prodTab) => {
+        if (chrome.runtime.lastError) {
+          showStatus('❌ Could not open dashboard. Make sure the app is running.', 'error');
+        } else {
+          showStatus('✅ Dashboard opened successfully!', 'success');
+        }
+        resetButton(btn, originalText);
+      });
+    } else {
+      showStatus('✅ Dashboard opened successfully!', 'success');
+      resetButton(btn, originalText);
     }
   });
 });
 
 document.getElementById('openSettingsBtn').addEventListener('click', () => {
+  const btn = document.getElementById('openSettingsBtn');
+  const originalText = btn.textContent;
+  
+  // Show loading state
+  btn.textContent = '🔄 Opening...';
+  btn.disabled = true;
+  
   // Open settings in a new tab
   chrome.tabs.create({ url: 'http://localhost:5173/#/settings' }, (tab) => {
     // If localhost fails, try the production URL
     if (chrome.runtime.lastError) {
-      chrome.tabs.create({ url: 'https://smartresearchtracker.vercel.app/#/settings' });
+      chrome.tabs.create({ url: 'https://smartresearchtracker.vercel.app/#/settings' }, (prodTab) => {
+        if (chrome.runtime.lastError) {
+          showStatus('❌ Could not open settings. Make sure the app is running.', 'error');
+        } else {
+          showStatus('✅ Settings opened successfully!', 'success');
+        }
+        resetButton(btn, originalText);
+      });
+    } else {
+      showStatus('✅ Settings opened successfully!', 'success');
+      resetButton(btn, originalText);
     }
   });
-}); 
+});
+
+// Helper functions for better UX
+function showStatus(message, type = 'info') {
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = message;
+  statusEl.className = `status ${type}`;
+  statusEl.style.display = 'block';
+  
+  // Auto-hide success messages after 3 seconds
+  if (type === 'success') {
+    setTimeout(() => {
+      statusEl.style.display = 'none';
+    }, 3000);
+  }
+}
+
+function resetButton(button, originalText) {
+  button.textContent = originalText;
+  button.disabled = false;
+} 

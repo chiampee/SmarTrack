@@ -244,11 +244,33 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     chrome.tabs.create({ url: 'http://localhost:5173/' }, (newTab) => {
       // If localhost fails, try the production URL
       if (chrome.runtime.lastError) {
-        chrome.tabs.create({ url: 'https://smartresearchtracker.vercel.app/' });
+        chrome.tabs.create({ url: 'https://smartresearchtracker.vercel.app/' }, (prodTab) => {
+          if (chrome.runtime.lastError) {
+            // Show notification if both URLs fail
+            chrome.notifications.create({
+              type: 'basic',
+              iconUrl: 'icons/icon.svg',
+              title: 'Smart Research Tracker',
+              message: 'Could not open dashboard. Make sure the app is running.'
+            });
+          }
+        });
       }
     });
   } else if (info.menuItemId === 'saveToResearch') {
     // Open the popup to save the current page or selected link
     chrome.action.openPopup();
+  }
+});
+
+// Add notification permission to manifest
+chrome.runtime.onInstalled.addListener(() => {
+  // Request notification permission
+  if (chrome.notifications) {
+    chrome.notifications.getPermissionLevel((level) => {
+      if (level === 'denied') {
+        console.log('Notification permission denied');
+      }
+    });
   }
 }); 
