@@ -4,312 +4,525 @@
 
 **Your AI-powered research companion** - Save web pages, get instant summaries, and chat with your research collection.
 
-[🚀 Quick Start](#-quick-start) • [📖 Features](#-features) • [🛠️ Development](#️-development) • [🤝 Contributing](#-contributing)
+[🚀 Quick Start](#-quick-start) • [📖 Features](#-features) • [🔧 Setup](#-setup) • [🛠️ Development](#️-development) • [🤝 Contributing](#-contributing)
 
 </div>
 
 ---
 
-## 📖 What is Smart Research Tracker?
+## 📖 Overview
 
-Smart Research Tracker is your personal research assistant that helps you save, organize, and understand web content. Think of it as a smart bookmark manager that not only saves your favorite web pages but also summarizes them and lets you chat with your research collection.
+Smart Research Tracker is a comprehensive research management tool that combines the power of AI with intuitive organization. It helps you save, summarize, and interact with web content through an intelligent browser extension and web dashboard.
 
-> **Current Status**: ✅ App is fully functional and tested. Development server may crash on some systems, but production build works perfectly.
+### ✨ Key Features
 
-### ✨ What makes it special?
+- 🧠 **AI-Powered Summaries** - Get instant, intelligent summaries of any web page
+- 💬 **Research Chat** - Ask questions about your saved content and get AI-powered answers
+- 🔍 **Smart Search** - Find information across your entire research collection
+- 🏷️ **Intelligent Organization** - Auto-categorize and organize research by topics
+- 🔒 **Privacy-First** - All data stays on your device, no cloud storage required
+- 🎯 **Browser Extension** - Save pages with one click from any website
+- 📊 **Multiple Views** - Boards, lists, and grid views for different workflows
 
-- 🧠 **Smart Summaries** - Get instant summaries of any web page you save
-- 💬 **Chat with Your Research** - Ask questions about your saved content
-- 🔍 **Find Anything** - Search through all your research easily
-- 🏷️ **Stay Organized** - Automatically categorize and organize your research
-- 🔒 **Your Data, Your Control** - Everything stays on your device
-- 🎯 **Easy to Use** - Simple setup and helpful guidance throughout
+### 🎯 Perfect For
+
+- **Researchers** - Organize academic papers and research findings
+- **Students** - Collect and summarize study materials
+- **Content Creators** - Gather inspiration and reference materials
+- **Professionals** - Build knowledge bases and research repositories
+- **Anyone** - Who wants to save and understand web content better
 
 ---
 
-## 🚀 Get Started in 5 Minutes
+## 🚀 Quick Start
 
-### What you'll need
+### Prerequisites
 
-- A computer with Node.js installed (version 18 or higher)
-- A web browser (Chrome works best)
-- An OpenAI API key (optional, but needed for the smart features)
+- **Node.js** 18+ ([Download here](https://nodejs.org/))
+- **Modern browser** (Chrome, Firefox, Safari, Edge)
+- **OpenAI API key** (optional, for AI features)
 
-### 🎯 Super Easy Installation
+### Installation Options
 
-**Option 1: One-command install (Recommended)**
+#### Option 1: One-Command Install (Recommended)
+
+**macOS/Linux:**
 ```bash
-# On Mac/Linux:
-./install.sh
-
-# On Windows:
-install.bat
+curl -fsSL https://raw.githubusercontent.com/your-repo/main/install.sh | bash
 ```
 
-**Option 2: Manual setup**
+**Windows:**
+```cmd
+powershell -ExecutionPolicy Bypass -File install.ps1
+```
+
+#### Option 2: Manual Installation
+
 ```bash
-# 1. Download the project
-git clone <your-repo-url>
+# 1. Clone the repository
+git clone https://github.com/your-username/smart-research-tracker.git
 cd smart-research-tracker
 
-# 2. Run the setup wizard
+# 2. Run the interactive setup
 pnpm setup
 
 # 3. Install dependencies
 pnpm install
 
-# 4. Start the app (choose one):
-pnpm dev                    # Development server (may crash)
-# OR
-pnpm build && pnpm preview  # Production build (more stable)
+# 4. Start the application
+pnpm build && pnpm preview
 ```
 
-### 🤖 Setting up AI features (Optional)
+### First-Time Setup
 
-The setup wizard will guide you through this, but if you prefer to do it manually:
+1. **Configure AI Features** (Optional):
+   - Get an OpenAI API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+   - The setup wizard will guide you through configuration
+   - AI features work without the key, but with limited functionality
 
-1. **Get an OpenAI API key** (free to start):
-   - Go to [OpenAI API Keys](https://platform.openai.com/api-keys)
-   - Sign up or log in
-   - Click "Create new secret key"
-   - Copy the key (starts with "sk-")
-
-2. **Add it to your configuration**:
-   ```bash
-   # The setup wizard will do this for you, or you can:
-   cp .env.example .env.local
-   # Then edit .env.local and add your API key
-   ```
-
-### 🌐 Start using the app
-
-After installation:
-1. **Start the app**: `pnpm dev`
-2. **Open your browser**: Go to [http://localhost:5173](http://localhost:5173)
-3. **If the server crashes**: Try `pnpm build && pnpm preview` instead
-4. **Optional**: Build the browser extension
+2. **Install Browser Extension**:
    ```bash
    pnpm build:extension
    ```
-   Then load the `dist-extension/` folder in Chrome's developer mode
+   - Open Chrome and go to `chrome://extensions/`
+   - Enable "Developer mode"
+   - Click "Load unpacked" and select the `dist-extension/` folder
+
+3. **Access the Dashboard**:
+   - Open [http://localhost:4173](http://localhost:4173) in your browser
+   - Start saving pages using the browser extension
 
 ---
 
-## 📖 What can you do with it?
+## 📖 Features
 
-### 🧠 Smart Research Assistant
+### 🧠 AI-Powered Intelligence
 
-- **Get instant summaries** of any web page you save
-- **Chat with your research** - ask questions about your saved content
-- **Find related information** across all your saved pages
-- **See what the AI knows** about each page you've saved
+#### Smart Summaries
+- **Instant Analysis** - Get comprehensive summaries of any web page
+- **Key Points Extraction** - Automatically identify main topics and insights
+- **Customizable Length** - Choose from brief, standard, or detailed summaries
+- **Multi-language Support** - Works with content in various languages
 
-### 📚 Keep Everything Organized
+#### Research Chat
+- **Ask Questions** - Query your saved research with natural language
+- **Context-Aware Answers** - AI understands the context of your questions
+- **Cross-Reference** - Find connections between different saved pages
+- **Citation Tracking** - See which sources the AI used for answers
 
-- **Auto-categorize** your research by topic or project
-- **Drag and drop** to organize your research boards
-- **Multiple views** - see your research as boards, lists, or grids
-- **Bulk actions** - work with multiple pages at once
+### 📚 Organization & Management
 
-### 🔒 Your Data, Your Control
+#### Flexible Organization
+- **Boards** - Group related research by project or topic
+- **Labels** - Tag content for easy filtering and search
+- **Priority Levels** - Mark important content for quick access
+- **Custom Categories** - Create your own organizational system
 
-- **Everything stays on your device** - no cloud storage required
-- **Your research is private** - we can't see your data
-- **AI is optional** - use it only when you want summaries
-- **Easy backup** - export your data whenever you want
+#### Multiple Views
+- **Board View** - Visual organization with drag-and-drop
+- **List View** - Compact list for quick scanning
+- **Grid View** - Card-based layout for visual browsing
+- **Search View** - Find specific content instantly
 
-### 🎯 Designed for You
+### 🔍 Advanced Search & Discovery
 
-- **Simple setup** - get started in minutes
-- **Helpful guidance** - tips and hints as you use the app
-- **Easy to use** - intuitive interface that just works
-- **Keyboard shortcuts** - power users can work faster
+#### Smart Search
+- **Full-Text Search** - Search through all saved content
+- **Semantic Search** - Find related content even with different words
+- **Filter Options** - Search by date, tags, boards, or content type
+- **Search History** - Track your previous searches
+
+#### Content Discovery
+- **Related Content** - AI suggests connections between saved pages
+- **Trend Analysis** - See patterns in your research interests
+- **Duplicate Detection** - Avoid saving the same content twice
+- **Content Recommendations** - Get suggestions based on your interests
+
+### 🔒 Privacy & Security
+
+#### Data Control
+- **Local Storage** - All data stays on your device
+- **No Cloud Dependencies** - Works completely offline
+- **Export Options** - Backup your data in multiple formats
+- **Selective Sync** - Choose what to sync across devices
+
+#### Security Features
+- **Encrypted Storage** - Sensitive data is encrypted locally
+- **No Tracking** - We don't collect or analyze your data
+- **API Key Security** - API keys are stored securely
+- **Privacy-First Design** - Built with privacy as a core principle
 
 ---
 
-## 🛠️ For Developers
+## 🔧 Setup & Configuration
 
-### Quick commands
+### Environment Configuration
+
+Create a `.env.local` file in the project root:
+
+```env
+# Required for AI features
+VITE_OPENAI_API_KEY=your_openai_api_key_here
+
+# Optional: Customize AI behavior
+VITE_OPENAI_MODEL=gpt-4o-mini
+VITE_OPENAI_EMBED_MODEL=text-embedding-3-small
+
+# Optional: Backup AI provider
+VITE_MISTRAL_API_KEY=your_mistral_api_key_here
+
+# Optional: Custom settings
+VITE_MAX_SUMMARY_LENGTH=500
+VITE_ENABLE_ANALYTICS=false
+```
+
+### Browser Extension Configuration
+
+The extension can be configured through its settings page:
+
+- **Dashboard URL** - Where your main app is running
+- **Auto-fill** - Automatically populate page titles
+- **Auto-close** - Close popup after saving
+- **Keyboard Shortcuts** - Customize hotkeys
+- **Data Management** - Export/import your data
+
+### Performance Optimization
+
+#### For Large Research Collections
+- **Pagination** - Content loads in chunks for better performance
+- **Lazy Loading** - Images and heavy content load on demand
+- **Search Indexing** - Optimized search for quick results
+- **Caching** - Smart caching for frequently accessed content
+
+#### System Requirements
+- **Minimum**: 4GB RAM, 2GB free disk space
+- **Recommended**: 8GB RAM, 5GB free disk space
+- **Browser**: Modern browser with ES2020 support
+
+---
+
+## 🛠️ Development
+
+### Project Structure
+
+```
+smart-research-tracker/
+├── src/                    # Main application source
+│   ├── components/         # React components
+│   │   ├── ai/            # AI-related features
+│   │   ├── boards/        # Board management
+│   │   ├── links/         # Link management
+│   │   ├── layout/        # Layout components
+│   │   └── ui/            # Reusable UI elements
+│   ├── pages/             # Application pages
+│   ├── services/          # Business logic & APIs
+│   ├── stores/            # State management (Zustand)
+│   ├── types/             # TypeScript definitions
+│   ├── utils/             # Utility functions
+│   └── db/                # Database configuration
+├── extension/             # Browser extension
+├── api/                   # Backend API functions
+├── tests/                 # Test files
+├── public/                # Static assets
+└── docs/                  # Documentation
+```
+
+### Development Commands
 
 ```bash
-pnpm dev          # Start the app for development (may crash on some systems)
-pnpm build        # Build for production
-pnpm preview      # Preview the production build (more stable alternative)
-pnpm test         # Run tests
-pnpm test:watch   # Run tests and watch for changes
-pnpm lint         # Check code quality
-pnpm lint:fix     # Fix code formatting issues
-pnpm e2e          # Run end-to-end tests
+# Development
+pnpm dev                   # Start development server
+pnpm build                 # Build for production
+pnpm preview               # Preview production build
+pnpm build:extension       # Build browser extension
+
+# Testing
+pnpm test                  # Run unit tests
+pnpm test:watch           # Run tests in watch mode
+pnpm test:e2e             # Run end-to-end tests
+pnpm test:coverage        # Generate coverage report
+
+# Code Quality
+pnpm lint                  # Check code quality
+pnpm lint:fix             # Fix linting issues
+pnpm format               # Format code with Prettier
+pnpm type-check           # Run TypeScript checks
+
+# Database
+pnpm db:migrate           # Run database migrations
+pnpm db:seed              # Seed database with sample data
+pnpm db:reset             # Reset database
 ```
 
-### How the code is organized
+### Technology Stack
 
-```
-src/
-├── components/          # All the UI components
-│   ├── ai/             # AI-related features
-│   ├── boards/         # Research board management
-│   ├── links/          # Link and page management
-│   ├── layout/         # Page layout components
-│   └── ui/             # Reusable UI elements
-├── pages/              # Main app pages
-├── services/           # Business logic and API calls
-├── stores/             # Data management (Zustand)
-├── types/              # TypeScript type definitions
-├── utils/              # Helper functions
-└── db/                 # Database setup
+#### Frontend
+- **React 18** - UI framework with concurrent features
+- **TypeScript** - Type-safe JavaScript development
+- **Vite** - Fast build tool and development server
+- **Tailwind CSS** - Utility-first CSS framework
+- **Headless UI** - Accessible UI components
 
-extension/              # Browser extension code
-api/                   # Backend API functions
-tests/                 # Test files
-```
+#### State Management
+- **Zustand** - Lightweight state management
+- **React Query** - Server state management
+- **Dexie** - IndexedDB wrapper for local storage
 
-### What we use to build this
+#### AI & APIs
+- **OpenAI API** - Primary AI provider
+- **Mistral API** - Backup AI provider
+- **Embedding Models** - For semantic search
 
-- **Frontend**: React 18, TypeScript, Vite
-- **Styling**: Tailwind CSS, Headless UI
-- **Data Management**: Zustand
-- **Database**: Dexie (for local storage)
-- **AI**: OpenAI API, with Mistral as backup
-- **Testing**: Vitest, Playwright
-- **Code Quality**: ESLint, Prettier
+#### Testing
+- **Vitest** - Unit testing framework
+- **Playwright** - End-to-end testing
+- **Testing Library** - Component testing utilities
 
-### Configuration options
+#### Code Quality
+- **ESLint** - Code linting
+- **Prettier** - Code formatting
+- **Husky** - Git hooks
+- **Commitlint** - Commit message validation
 
-| Setting | What it does | Required? | Default |
-|---------|-------------|-----------|---------|
-| `VITE_OPENAI_API_KEY` | Your OpenAI API key | Yes (for AI features) | - |
-| `VITE_OPENAI_MODEL` | Which AI model to use | No | `gpt-4.5-preview` |
-| `VITE_OPENAI_EMBED_MODEL` | Model for search features | No | `text-embedding-3-small` |
-| `VITE_MISTRAL_API_KEY` | Backup AI provider | No | - |
+### Development Guidelines
 
-### 🚨 Development Server Stability
+#### Code Style
+- Follow TypeScript best practices
+- Use functional components with hooks
+- Implement proper error boundaries
+- Write self-documenting code
+- Add JSDoc comments for complex functions
 
-**If `pnpm dev` keeps crashing:**
-- The development server may crash on some systems due to HMR (Hot Module Replacement) issues
-- **Solution**: Use the production build instead:
-  ```bash
-  pnpm build && pnpm preview
-  ```
-- This provides a more stable development experience
-- The app will be available at `http://localhost:4173/`
+#### Testing Strategy
+- Unit tests for utility functions
+- Component tests for UI elements
+- Integration tests for user workflows
+- E2E tests for critical paths
+- Maintain 80%+ code coverage
+
+#### Performance
+- Implement lazy loading for routes
+- Use React.memo for expensive components
+- Optimize bundle size with code splitting
+- Implement proper caching strategies
+- Monitor Core Web Vitals
 
 ---
 
-## 🤝 Want to help?
+## 🤝 Contributing
 
-We'd love your help making Smart Research Tracker even better! Here's how you can contribute:
+We welcome contributions from the community! Here's how you can help:
 
-### How to get started
+### Getting Started
 
-1. **Fork this project** (click the fork button on GitHub)
-2. **Download your copy**
+1. **Fork the repository**
+2. **Clone your fork**:
    ```bash
    git clone https://github.com/your-username/smart-research-tracker.git
    cd smart-research-tracker
    ```
-3. **Create a new branch** for your changes
+3. **Create a feature branch**:
    ```bash
-   git checkout -b feature/your-awesome-idea
+   git checkout -b feature/amazing-feature
    ```
-4. **Set up the project**
+4. **Set up development environment**:
    ```bash
    pnpm install
+   pnpm setup
    ```
-5. **Make your changes** and test them
-6. **Check everything works**
+5. **Make your changes** and test thoroughly
+6. **Commit your changes**:
    ```bash
-   pnpm lint && pnpm test
+   git commit -m "feat: add amazing feature"
    ```
-7. **Save your changes**
+7. **Push to your fork**:
    ```bash
-   git commit -m "feat: add your awesome feature"
+   git push origin feature/amazing-feature
    ```
-8. **Share your work**
-   ```bash
-   git push origin feature/your-awesome-idea
-   ```
-9. **Create a pull request** on GitHub
+8. **Create a Pull Request**
 
-### What we're looking for
+### Contribution Areas
 
-- **Bug fixes** - help us squash those pesky bugs
-- **New features** - add something cool and useful
-- **Documentation** - make things clearer for everyone
-- **UI improvements** - make it look and feel better
-- **Performance** - make it faster and more efficient
+#### High Priority
+- **Bug fixes** - Help squash bugs and improve stability
+- **Performance improvements** - Make the app faster and more efficient
+- **Accessibility enhancements** - Improve usability for all users
+- **Documentation** - Improve guides and API documentation
 
-### Our coding standards
+#### Medium Priority
+- **New features** - Add useful functionality
+- **UI/UX improvements** - Enhance the user interface
+- **Testing** - Add more test coverage
+- **Internationalization** - Support for multiple languages
 
-- Write clear, readable code
-- Add tests for new features
-- Follow our existing code style
-- Make sure it works for everyone (accessibility)
-- Write helpful commit messages
+#### Low Priority
+- **Code refactoring** - Improve code structure
+- **Developer experience** - Better tooling and workflows
+- **Analytics** - Usage tracking and insights
+- **Integration** - Connect with other tools
+
+### Development Workflow
+
+#### Before Starting
+- Check existing issues and pull requests
+- Discuss your idea in an issue first
+- Ensure your feature aligns with project goals
+- Review the codebase to understand the architecture
+
+#### During Development
+- Follow the established code style
+- Write tests for new functionality
+- Update documentation as needed
+- Test across different browsers and devices
+
+#### Before Submitting
+- Run all tests: `pnpm test`
+- Check code quality: `pnpm lint`
+- Test the build: `pnpm build`
+- Update relevant documentation
+- Write a clear commit message
+
+### Code of Conduct
+
+We are committed to providing a welcoming and inclusive environment for all contributors. Please:
+
+- Be respectful and considerate of others
+- Use inclusive language
+- Focus on constructive feedback
+- Help others learn and grow
+- Report any inappropriate behavior
 
 ---
 
-## 🐛 Having trouble?
+## 🐛 Troubleshooting
 
-### Installation problems
+### Common Issues
 
-**The install script won't run**
-- Make sure you have Node.js installed (version 18 or higher)
-- On Mac/Linux, make the script executable: `chmod +x install.sh`
-- On Windows, right-click `install.bat` and "Run as administrator"
+#### Installation Problems
 
-**Dependencies won't install**
-- Try clearing npm cache: `npm cache clean --force`
-- Make sure you have enough disk space
-- Try using npm instead: `npm install`
+**Node.js version issues**
+```bash
+# Check your Node.js version
+node --version
 
-**Setup wizard isn't working**
-- Run the setup manually: `node scripts/setup.js`
-- Check that you have write permissions in the project folder
-- Try running as administrator (Windows) or with sudo (Mac/Linux)
+# If below 18, update Node.js
+# macOS: brew install node@18
+# Windows: Download from nodejs.org
+# Linux: Use nvm or package manager
+```
 
-### App problems
+**Permission errors**
+```bash
+# macOS/Linux
+sudo chmod +x install.sh
+./install.sh
 
-**The AI features aren't working**
-- Make sure your OpenAI API key is correct
-- Check if you have enough credits in your OpenAI account
-- Look at the browser console for error messages
+# Windows (Run as Administrator)
+install.bat
+```
 
-**The browser extension won't save pages**
-- Make sure you've loaded the extension in Chrome
-- Check that the app is running on localhost:5173
-- Try refreshing the page you're trying to save
+**Dependency conflicts**
+```bash
+# Clear cache and reinstall
+rm -rf node_modules pnpm-lock.yaml
+pnpm install
+```
 
-**The development server keeps crashing**
-- Try using the production build instead: `pnpm build && pnpm preview`
-- Clear Vite cache: `rm -rf node_modules/.vite`
-- Restart your terminal and try again
-- Check if you have enough memory available
+#### Application Issues
 
-**The app won't build or start**
-- Try deleting `node_modules` and reinstalling: `rm -rf node_modules pnpm-lock.yaml && pnpm install`
-- Check for TypeScript errors: `pnpm tsc --noEmit`
-- Make sure all the required software is installed
+**Development server crashes**
+```bash
+# Use production build instead
+pnpm build && pnpm preview
 
-**The app is slow or not working well**
-- Check the browser console for error messages
-- Try clearing your browser cache and storage
-- Make sure you have enough disk space
+# Clear Vite cache
+rm -rf node_modules/.vite
+
+# Check system resources
+# Ensure you have enough RAM and disk space
+```
+
+**AI features not working**
+- Verify your OpenAI API key is correct
+- Check your OpenAI account has sufficient credits
+- Ensure the API key has the correct permissions
+- Check browser console for error messages
+
+**Browser extension issues**
+- Ensure the main app is running on localhost:5173
+- Check extension permissions in Chrome
+- Reload the extension in chrome://extensions/
+- Clear browser cache and storage
+
+#### Performance Issues
+
+**Slow loading times**
+- Check your internet connection
+- Clear browser cache and cookies
+- Ensure sufficient disk space
+- Close unnecessary browser tabs
+
+**High memory usage**
+- Restart the application
+- Clear saved data if not needed
+- Check for memory leaks in browser
+- Update to latest version
+
+### Getting Help
+
+#### Before Asking for Help
+1. Check this troubleshooting section
+2. Search existing issues on GitHub
+3. Check the browser console for errors
+4. Try the suggested solutions above
+
+#### When Asking for Help
+- Provide your operating system and version
+- Include Node.js and browser versions
+- Share error messages and console logs
+- Describe what you were trying to do
+- Mention what you've already tried
+
+#### Support Channels
+- **GitHub Issues** - For bugs and feature requests
+- **GitHub Discussions** - For questions and help
+- **Documentation** - Check the docs first
+- **Community** - Join our community chat
 
 ---
-
 
 ## 📄 License
 
-This project is free to use under the MIT License - see the [LICENSE](LICENSE) file for the full details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+The MIT License is a permissive license that allows you to:
+- Use the software for any purpose
+- Modify the software
+- Distribute the software
+- Use it commercially
+
+The only requirement is that you include the original license and copyright notice.
 
 ---
 
-## 🙏 Thanks
+## 🙏 Acknowledgments
 
-- Built for researchers, students, and anyone who loves learning
-- Inspired by the need for better ways to organize research
-- Made possible by the amazing open source community
+### Open Source Contributors
+- **React Team** - For the amazing React framework
+- **Vite Team** - For the fast build tool
+- **Tailwind CSS** - For the utility-first CSS framework
+- **OpenAI** - For providing the AI capabilities
+- **All Contributors** - For making this project better
+
+### Inspiration
+- Built for researchers, students, and knowledge workers
+- Inspired by the need for better research organization tools
+- Designed to make information discovery and management easier
+
+### Community
+- Thanks to all users who provide feedback and suggestions
+- Special thanks to early adopters and beta testers
+- Grateful for the open source community's support
 
 ---
 
@@ -317,6 +530,6 @@ This project is free to use under the MIT License - see the [LICENSE](LICENSE) f
 
 **Made with ❤️ for curious minds everywhere**
 
-[⭐ Star this repo](https://github.com/your-username/smart-research-tracker) • [🐛 Report issues](https://github.com/your-username/smart-research-tracker/issues) • [💬 Join the discussion](https://github.com/your-username/smart-research-tracker/discussions)
+[⭐ Star this repo](https://github.com/your-username/smart-research-tracker) • [🐛 Report issues](https://github.com/your-username/smart-research-tracker/issues) • [💬 Join discussions](https://github.com/your-username/smart-research-tracker/discussions) • [📖 View docs](https://github.com/your-username/smart-research-tracker/wiki)
 
 </div>
