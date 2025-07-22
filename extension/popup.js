@@ -19,15 +19,20 @@ chrome.storage.local.get(['firstLoad'], (result) => {
 chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   const tab = tabs[0];
   if (tab && tab.url && !tab.url.startsWith('chrome://')) {
-    const titleInput = document.getElementById('title');
-    if (titleInput && tab.title) {
-      titleInput.value = tab.title;
-      titleInput.placeholder = 'Page title (auto-filled)';
-    }
-    
-    // Show current URL info
-    const url = new URL(tab.url);
-    showStatus(`📄 Ready to save: ${url.hostname}`, 'info');
+    // Check auto-fill setting
+    chrome.storage.sync.get({ autoFillTitle: true }, (settings) => {
+      const titleInput = document.getElementById('title');
+      if (titleInput && tab.title && settings.autoFillTitle) {
+        titleInput.value = tab.title;
+        titleInput.placeholder = 'Page title (auto-filled)';
+      } else if (titleInput) {
+        titleInput.placeholder = 'Page title';
+      }
+      
+      // Show current URL info
+      const url = new URL(tab.url);
+      showStatus(`📄 Ready to save: ${url.hostname}`, 'info');
+    });
   }
 });
 
@@ -313,7 +318,13 @@ document.getElementById('saveBtn').addEventListener('click', () => {
               resetButton(saveBtn, originalText);
             } else {
               showStatus('✅ Page saved successfully!', 'success');
-              setTimeout(() => window.close(), 2000);
+              
+              // Check auto-close setting
+              chrome.storage.sync.get({ autoClose: true }, (settings) => {
+                if (settings.autoClose) {
+                  setTimeout(() => window.close(), 2000);
+                }
+              });
             }
           },
         );
@@ -331,22 +342,28 @@ document.getElementById('openDashboardBtn').addEventListener('click', () => {
   btn.textContent = '🔄 Opening...';
   btn.disabled = true;
   
-  // Try to open the dashboard in a new tab
-  chrome.tabs.create({ url: 'http://localhost:5173/' }, (tab) => {
-    // If localhost fails, try the production URL
-    if (chrome.runtime.lastError) {
-      chrome.tabs.create({ url: 'https://smartresearchtracker.vercel.app/' }, (prodTab) => {
-        if (chrome.runtime.lastError) {
-          showStatus('❌ Could not open dashboard. Make sure the app is running.', 'error');
-        } else {
-          showStatus('✅ Dashboard opened successfully!', 'success');
-        }
+  // Get configured URLs from settings
+  chrome.storage.sync.get({
+    dashboardUrl: 'http://localhost:5173/',
+    fallbackUrl: 'https://smartresearchtracker.vercel.app/'
+  }, (settings) => {
+    // Try to open the dashboard in a new tab
+    chrome.tabs.create({ url: settings.dashboardUrl }, (tab) => {
+      // If dashboard URL fails, try the fallback URL
+      if (chrome.runtime.lastError) {
+        chrome.tabs.create({ url: settings.fallbackUrl }, (prodTab) => {
+          if (chrome.runtime.lastError) {
+            showStatus('❌ Could not open dashboard. Check your settings.', 'error');
+          } else {
+            showStatus('✅ Dashboard opened successfully!', 'success');
+          }
+          resetButton(btn, originalText);
+        });
+      } else {
+        showStatus('✅ Dashboard opened successfully!', 'success');
         resetButton(btn, originalText);
-      });
-    } else {
-      showStatus('✅ Dashboard opened successfully!', 'success');
-      resetButton(btn, originalText);
-    }
+      }
+    });
   });
 });
 
@@ -358,20 +375,20 @@ document.getElementById('openSettingsBtn').addEventListener('click', () => {
   btn.textContent = '🔄 Opening...';
   btn.disabled = true;
   
-  // Open settings in a new tab
-  chrome.tabs.create({ url: 'http://localhost:5173/#/settings' }, (tab) => {
-    // If localhost fails, try the production URL
+  // Open browser extension settings
+  chrome.runtime.openOptionsPage(() => {
     if (chrome.runtime.lastError) {
-      chrome.tabs.create({ url: 'https://smartresearchtracker.vercel.app/#/settings' }, (prodTab) => {
+      // Fallback: open extension management page
+      chrome.tabs.create({ url: 'chrome://extensions/?id=' + chrome.runtime.id }, (tab) => {
         if (chrome.runtime.lastError) {
-          showStatus('❌ Could not open settings. Make sure the app is running.', 'error');
+          showStatus('❌ Could not open extension settings.', 'error');
         } else {
-          showStatus('✅ Settings opened successfully!', 'success');
+          showStatus('✅ Extension settings opened!', 'success');
         }
         resetButton(btn, originalText);
       });
     } else {
-      showStatus('✅ Settings opened successfully!', 'success');
+      showStatus('✅ Extension settings opened!', 'success');
       resetButton(btn, originalText);
     }
   });

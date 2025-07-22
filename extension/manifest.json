@@ -12,6 +12,7 @@
       "128": "icons/icon.svg"
     }
   },
+  "options_page": "options.html",
   "permissions": ["storage", "activeTab", "scripting", "tabs", "contextMenus", "notifications"],
   "host_permissions": ["<all_urls>"],
   "background": {
