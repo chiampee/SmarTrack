@@ -162,6 +162,20 @@
         background: #4b5563;
       }
       
+      .btn-dashboard {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+        font-size: 12px;
+        padding: 6px 10px;
+        transition: all 0.2s;
+      }
+      
+      .btn-dashboard:hover {
+        background: #e5e7eb;
+        border-color: #9ca3af;
+      }
+      
       .status {
         display: block;
         margin-top: 6px;
@@ -240,6 +254,13 @@
         <button id="minimalSettingsBtn" class="minimal-settings-btn" title="Settings">⚙️</button>
       </div>
       
+      <!-- Dashboard Option -->
+      <div class="dashboard-option" style="margin-bottom: 12px;">
+        <button id="openDashboardBtn" class="btn btn-dashboard">
+          📊 Open Dashboard
+        </button>
+      </div>
+
       <!-- Category Tabs -->
       <div class="category-tabs">
         <button class="cat active" data-cat="link">📄 Link</button>
@@ -289,22 +310,7 @@
 
     <hr class="divider">
     
-    <div class="section">
-      <div class="section-title">
-        <span>🚀</span>
-        Quick Actions
-      </div>
-      
-      <div class="quick-actions">
-        <button id="openDashboardBtn" class="btn btn-secondary">
-          📊 Dashboard
-        </button>
-      </div>
-      
-      <div style="margin-top: 8px; font-size: 11px; color: #6b7280; text-align: center;">
-        💡 Ctrl+Shift+R to open quickly
-      </div>
-    </div>
+
 
     <!-- Minimal Settings Panel -->
     <div id="minimalSettingsPanel" class="section" style="display: none;">
