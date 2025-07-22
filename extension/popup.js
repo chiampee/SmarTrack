@@ -3,7 +3,6 @@ console.log('🚀 Smart Research Tracker Extension Popup Loaded');
 
 // Replace old categorySelect logic
 let selectedCat = 'link';
-const boardSelect = document.getElementById('board');
 const linkFields = document.getElementById('linkFields');
 const statusEl = document.getElementById('status');
 
@@ -53,25 +52,13 @@ catEls.forEach((el) => {
 const toggleFields = () => {
   const show = selectedCat === 'link';
   linkFields.style.display = show ? 'block' : 'none';
-  boardSelect.style.display = show ? 'block' : 'none';
   document.getElementById('saveBtn').disabled = !show;
 };
 
 toggleFields();
 
-// Load boards and labels from storage
-chrome.storage.local.get(['boards', 'labels', 'links'], (res) => {
-  const boards = (res.boards || []).filter((b) => b.title !== 'Default');
-  if (boards.length === 0) {
-    boardSelect.style.display = 'none';
-  } else {
-    boards.forEach((b) => {
-      const opt = document.createElement('option');
-      opt.value = b.id;
-      opt.textContent = b.title;
-      boardSelect.appendChild(opt);
-    });
-  }
+// Load labels from storage
+chrome.storage.local.get(['labels', 'links'], (res) => {
 
   let labels = res.labels || [];
   if ((!labels || labels.length === 0) && res.links) {
@@ -175,7 +162,6 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     return;
   }
 
-  const boardId = boardSelect.value;
   let label = '';
   if (labelSelect && labelSelect.style.display !== 'none') {
     label = labelSelect.value === '__new' ? '' : labelSelect.value;
@@ -304,7 +290,6 @@ document.getElementById('saveBtn').addEventListener('click', () => {
             payload: {
               url: tab.url,
               title: pageData.title,
-              boardId,
               label,
               description: pageData.description,
               priority,

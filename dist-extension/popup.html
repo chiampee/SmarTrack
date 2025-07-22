@@ -6,9 +6,9 @@
     <style>
       body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        width: 300px;
+        width: 280px;
         margin: 0;
-        padding: 10px;
+        padding: 8px;
         background: #fafafa;
         color: #1f2937;
       }
@@ -16,8 +16,8 @@
 
       
       .section {
-        margin-bottom: 12px;
-        padding: 10px;
+        margin-bottom: 10px;
+        padding: 8px;
         background: white;
         border-radius: 6px;
         border: 1px solid #e5e7eb;
@@ -25,10 +25,10 @@
       }
       
       .section-title {
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
         color: #374151;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         display: flex;
         align-items: center;
         gap: 4px;
@@ -61,11 +61,11 @@
       
       input, select, textarea {
         width: 100%;
-        padding: 5px 8px;
-        margin-bottom: 8px;
+        padding: 4px 6px;
+        margin-bottom: 6px;
         border: 1px solid #d1d5db;
         border-radius: 4px;
-        font-size: 12px;
+        font-size: 11px;
         background: #fff;
         box-sizing: border-box;
         transition: border-color 0.2s, box-shadow 0.2s;
@@ -80,7 +80,7 @@
       .category-tabs {
         display: flex;
         gap: 1px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         background: #f3f4f6;
         padding: 2px;
         border-radius: 4px;
@@ -88,11 +88,11 @@
       
       .cat {
         flex: 1;
-        padding: 5px 6px;
+        padding: 4px 5px;
         border-radius: 3px;
         background: transparent;
         color: #6b7280;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 500;
         cursor: pointer;
         text-align: center;
@@ -114,10 +114,10 @@
       .btn {
         display: block;
         width: 100%;
-        padding: 7px 10px;
+        padding: 6px 8px;
         border: none;
         border-radius: 4px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.2s;
@@ -166,8 +166,8 @@
         background: #f3f4f6;
         color: #374151;
         border: 1px solid #d1d5db;
-        font-size: 11px;
-        padding: 5px 8px;
+        font-size: 10px;
+        padding: 4px 6px;
         transition: all 0.2s;
       }
       
@@ -205,12 +205,12 @@
       }
       
       .field-group {
-        margin-bottom: 8px;
+        margin-bottom: 6px;
       }
       
       .field-label {
         display: block;
-        font-size: 10px;
+        font-size: 9px;
         font-weight: 500;
         color: #6b7280;
         margin-bottom: 2px;
@@ -231,7 +231,7 @@
       .priority-high { background: #ef4444; }
       
       .divider {
-        margin: 12px 0;
+        margin: 10px 0;
         border: none;
         border-top: 1px solid #e5e7eb;
       }
@@ -255,7 +255,7 @@
       </div>
       
       <!-- Dashboard Option -->
-      <div class="dashboard-option" style="margin-bottom: 8px;">
+      <div class="dashboard-option" style="margin-bottom: 6px;">
         <button id="openDashboardBtn" class="btn btn-dashboard">
           📊 Dashboard
         </button>
@@ -268,11 +268,7 @@
         <button class="cat" data-cat="board">📋 Board</button>
       </div>
 
-      <!-- Board Selection -->
-      <div class="field-group">
-        <label class="field-label">Board</label>
-        <select id="board"></select>
-      </div>
+
 
       <div id="linkFields">
         <div class="field-group">
@@ -307,7 +303,7 @@
       
       <div id="status" class="status" style="display:none;"></div>
       
-      <div id="readyStatus" style="margin-top: 6px; font-size: 10px; color: #6b7280; text-align: center;">
+      <div id="readyStatus" style="margin-top: 4px; font-size: 9px; color: #6b7280; text-align: center;">
         Ready: <span id="currentUrl">Loading...</span>
       </div>
     </div>
