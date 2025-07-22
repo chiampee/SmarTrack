@@ -279,13 +279,49 @@
         <button id="openDashboardBtn" class="btn btn-secondary">
           📊 Dashboard
         </button>
-        <button id="openSettingsBtn" class="btn btn-tertiary">
+        <button id="toggleSettingsBtn" class="btn btn-tertiary">
           ⚙️ Settings
         </button>
       </div>
       
       <div style="margin-top: 8px; font-size: 11px; color: #6b7280; text-align: center;">
         💡 Ctrl+Shift+R to open quickly
+      </div>
+    </div>
+
+    <!-- Inline Settings Panel -->
+    <div id="settingsPanel" class="section" style="display: none;">
+      <div class="section-title">
+        <span>⚙️</span>
+        Quick Settings
+      </div>
+      
+      <div class="field-group">
+        <label class="field-label">Dashboard URL</label>
+        <input id="quickDashboardUrl" placeholder="http://localhost:5173/" />
+      </div>
+      
+      <div class="field-group">
+        <label class="field-label">Behavior</label>
+        <div style="display: flex; gap: 12px; font-size: 12px;">
+          <label style="display: flex; align-items: center; gap: 4px;">
+            <input type="checkbox" id="quickAutoFill" checked />
+            Auto-fill
+          </label>
+          <label style="display: flex; align-items: center; gap: 4px;">
+            <input type="checkbox" id="quickAutoClose" checked />
+            Auto-close
+          </label>
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 6px; margin-top: 8px;">
+        <button id="saveQuickSettings" class="btn btn-primary" style="flex: 1; font-size: 12px; padding: 6px 8px;">
+          💾 Save
+        </button>
+        <button id="openFullSettings" class="btn btn-tertiary" style="flex: 1; font-size: 12px; padding: 6px 8px;">
+          ⚙️ Full Settings
+        </button>
       </div>
     </div>
 

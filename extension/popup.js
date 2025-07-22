@@ -367,29 +367,52 @@ document.getElementById('openDashboardBtn').addEventListener('click', () => {
   });
 });
 
-document.getElementById('openSettingsBtn').addEventListener('click', () => {
-  const btn = document.getElementById('openSettingsBtn');
-  const originalText = btn.textContent;
+// Toggle inline settings panel
+document.getElementById('toggleSettingsBtn').addEventListener('click', () => {
+  const settingsPanel = document.getElementById('settingsPanel');
+  const btn = document.getElementById('toggleSettingsBtn');
   
-  // Show loading state
-  btn.textContent = '🔄 Opening...';
-  btn.disabled = true;
-  
-  // Open browser extension settings
+  if (settingsPanel.style.display === 'none') {
+    settingsPanel.style.display = 'block';
+    btn.textContent = '✕ Close';
+    loadQuickSettings();
+  } else {
+    settingsPanel.style.display = 'none';
+    btn.textContent = '⚙️ Settings';
+  }
+});
+
+// Load quick settings
+function loadQuickSettings() {
+  chrome.storage.sync.get({
+    dashboardUrl: 'http://localhost:5173/',
+    autoFillTitle: true,
+    autoClose: true
+  }, (settings) => {
+    document.getElementById('quickDashboardUrl').value = settings.dashboardUrl;
+    document.getElementById('quickAutoFill').checked = settings.autoFillTitle;
+    document.getElementById('quickAutoClose').checked = settings.autoClose;
+  });
+}
+
+// Save quick settings
+document.getElementById('saveQuickSettings').addEventListener('click', () => {
+  const settings = {
+    dashboardUrl: document.getElementById('quickDashboardUrl').value.trim(),
+    autoFillTitle: document.getElementById('quickAutoFill').checked,
+    autoClose: document.getElementById('quickAutoClose').checked
+  };
+
+  chrome.storage.sync.set(settings, () => {
+    showStatus('✅ Quick settings saved!', 'success');
+  });
+});
+
+// Open full settings
+document.getElementById('openFullSettings').addEventListener('click', () => {
   chrome.runtime.openOptionsPage(() => {
     if (chrome.runtime.lastError) {
-      // Fallback: open extension management page
-      chrome.tabs.create({ url: 'chrome://extensions/?id=' + chrome.runtime.id }, (tab) => {
-        if (chrome.runtime.lastError) {
-          showStatus('❌ Could not open extension settings.', 'error');
-        } else {
-          showStatus('✅ Extension settings opened!', 'success');
-        }
-        resetButton(btn, originalText);
-      });
-    } else {
-      showStatus('✅ Extension settings opened!', 'success');
-      resetButton(btn, originalText);
+      chrome.tabs.create({ url: 'chrome://extensions/?id=' + chrome.runtime.id });
     }
   });
 });

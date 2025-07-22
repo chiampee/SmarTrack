@@ -2,142 +2,159 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Smart Research Tracker - Extension Settings</title>
+  <title>Smart Research Tracker - Settings</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      max-width: 600px;
+      max-width: 400px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 16px;
       background: #fafafa;
       color: #1f2937;
+      font-size: 14px;
     }
     
     .header {
       text-align: center;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 2px solid #e5e7eb;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e7eb;
     }
     
     .header h1 {
-      margin: 0 0 8px 0;
-      font-size: 24px;
+      margin: 0 0 4px 0;
+      font-size: 18px;
       font-weight: 600;
       color: #111827;
     }
     
     .header p {
       margin: 0;
-      font-size: 14px;
+      font-size: 12px;
       color: #6b7280;
     }
     
     .section {
-      margin-bottom: 24px;
-      padding: 20px;
+      margin-bottom: 16px;
+      padding: 12px;
       background: white;
-      border-radius: 8px;
+      border-radius: 6px;
       border: 1px solid #e5e7eb;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
     
     .section-title {
-      font-size: 16px;
+      font-size: 13px;
       font-weight: 600;
       color: #374151;
-      margin-bottom: 16px;
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
     }
     
     .form-group {
-      margin-bottom: 16px;
+      margin-bottom: 12px;
+    }
+    
+    .form-group:last-child {
+      margin-bottom: 0;
     }
     
     .form-label {
       display: block;
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 500;
       color: #374151;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
     
     .form-input {
       width: 100%;
-      padding: 8px 12px;
+      padding: 6px 8px;
       border: 1px solid #d1d5db;
-      border-radius: 6px;
-      font-size: 14px;
+      border-radius: 4px;
+      font-size: 13px;
       background: #fff;
       box-sizing: border-box;
-      transition: border-color 0.2s, box-shadow 0.2s;
     }
     
     .form-input:focus {
       outline: none;
       border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-    }
-    
-    .form-select {
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      font-size: 14px;
-      background: #fff;
-      box-sizing: border-box;
+      box-shadow: 0 0 0 2px rgba(59,130,246,0.1);
     }
     
     .form-checkbox {
-      margin-right: 8px;
+      margin-right: 6px;
+    }
+    
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .checkbox-group:last-child {
+      margin-bottom: 0;
+    }
+    
+    .checkbox-label {
+      font-size: 12px;
+      color: #374151;
     }
     
     .btn {
       display: inline-block;
-      padding: 10px 20px;
+      padding: 6px 12px;
       border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
       cursor: pointer;
       transition: all 0.2s;
       text-align: center;
       text-decoration: none;
       box-sizing: border-box;
+      margin-right: 6px;
+      margin-bottom: 6px;
     }
     
     .btn-primary {
       background: #3b82f6;
       color: white;
-      box-shadow: 0 1px 3px rgba(59,130,246,0.3);
     }
     
     .btn-primary:hover {
       background: #2563eb;
-      box-shadow: 0 2px 4px rgba(59,130,246,0.4);
     }
     
     .btn-secondary {
       background: #6b7280;
       color: white;
-      margin-left: 8px;
     }
     
     .btn-secondary:hover {
       background: #4b5563;
     }
     
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+    
     .status {
       display: none;
-      margin-top: 12px;
-      font-size: 14px;
+      margin-top: 8px;
+      font-size: 12px;
       font-weight: 500;
       text-align: center;
-      padding: 10px;
-      border-radius: 6px;
+      padding: 6px;
+      border-radius: 4px;
     }
     
     .status.success {
@@ -153,120 +170,99 @@
     }
     
     .info-text {
-      font-size: 13px;
+      font-size: 11px;
       color: #6b7280;
-      margin-top: 4px;
+      margin-top: 2px;
+    }
+    
+    .compact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
     
     .shortcut-info {
       background: #f3f4f6;
-      padding: 12px;
-      border-radius: 6px;
-      margin-top: 12px;
-    }
-    
-    .shortcut-info h4 {
-      margin: 0 0 8px 0;
-      font-size: 14px;
-      color: #374151;
-    }
-    
-    .shortcut-info p {
-      margin: 0;
-      font-size: 13px;
+      padding: 8px;
+      border-radius: 4px;
+      margin-top: 8px;
+      font-size: 11px;
       color: #6b7280;
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>⚙️ Extension Settings</h1>
-    <p>Configure your Smart Research Tracker browser extension</p>
+    <h1>⚙️ Settings</h1>
+    <p>Configure your Smart Research Tracker</p>
   </div>
 
   <div class="section">
     <div class="section-title">
       <span>🔗</span>
-      Dashboard URL
+      URLs
     </div>
     
     <div class="form-group">
       <label class="form-label">Dashboard URL</label>
       <input type="url" id="dashboardUrl" class="form-input" placeholder="http://localhost:5173/">
-      <div class="info-text">URL where your Smart Research Tracker dashboard is running</div>
     </div>
     
     <div class="form-group">
       <label class="form-label">Fallback URL</label>
       <input type="url" id="fallbackUrl" class="form-input" placeholder="https://smartresearchtracker.vercel.app/">
-      <div class="info-text">Fallback URL if the main dashboard is not available</div>
     </div>
   </div>
 
   <div class="section">
     <div class="section-title">
       <span>🎯</span>
-      Behavior Settings
+      Behavior
     </div>
     
-    <div class="form-group">
-      <label class="form-label">Auto-fill page title</label>
+    <div class="checkbox-group">
       <input type="checkbox" id="autoFillTitle" class="form-checkbox" checked>
-      <span>Automatically fill the title field with the current page title</span>
+      <label for="autoFillTitle" class="checkbox-label">Auto-fill page title</label>
     </div>
     
-    <div class="form-group">
-      <label class="form-label">Show badge count</label>
+    <div class="checkbox-group">
       <input type="checkbox" id="showBadge" class="form-checkbox" checked>
-      <span>Show the number of saved items on the extension icon</span>
+      <label for="showBadge" class="checkbox-label">Show badge count</label>
     </div>
     
-    <div class="form-group">
-      <label class="form-label">Auto-close popup after save</label>
+    <div class="checkbox-group">
       <input type="checkbox" id="autoClose" class="form-checkbox" checked>
-      <span>Automatically close the popup after successfully saving a page</span>
+      <label for="autoClose" class="checkbox-label">Auto-close after save</label>
     </div>
   </div>
 
   <div class="section">
     <div class="section-title">
       <span>⌨️</span>
-      Keyboard Shortcuts
+      Shortcuts
     </div>
     
     <div class="shortcut-info">
-      <h4>Default Shortcuts</h4>
-      <p><strong>Ctrl+Shift+R</strong> (Windows/Linux) or <strong>Cmd+Shift+R</strong> (Mac) - Open extension popup</p>
-      <p>You can customize these shortcuts in your browser's extension settings</p>
+      <strong>Ctrl+Shift+R</strong> (Windows/Linux)<br>
+      <strong>Cmd+Shift+R</strong> (Mac)<br>
+      <em>Open extension popup</em>
     </div>
   </div>
 
   <div class="section">
     <div class="section-title">
       <span>🗂️</span>
-      Data Management
+      Data
     </div>
     
-    <div class="form-group">
-      <button id="exportData" class="btn btn-primary">📤 Export Saved Data</button>
-      <button id="importData" class="btn btn-secondary">📥 Import Data</button>
-      <input type="file" id="importFile" accept=".json" style="display: none;">
+    <div class="compact-grid">
+      <button id="exportData" class="btn btn-primary">📤 Export</button>
+      <button id="importData" class="btn btn-secondary">📥 Import</button>
+      <button id="clearData" class="btn btn-danger">🗑️ Clear</button>
+      <button id="saveSettings" class="btn btn-primary">💾 Save</button>
     </div>
     
-    <div class="form-group">
-      <button id="clearData" class="btn btn-secondary" style="background: #ef4444;">🗑️ Clear All Data</button>
-      <div class="info-text">⚠️ This will permanently delete all saved links and settings</div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">
-      <span>💾</span>
-      Save Settings
-    </div>
-    
-    <button id="saveSettings" class="btn btn-primary">💾 Save Settings</button>
-    <button id="resetSettings" class="btn btn-secondary">🔄 Reset to Defaults</button>
+    <input type="file" id="importFile" accept=".json" style="display: none;">
     
     <div id="status" class="status"></div>
   </div>
