@@ -367,49 +367,49 @@ document.getElementById('openDashboardBtn').addEventListener('click', () => {
   });
 });
 
-// Toggle inline settings panel
-document.getElementById('toggleSettingsBtn').addEventListener('click', () => {
-  const settingsPanel = document.getElementById('settingsPanel');
-  const btn = document.getElementById('toggleSettingsBtn');
-  
-  if (settingsPanel.style.display === 'none') {
-    settingsPanel.style.display = 'block';
-    btn.textContent = '✕ Close';
-    loadQuickSettings();
-  } else {
-    settingsPanel.style.display = 'none';
-    btn.textContent = '⚙️ Settings';
-  }
+// Minimal settings functionality
+document.getElementById('minimalSettingsBtn').addEventListener('click', () => {
+  const settingsPanel = document.getElementById('minimalSettingsPanel');
+  settingsPanel.style.display = 'block';
+  loadMinimalSettings();
 });
 
-// Load quick settings
-function loadQuickSettings() {
+document.getElementById('closeMinimalSettings').addEventListener('click', () => {
+  const settingsPanel = document.getElementById('minimalSettingsPanel');
+  settingsPanel.style.display = 'none';
+});
+
+// Load minimal settings
+function loadMinimalSettings() {
   chrome.storage.sync.get({
     dashboardUrl: 'http://localhost:5173/',
     autoFillTitle: true,
     autoClose: true
   }, (settings) => {
-    document.getElementById('quickDashboardUrl').value = settings.dashboardUrl;
-    document.getElementById('quickAutoFill').checked = settings.autoFillTitle;
-    document.getElementById('quickAutoClose').checked = settings.autoClose;
+    document.getElementById('minimalDashboardUrl').value = settings.dashboardUrl;
+    document.getElementById('minimalAutoFill').checked = settings.autoFillTitle;
+    document.getElementById('minimalAutoClose').checked = settings.autoClose;
   });
 }
 
-// Save quick settings
-document.getElementById('saveQuickSettings').addEventListener('click', () => {
+// Save minimal settings
+document.getElementById('saveMinimalSettings').addEventListener('click', () => {
   const settings = {
-    dashboardUrl: document.getElementById('quickDashboardUrl').value.trim(),
-    autoFillTitle: document.getElementById('quickAutoFill').checked,
-    autoClose: document.getElementById('quickAutoClose').checked
+    dashboardUrl: document.getElementById('minimalDashboardUrl').value.trim(),
+    autoFillTitle: document.getElementById('minimalAutoFill').checked,
+    autoClose: document.getElementById('minimalAutoClose').checked
   };
 
   chrome.storage.sync.set(settings, () => {
-    showStatus('✅ Quick settings saved!', 'success');
+    showStatus('✅ Settings saved!', 'success');
+    setTimeout(() => {
+      document.getElementById('minimalSettingsPanel').style.display = 'none';
+    }, 1500);
   });
 });
 
-// Open full settings
-document.getElementById('openFullSettings').addEventListener('click', () => {
+// Open full settings from minimal panel
+document.getElementById('openFullSettingsFromMinimal').addEventListener('click', () => {
   chrome.runtime.openOptionsPage(() => {
     if (chrome.runtime.lastError) {
       chrome.tabs.create({ url: 'chrome://extensions/?id=' + chrome.runtime.id });

@@ -32,6 +32,24 @@
         display: flex;
         align-items: center;
         gap: 4px;
+        justify-content: space-between;
+      }
+      
+      .minimal-settings-btn {
+        background: none;
+        border: none;
+        font-size: 14px;
+        cursor: pointer;
+        padding: 2px;
+        border-radius: 3px;
+        color: #6b7280;
+        transition: all 0.2s;
+        margin-left: auto;
+      }
+      
+      .minimal-settings-btn:hover {
+        background: #f3f4f6;
+        color: #374151;
       }
       
       h3 {
@@ -218,6 +236,7 @@
       <div class="section-title">
         <span>💾</span>
         Save Current Page
+        <button id="minimalSettingsBtn" class="minimal-settings-btn" title="Settings">⚙️</button>
       </div>
       
       <!-- Category Tabs -->
@@ -279,9 +298,6 @@
         <button id="openDashboardBtn" class="btn btn-secondary">
           📊 Dashboard
         </button>
-        <button id="toggleSettingsBtn" class="btn btn-tertiary">
-          ⚙️ Settings
-        </button>
       </div>
       
       <div style="margin-top: 8px; font-size: 11px; color: #6b7280; text-align: center;">
@@ -289,38 +305,39 @@
       </div>
     </div>
 
-    <!-- Inline Settings Panel -->
-    <div id="settingsPanel" class="section" style="display: none;">
+    <!-- Minimal Settings Panel -->
+    <div id="minimalSettingsPanel" class="section" style="display: none;">
       <div class="section-title">
         <span>⚙️</span>
-        Quick Settings
+        Settings
+        <button id="closeMinimalSettings" class="minimal-settings-btn" title="Close">✕</button>
       </div>
       
       <div class="field-group">
         <label class="field-label">Dashboard URL</label>
-        <input id="quickDashboardUrl" placeholder="http://localhost:5173/" />
+        <input id="minimalDashboardUrl" placeholder="http://localhost:5173/" />
       </div>
       
       <div class="field-group">
         <label class="field-label">Behavior</label>
         <div style="display: flex; gap: 12px; font-size: 12px;">
           <label style="display: flex; align-items: center; gap: 4px;">
-            <input type="checkbox" id="quickAutoFill" checked />
+            <input type="checkbox" id="minimalAutoFill" checked />
             Auto-fill
           </label>
           <label style="display: flex; align-items: center; gap: 4px;">
-            <input type="checkbox" id="quickAutoClose" checked />
+            <input type="checkbox" id="minimalAutoClose" checked />
             Auto-close
           </label>
         </div>
       </div>
       
       <div style="display: flex; gap: 6px; margin-top: 8px;">
-        <button id="saveQuickSettings" class="btn btn-primary" style="flex: 1; font-size: 12px; padding: 6px 8px;">
+        <button id="saveMinimalSettings" class="btn btn-primary" style="flex: 1; font-size: 12px; padding: 6px 8px;">
           💾 Save
         </button>
-        <button id="openFullSettings" class="btn btn-tertiary" style="flex: 1; font-size: 12px; padding: 6px 8px;">
-          ⚙️ Full Settings
+        <button id="openFullSettingsFromMinimal" class="btn btn-tertiary" style="flex: 1; font-size: 12px; padding: 6px 8px;">
+          ⚙️ More
         </button>
       </div>
     </div>
