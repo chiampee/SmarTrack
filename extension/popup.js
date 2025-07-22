@@ -281,4 +281,25 @@ document.getElementById('saveBtn').addEventListener('click', () => {
       },
     );
   });
+});
+
+// Dashboard and Settings buttons
+document.getElementById('openDashboardBtn').addEventListener('click', () => {
+  // Try to open the dashboard in a new tab
+  chrome.tabs.create({ url: 'http://localhost:5173/' }, (tab) => {
+    // If localhost fails, try the production URL
+    if (chrome.runtime.lastError) {
+      chrome.tabs.create({ url: 'https://smartresearchtracker.vercel.app/' });
+    }
+  });
+});
+
+document.getElementById('openSettingsBtn').addEventListener('click', () => {
+  // Open settings in a new tab
+  chrome.tabs.create({ url: 'http://localhost:5173/#/settings' }, (tab) => {
+    // If localhost fails, try the production URL
+    if (chrome.runtime.lastError) {
+      chrome.tabs.create({ url: 'https://smartresearchtracker.vercel.app/#/settings' });
+    }
+  });
 }); 

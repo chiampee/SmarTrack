@@ -37,6 +37,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
       chrome.storage.local.set({ links }, () => {
         console.log('Link saved to chrome.storage', payload);
+        
+        // Update badge to show number of saved items
+        chrome.action.setBadgeText({ text: links.length.toString() });
+        chrome.action.setBadgeBackgroundColor({ color: '#10b981' });
+        
         sendResponse?.({ ok: true });
       });
 
@@ -203,5 +208,47 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 
     return true; // keep message channel open for async sendResponse
+  }
+});
+
+// Create context menu items
+chrome.runtime.onInstalled.addListener(() => {
+  // Remove existing context menu items
+  chrome.contextMenus.removeAll(() => {
+    // Create new context menu items
+    chrome.contextMenus.create({
+      id: 'openDashboard',
+      title: '📊 Open Smart Research Dashboard',
+      contexts: ['action', 'page', 'selection']
+    });
+    
+    chrome.contextMenus.create({
+      id: 'saveToResearch',
+      title: '💾 Save to Smart Research',
+      contexts: ['page', 'link', 'selection']
+    });
+  });
+  
+  // Initialize badge with current link count
+  chrome.storage.local.get(['links'], (res) => {
+    const links = res.links || [];
+    chrome.action.setBadgeText({ text: links.length.toString() });
+    chrome.action.setBadgeBackgroundColor({ color: '#10b981' });
+  });
+});
+
+// Handle context menu clicks
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === 'openDashboard') {
+    // Try to open the dashboard in a new tab
+    chrome.tabs.create({ url: 'http://localhost:5173/' }, (newTab) => {
+      // If localhost fails, try the production URL
+      if (chrome.runtime.lastError) {
+        chrome.tabs.create({ url: 'https://smartresearchtracker.vercel.app/' });
+      }
+    });
+  } else if (info.menuItemId === 'saveToResearch') {
+    // Open the popup to save the current page or selected link
+    chrome.action.openPopup();
   }
 }); 
