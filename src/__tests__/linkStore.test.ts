@@ -61,9 +61,9 @@ it('filters by priority', async () => {
   expect(useLinkStore.getState().links[0].id).toBe('2');
 });
 
-it('sorts by title asc', async () => {
+it('sorts by labels asc', async () => {
   const store = useLinkStore.getState();
-  store.setSortKey('title');
+  store.setSortKey('labels');
   await new Promise((r) => setTimeout(r, 10));
   const ids = useLinkStore.getState().links.map((l) => l.id);
   expect(ids).toEqual(['1', '2']);

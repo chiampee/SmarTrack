@@ -13,6 +13,7 @@ import { aiSummaryService } from '../../services/aiSummaryService';
 interface Props {
   link: LinkType;
   columns: string[];
+  columnWidths?: Record<string, number>;
   selectable?: boolean;
   selected?: boolean;
   onSelect?: (checked: boolean) => void;
@@ -30,7 +31,7 @@ const statusVariant = {
   deleted: 'danger',
 } as const;
 
-export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, selected = false, onSelect }) => {
+export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, selectable = false, selected = false, onSelect }) => {
   const { updateLink, deleteLink } = useLinkStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -43,6 +44,16 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
     field?: 'title' | 'labels' | 'priority' | 'status';
   }>({});
   const [draft, setDraft] = useState<string>('');
+  
+  // Text presentation mode state
+  const [textPresentationMode, setTextPresentationMode] = useState<Record<string, 'wrap' | 'clip' | 'words'>>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('linkTextPresentationMode') || '{}');
+      return saved;
+    } catch {
+      return {};
+    }
+  });
 
   useEffect(() => {
     (async () => {
@@ -103,10 +114,58 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
     setMenuOpen(false);
   };
 
+  // Function to get column width with constraints
+  // Function to format text based on presentation mode
+  const formatText = (text: string, column: string) => {
+    const mode = textPresentationMode[column] || 'wrap';
+    
+    switch (mode) {
+      case 'clip':
+        return text.length > 50 ? text.substring(0, 50) + '...' : text;
+      case 'words':
+        const words = text.split(' ');
+        return words.length > 4 ? words.slice(0, 4).join(' ') + '...' : text;
+      case 'wrap':
+      default:
+        return text;
+    }
+  };
+
+  // Function to get CSS class based on presentation mode
+  const getTextPresentationClass = (column: string) => {
+    const mode = textPresentationMode[column] || 'wrap';
+    
+    switch (mode) {
+      case 'clip':
+        return 'truncate';
+      case 'words':
+        return 'line-clamp-2';
+      case 'wrap':
+      default:
+        return 'break-words';
+    }
+  };
+
+  const getColumnWidth = (col: string) => {
+    const defaultWidths: Record<string, number> = {
+      name: 300,    // Much wider for names to prevent truncation
+      url: 200,     // Wider for URLs
+      labels: 150,  // Wider for multiple labels
+      status: 100,  // Adequate for status
+      priority: 100, // Adequate for priority
+      created: 120  // Adequate for dates
+    };
+    
+    const customWidth = columnWidths[col];
+    const defaultWidth = defaultWidths[col] || 150;
+    const width = customWidth || defaultWidth;
+    
+    // Ensure reasonable constraints to prevent content cutoff
+    return Math.max(80, Math.min(width, 500)); // Min 80px, Max 500px
+  };
+
   const gridTemplate = {
-    gridTemplateColumns: selectable
-      ? `40px repeat(${columns.length + 1}, minmax(0, 1fr))`
-      : `repeat(${columns.length + 1}, minmax(0, 1fr))`,
+    gridTemplateColumns: `40px repeat(${columns.length}, 1fr)`,
   } as React.CSSProperties;
 
   const renderCell = (col: string) => {
@@ -131,7 +190,7 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
             {/* status icon removed – merged into tri-state selector */}
             {editing.field === 'title' ? (
               <input
-                className="w-full rounded border border-gray-300 px-1 text-sm"
+                className="w-full rounded-lg border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 value={draft}
                 autoFocus
                 onChange={(e) => setDraft(e.target.value)}
@@ -143,18 +202,13 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
               />
             ) : (
               (() => {
-                const limitWords = (str: string, maxWords: number) => {
-                  const parts = str.split(/\s+/);
-                  if (parts.length <= maxWords) return str;
-                  return parts.slice(0, maxWords).join(' ') + '…';
-                };
-                const limited = limitWords(displayName, 6);
+                const limited = formatText(displayName, col);
                 return (
                   <a
                     href={link.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-medium text-blue-600 hover:underline cursor-pointer line-clamp-1"
+                    className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer line-clamp-1 transition-colors duration-200"
                     title={displayName}
                     onDoubleClick={() => startEdit('title', link.metadata.title || '')}
                   >
@@ -177,7 +231,7 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
               href={link.url}
               target="_blank"
               rel="noreferrer"
-              className="text-blue-600 hover:underline truncate"
+              className="text-blue-600 hover:text-blue-700 hover:underline truncate transition-colors duration-200 font-medium"
               title={link.url}
             >
               {(() => {
@@ -198,16 +252,16 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
           // Prefer createdAt but gracefully fall back to updatedAt when missing.
           const raw = link.createdAt ?? (link as any).updatedAt;
           const d = raw ? new Date(raw) : new Date('');
-
-          if (isNaN(d as any)) {
-            return <span className="text-xs text-gray-400">—</span>;
+          if (isNaN(d.getTime())) {
+            return (
+              <span className="text-gray-400 text-sm">—</span>
+            );
           }
-
           return (
             <time
+              className="text-gray-600 text-sm font-medium"
               dateTime={d.toISOString()}
               title={d.toLocaleString()}
-              className="text-xs text-gray-600"
             >
               {d.toLocaleDateString(undefined, {
                 year: 'numeric',
@@ -222,16 +276,26 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
           let h = 0;
           for (let i = 0; i < str.length; i++) h = (h << 5) - h + str.charCodeAt(i);
           const hue = Math.abs(h) % 360;
-          return `hsl(${hue} 70% 85%)`;
+          // Use more vibrant colors with better contrast
+          return `hsl(${hue}, 70%, 85%)`;
         };
+        
+        const getTextColor = (str: string) => {
+          let h = 0;
+          for (let i = 0; i < str.length; i++) h = (h << 5) - h + str.charCodeAt(i);
+          const hue = Math.abs(h) % 360;
+          // Darker text for better readability
+          return `hsl(${hue}, 60%, 25%)`;
+        };
+        
         return (
           <div
-            className="flex flex-wrap gap-1 cursor-pointer"
+            className="flex flex-wrap gap-1.5 cursor-pointer"
             onDoubleClick={() => startEdit('labels', link.labels.join(', '))}
           >
             {editing.field === 'labels' ? (
               <input
-                className="w-full rounded border border-gray-300 px-1 text-xs"
+                className="w-full rounded-lg border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 value={draft}
                 autoFocus
                 onChange={(e) => setDraft(e.target.value)}
@@ -245,8 +309,12 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
               link.labels.map((lab) => (
                 <span
                   key={lab}
-                  className="rounded-full px-2 py-0.5 text-[10px]"
-                  style={{ backgroundColor: hashColor(lab), color: '#333' }}
+                  className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium border shadow-sm"
+                  style={{ 
+                    backgroundColor: hashColor(lab), 
+                    color: getTextColor(lab),
+                    borderColor: getTextColor(lab) + '20'
+                  }}
                 >
                   {lab}
                 </span>
@@ -262,7 +330,7 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
           >
             {editing.field === 'priority' ? (
               <select
-                className="rounded border border-gray-300 px-1 text-xs"
+                className="rounded-lg border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onBlur={commit}
@@ -287,7 +355,7 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
           >
             {editing.field === 'status' ? (
               <select
-                className="rounded border border-gray-300 px-1 text-xs"
+                className="rounded-lg border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onBlur={commit}
@@ -308,80 +376,103 @@ export const LinkRow: React.FC<Props> = ({ link, columns, selectable = false, se
   };
 
   return (
-    <div
-      className="group relative grid items-center gap-3 border-b border-gray-100 px-4 py-1.5 text-sm even:bg-gray-50 hover:bg-blue-50"
-      style={gridTemplate}
-    >
-      {selectable && (
-        <div className="flex items-center justify-center px-2 border-r">
-          <button
-            type="button"
-            onClick={(e) => {
-              // regular click: toggle selection
-              onSelect?.(!selected);
-            }}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              void toggleDone();
-            }}
-            title={
-              link.status === 'archived'
-                ? 'Done – right-click to mark active / left-click to select'
-                : selected
-                ? 'Selected – right-click to mark done'
-                : 'Left-click to select / right-click to mark done'
-            }
-            className="p-1 focus:outline-none"
-          >
-            {link.status === 'archived' ? (
-              <CheckCircle size={18} className="text-green-600" />
-            ) : selected ? (
-              <CheckSquare size={18} className="text-blue-600" />
-            ) : (
-              <Square size={18} className="text-gray-400" />
-            )}
-          </button>
-        </div>
-      )}
-      {columns.map((c) => (
-        <React.Fragment key={c}>{renderCell(c)}</React.Fragment>
-      ))}
-      {/* Actions column */}
-      <div className="flex items-center gap-2 pl-2">
+    <div className="group relative hover:bg-gray-50 transition-all duration-200">
+      <table className="w-full">
+        <tbody>
+          <tr>
+            {/* Checkbox column - always present for alignment */}
+            <td className="w-10 px-3 py-3 border-r border-gray-100">
+              <div className="flex items-center justify-center">
+                {selectable ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      // regular click: toggle selection
+                      onSelect?.(!selected);
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      void toggleDone();
+                    }}
+                    title={
+                      link.status === 'archived'
+                        ? 'Done – right-click to mark active / left-click to select'
+                        : selected
+                        ? 'Selected – right-click to mark done'
+                        : 'Left-click to select / right-click to mark done'
+                    }
+                    className="p-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-md transition-all duration-200 hover:bg-gray-100"
+                  >
+                    {link.status === 'archived' ? (
+                      <CheckCircle size={18} className="text-green-600" />
+                    ) : selected ? (
+                      <CheckSquare size={18} className="text-blue-600" />
+                    ) : (
+                      <Square size={18} className="text-gray-400 group-hover:text-gray-600" />
+                    )}
+                  </button>
+                ) : (
+                  <div className="w-5 h-5"></div> // Empty space for alignment
+                )}
+              </div>
+            </td>
+            {columns.map((c) => (
+              <td 
+                key={c} 
+                style={{ minWidth: getColumnWidth(c) }}
+                className="px-4 py-3 border-r border-gray-100"
+              >
+                <div className={getTextPresentationClass(c)}>
+                  {renderCell(c)}
+                </div>
+              </td>
+            ))}
+
+          </tr>
+        </tbody>
+      </table>
+      
+      {/* Actions overlay - positioned absolutely to not affect table layout */}
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 px-2 py-1">
         {summaryStatus && (
           <button
             type="button"
-            title={summaryStatus + ' – View context'}
-            className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-600 transition"
-            onClick={(e) => {
-              e.stopPropagation();
-              setContextOpen(true);
-            }}
+            onClick={() => setSummaryOpen(true)}
+            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all duration-200"
+            title="View AI Summary"
           >
             <Info size={16} />
           </button>
         )}
         <button
           type="button"
-          title="Chat"
-          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-600 transition"
           onClick={() => setChatOpen(true)}
+          className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-all duration-200"
+          title="Chat about this link"
         >
           <MessageSquare size={16} />
         </button>
         <button
           type="button"
-          title="Edit"
-          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-600 transition"
           onClick={() => setEditOpen(true)}
+          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all duration-200"
+          title="Edit link"
         >
           <Edit2 size={16} />
         </button>
         <button
           type="button"
-          title="Delete"
-          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600 transition"
-          onClick={handleDelete}
+          onClick={() => setContextOpen(true)}
+          className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-all duration-200"
+          title="View context"
+        >
+          <Info size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={() => deleteLink(link.id)}
+          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all duration-200"
+          title="Delete link"
         >
           <Trash size={16} />
         </button>

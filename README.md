@@ -30,6 +30,7 @@ Smart Research Tracker is a comprehensive research management tool that combines
 - **Students** - Collect and summarize study materials
 - **Content Creators** - Gather inspiration and reference materials
 - **Professionals** - Build knowledge bases and research repositories
+- **Data Analysts** - Export and analyze research data in bulk
 - **Anyone** - Who wants to save and understand web content better
 
 ---
@@ -77,7 +78,7 @@ pnpm build && pnpm preview
 
 1. **Configure AI Features** (Optional):
    - Get an OpenAI API key from [OpenAI Platform](https://platform.openai.com/api-keys)
-   - The setup wizard will guide you through configuration
+   - The setup wizard will guide you through configuration with automatic file generation
    - AI features work without the key, but with limited functionality
 
 2. **Install Browser Extension**:
@@ -91,6 +92,12 @@ pnpm build && pnpm preview
 3. **Access the Dashboard**:
    - Open [http://localhost:4173](http://localhost:4173) in your browser
    - Start saving pages using the browser extension
+
+4. **Try Advanced Features**:
+   - Select multiple links to see bulk actions
+   - Right-click on links for context menus
+   - Use the "Copy Info" button to export raw data
+   - Customize table columns and layout
 
 ---
 
@@ -109,6 +116,8 @@ pnpm build && pnpm preview
 - **Context-Aware Answers** - AI understands the context of your questions
 - **Cross-Reference** - Find connections between different saved pages
 - **Citation Tracking** - See which sources the AI used for answers
+- **Multi-Link Chat** - Start conversations with multiple selected links
+- **Chat History** - Save and revisit previous conversations
 
 ### 📚 Organization & Management
 
@@ -120,9 +129,17 @@ pnpm build && pnpm preview
 
 #### Multiple Views
 - **Board View** - Visual organization with drag-and-drop
-- **List View** - Compact list for quick scanning
+- **List View** - Compact list with advanced table features
 - **Grid View** - Card-based layout for visual browsing
 - **Search View** - Find specific content instantly
+
+#### Advanced Table Features
+- **Bulk Actions** - Select multiple links for batch operations
+- **Copy Raw Data** - Export complete link data in JSON format
+- **Context Menus** - Right-click for quick actions on individual links
+- **Column Management** - Show/hide and resize columns
+- **Text Presentation Modes** - Wrap, clip, or show first words
+- **Drag & Drop Reordering** - Customize column and group order
 
 ### 🔍 Advanced Search & Discovery
 
@@ -131,6 +148,12 @@ pnpm build && pnpm preview
 - **Semantic Search** - Find related content even with different words
 - **Filter Options** - Search by date, tags, boards, or content type
 - **Search History** - Track your previous searches
+
+#### Data Export & Integration
+- **Raw Data Export** - Copy complete link data in JSON format
+- **Bulk Operations** - Select multiple links for batch processing
+- **Context-Aware Actions** - Right-click menus for quick access
+- **Clipboard Integration** - Easy data sharing and backup
 
 #### Content Discovery
 - **Related Content** - AI suggests connections between saved pages
@@ -146,6 +169,20 @@ pnpm build && pnpm preview
 - **Export Options** - Backup your data in multiple formats
 - **Selective Sync** - Choose what to sync across devices
 
+### 📋 Data Export & Integration
+
+#### Copy Functionality
+- **Bulk Copy** - Select multiple links and copy all raw data
+- **Individual Copy** - Right-click any link to copy its complete data
+- **Inline Copy** - Hover over link names for quick copy access
+- **JSON Format** - Structured data export for easy integration
+
+#### Export Features
+- **Complete Data** - All link metadata, labels, and timestamps
+- **Visual Feedback** - Clear indication when data is copied
+- **Multiple Formats** - JSON, formatted text, and raw data
+- **Batch Processing** - Export large datasets efficiently
+
 #### Security Features
 - **Encrypted Storage** - Sensitive data is encrypted locally
 - **No Tracking** - We don't collect or analyze your data
@@ -158,7 +195,15 @@ pnpm build && pnpm preview
 
 ### Environment Configuration
 
-Create a `.env.local` file in the project root:
+#### Automatic Setup (Recommended)
+The onboarding wizard includes an automatic API key setup feature:
+1. Enter your OpenAI API key in the setup modal
+2. Click "Setup" to validate the key
+3. Download the generated `.env.local` file
+4. Place it in your project root and restart the server
+
+#### Manual Setup
+Alternatively, create a `.env.local` file in the project root:
 
 ```env
 # Required for AI features
@@ -193,6 +238,8 @@ The extension can be configured through its settings page:
 - **Lazy Loading** - Images and heavy content load on demand
 - **Search Indexing** - Optimized search for quick results
 - **Caching** - Smart caching for frequently accessed content
+- **Bulk Operations** - Efficiently manage large numbers of links
+- **Data Export** - Export large datasets in structured formats
 
 #### System Requirements
 - **Minimum**: 4GB RAM, 2GB free disk space
@@ -237,7 +284,7 @@ pnpm preview               # Preview production build
 pnpm build:extension       # Build browser extension
 
 # Testing
-pnpm test                  # Run unit tests
+pnpm test                  # Run unit tests (Vitest)
 pnpm test:watch           # Run tests in watch mode
 pnpm test:e2e             # Run end-to-end tests
 pnpm test:coverage        # Generate coverage report
@@ -262,6 +309,7 @@ pnpm db:reset             # Reset database
 - **Vite** - Fast build tool and development server
 - **Tailwind CSS** - Utility-first CSS framework
 - **Headless UI** - Accessible UI components
+- **Lucide React** - Beautiful, customizable icons
 
 #### State Management
 - **Zustand** - Lightweight state management
@@ -274,7 +322,7 @@ pnpm db:reset             # Reset database
 - **Embedding Models** - For semantic search
 
 #### Testing
-- **Vitest** - Unit testing framework
+- **Vitest** - Unit testing framework (migrated from Jest)
 - **Playwright** - End-to-end testing
 - **Testing Library** - Component testing utilities
 

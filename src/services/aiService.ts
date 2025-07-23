@@ -144,7 +144,33 @@ export const aiService = {
 
       if (!res.ok) {
         const errText = await res.text();
-        throw new Error(`${provider} ${res.status}: ${errText}`);
+        let errorMessage = `${provider} ${res.status}: ${errText}`;
+        
+        // Provide more specific error messages based on status codes
+        switch (res.status) {
+          case 401:
+            errorMessage = 'API Key Not Found: The API key you provided doesn\'t exist in our system.';
+            break;
+          case 402:
+            errorMessage = 'Insufficient Credits: Your OpenAI account doesn\'t have enough credits for API calls.';
+            break;
+          case 429:
+            errorMessage = 'Rate Limit Exceeded: You\'ve made too many API requests in a short time period.';
+            break;
+          case 403:
+            errorMessage = 'Access Denied: Your API key doesn\'t have the required permissions.';
+            break;
+          case 500:
+            errorMessage = 'OpenAI Server Error: The service is temporarily unavailable. Please try again later.';
+            break;
+          case 502:
+          case 503:
+          case 504:
+            errorMessage = 'OpenAI Service Unavailable: The service is experiencing issues. Please try again later.';
+            break;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data = await res.json();
@@ -278,13 +304,34 @@ export const aiService = {
 
         if (!res.ok) {
           const errText = await res.text();
+          let errorMessage = `OpenAI embeddings error ${res.status}: ${errText}`;
+          
+          // Provide more specific error messages for embeddings
+          switch (res.status) {
+            case 401:
+              errorMessage = 'API Key Not Found: The API key you provided doesn\'t exist in our system.';
+              break;
+            case 402:
+              errorMessage = 'Insufficient Credits: Your OpenAI account doesn\'t have enough credits for embeddings.';
+              break;
+            case 429:
+              errorMessage = 'Rate Limit Exceeded: You\'ve made too many embedding requests.';
+              break;
+            case 403:
+              errorMessage = 'Access Denied: Your API key doesn\'t have embedding permissions.';
+              break;
+            case 404:
+              errorMessage = 'Model Not Found: The embedding model is not available.';
+              break;
+          }
+          
           const isModelErr = res.status === 404 || errText.includes("model");
           if (isModelErr && mdl !== "text-embedding-ada-002") {
             // retry with universally available Ada model
             console.warn(`Embedding model ${mdl} not available, falling back to ada-002`);
             return attempt("text-embedding-ada-002");
           }
-          throw new Error(`OpenAI embeddings error ${res.status}: ${errText}`);
+          throw new Error(errorMessage);
         }
 
         const data = await res.json();

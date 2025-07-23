@@ -12,7 +12,7 @@ import { useLinkStore } from './stores/linkStore';
 import './index.css';
 
 function App() {
-  const { showOnboarding, setShowOnboarding, setHasSeenOnboarding, hasSeenOnboarding } = useSettingsStore();
+  const { showOnboarding, setShowOnboarding, setHasSeenOnboarding, hasSeenOnboarding, setDontShowOnboarding } = useSettingsStore();
   const { rawLinks } = useLinkStore();
 
   useEffect(() => {
@@ -35,7 +35,11 @@ function App() {
   // Show onboarding for new users (no links and haven't seen onboarding)
   useEffect(() => {
     console.log('👥 Onboarding check:', { rawLinksLength: rawLinks.length, hasSeenOnboarding, showOnboarding });
-    if (rawLinks.length === 0 && !hasSeenOnboarding && !showOnboarding) {
+    
+    // Check if user has chosen not to show onboarding again
+    const dontShowAgain = localStorage.getItem('dontShowOnboarding') === 'true';
+    
+    if (rawLinks.length === 0 && !hasSeenOnboarding && !showOnboarding && !dontShowAgain) {
       setShowOnboarding(true);
     }
   }, [rawLinks.length, hasSeenOnboarding, showOnboarding, setShowOnboarding]);
@@ -60,7 +64,8 @@ function App() {
       
       <OnboardingModal 
         isOpen={showOnboarding} 
-        onClose={handleOnboardingClose} 
+        onClose={handleOnboardingClose}
+        onDontShowAgain={setDontShowOnboarding}
       />
     </Router>
   );

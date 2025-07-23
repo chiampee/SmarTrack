@@ -155,7 +155,14 @@ export class SmartResearchDB extends Dexie {
 
   // Conversations
   addConversation(conv: import('../types/Conversation').Conversation) {
-    return this.conversations.add(conv);
+    console.log('db.addConversation called with:', conv);
+    return this.conversations.add(conv).then(() => {
+      console.log('Conversation added to database successfully');
+      return conv;
+    }).catch(err => {
+      console.error('Error adding conversation to database:', err);
+      throw err;
+    });
   }
   getConversation(id: string) {
     return this.conversations.get(id);
@@ -174,7 +181,11 @@ export class SmartResearchDB extends Dexie {
     return this.conversations.update(id, { endedAt: new Date() });
   }
   getAllConversations() {
-    return this.conversations.toArray();
+    console.log('db.getAllConversations called');
+    return this.conversations.toArray().then(conversations => {
+      console.log('Conversations from database:', conversations);
+      return conversations;
+    });
   }
   async deleteConversation(id: string) {
     await this.transaction('rw', this.conversations, this.chatMessages, async () => {

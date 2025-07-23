@@ -12,6 +12,7 @@ interface SettingsState {
   saveSettings: (settings: Settings) => Promise<void>;
   setShowOnboarding: (show: boolean) => void;
   setHasSeenOnboarding: (seen: boolean) => void;
+  setDontShowOnboarding: (dontShow: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()((set) => ({
@@ -30,6 +31,12 @@ export const useSettingsStore = create<SettingsState>()((set) => ({
     set({ settings });
   },
   setShowOnboarding: (show: boolean) => {
+    // Check if user has chosen not to show onboarding again
+    const dontShowAgain = localStorage.getItem('dontShowOnboarding') === 'true';
+    if (dontShowAgain && show) {
+      return; // Don't show if user has opted out
+    }
+    
     set((state) => ({ 
       ...state, 
       showOnboarding: show,
@@ -43,6 +50,20 @@ export const useSettingsStore = create<SettingsState>()((set) => ({
       ...state, 
       hasSeenOnboarding: seen,
       showOnboarding: seen ? false : state.showOnboarding
+    }));
+  },
+
+  setDontShowOnboarding: (dontShow: boolean) => {
+    if (dontShow) {
+      localStorage.setItem('dontShowOnboarding', 'true');
+    } else {
+      localStorage.removeItem('dontShowOnboarding');
+    }
+    
+    set((state) => ({ 
+      ...state, 
+      hasSeenOnboarding: true,
+      showOnboarding: false
     }));
   },
 }));

@@ -5,6 +5,7 @@ export * from './Badge';
 export * from './LoadingSpinner';
 export * from './Modal';
 export { OnboardingModal } from './OnboardingModal';
+export { DiagnosticModal } from './DiagnosticModal';
 export { EmptyState } from './EmptyState';
 export { Tooltip, HelpTooltip } from './Tooltip';
 export { QuickStartGuide } from './QuickStartGuide';

@@ -3,7 +3,7 @@ import { Link } from '../types/Link';
 import { linkService } from '../services/linkService';
 import { db } from '../db/smartResearchDB';
 
-type SortKey = 'createdAt' | 'priority' | 'title' | 'labels' | 'status';
+type SortKey = 'createdAt' | 'labels';
 type SortDir = 'asc' | 'desc';
 
 interface LinkState {
@@ -32,9 +32,19 @@ interface LinkState {
 
 const savedSort = (() => {
   try {
-    return JSON.parse(localStorage.getItem('linkSort') || '') as { key: SortKey; dir: SortDir };
+    const saved = JSON.parse(localStorage.getItem('linkSort') || '');
+    // If no saved sort or if it's the old default (createdAt), use labels as default
+    if (!saved || saved.key === 'createdAt') {
+      const defaultSort = { key: 'labels' as SortKey, dir: 'asc' as SortDir };
+      localStorage.setItem('linkSort', JSON.stringify(defaultSort));
+      return defaultSort;
+    }
+    return saved as { key: SortKey; dir: SortDir };
   } catch {
-    return null;
+    // If parsing fails, set labels as default
+    const defaultSort = { key: 'labels' as SortKey, dir: 'asc' as SortDir };
+    localStorage.setItem('linkSort', JSON.stringify(defaultSort));
+    return defaultSort;
   }
 })();
 
@@ -44,7 +54,7 @@ const linkStore = create<LinkState>()((set, get) => ({
   loading: false,
   error: undefined,
   sortKey: savedSort?.key || 'labels',
-  sortDir: savedSort?.dir || 'asc',
+  sortDir: savedSort?.dir || 'desc',
   searchTerm: undefined,
   async loadLinks() {
     try {
@@ -81,16 +91,12 @@ const linkStore = create<LinkState>()((set, get) => ({
       );
     links.sort((a, b) => {
       let cmp = 0;
-      if (sortKey === 'title')
-        cmp = (a.metadata.title ?? '').localeCompare(b.metadata.title ?? '');
-      else if (sortKey === 'priority') cmp = a.priority.localeCompare(b.priority);
-      else if (sortKey === 'labels') {
+      if (sortKey === 'labels') {
         const aLabel = a.labels[0] || '';
         const bLabel = b.labels[0] || '';
         cmp = aLabel.localeCompare(bLabel);
-      } else if (sortKey === 'status') {
-        cmp = a.status.localeCompare(b.status);
-      } else {
+      } else if (sortKey === 'createdAt') {
+        // Sort by creation date
         cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       }
       return sortDir === 'asc' ? cmp : -cmp;

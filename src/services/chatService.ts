@@ -92,16 +92,26 @@ function cosineSimilarity(a: number[], b: number[]): number {
 export const chatService = {
   /** Conversations */
   async startConversation(linkIds: string[]): Promise<Conversation> {
+    console.log('chatService.startConversation called with linkIds:', linkIds);
+    
     // try reuse active conversation first
     const existing = await db.getActiveConversationByLinks(linkIds);
-    if (existing) return existing as Conversation;
+    if (existing) {
+      console.log('Found existing conversation:', existing);
+      return existing as Conversation;
+    }
+    
     const conv: Conversation = {
       id: crypto.randomUUID(),
       linkIds,
       startedAt: new Date(),
       endedAt: null,
     };
+    
+    console.log('Creating new conversation:', conv);
     await db.addConversation(conv);
+    console.log('Conversation saved to database');
+    
     return conv;
   },
   async endConversation(id: string) {
@@ -116,7 +126,15 @@ export const chatService = {
     return db.getChatMessagesByConversation(conversationId);
   },
   async getAllConversations() {
-    return db.getAllConversations();
+    console.log('chatService.getAllConversations called');
+    try {
+      const conversations = await db.getAllConversations();
+      console.log('Raw conversations from database:', conversations);
+      return conversations;
+    } catch (err) {
+      console.error('Error in getAllConversations:', err);
+      throw err;
+    }
   },
   async deleteConversation(id: string) {
     return db.deleteConversation(id);

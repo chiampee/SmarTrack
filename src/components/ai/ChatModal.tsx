@@ -5,7 +5,7 @@ import { Modal, Button, LoadingSpinner } from '..';
 import { ContextInspectorModal } from './ContextInspectorModal';
 import { Link } from '../../types/Link';
 import { chatService } from '../../services/chatService';
-import { RefreshCcw } from 'lucide-react';
+import { RefreshCcw, Edit3, Check, X as XIcon, Copy, Check as CheckIcon } from 'lucide-react';
 import { Conversation } from '../../types/Conversation';
 import { useNavigate } from 'react-router-dom';
 import { PastChatsSidebar } from './PastChatsSidebar';
@@ -28,6 +28,9 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
   const [autoScroll, setAutoScroll] = useState(true);
   const navigate = useNavigate();
   const [contextOpen, setContextOpen] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
 
   const initConversation = async () => {
     const conv = await chatService.startConversation([link.id]);
@@ -54,6 +57,25 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
     const { scrollTop, scrollHeight, clientHeight } = listRef.current;
     const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
     setAutoScroll(distanceFromBottom < 20);
+  };
+
+  const copyToClipboard = async (text: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000); // Reset after 2 seconds
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    }
   };
 
   const send = async (contentOverride?: string) => {
@@ -102,6 +124,42 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const startEditMessage = (messageId: string, currentContent: string) => {
+    setEditingMessageId(messageId);
+    setEditContent(currentContent);
+  };
+
+  const cancelEdit = () => {
+    setEditingMessageId(null);
+    setEditContent('');
+  };
+
+  const saveEdit = async () => {
+    if (!editingMessageId || !editContent.trim()) return;
+    
+    // Update the message content
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === editingMessageId ? { ...m, content: editContent.trim() } : m
+      )
+    );
+
+    // Remove the assistant's response that followed this message
+    const messageIndex = messages.findIndex(m => m.id === editingMessageId);
+    if (messageIndex !== -1 && messageIndex < messages.length - 1) {
+      const nextMessage = messages[messageIndex + 1];
+      if (nextMessage.role === 'assistant') {
+        setMessages((prev) => prev.filter((_, index) => index <= messageIndex));
+      }
+    }
+
+    setEditingMessageId(null);
+    setEditContent('');
+
+    // Resend the edited message
+    await send(editContent.trim());
   };
 
   const endChat = async () => {
@@ -188,19 +246,90 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
             {messages.map((m) => (
               <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  className={`rounded px-3 py-2 text-sm max-w-[70%] ${
+                  className={`rounded px-3 py-2 text-sm max-w-[70%] relative group ${
                     m.role === 'user' ? 'bg-blue-600 text-white whitespace-pre-wrap' : 'bg-gray-100'
                   }`}
                 >
-                  {m.role === 'assistant' ? (
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm as any]}
-                      className="prose prose-sm max-w-none"
-                    >
-                      {m.content}
-                    </ReactMarkdown>
+                  {m.role === 'user' && editingMessageId === m.id ? (
+                    // Edit mode for user messages
+                    <div className="space-y-3">
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            void saveEdit();
+                          }
+                          if (e.key === 'Escape') {
+                            cancelEdit();
+                          }
+                        }}
+                        className="w-full rounded border border-white/30 bg-white/10 text-white placeholder-white/70 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-white/50 resize-none"
+                        rows={Math.max(2, editContent.split('\n').length)}
+                        placeholder="Edit your message..."
+                        autoFocus
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => void saveEdit()}
+                          className="flex items-center gap-1 px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-xs font-medium transition-all duration-200"
+                        >
+                          <Check size={12} />
+                          Save & Resend
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          className="flex items-center gap-1 px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-xs font-medium transition-all duration-200"
+                        >
+                          <XIcon size={12} />
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
                   ) : (
-                    <span className="whitespace-pre-wrap">{m.content}</span>
+                    <>
+                      {m.role === 'assistant' ? (
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm as any]}
+                          className="prose prose-sm max-w-none"
+                        >
+                          {m.content}
+                        </ReactMarkdown>
+                      ) : (
+                        <span className="whitespace-pre-wrap">{m.content}</span>
+                      )}
+                      
+                      {/* Action buttons for messages */}
+                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center gap-1">
+                        {m.role === 'user' && (
+                          <button
+                            onClick={() => startEditMessage(m.id, m.content)}
+                            className="p-1 bg-white/20 hover:bg-white/30 rounded transition-all duration-200"
+                            title="Edit message"
+                          >
+                            <Edit3 size={10} />
+                          </button>
+                        )}
+                        {m.role === 'assistant' && (
+                          <button
+                            onClick={() => copyToClipboard(m.content, m.id)}
+                            className={`p-1 rounded transition-all duration-200 ${
+                              copiedMessageId === m.id 
+                                ? 'bg-green-500 text-white' 
+                                : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
+                            }`}
+                            title={copiedMessageId === m.id ? "Copied!" : "Copy response"}
+                          >
+                            {copiedMessageId === m.id ? (
+                              <CheckIcon size={10} />
+                            ) : (
+                              <Copy size={10} />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
