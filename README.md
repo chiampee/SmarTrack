@@ -377,4 +377,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Made with ❤️ for researchers and knowledge workers**
 
-**Version 1.1.0** - Enhanced chat functionality with robust error handling and improved user experience. 
+**Version 1.1.0** - Enhanced chat functionality with robust error handling and improved user experience.
