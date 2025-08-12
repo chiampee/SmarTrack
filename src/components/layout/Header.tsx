@@ -1,31 +1,30 @@
 import React from 'react';
-import { Menu, HelpCircle, Settings, BookOpen, Link as LinkIcon, CheckSquare, MessageSquare } from 'lucide-react';
+import { Menu, BookOpen, Link as LinkIcon, CheckSquare, MessageSquare, RefreshCw } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { useSettingsStore } from '../../stores/settingsStore';
-import { HelpTooltip } from '../Tooltip';
+import { linkStore } from '../../stores/linkStore';
 
 export const Header: React.FC<{ onMenu: () => void }> = ({ onMenu }) => {
   const location = useLocation();
-  const { setShowOnboarding } = useSettingsStore();
+  const fetchLinks = linkStore((state) => state.fetchLinks);
 
   const navItems = [
     { 
       path: '/', 
-      label: 'Boards', 
-      icon: BookOpen,
-      description: 'Organize research into projects and collections' 
-    },
-    { 
-      path: '/links', 
       label: 'Links', 
       icon: LinkIcon,
       description: 'Manage and organize saved web pages' 
     },
     { 
+      path: '/boards', 
+      label: 'Boards', 
+      icon: BookOpen,
+      description: 'Organize research into projects and collections (Coming Soon)' 
+    },
+    { 
       path: '/tasks', 
       label: 'Tasks', 
       icon: CheckSquare,
-      description: 'Track research goals and action items' 
+      description: 'Track research goals and action items (Coming Soon)' 
     },
     { 
       path: '/chat-history', 
@@ -35,31 +34,29 @@ export const Header: React.FC<{ onMenu: () => void }> = ({ onMenu }) => {
     }
   ];
 
-  const handleShowHelp = () => {
-    setShowOnboarding(true);
-  };
+
 
   return (
-    <header className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between bg-gradient-to-r from-gray-800 to-gray-900 px-4 text-white md:pl-64 shadow-lg border-b border-gray-700">
+    <header className="fixed inset-x-0 top-0 z-30 flex h-12 items-center justify-between bg-gradient-to-r from-slate-900 via-gray-900 to-slate-800 px-4 text-white md:pl-64 shadow-xl border-b border-gray-700/50 backdrop-blur-sm">
       {/* Left Section - Logo and Mobile Menu */}
       <div className="flex items-center gap-4">
         <button 
-          className="md:hidden p-2 hover:bg-gray-700 rounded-lg transition-all duration-200" 
+          className="md:hidden p-2 hover:bg-white/10 rounded-lg transition-all duration-300 group" 
           onClick={onMenu}
           aria-label="Toggle menu"
         >
-          <Menu size={20} />
+          <Menu size={16} className="group-hover:scale-110 transition-transform duration-300" />
         </button>
-        <Link to="/" className="flex items-center gap-2 text-lg font-bold hover:text-gray-200 transition-colors">
-          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <BookOpen size={16} className="text-white" />
+        <Link to="/" className="flex items-center gap-2 text-lg font-bold hover:text-gray-200 transition-all duration-300 group">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300">
+            <BookOpen size={14} className="text-white" />
           </div>
-          <span>Smart Research Tracker</span>
+          <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">Smart Research Tracker</span>
         </Link>
       </div>
       
       {/* Center Section - Navigation Tabs */}
-      <nav className="hidden md:flex gap-1 text-sm">
+      <nav className="hidden md:flex gap-2 text-sm">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
@@ -68,40 +65,33 @@ export const Header: React.FC<{ onMenu: () => void }> = ({ onMenu }) => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+              className={`group flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-300 ${
                 isActive
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700 hover:shadow-md'
+                  ? 'bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white shadow-lg'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10 hover:shadow-md backdrop-blur-sm'
               }`}
               title={item.description}
             >
-              <Icon size={16} className={isActive ? 'text-white' : 'text-gray-400'} />
-              <span className="font-medium">{item.label}</span>
+              <Icon size={14} className={`${isActive ? 'text-white' : 'text-gray-400'} group-hover:scale-110 transition-transform duration-300`} />
+              <span className="font-semibold text-sm">{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      {/* Right Section - Actions */}
-      <div className="flex items-center gap-3">
-        <HelpTooltip 
-          content="Show setup guide and help" 
-          className="text-gray-300 hover:text-white transition-colors"
-        />
+      {/* Right Section - Refresh Button */}
+      <div className="flex items-center gap-2">
         <button
-          onClick={handleShowHelp}
-          className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-all duration-200"
-          aria-label="Show help"
+          onClick={() => fetchLinks()}
+          className="group flex items-center gap-1.5 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 hover:shadow-md backdrop-blur-sm transition-all duration-300"
+          title="Refresh links from extension"
         >
-          <HelpCircle size={18} />
-        </button>
-        <button
-          className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-all duration-200"
-          aria-label="Settings"
-        >
-          <Settings size={18} />
+          <RefreshCw size={14} className="text-gray-400 group-hover:scale-110 transition-transform duration-300" />
+          <span className="font-semibold text-sm hidden sm:inline">Refresh</span>
         </button>
       </div>
+
+
     </header>
   );
 };

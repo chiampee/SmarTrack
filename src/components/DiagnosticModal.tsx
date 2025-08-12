@@ -67,7 +67,61 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
     let positiveDetections = 0;
     let totalChecks = 0;
 
-    // Method 1: Check if extension is installed by trying to communicate with it
+    // Method 1: Fast path – handshake with content script via window.postMessage
+    try {
+      totalChecks++;
+      detectionMethods.push('Window handshake');
+
+      const handshake = await new Promise<{ valid: boolean; details: string }>((resolve) => {
+        let resolved = false;
+        const timeoutId = setTimeout(() => {
+          if (!resolved) resolve({ valid: false, details: 'Timeout' });
+        }, 1500);
+
+        const handleMessage = (event: MessageEvent) => {
+          const data = (event?.data || {}) as any;
+          if (data?.type !== 'SRT_PONG') return;
+          // Validate fields we set in the content script
+          const hasSource = data.source === 'smart-research-tracker-extension';
+          const hasStatus = data.status === 'ok' && data.message === 'Extension is working';
+          const hasTimestamp = typeof data.timestamp === 'number';
+          const identifierCount = [hasSource, hasStatus, hasTimestamp].filter(Boolean).length;
+          const isValid = identifierCount >= 2;
+          window.removeEventListener('message', handleMessage);
+          clearTimeout(timeoutId);
+          resolved = true;
+          resolve({ valid: isValid, details: `Handshake identifiers: ${identifierCount}` });
+        };
+
+        window.addEventListener('message', handleMessage);
+        // Send ping that content script listens for
+        window.postMessage({ type: 'SRT_PING' }, '*');
+        // Also look for passive presence variables that don't require inline script injection
+        setTimeout(() => {
+          try {
+            const hasPresence = !!(window as any).smartResearchTracker || !!(window as any).__SMART_RESEARCH_TRACKER__;
+            if (hasPresence && !resolved) {
+              resolved = true;
+              clearTimeout(timeoutId);
+              window.removeEventListener('message', handleMessage);
+              resolve({ valid: true, details: 'Passive presence variable detected' });
+            }
+          } catch (_) {}
+        }, 200);
+      });
+
+      if (handshake.valid) {
+        positiveDetections++;
+        return { installed: true, accessible: true, details: `Extension responded via handshake: ${handshake.details}` };
+      } else {
+        detectionMethods.push(`Window handshake (${handshake.details})`);
+      }
+    } catch (error) {
+      console.log('Extension handshake failed:', error);
+      detectionMethods.push('Window handshake (failed)');
+    }
+
+    // Method 2: Check if extension is installed by trying to communicate with it using Chrome API (will fail on web pages without externally_connectable)
     try {
       totalChecks++;
       if (typeof window.chrome !== 'undefined' && window.chrome.runtime) {
@@ -118,7 +172,7 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
       detectionMethods.push('Chrome API (failed)');
     }
 
-    // Method 2: Check if extension elements are present in the DOM with specific attributes
+    // Method 3: Check if extension elements are present in the DOM with specific attributes
     try {
       totalChecks++;
       detectionMethods.push('DOM elements');
@@ -144,7 +198,7 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
       detectionMethods.push('DOM elements (failed)');
     }
 
-    // Method 3: Check if extension script is loaded with specific validation
+    // Method 4: Check if extension script is loaded with specific validation
     try {
       totalChecks++;
       detectionMethods.push('Script detection');
@@ -184,7 +238,7 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
       detectionMethods.push('Script detection (failed)');
     }
 
-    // Method 4: Check localStorage for extension data with validation
+    // Method 5: Check localStorage for extension data with validation
     try {
       totalChecks++;
       detectionMethods.push('localStorage');
@@ -222,7 +276,7 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
       detectionMethods.push('localStorage (failed)');
     }
 
-    // Method 5: Check for extension manifest or specific window properties with validation
+    // Method 6: Check for extension manifest or specific window properties with validation
     try {
       totalChecks++;
       detectionMethods.push('Window properties');
@@ -254,25 +308,22 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
       detectionMethods.push('Window properties (failed)');
     }
 
-    // Method 6: Check if we're in an extension context with validation
+    // Method 7: Check if we're in an extension context with validation
     try {
       totalChecks++;
       detectionMethods.push('Extension context');
       
+      // On normal web pages this won't be present, but keep as a best-effort signal
       if (typeof window.chrome !== 'undefined' && window.chrome.runtime && window.chrome.runtime.id) {
-        const extensionId = window.chrome.runtime.id;
-        // Validate that this is actually our extension ID
-        if (extensionId === 'smart-research-tracker' || extensionId.includes('smart-research-tracker')) {
-          positiveDetections++;
-          return { installed: true, accessible: true, details: 'Running in extension context with valid ID' };
-        }
+        positiveDetections++;
+        return { installed: true, accessible: true, details: 'Chrome runtime present (likely extension context)' };
       }
     } catch (error) {
       console.log('Extension context check failed:', error);
       detectionMethods.push('Extension context (failed)');
     }
 
-    // Method 7: Check for extension-specific CSS or styles
+    // Method 8: Check for extension-specific CSS or styles
     try {
       totalChecks++;
       detectionMethods.push('CSS detection');
@@ -299,7 +350,7 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
 
     // Calculate confidence score
-    const confidenceScore = positiveDetections / totalChecks;
+    const confidenceScore = totalChecks > 0 ? positiveDetections / totalChecks : 0;
     const isLikelyInstalled = positiveDetections >= 2; // Require at least 2 positive detections
     
     if (isLikelyInstalled) {
@@ -430,36 +481,41 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
       } else {
         // Check if there were any partial detections
         const hasPartialDetection = extensionStatus.details.includes('positive detections') && 
-                                  extensionStatus.details.includes('0/');
-        
+                                   extensionStatus.details.includes('0/');
+
+        // If we are on a Chromium browser but handshake failed, most likely site access isn't granted
+        const isChromium = typeof navigator !== 'undefined' && /chrome|edg|brave|opera/i.test(navigator.userAgent);
+        const message = hasPartialDetection
+          ? 'Extension not properly installed'
+          : isChromium
+            ? 'Extension not accessible on this site (likely site access not granted)'
+            : 'Extension not detected';
+        const recommendation = hasPartialDetection
+          ? 'Extension was partially detected but not fully functional. Try reloading the extension.'
+          : 'If the extension is installed, enable "Allow on all sites" or "On specific sites" for localhost, then refresh the page.';
+
         diagnosticResults.push({
           name: 'Browser Extension',
-          status: 'error',
-          message: hasPartialDetection ? 'Extension not properly installed' : 'Extension not detected',
+          status: hasPartialDetection ? 'warning' : 'warning',
+          message,
           details: extensionStatus.details,
-          recommendation: hasPartialDetection 
-            ? 'Extension was partially detected but not fully functional. Try reloading the extension.'
-            : 'This is a local development extension. Please load it manually in developer mode.',
+          recommendation,
           action: {
-            label: hasPartialDetection ? 'Check Extension' : 'Load Extension',
-            onClick: hasPartialDetection ? openExtensionsPage : () => {
-              const instructions = `To load the extension:
+            label: 'Open Extensions',
+            onClick: () => {
+              openExtensionsPage();
+              if (!hasPartialDetection) {
+                const help = `Enable site access for the extension:
 
 1. Open ${getExtensionsUrl()}
 2. Enable "Developer mode" (toggle in top right)
-3. Click "Load unpacked"
-4. Select the "extension" folder from this project
-5. Make sure the extension is enabled
+ 3. Find "Smart Research Tracker" and click "Details"
+ 4. Under "Site access", choose "On all sites" (or add http://localhost:5174)
+ 5. Refresh this page
 
-The extension folder should contain:
-- manifest.json
-- background.js
-- contentScript.js
-- popup.html
-- icons/ folder
-
-If you need help, check the console for detailed detection logs.`;
-              alert(instructions);
+ If you need help, check the console for detailed detection logs.`;
+                alert(help);
+              }
             }
           }
         });
@@ -575,6 +631,24 @@ If you need help, check the console for detailed detection logs.`;
       runDiagnostics();
     }
   }, [isOpen]);
+
+  // Listen for custom event to show diagnostics
+  useEffect(() => {
+    const handleShowDiagnostics = () => {
+      if (!isOpen) {
+        onClose(); // Close any existing modal first
+        setTimeout(() => {
+          // This will trigger the parent to open the diagnostic modal
+          window.dispatchEvent(new CustomEvent('openDiagnosticModal'));
+        }, 100);
+      }
+    };
+
+    window.addEventListener('showDiagnostics', handleShowDiagnostics);
+    return () => {
+      window.removeEventListener('showDiagnostics', handleShowDiagnostics);
+    };
+  }, [isOpen, onClose]);
 
   const getStatusIcon = (status: DiagnosticResult['status']) => {
     switch (status) {

@@ -101,9 +101,10 @@ export const chatService = {
       return existing as Conversation;
     }
     
+    console.log('No existing conversation found, creating new one');
     const conv: Conversation = {
       id: crypto.randomUUID(),
-      linkIds,
+      linkIds: [...linkIds], // Create a copy to ensure proper array handling
       startedAt: new Date(),
       endedAt: null,
     };
@@ -164,6 +165,7 @@ export const chatService = {
     conv: Conversation,
     content: string,
     onProgress?: (partial: string) => void,
+    model?: string,
   ): Promise<ChatMessage[]> {
     // Use first link for legacy linkId storage but build context from all links
     const primaryLinkId = conv.linkIds[0];
@@ -187,7 +189,17 @@ export const chatService = {
     }));
 
     // ---------- Build context ----------
-    let pageContext = 'You are a helpful research assistant. Use the following information from the user\'s saved research pages to answer as accurately as possible.\n\n';
+    let pageContext = `You are an expert research assistant powered by GPT-4o, designed to help users analyze and understand their research materials. You have access to multiple pages of content that the user has selected.
+
+Your capabilities:
+- Analyze and synthesize information from multiple sources
+- Provide detailed, well-structured responses
+- Identify patterns, connections, and insights across different materials
+- Answer questions with depth and accuracy
+- Suggest research directions and questions
+- Help organize and categorize information
+
+Use the following information from the user's saved research pages to answer as accurately as possible:\n\n`;
 
     // Gather summaries & embeddings for all links referenced in this conversation
     const allSummaries: { content: string; embedding?: number[]; link: Link }[] = [];
@@ -340,7 +352,16 @@ export const chatService = {
     }
 
     pageContext +=
-      "Use these snippets to answer the user's question. When quoting, cite as (Snippet N). Respond in the same language as the user's query unless they ask for a different language.";
+      "Use these snippets to answer the user's question. When quoting, cite as (Snippet N). Respond in the same language as the user's query unless they ask for a different language.\n\n" +
+      "IMPORTANT: Format your response for maximum readability:\n" +
+      "- Use clear headings (##) to organize your response\n" +
+      "- Use bullet points and numbered lists for better structure\n" +
+      "- Highlight key points with **bold text**\n" +
+      "- Use code blocks for technical terms or structured data\n" +
+      "- Include blockquotes for important quotes\n" +
+      "- Break up long paragraphs into digestible chunks\n" +
+      "- Use tables when comparing multiple items\n" +
+      "- Provide clear, actionable insights with proper visual hierarchy";
 
     // Token/char budget guard (~4 chars per token)
     const MAX_CHARS = 32000; // ≈ 8k tokens
@@ -360,11 +381,12 @@ export const chatService = {
               onProgress?.(partial);
             } catch (_) {}
           },
+          { model },
         )
       : await aiService.chat([
           { role: 'system', content: pageContext },
           ...aiMessages,
-        ]);
+        ], { model });
 
     const assistantMsg: ChatMessage = {
       id: crypto.randomUUID(),

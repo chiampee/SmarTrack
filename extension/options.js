@@ -3,7 +3,7 @@ console.log('🚀 Smart Research Tracker Extension Options Loaded');
 
 // Default settings
 const defaultSettings = {
-  dashboardUrl: 'http://localhost:5173/',
+          dashboardUrl: 'http://localhost:5174/',
   fallbackUrl: 'https://smartresearchtracker.vercel.app/',
   autoFillTitle: true,
   showBadge: true,

@@ -26,12 +26,12 @@ export const aiSummaryService = {
   async generate(link: Link, kind: SummaryKind, customPrompt?: string): Promise<AISummary> {
     const url = link.url;
     const templates: Record<SummaryKind, string> = {
-      tldr: `Provide a concise TL;DR (max 3 sentences) of the content at ${url}.`,
-      bullets: `Summarize the content at ${url} into bullet points.`,
-      quotes: `Provide 3 notable direct quotes from the content at ${url}.`,
+      tldr: `Provide a concise TL;DR (max 3 sentences) of the content at ${url}. Use clear, direct language and highlight the most important points.`,
+      bullets: `Summarize the content at ${url} into well-organized bullet points. Use clear headings and structure the information logically.`,
+      quotes: `Provide 3 notable direct quotes from the content at ${url}. Format each quote clearly and include context where relevant.`,
       raw: `Provide the full raw text of the page at ${url}.`,
-      insights: `As a product manager, highlight key insights from ${url}.`,
-      custom: customPrompt || `Summarize the content at ${url}.`,
+      insights: `As a product manager, highlight key insights from ${url}. Use clear headings, bullet points, and bold text to emphasize important findings.`,
+      custom: customPrompt || `Summarize the content at ${url}. Use clear formatting with headings, bullet points, and proper structure for maximum readability.`,
     };
     const prompt = kind === 'custom' ? customPrompt || '' : templates[kind];
 

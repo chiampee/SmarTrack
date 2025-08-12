@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { BoardsPage } from './pages/BoardsPage';
 import { LinksPage } from './pages/LinksPage';
@@ -6,14 +6,17 @@ import { TasksPage } from './pages/TasksPage';
 import { Layout } from './components/layout/Layout';
 import { ChatHistoryPage } from './pages/ChatHistoryPage';
 import { OnboardingModal } from './components/OnboardingModal';
+import { DiagnosticModal } from './components/DiagnosticModal';
 import { migrationService } from './services/migrationService';
 import { useSettingsStore } from './stores/settingsStore';
 import { useLinkStore } from './stores/linkStore';
+import { SettingsProvider } from './contexts/SettingsContext';
 import './index.css';
 
 function App() {
   const { showOnboarding, setShowOnboarding, setHasSeenOnboarding, hasSeenOnboarding, setDontShowOnboarding } = useSettingsStore();
   const { rawLinks } = useLinkStore();
+  const [diagnosticOpen, setDiagnosticOpen] = useState(false);
 
   useEffect(() => {
     console.log('🚀 App starting up...');
@@ -32,42 +35,71 @@ function App() {
     }
   }, []);
 
-  // Show onboarding for new users (no links and haven't seen onboarding)
+  // Listen for diagnostic modal trigger
+  useEffect(() => {
+    const handleOpenDiagnosticModal = () => {
+      setDiagnosticOpen(true);
+    };
+
+    window.addEventListener('openDiagnosticModal', handleOpenDiagnosticModal);
+    return () => {
+      window.removeEventListener('openDiagnosticModal', handleOpenDiagnosticModal);
+    };
+  }, []);
+
+  // Show onboarding only for truly new users who have never seen it
   useEffect(() => {
     console.log('👥 Onboarding check:', { rawLinksLength: rawLinks.length, hasSeenOnboarding, showOnboarding });
     
     // Check if user has chosen not to show onboarding again
     const dontShowAgain = localStorage.getItem('dontShowOnboarding') === 'true';
     
-    if (rawLinks.length === 0 && !hasSeenOnboarding && !showOnboarding && !dontShowAgain) {
+    // Only show onboarding if user has never seen it and hasn't opted out
+    if (!hasSeenOnboarding && !showOnboarding && !dontShowAgain) {
       setShowOnboarding(true);
     }
-  }, [rawLinks.length, hasSeenOnboarding, showOnboarding, setShowOnboarding]);
+  }, [hasSeenOnboarding, showOnboarding, setShowOnboarding]);
 
   const handleOnboardingClose = () => {
     setShowOnboarding(false);
     setHasSeenOnboarding(true);
   };
 
+  const handleShowOnboarding = () => {
+    setDontShowOnboarding(false);
+    setShowOnboarding(true);
+  };
+
+  const handleShowDiagnostics = () => {
+    setDiagnosticOpen(true);
+  };
+
   console.log('🎨 Rendering App component');
 
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<BoardsPage />} />
-          <Route path="/links" element={<LinksPage />} />
-          <Route path="/tasks" element={<TasksPage />} />
-          <Route path="/chat-history" element={<ChatHistoryPage />} />
-        </Routes>
-      </Layout>
-      
-      <OnboardingModal 
-        isOpen={showOnboarding} 
-        onClose={handleOnboardingClose}
-        onDontShowAgain={setDontShowOnboarding}
-      />
-    </Router>
+    <SettingsProvider showOnboarding={handleShowOnboarding} showDiagnostics={handleShowDiagnostics}>
+      <Router>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<LinksPage />} />
+            <Route path="/boards" element={<BoardsPage />} />
+            <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/chat-history" element={<ChatHistoryPage />} />
+          </Routes>
+        </Layout>
+        
+        <OnboardingModal 
+          isOpen={showOnboarding} 
+          onClose={handleOnboardingClose}
+          onDontShowAgain={setDontShowOnboarding}
+        />
+        
+        <DiagnosticModal 
+          isOpen={diagnosticOpen} 
+          onClose={() => setDiagnosticOpen(false)}
+        />
+      </Router>
+    </SettingsProvider>
   );
 }
 

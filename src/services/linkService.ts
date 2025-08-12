@@ -15,6 +15,49 @@ export const linkService = {
   },
   async update(id: string, changes: Partial<Link>) {
     changes.updatedAt = new Date();
+    // If running in the dashboard with the extension available, route updates
+    // to the extension storage so the list reflects edits immediately.
+    if (typeof window !== 'undefined') {
+      try {
+        const messageId = `update-link-${id}-${Date.now()}`;
+        const result = await new Promise<{ ok: boolean }>((resolve) => {
+          const handler = (event: MessageEvent) => {
+            const data = (event?.data || {}) as any;
+            if (
+              data?.type === 'SRT_UPDATE_LINK_OK' &&
+              data?.messageId === messageId
+            ) {
+              window.removeEventListener('message', handler);
+              resolve({ ok: true });
+            }
+          };
+          window.addEventListener('message', handler);
+          try {
+            window.postMessage(
+              {
+                type: 'SRT_UPDATE_LINK',
+                messageId,
+                id,
+                changes,
+              },
+              '*'
+            );
+          } catch (_) {
+            // fall through to Dexie
+            window.removeEventListener('message', handler);
+            resolve({ ok: false });
+          }
+          // Safety timeout to avoid hanging if extension not present
+          setTimeout(() => {
+            window.removeEventListener('message', handler);
+            resolve({ ok: false });
+          }, 1200);
+        });
+        if (result.ok) return Promise.resolve();
+      } catch {
+        // ignore and fall back to Dexie
+      }
+    }
     return db.updateLink(id, changes);
   },
   async remove(id: string) {
@@ -43,7 +86,9 @@ export const linkService = {
 
       try {
         const key = 'deletedLinkMeta_v1';
-        const existing: typeof metaOnly[] = JSON.parse(localStorage.getItem(key) || '[]');
+        const existing: (typeof metaOnly)[] = JSON.parse(
+          localStorage.getItem(key) || '[]'
+        );
         existing.push(metaOnly);
         // Guard total per-item size and keep JSON under control
         localStorage.setItem(key, JSON.stringify(existing));

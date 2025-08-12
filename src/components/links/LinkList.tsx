@@ -4,54 +4,122 @@ import { LinkRow } from './LinkRow';
 import { Button } from '../Button';
 import { Modal } from '../Modal';
 import { MultiChatPanel } from '../ai/MultiChatPanel';
+import { ChatGPTExportModal } from '../ChatGPTExportModal';
+import { openChatGPTWithLinksAndCopy } from '../../utils/chatGptExport';
+// Using store-provided filtered links rather than raw DB query
 import { useLinkStore } from '../../stores/linkStore';
-import { ChevronUp, ChevronDown, GripVertical, MessageSquare, Archive, Square, CheckSquare, CheckCircle, Eye, EyeOff, Settings, Copy, Clipboard } from 'lucide-react';
-import React, { useEffect, useState, useRef } from 'react';
+import { linkService } from '../../services/linkService';
+import {
+  ChevronUp,
+  ChevronDown,
+  GripVertical,
+  MessageSquare,
+  Archive,
+  Square,
+  CheckSquare,
+  CheckCircle,
+  Eye,
+  EyeOff,
+  Settings,
+  Copy,
+  Clipboard,
+  X,
+  ExternalLink,
+  Edit2,
+} from 'lucide-react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Link } from '../../types/Link';
 import { aiSummaryService } from '../../services/aiSummaryService';
 import { LinkForm } from './LinkForm';
 
-const DEFAULT_COLUMNS = ['name', 'url', 'labels', 'status', 'priority', 'created'] as const;
+const DEFAULT_COLUMNS = [
+  'name',
+  'url',
+  'labels',
+  'status',
+  'priority',
+  'created',
+] as const;
 
-export const LinkList: React.FC = () => {
-  const { links, loading, loadLinks, error, sortKey, sortDir: sdir, toggleSort, updateLink } = useLinkStore();
-  const [open, setOpen] = useState(false);
+export const LinkList = React.memo(() => {
+  const componentId = useRef(`LinkList-${Math.random().toString(36).substr(2, 9)}`);
+  
+  useEffect(() => {
+    console.log(`LinkList ${componentId.current} mounted`);
+    return () => {
+      console.log(`LinkList ${componentId.current} unmounted`);
+    };
+  }, []);
+
+  const {
+    sortKey,
+    sortDir: sdir,
+    toggleSort,
+    links: storeLinks,
+    loading,
+    loadLinks,
+  } = useLinkStore();
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingLink, setEditingLink] = useState<Link | null>(null);
+  const modalStateRef = useRef({ editOpen: false, editingLink: null });
+  const rootRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState<string[]>([...DEFAULT_COLUMNS]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [chatLinks, setChatLinks] = useState<typeof links | null>(null);
+  const [chatLinks, setChatLinks] = useState<Link[] | null>(null);
   const [anchorLabel, setAnchorLabel] = useState<string | null>(null);
   const [pendingSummaries, setPendingSummaries] = useState(0);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [dragOverGroup, setDragOverGroup] = useState<string | null>(null);
   const [isSorting, setIsSorting] = useState(false);
-  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('linkColumnWidths') || '{}');
-      // If no saved settings, use best view widths as default
-      if (Object.keys(saved).length === 0) {
+  const [copyFeedback, setCopyFeedback] = useState<{
+    show: boolean;
+    message: string;
+    type: 'success' | 'error';
+  }>({
+    show: false,
+    message: '',
+    type: 'success',
+  });
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(
+    () => {
+      try {
+        const saved = JSON.parse(
+          localStorage.getItem('linkColumnWidths') || '{}'
+        );
+        // If no saved settings, use best view widths as default
+        if (Object.keys(saved).length === 0) {
+          const bestViewWidths = {
+            name: 350, // Much wider for titles to prevent truncation
+            labels: 150, // Good for multiple labels
+            status: 100, // Adequate for status
+            priority: 100, // Adequate for priority
+          };
+          localStorage.setItem(
+            'linkColumnWidths',
+            JSON.stringify(bestViewWidths)
+          );
+          return bestViewWidths;
+        }
+        return saved;
+      } catch {
         const bestViewWidths = {
-          name: 350,     // Much wider for titles to prevent truncation
-          labels: 150,   // Good for multiple labels
-          status: 100,   // Adequate for status
-          priority: 100  // Adequate for priority
+          name: 350, // Much wider for titles to prevent truncation
+          labels: 150, // Good for multiple labels
+          status: 100, // Adequate for status
+          priority: 100, // Adequate for priority
         };
-        localStorage.setItem('linkColumnWidths', JSON.stringify(bestViewWidths));
+        localStorage.setItem(
+          'linkColumnWidths',
+          JSON.stringify(bestViewWidths)
+        );
         return bestViewWidths;
       }
-      return saved;
-    } catch {
-      const bestViewWidths = {
-        name: 350,     // Much wider for titles to prevent truncation
-        labels: 150,   // Good for multiple labels
-        status: 100,   // Adequate for status
-        priority: 100  // Adequate for priority
-      };
-      localStorage.setItem('linkColumnWidths', JSON.stringify(bestViewWidths));
-      return bestViewWidths;
     }
-  });
+  );
   const [resizingColumn, setResizingColumn] = useState<string | null>(null);
-  const [previewWidths, setPreviewWidths] = useState<Record<string, number>>({});
+  const [previewWidths, setPreviewWidths] = useState<Record<string, number>>(
+    {}
+  );
   const [showColumnSettings, setShowColumnSettings] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     show: boolean;
@@ -62,64 +130,143 @@ export const LinkList: React.FC = () => {
     show: false,
     x: 0,
     y: 0,
-    link: null
+    link: null,
   });
-  
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    modalStateRef.current = { editOpen, editingLink };
+  }, [editOpen, editingLink]);
+
+  // Monitor modal state changes
+  useEffect(() => {
+    console.log('Modal state changed - editOpen:', editOpen, 'editingLink:', editingLink?.id);
+  }, [editOpen, editingLink]);
+
+  // Helper to open the edit modal reliably
+  const openEditor = useCallback((link: Link) => {
+    console.log('openEditor called with link:', link.id);
+    console.log('Current editOpen state:', editOpen);
+    console.log('Current editingLink state:', editingLink);
+    console.log('Ref state:', modalStateRef.current);
+    
+    setEditingLink(link);
+    setEditOpen(true);
+    
+    console.log('State setters called');
+    
+    // Check state after a tick
+    setTimeout(() => {
+      console.log('After timeout - state:', { editOpen, editingLink });
+      console.log('After timeout - ref:', modalStateRef.current);
+    }, 100);
+  }, [editOpen, editingLink]);
+
+  // Defensive: delegate clicks for inline edit buttons to ensure the modal opens
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const editBtn = target.closest(
+        '[data-edit-button="inline"]'
+      ) as HTMLElement | null;
+      if (!editBtn) return;
+      const linkId = editBtn.getAttribute('data-link-id');
+      if (!linkId) return; // let React handler run
+      const link = storeLinks.find((l) => l.id === linkId);
+      if (!link) return; // let React handler run
+      e.preventDefault();
+      e.stopPropagation();
+      openEditor(link);
+    };
+    root.addEventListener('click', handler, true);
+    return () => root.removeEventListener('click', handler, true);
+  }, [storeLinks, openEditor]);
+
+  // ChatGPT export modal state
+  const [chatGPTExportOpen, setChatGPTExportOpen] = useState(false);
+  const [chatGPTExportLinks, setChatGPTExportLinks] = useState<Link[]>([]);
+
   // Text presentation mode state
-  const [textPresentationMode, setTextPresentationMode] = useState<Record<string, 'wrap' | 'clip' | 'words'>>(() => {
+  const [textPresentationMode, setTextPresentationMode] = useState<
+    Record<string, 'wrap' | 'clip' | 'words'>
+  >(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('linkTextPresentationMode') || '{}');
+      const saved = JSON.parse(
+        localStorage.getItem('linkTextPresentationMode') || '{}'
+      );
       // Ensure all default columns are present
-      const defaultMode = DEFAULT_COLUMNS.reduce((acc, col) => {
-        acc[col] = saved[col] || 'wrap';
-        return acc;
-      }, {} as Record<string, 'wrap' | 'clip' | 'words'>);
+      const defaultMode = DEFAULT_COLUMNS.reduce(
+        (acc, col) => {
+          acc[col] = saved[col] || 'wrap';
+          return acc;
+        },
+        {} as Record<string, 'wrap' | 'clip' | 'words'>
+      );
       return defaultMode;
     } catch {
-      return DEFAULT_COLUMNS.reduce((acc, col) => {
-        acc[col] = 'wrap';
-        return acc;
-      }, {} as Record<string, 'wrap' | 'clip' | 'words'>);
+      return DEFAULT_COLUMNS.reduce(
+        (acc, col) => {
+          acc[col] = 'wrap';
+          return acc;
+        },
+        {} as Record<string, 'wrap' | 'clip' | 'words'>
+      );
     }
   });
-  
+
   // Column visibility state
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('linkVisibleColumns') || '{}');
-      // If no saved settings, use best view as default
-      if (Object.keys(saved).length === 0) {
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    () => {
+      try {
+        const saved = JSON.parse(
+          localStorage.getItem('linkVisibleColumns') || '{}'
+        );
+        // If no saved settings, use best view as default
+        if (Object.keys(saved).length === 0) {
+          const bestViewVisibility = {
+            name: true, // Always show name - most important
+            url: false, // Hide URL to save space - can be accessed via name link
+            labels: true, // Show labels for categorization
+            status: true, // Show status for quick overview
+            priority: true, // Show priority for task management
+            created: false, // Hide created date to save space
+          };
+          localStorage.setItem(
+            'linkVisibleColumns',
+            JSON.stringify(bestViewVisibility)
+          );
+          return bestViewVisibility;
+        }
+        // Ensure all default columns are present
+        const defaultVisibility = DEFAULT_COLUMNS.reduce(
+          (acc, col) => {
+            acc[col] = saved[col] !== undefined ? saved[col] : true;
+            return acc;
+          },
+          {} as Record<string, boolean>
+        );
+        return defaultVisibility;
+      } catch {
         const bestViewVisibility = {
-          name: true,    // Always show name - most important
-          url: false,    // Hide URL to save space - can be accessed via name link
-          labels: true,  // Show labels for categorization
-          status: true,  // Show status for quick overview
+          name: true, // Always show name - most important
+          url: false, // Hide URL to save space - can be accessed via name link
+          labels: true, // Show labels for categorization
+          status: true, // Show status for quick overview
           priority: true, // Show priority for task management
-          created: false // Hide created date to save space
+          created: false, // Hide created date to save space
         };
-        localStorage.setItem('linkVisibleColumns', JSON.stringify(bestViewVisibility));
+        localStorage.setItem(
+          'linkVisibleColumns',
+          JSON.stringify(bestViewVisibility)
+        );
         return bestViewVisibility;
       }
-      // Ensure all default columns are present
-      const defaultVisibility = DEFAULT_COLUMNS.reduce((acc, col) => {
-        acc[col] = saved[col] !== undefined ? saved[col] : true;
-        return acc;
-      }, {} as Record<string, boolean>);
-      return defaultVisibility;
-    } catch {
-      const bestViewVisibility = {
-        name: true,    // Always show name - most important
-        url: false,    // Hide URL to save space - can be accessed via name link
-        labels: true,  // Show labels for categorization
-        status: true,  // Show status for quick overview
-        priority: true, // Show priority for task management
-        created: false // Hide created date to save space
-      };
-      localStorage.setItem('linkVisibleColumns', JSON.stringify(bestViewVisibility));
-      return bestViewVisibility;
     }
-  });
-  
+  );
+
   // Local sorting state for label groups
   const [localSortKey, setLocalSortKey] = useState<string>('name');
   const [localSortDir, setLocalSortDir] = useState<'asc' | 'desc'>('asc');
@@ -143,7 +290,9 @@ export const LinkList: React.FC = () => {
       if (savedOrder) {
         const parsedOrder = JSON.parse(savedOrder);
         // Validate that all default columns are present
-        const isValidOrder = DEFAULT_COLUMNS.every(col => parsedOrder.includes(col));
+        const isValidOrder = DEFAULT_COLUMNS.every((col) =>
+          parsedOrder.includes(col)
+        );
         if (isValidOrder) {
           setColumns(parsedOrder);
           return;
@@ -156,15 +305,47 @@ export const LinkList: React.FC = () => {
     setColumns([...DEFAULT_COLUMNS]);
   }, []); // Only run once on mount
 
+  const normalizeCol = (val: string) => {
+    const map: Record<string, string> = {
+      name: 'name',
+      url: 'url',
+      labels: 'labels',
+      status: 'status',
+      priority: 'priority',
+      created: 'created',
+    };
+    return map[val] || val;
+  };
+
   const reorder = (source: string, target: string) => {
-    if (source === target) return;
+    console.log('Reordering columns:', source, '->', target);
+    if (source === target) {
+      console.log('Source and target are the same, no reordering needed');
+      return;
+    }
     setColumns((prev) => {
       const newOrder = [...prev];
-      const fromIdx = newOrder.indexOf(source);
-      const toIdx = newOrder.indexOf(target);
-      if (fromIdx === -1 || toIdx === -1) return prev;
-      newOrder.splice(fromIdx, 1);
-      newOrder.splice(toIdx, 0, source);
+      const src = normalizeCol(source);
+      const tgt = normalizeCol(target);
+      let fromIdx = newOrder.indexOf(src);
+      let toIdx = newOrder.indexOf(tgt);
+      console.log('Current order:', prev);
+      console.log('Indices:', { fromIdx, toIdx, source: src, target: tgt });
+      if (fromIdx === -1 || toIdx === -1) {
+        // Fallback to case-insensitive matching
+        const lower = newOrder.map((c) => c.toLowerCase());
+        fromIdx = lower.indexOf(src.toLowerCase());
+        toIdx = lower.indexOf(tgt.toLowerCase());
+      }
+      if (fromIdx === -1 || toIdx === -1) {
+        console.log(
+          'Invalid indices after normalization, returning previous order'
+        );
+        return prev;
+      }
+      const [moved] = newOrder.splice(fromIdx, 1);
+      newOrder.splice(toIdx, 0, moved);
+      console.log('New order:', newOrder);
       localStorage.setItem('linkColumnOrder', JSON.stringify(newOrder));
       return newOrder;
     });
@@ -175,17 +356,17 @@ export const LinkList: React.FC = () => {
     setGroupOrder((prev) => {
       // Start with current order, or create new array if empty
       const arr = prev.length ? [...prev] : [];
-      
+
       // If source isn't in the array yet, add it
       if (!arr.includes(source)) {
         arr.push(source);
       }
-      
+
       // If target isn't in the array yet, add it
       if (!arr.includes(target)) {
         arr.push(target);
       }
-      
+
       const fromIdx = arr.indexOf(source);
       const toIdx = arr.indexOf(target);
       if (fromIdx === -1 || toIdx === -1) return prev;
@@ -196,11 +377,17 @@ export const LinkList: React.FC = () => {
     });
   };
 
-  const onGroupDragStart = (e: React.DragEvent<HTMLDivElement>, grp: string) => {
+  const onGroupDragStart = (
+    e: React.DragEvent<HTMLDivElement>,
+    grp: string
+  ) => {
     e.dataTransfer.setData('text/plain', grp);
     e.dataTransfer.effectAllowed = 'move';
   };
-  const onGroupDrop = (e: React.DragEvent<HTMLDivElement>, targetGrp: string) => {
+  const onGroupDrop = (
+    e: React.DragEvent<HTMLDivElement>,
+    targetGrp: string
+  ) => {
     e.preventDefault();
     const src = e.dataTransfer.getData('text/plain');
     if (src && src !== targetGrp) {
@@ -225,10 +412,26 @@ export const LinkList: React.FC = () => {
   };
 
   // ---------------------- Drag & Drop column reordering --------------------
+  const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
+
   const onDragStart = (e: React.DragEvent<HTMLDivElement>, col: string) => {
-    console.log('Drag started for column:', col);
+    console.log('🚀 Drag started for column:', col);
+    // Set multiple formats to maximize compatibility
     e.dataTransfer.setData('text/plain', col);
+    e.dataTransfer.setData('application/x-srt-col', col);
     e.dataTransfer.effectAllowed = 'move';
+    setDraggedColumn(col);
+    // Add visual feedback
+    e.currentTarget.style.opacity = '0.5';
+    e.currentTarget.style.transform = 'scale(1.05)';
+  };
+
+  const onDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    console.log('🏁 Drag ended');
+    setDraggedColumn(null);
+    // Reset visual feedback
+    e.currentTarget.style.opacity = '1';
+    e.currentTarget.style.transform = 'scale(1)';
   };
 
   const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -238,13 +441,37 @@ export const LinkList: React.FC = () => {
 
   const onDrop = (e: React.DragEvent<HTMLDivElement>, targetCol: string) => {
     e.preventDefault();
-    const sourceCol = e.dataTransfer.getData('text/plain');
-    console.log('Drop event - source:', sourceCol, 'target:', targetCol);
+    // Prefer internal state to avoid browser overriding dataTransfer
+    const dtCustom = e.dataTransfer.getData('application/x-srt-col');
+    const dtText = e.dataTransfer.getData('text/plain');
+    const sourceCol = draggedColumn || dtCustom || dtText;
+    console.log('🎯 Drop event - source:', sourceCol, 'target:', targetCol);
+
     if (sourceCol && sourceCol !== targetCol) {
-      console.log('Reordering columns:', sourceCol, '->', targetCol);
+      console.log('✅ Reordering columns:', sourceCol, '->', targetCol);
       reorder(sourceCol, targetCol);
+    } else {
+      console.log('ℹ️ No valid source column detected');
     }
+
     setDragOverColumn(null);
+    setDraggedColumn(null);
+  };
+
+  const onDragEnter = (e: React.DragEvent<HTMLDivElement>, col: string) => {
+    e.preventDefault();
+    if (draggedColumn && draggedColumn !== col) {
+      console.log('🎯 Drag entered column:', col);
+      setDragOverColumn(col);
+    }
+  };
+
+  const onDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    // Only clear if we're leaving the entire header cell
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverColumn(null);
+    }
   };
 
   // ---------------------- Column Resizing --------------------
@@ -252,75 +479,162 @@ export const LinkList: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     setResizingColumn(col);
-    
+
     const startX = e.clientX;
     const startWidth = columnWidths[col] || 150; // Default width
-    
+
     const onMouseMove = (e: MouseEvent) => {
       const deltaX = e.clientX - startX;
       const newWidth = Math.max(80, Math.min(500, startWidth + deltaX)); // Min 80px, Max 500px
-      
+
       // Update preview width for real-time feedback
-      setPreviewWidths(prev => ({ ...prev, [col]: newWidth }));
+      setPreviewWidths((prev) => ({ ...prev, [col]: newWidth }));
     };
-    
+
     const onMouseUp = () => {
       // Save the final width
       const finalWidth = previewWidths[col] || startWidth;
-      setColumnWidths(prev => {
+      setColumnWidths((prev) => {
         const newWidths = { ...prev, [col]: finalWidth };
         localStorage.setItem('linkColumnWidths', JSON.stringify(newWidths));
         return newWidths;
       });
-      
+
       // Clear preview and resizing state
       setPreviewWidths({});
       setResizingColumn(null);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
     };
-    
+
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
   };
 
   const archiveSelected = async () => {
     if (!selectedIds.length) return;
-    await Promise.all(selectedIds.map((id) => updateLink(id, { status: 'archived' })));
-    setSelectedIds([]);
+    console.log('[Dashboard] Archiving links:', selectedIds);
+    try {
+      // Update the extension storage directly
+      const selectedLinks = getSelectedLinks();
+      if (selectedLinks.length > 0) {
+        try {
+          window.postMessage(
+            {
+              type: 'SRT_UPDATE_LINKS_STATUS',
+              links: selectedLinks.map((link) => ({
+                id: link.id,
+                status: 'archived',
+              })),
+            },
+            '*'
+          );
+          console.log('[Dashboard] Archive request sent to extension');
+        } catch (error) {
+          console.warn(
+            '[Dashboard] Failed to update extension storage:',
+            error
+          );
+        }
+      }
+
+      console.log('[Dashboard] Links archived successfully');
+      setSelectedIds([]);
+      // Refresh the links to show updated status
+      setTimeout(() => {
+        loadLinks();
+      }, 500); // Small delay to allow extension to process the update
+    } catch (error) {
+      console.error('[Dashboard] Failed to archive links:', error);
+    }
   };
 
   useEffect(() => {
-    (async () => {
-      let count = 0;
-      for (const l of links) {
-        const sums = await aiSummaryService.getByLink(l.id);
-        if (!sums.some((s) => s.kind === 'tldr')) count++;
-      }
-      setPendingSummaries(count);
-    })();
-  }, [links]);
+    // Ensure links are loaded on mount
+    void loadLinks();
+  }, [loadLinks]);
 
-  const toggleSelectAll = (checked: boolean, visibleLinks: typeof links) => {
+  useEffect(() => {
+    // Only run this check if we have links and it's not already running
+    if (!storeLinks || storeLinks.length === 0) {
+      setPendingSummaries(0);
+      return;
+    }
+
+    let isMounted = true;
+
+    (async () => {
+      try {
+        let count = 0;
+        // Process links in batches to avoid overwhelming the system
+        const batchSize = 5;
+        for (let i = 0; i < storeLinks.length; i += batchSize) {
+          const batch = storeLinks.slice(i, i + batchSize);
+          const promises = batch.map(async (l) => {
+            try {
+              const sums = await aiSummaryService.getByLink(l.id);
+              return !sums.some((s) => s.kind === 'tldr');
+            } catch (error) {
+              console.warn('Failed to check summaries for link:', l.id, error);
+              return false; // Assume it has a summary if we can't check
+            }
+          });
+
+          const results = await Promise.all(promises);
+          count += results.filter(Boolean).length;
+
+          // Check if component is still mounted
+          if (!isMounted) return;
+
+          // Small delay between batches to prevent blocking
+          if (i + batchSize < storeLinks.length) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+        }
+
+        if (isMounted) {
+          setPendingSummaries(count);
+        }
+      } catch (error) {
+        console.error('Error checking pending summaries:', error);
+        if (isMounted) {
+          setPendingSummaries(0);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [storeLinks]);
+
+  const toggleSelectAll = (checked: boolean, visibleLinks: Link[]) => {
+    if (!visibleLinks) return;
     if (checked) {
       setSelectedIds((prev) => [
         ...prev,
         ...visibleLinks.map((l) => l.id).filter((id) => !prev.includes(id)),
       ]);
     } else {
-      setSelectedIds((prev) => prev.filter((id) => !visibleLinks.some((l) => l.id === id)));
+      setSelectedIds((prev) =>
+        prev.filter((id) => !visibleLinks.some((l) => l.id === id))
+      );
     }
   };
 
   const startChat = () => {
-    const selected = links.filter((l) => selectedIds.includes(l.id));
+    const selected = getSelectedLinks();
+    console.log('[Dashboard] Starting chat with links:', selected);
     if (selected.length) {
       // determine anchor label from last selected link
       const lastId = selectedIds[selectedIds.length - 1];
-      const lastLink = links.find((l) => l.id === lastId);
+      const lastLink = storeLinks?.find((l) => l.id === lastId);
       let lbl: string | null = null;
-      if (lastLink) {
-        lbl = lastLink.labels.length ? lastLink.labels[0] : 'Unlabeled';
+      if (lastLink && lastLink.labels) {
+        lbl =
+          lastLink.labels && lastLink.labels.length
+            ? lastLink.labels[0]
+            : 'Unlabeled';
       }
       setAnchorLabel(lbl);
 
@@ -330,48 +644,189 @@ export const LinkList: React.FC = () => {
   };
 
   const copySelectedLinksInfo = async () => {
-    const selected = links.filter((l) => selectedIds.includes(l.id));
+    const selected = getSelectedLinks();
+    console.log('[Dashboard] Copying links:', selected);
     if (selected.length) {
-      const linkInfo = selected.map(link => {
-        const rawData = {
-          id: link.id,
-          url: link.url,
-          metadata: {
-            title: link.metadata.title || 'Untitled',
-            description: link.metadata.description || 'No description',
-            image: link.metadata.image || 'No image'
-          },
-          summary: link.summary || 'No summary',
-          labels: link.labels,
-          priority: link.priority,
-          status: link.status,
-          boardId: link.boardId || null,
-          createdAt: link.createdAt,
-          updatedAt: link.updatedAt
-        };
-        
-        return JSON.stringify(rawData, null, 2);
-      }).join('\n\n---\n\n');
+      // Create rich copy format with images
+      const richCopyData = selected
+        .map((link) => {
+          const hasImage =
+            link.metadata.image && link.metadata.image !== 'No image';
+          const isGitHub = link.url.includes('github.com');
+
+          // Enhanced format with image preview
+          const richData = {
+            id: link.id,
+            url: link.url,
+            metadata: {
+              title: (link.metadata && link.metadata.title) || 'Untitled',
+              description:
+                (link.metadata && link.metadata.description) ||
+                'No description',
+              image: (link.metadata && link.metadata.image) || 'No image',
+              hasImage: hasImage,
+              isGitHub: isGitHub,
+            },
+            summary: link.summary || 'No summary',
+            labels: link.labels,
+            priority: link.priority,
+            status: link.status,
+            boardId: link.boardId || null,
+            createdAt: link.createdAt,
+            updatedAt: link.updatedAt,
+          };
+
+          return JSON.stringify(richData, null, 2);
+        })
+        .join('\n\n---\n\n');
 
       try {
-        await navigator.clipboard.writeText(linkInfo);
+        // Try to copy rich content with images
+        if (selected.length === 1) {
+          const link = selected[0];
+          const hasImage =
+            link.metadata.image && link.metadata.image !== 'No image';
+          const isGitHub = link.url.includes('github.com');
+          let htmlContent = '';
+
+          // Special GitHub repository preview
+          if (isGitHub) {
+            const repoPath = link.url.replace('https://github.com/', '');
+            const [owner, repo] = repoPath.split('/');
+
+            // Create a simpler, more compatible GitHub preview
+            htmlContent = `
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; max-width: 400px; border: 1px solid #d0d7de; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.12); background: white;">
+                <div style="background: #f6f8fa; padding: 16px; border-bottom: 1px solid #d0d7de;">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <span style="font-size: 20px;">🐙</span>
+                    <span style="color: #0969da; font-weight: 600; font-size: 14px;">${owner}/${repo}</span>
+                  </div>
+                  <p style="margin: 0; color: #656d76; font-size: 14px; line-height: 1.4;">${link.metadata.description || 'GitHub repository'}</p>
+                </div>
+                <div style="padding: 16px;">
+                  <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                    <span style="color: #656d76; font-size: 12px;">📁 Repository</span>
+                    <span style="color: #656d76; font-size: 12px;">⭐ Star</span>
+                    <span style="color: #656d76; font-size: 12px;">🍴 Fork</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="color: #656d76; font-size: 14px;">🔗</span>
+                    <span style="color: #0969da; font-size: 14px; text-decoration: none;">${link.url}</span>
+                  </div>
+                  ${
+                    link.labels && link.labels.length > 0
+                      ? `<div style="margin-top: 12px; display: flex; gap: 4px; flex-wrap: wrap;">
+                    ${link.labels.map((label: string) => `<span style="background: #f6f8fa; color: #656d76; padding: 2px 8px; border-radius: 12px; font-size: 12px; border: 1px solid #d0d7de;">${label}</span>`).join('')}
+                  </div>`
+                      : ''
+                  }
+                </div>
+              </div>
+            `;
+
+            // Also create a plain text version for better compatibility
+            const plainTextVersion = `🐙 GitHub Repository: ${owner}/${repo}\n${link.metadata.description || 'GitHub repository'}\n🔗 ${link.url}${link.labels && link.labels.length > 0 ? `\n🏷️ Labels: ${link.labels.join(', ')}` : ''}`;
+
+            console.log('GitHub link detected:', link.url);
+            console.log('Repository info:', {
+              owner,
+              repo,
+              description: link.metadata.description,
+            });
+
+            try {
+              const clipboardItem = new ClipboardItem({
+                'text/plain': new Blob([plainTextVersion], {
+                  type: 'text/plain',
+                }),
+                'text/html': new Blob([htmlContent], { type: 'text/html' }),
+              });
+
+              await navigator.clipboard.write([clipboardItem]);
+              console.log('GitHub preview copied successfully');
+            } catch (err) {
+              console.error('Failed to copy GitHub preview:', err);
+              // Fallback to text-only
+              await navigator.clipboard.writeText(plainTextVersion);
+            }
+          } else if (hasImage) {
+            // Regular image preview for non-GitHub links
+            htmlContent = `
+              <div style="font-family: Arial, sans-serif; max-width: 400px; border: 1px solid #e1e5e9; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <img src="${link.metadata.image}" style="width: 100%; height: 200px; object-fit: cover;" alt="${link.metadata.title || 'Link preview'}">
+                <div style="padding: 16px;">
+                  <h3 style="margin: 0 0 8px 0; color: #24292f; font-size: 16px;">${link.metadata.title || 'Untitled'}</h3>
+                  <p style="margin: 0 0 12px 0; color: #656d76; font-size: 14px; line-height: 1.4;">${link.metadata.description || 'No description'}</p>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: #656d76;">
+                      <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                    </svg>
+                    <span style="color: #0969da; font-size: 14px; text-decoration: none;">${link.url}</span>
+                  </div>
+                  ${
+                    link.labels.length > 0
+                      ? `<div style="margin-top: 12px; display: flex; gap: 4px; flex-wrap: wrap;">
+                    ${link.labels.map((label: string) => `<span style="background: #f6f8fa; color: #656d76; padding: 2px 8px; border-radius: 12px; font-size: 12px;">${label}</span>`).join('')}
+                  </div>`
+                      : ''
+                  }
+                </div>
+              </div>
+            `;
+
+            try {
+              const clipboardItem = new ClipboardItem({
+                'text/plain': new Blob([richCopyData], { type: 'text/plain' }),
+                'text/html': new Blob([htmlContent], { type: 'text/html' }),
+              });
+
+              await navigator.clipboard.write([clipboardItem]);
+            } catch (err) {
+              console.error('Failed to copy image preview:', err);
+              // Fallback to text-only
+              await navigator.clipboard.writeText(richCopyData);
+            }
+          } else {
+            // Text-only copy for links without images
+            await navigator.clipboard.writeText(richCopyData);
+          }
+        } else {
+          // Multiple links - just copy text
+          await navigator.clipboard.writeText(richCopyData);
+        }
+
         // Show visual feedback
-        const button = document.querySelector('[data-copy-button="bulk"]') as HTMLButtonElement;
+        const button = document.querySelector(
+          '[data-copy-button="bulk"]'
+        ) as HTMLButtonElement;
         if (button) {
           const originalText = button.innerHTML;
-          button.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Copied!';
+          const hasImage = selected.some(
+            (link) => link.metadata.image && link.metadata.image !== 'No image'
+          );
+          const hasGitHub = selected.some((link) =>
+            link.url.includes('github.com')
+          );
+          let icon = '✓';
+          if (hasGitHub) {
+            icon = '🐙'; // GitHub octopus icon
+          } else if (hasImage) {
+            icon = '🖼️';
+          }
+          button.innerHTML = `<span style="display: flex; align-items: center; gap: 2px;">${icon} Copied!</span>`;
           button.disabled = true;
           setTimeout(() => {
             button.innerHTML = originalText;
             button.disabled = false;
           }, 2000);
         }
-        console.log('Raw link data copied to clipboard');
+        console.log('Rich link data copied to clipboard');
       } catch (err) {
         console.error('Failed to copy to clipboard:', err);
         // Fallback for older browsers
         const textArea = document.createElement('textarea');
-        textArea.value = linkInfo;
+        textArea.value = richCopyData;
         document.body.appendChild(textArea);
         textArea.select();
         document.execCommand('copy');
@@ -380,14 +835,19 @@ export const LinkList: React.FC = () => {
     }
   };
 
-    const copySingleLinkInfo = async (link: Link) => {
-    const rawData = {
+  const copySingleLinkInfo = async (link: Link) => {
+    const hasImage = link.metadata.image && link.metadata.image !== 'No image';
+    const isGitHub = link.url.includes('github.com');
+
+    const richData = {
       id: link.id,
       url: link.url,
       metadata: {
         title: link.metadata.title || 'Untitled',
         description: link.metadata.description || 'No description',
-        image: link.metadata.image || 'No image'
+        image: link.metadata.image || 'No image',
+        hasImage: hasImage,
+        isGitHub: isGitHub,
       },
       summary: link.summary || 'No summary',
       labels: link.labels,
@@ -395,34 +855,122 @@ export const LinkList: React.FC = () => {
       status: link.status,
       boardId: link.boardId || null,
       createdAt: link.createdAt,
-      updatedAt: link.updatedAt
+      updatedAt: link.updatedAt,
     };
-    
-    const linkInfo = JSON.stringify(rawData, null, 2);
+
+    const linkInfo = JSON.stringify(richData, null, 2);
 
     try {
-      await navigator.clipboard.writeText(linkInfo);
-      // Show visual feedback in context menu
-      const contextMenu = document.querySelector('[data-context-menu="copy"]') as HTMLButtonElement;
-      if (contextMenu) {
-        const originalText = contextMenu.innerHTML;
-        contextMenu.innerHTML = '<svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Copied!';
-        setTimeout(() => {
-          contextMenu.innerHTML = originalText;
-        }, 2000);
+      // Try to copy rich content with image preview
+      let htmlContent = '';
+
+      // Special GitHub repository preview
+      if (isGitHub) {
+        const repoPath = link.url.replace('https://github.com/', '');
+        const [owner, repo] = repoPath.split('/');
+
+        // Create a simpler, more compatible GitHub preview
+        htmlContent = `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; max-width: 400px; border: 1px solid #d0d7de; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.12); background: white;">
+            <div style="background: #f6f8fa; padding: 16px; border-bottom: 1px solid #d0d7de;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="font-size: 20px;">🐙</span>
+                <span style="color: #0969da; font-weight: 600; font-size: 14px;">${owner}/${repo}</span>
+              </div>
+              <p style="margin: 0; color: #656d76; font-size: 14px; line-height: 1.4;">${link.metadata.description || 'GitHub repository'}</p>
+            </div>
+            <div style="padding: 16px;">
+              <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
+                <span style="color: #656d76; font-size: 12px;">📁 Repository</span>
+                <span style="color: #656d76; font-size: 12px;">⭐ Star</span>
+                <span style="color: #656d76; font-size: 12px;">🍴 Fork</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: #656d76; font-size: 14px;">🔗</span>
+                <span style="color: #0969da; font-size: 14px; text-decoration: none;">${link.url}</span>
+              </div>
+              ${
+                link.labels && link.labels.length > 0
+                  ? `<div style="margin-top: 12px; display: flex; gap: 4px; flex-wrap: wrap;">
+                ${link.labels.map((label: string) => `<span style="background: #f6f8fa; color: #656d76; padding: 2px 8px; border-radius: 12px; font-size: 12px; border: 1px solid #d0d7de;">${label}</span>`).join('')}
+              </div>`
+                  : ''
+              }
+            </div>
+          </div>
+        `;
+
+        // Also create a plain text version for better compatibility
+        const plainTextVersion = `🐙 GitHub Repository: ${owner}/${repo}\n${link.metadata.description || 'GitHub repository'}\n🔗 ${link.url}${link.labels && link.labels.length > 0 ? `\n🏷️ Labels: ${link.labels.join(', ')}` : ''}`;
+
+        console.log('Single GitHub link detected:', link.url);
+        console.log('Repository info:', {
+          owner,
+          repo,
+          description: link.metadata.description,
+        });
+
+        try {
+          const clipboardItem = new ClipboardItem({
+            'text/plain': new Blob([plainTextVersion], { type: 'text/plain' }),
+            'text/html': new Blob([htmlContent], { type: 'text/html' }),
+          });
+
+          await navigator.clipboard.write([clipboardItem]);
+          console.log('Single GitHub preview copied successfully');
+          showCopyFeedback('✨ GitHub preview copied!', 'success');
+        } catch (err) {
+          console.error('Failed to copy single GitHub preview:', err);
+          // Fallback to text-only
+          await navigator.clipboard.writeText(plainTextVersion);
+          showCopyFeedback('📋 Link info copied!', 'success');
+        }
+      } else if (hasImage) {
+        // Regular image preview for non-GitHub links
+        htmlContent = `
+          <div style="font-family: Arial, sans-serif; max-width: 400px; border: 1px solid #e1e5e9; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <img src="${link.metadata.image}" style="width: 100%; height: 200px; object-fit: cover;" alt="${link.metadata.title || 'Link preview'}">
+            <div style="padding: 16px;">
+              <h3 style="margin: 0 0 8px 0; color: #24292f; font-size: 16px;">${link.metadata.title || 'Untitled'}</h3>
+              <p style="margin: 0 0 12px 0; color: #656d76; font-size: 14px; line-height: 1.4;">${link.metadata.description || 'No description'}</p>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: #656d76;">
+                  <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                </svg>
+                <span style="color: #0969da; font-size: 14px; text-decoration: none;">${link.url}</span>
+              </div>
+              ${
+                link.labels.length > 0
+                  ? `<div style="margin-top: 12px; display: flex; gap: 4px; flex-wrap: wrap;">
+                ${link.labels.map((label: string) => `<span style="background: #f6f8fa; color: #656d76; padding: 2px 8px; border-radius: 12px; font-size: 12px;">${label}</span>`).join('')}
+              </div>`
+                  : ''
+              }
+            </div>
+          </div>
+        `;
+
+        try {
+          const clipboardItem = new ClipboardItem({
+            'text/plain': new Blob([linkInfo], { type: 'text/plain' }),
+            'text/html': new Blob([htmlContent], { type: 'text/html' }),
+          });
+
+          await navigator.clipboard.write([clipboardItem]);
+          showCopyFeedback('🖼️ Image preview copied!', 'success');
+        } catch (err) {
+          console.error('Failed to copy image preview:', err);
+          // Fallback to text-only
+          await navigator.clipboard.writeText(linkInfo);
+          showCopyFeedback('📋 Link info copied!', 'success');
+        }
+      } else {
+        // Text-only copy for links without images
+        await navigator.clipboard.writeText(linkInfo);
+        showCopyFeedback('📋 Link info copied!', 'success');
       }
-      // Also show feedback for inline copy button if it exists
-      const inlineButton = document.querySelector('[data-copy-button="inline"]') as HTMLButtonElement;
-      if (inlineButton) {
-        const originalHTML = inlineButton.innerHTML;
-        inlineButton.innerHTML = '<svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-        setTimeout(() => {
-          inlineButton.innerHTML = originalHTML;
-        }, 2000);
-      }
-      console.log('Raw link data copied to clipboard');
     } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
+      console.error('Failed to copy link info:', err);
       // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = linkInfo;
@@ -430,17 +978,67 @@ export const LinkList: React.FC = () => {
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
+      showCopyFeedback('📋 Link info copied!', 'success');
     }
   };
 
   const startChatWithSingleLink = (link: Link) => {
     setChatLinks([link]);
-    setAnchorLabel(link.labels.length ? link.labels[0] : 'Unlabeled');
+    setAnchorLabel(
+      link.labels && link.labels.length ? link.labels[0] : 'Unlabeled'
+    );
   };
 
-  useEffect(() => {
-    loadLinks();
-  }, [loadLinks]);
+  const showCopyFeedback = (
+    message: string,
+    type: 'success' | 'error' = 'success'
+  ) => {
+    setCopyFeedback({ show: true, message, type });
+    setTimeout(() => {
+      setCopyFeedback({ show: false, message: '', type: 'success' });
+    }, 3000);
+  };
+
+  // Helper function to get selected links
+  const getSelectedLinks = () => {
+    const selected = (storeLinks || []).filter((link) =>
+      selectedIds.includes(link.id)
+    );
+    console.log('[Dashboard] Selected links:', selected);
+    console.log('[Dashboard] Selected IDs:', selectedIds);
+    console.log('[Dashboard] Available links:', storeLinks?.length || 0);
+    return selected;
+  };
+
+  // Context menu reset helper
+  const resetContextMenu = () => {
+    setContextMenu({ show: false, x: 0, y: 0, link: null });
+  };
+
+  // ChatGPT export button styling
+  const chatGPTExportButtonClass =
+    'group flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 font-semibold';
+
+  // ChatGPT export handler function
+  const handleChatGPTExport = async (linksToExport: Link[]) => {
+    console.log('[Dashboard] Exporting to ChatGPT:', linksToExport);
+    if (linksToExport.length === 0) {
+      alert('Please select at least one link to export.');
+      return;
+    }
+    // Directly trigger copy + open for faster UX; keep modal as fallback if needed
+    try {
+      await openChatGPTWithLinksAndCopy(linksToExport, {
+        includeSummaries: false,
+        includeRawContent: false,
+        format: 'markdown',
+      });
+    } catch (e) {
+      console.warn('Direct export failed, falling back to modal', e);
+      setChatGPTExportLinks(linksToExport);
+      setChatGPTExportOpen(true);
+    }
+  };
 
   if (loading)
     return (
@@ -451,44 +1049,44 @@ export const LinkList: React.FC = () => {
       </div>
     );
 
-  if (error) return <ErrorBanner message={error} onRetry={loadLinks} />;
+  // Error handling is done through the loading state and null checks
 
   // Function to get column width with constraints
   const getColumnWidth = (col: string) => {
     const defaultWidths: Record<string, number> = {
-      name: 300,    // Much wider for names to prevent truncation
-      url: 200,     // Wider for URLs
-      labels: 150,  // Wider for multiple labels
-      status: 100,  // Adequate for status
-      priority: 100, // Adequate for priority
-      created: 120  // Adequate for dates
+      name: 400, // Much wider for names to prevent truncation
+      url: 300, // Wider for URLs
+      labels: 200, // Wider for multiple labels
+      status: 120, // Adequate for status
+      priority: 120, // Adequate for priority
+      created: 140, // Adequate for dates
     };
-    
+
     // Use preview width if currently resizing this column
     if (resizingColumn === col && previewWidths[col] !== undefined) {
-      return Math.max(80, Math.min(previewWidths[col], 500)); // Min 80px, Max 500px
+      return Math.max(100, Math.min(previewWidths[col], 800)); // Min 100px, Max 800px
     }
-    
+
     const customWidth = columnWidths[col];
-    const defaultWidth = defaultWidths[col] || 150;
+    const defaultWidth = defaultWidths[col] || 200;
     const width = customWidth || defaultWidth;
-    
+
     // Ensure reasonable constraints to prevent content cutoff
-    return Math.max(80, Math.min(width, 500)); // Min 80px, Max 500px
+    return Math.max(100, Math.min(width, 800)); // Min 100px, Max 800px
   };
 
   // Calculate total table width
   const getTotalTableWidth = () => {
     const checkboxWidth = 40; // Fixed checkbox column width
     const totalColumnWidths = columns
-      .filter(col => visibleColumns[col])
+      .filter((col) => visibleColumns[col])
       .reduce((sum, col) => sum + getColumnWidth(col), 0);
     return checkboxWidth + totalColumnWidths;
   };
 
   // Function to toggle column visibility
   const toggleColumnVisibility = (column: string) => {
-    setVisibleColumns(prev => {
+    setVisibleColumns((prev) => {
       const newVisibility = { ...prev, [column]: !prev[column] };
       localStorage.setItem('linkVisibleColumns', JSON.stringify(newVisibility));
       return newVisibility;
@@ -496,8 +1094,11 @@ export const LinkList: React.FC = () => {
   };
 
   // Function to set text presentation mode
-  const updateTextPresentationMode = (column: string, mode: 'wrap' | 'clip' | 'words') => {
-    setTextPresentationMode(prev => {
+  const updateTextPresentationMode = (
+    column: string,
+    mode: 'wrap' | 'clip' | 'words'
+  ) => {
+    setTextPresentationMode((prev) => {
       const newMode = { ...prev, [column]: mode };
       localStorage.setItem('linkTextPresentationMode', JSON.stringify(newMode));
       return newMode;
@@ -507,35 +1108,43 @@ export const LinkList: React.FC = () => {
   // Function to set best view preset
   const setBestView = () => {
     const bestViewVisibility = {
-      name: true,    // Always show name - most important
-      url: false,    // Hide URL to save space - can be accessed via name link
-      labels: true,  // Show labels for categorization
-      status: true,  // Show status for quick overview
+      name: true, // Always show name - most important
+      url: true, // Show URL for better context
+      labels: true, // Show labels for categorization
+      status: true, // Show status for quick overview
       priority: true, // Show priority for task management
-      created: false // Hide created date to save space
+      created: true, // Show created date for timeline context
     };
-    
+
     const bestViewWidths = {
-      name: 350,     // Much wider for titles to prevent truncation
-      labels: 150,   // Good for multiple labels
-      status: 100,   // Adequate for status
-      priority: 100  // Adequate for priority
+      name: 450, // Much wider for titles to prevent truncation
+      url: 300, // Good for URLs
+      labels: 200, // Good for multiple labels
+      status: 120, // Adequate for status
+      priority: 120, // Adequate for priority
+      created: 140, // Adequate for dates
     };
-    
+
     const bestViewTextMode = {
-      name: 'words' as const,    // Show first 4 words for names
-      labels: 'wrap' as const,   // Full labels
-      status: 'wrap' as const,   // Full status
-      priority: 'wrap' as const  // Full priority
+      name: 'words' as const, // Show first 4 words for names
+      labels: 'wrap' as const, // Full labels
+      status: 'wrap' as const, // Full status
+      priority: 'wrap' as const, // Full priority
     };
-    
+
     setVisibleColumns(bestViewVisibility);
     setColumnWidths(bestViewWidths);
     setTextPresentationMode(bestViewTextMode);
-    localStorage.setItem('linkVisibleColumns', JSON.stringify(bestViewVisibility));
+    localStorage.setItem(
+      'linkVisibleColumns',
+      JSON.stringify(bestViewVisibility)
+    );
     localStorage.setItem('linkColumnWidths', JSON.stringify(bestViewWidths));
-    localStorage.setItem('linkTextPresentationMode', JSON.stringify(bestViewTextMode));
-    
+    localStorage.setItem(
+      'linkTextPresentationMode',
+      JSON.stringify(bestViewTextMode)
+    );
+
     console.log('Applied best view preset');
   };
 
@@ -544,36 +1153,46 @@ export const LinkList: React.FC = () => {
     // Reset column order
     setColumns([...DEFAULT_COLUMNS]);
     localStorage.removeItem('linkColumnOrder');
-    
+
     // Reset column widths
     setColumnWidths({});
     localStorage.removeItem('linkColumnWidths');
-    
+
     // Reset group order
     setGroupOrder([]);
     localStorage.removeItem('linkGroupOrder');
-    
+
     // Reset column visibility
-    setVisibleColumns(DEFAULT_COLUMNS.reduce((acc, col) => {
-      acc[col] = true;
-      return acc;
-    }, {} as Record<string, boolean>));
+    setVisibleColumns(
+      DEFAULT_COLUMNS.reduce(
+        (acc, col) => {
+          acc[col] = true;
+          return acc;
+        },
+        {} as Record<string, boolean>
+      )
+    );
     localStorage.removeItem('linkVisibleColumns');
-    
+
     // Reset text presentation mode
-    setTextPresentationMode(DEFAULT_COLUMNS.reduce((acc, col) => {
-      acc[col] = 'wrap';
-      return acc;
-    }, {} as Record<string, 'wrap' | 'clip' | 'words'>));
+    setTextPresentationMode(
+      DEFAULT_COLUMNS.reduce(
+        (acc, col) => {
+          acc[col] = 'wrap';
+          return acc;
+        },
+        {} as Record<string, 'wrap' | 'clip' | 'words'>
+      )
+    );
     localStorage.removeItem('linkTextPresentationMode');
-    
+
     console.log('Table settings reset to defaults');
   };
 
   // Function to format text based on presentation mode
   const formatText = (text: string, column: string) => {
     const mode = textPresentationMode[column] || 'wrap';
-    
+
     switch (mode) {
       case 'clip':
         return text.length > 50 ? text.substring(0, 50) + '...' : text;
@@ -589,7 +1208,7 @@ export const LinkList: React.FC = () => {
   // Function to get CSS class based on presentation mode
   const getTextPresentationClass = (column: string) => {
     const mode = textPresentationMode[column] || 'wrap';
-    
+
     switch (mode) {
       case 'clip':
         return 'truncate text-left';
@@ -605,16 +1224,19 @@ export const LinkList: React.FC = () => {
   const renderCellContent = (link: Link, col: string) => {
     switch (col) {
       case 'name':
-      return (
+        return (
           <div className="group flex items-center gap-2">
             <a
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer break-words flex-1"
-              title={link.metadata.title || link.url}
+              title={(link.metadata && link.metadata.title) || link.url}
             >
-              {formatText(link.metadata.title || 'Untitled', col)}
+              {formatText(
+                (link.metadata && link.metadata.title) || 'Untitled',
+                col
+              )}
             </a>
             <button
               onClick={(e) => {
@@ -626,7 +1248,28 @@ export const LinkList: React.FC = () => {
               title="Copy link info"
               data-copy-button="inline"
             >
-              <Copy className="w-3 h-3" />
+              <Copy className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onPointerDown={(e) => {
+                console.log('Pencil onPointerDown triggered for link:', link.id);
+                e.preventDefault();
+                e.stopPropagation();
+                openEditor(link);
+              }}
+              onClick={(e) => {
+                console.log('Pencil onClick triggered for link:', link.id);
+                e.preventDefault();
+                e.stopPropagation();
+                openEditor(link);
+              }}
+              className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-blue-600 relative z-10"
+              title="Edit link"
+              data-edit-button="inline"
+              data-link-id={link.id}
+            >
+              <Edit2 className="w-4 h-4" />
             </button>
           </div>
         );
@@ -645,64 +1288,79 @@ export const LinkList: React.FC = () => {
       case 'labels':
         return (
           <div className="flex flex-wrap gap-1">
-            {link.labels.map((label) => (
-              <span
-                key={label}
-                className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800"
-              >
-                {label}
-              </span>
-            ))}
+            {link.labels &&
+              link.labels.map((label) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800"
+                >
+                  {label}
+                </span>
+              ))}
           </div>
         );
       case 'status':
         return (
-          <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-            link.status === 'active' ? 'bg-green-100 text-green-800' :
-            link.status === 'archived' ? 'bg-yellow-100 text-yellow-800' :
-            'bg-red-100 text-red-800'
-          }`}>
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+              link.status === 'active'
+                ? 'bg-green-100 text-green-800'
+                : link.status === 'archived'
+                  ? 'bg-yellow-100 text-yellow-800'
+                  : 'bg-red-100 text-red-800'
+            }`}
+          >
             {link.status}
           </span>
         );
       case 'priority':
         return (
-          <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-            link.priority === 'high' ? 'bg-red-100 text-red-800' :
-            link.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-            'bg-green-100 text-green-800'
-          }`}>
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+              link.priority === 'high'
+                ? 'bg-red-100 text-red-800'
+                : link.priority === 'medium'
+                  ? 'bg-yellow-100 text-yellow-800'
+                  : 'bg-green-100 text-green-800'
+            }`}
+          >
             {link.priority}
           </span>
         );
-      case 'created':
-        return (
-          <span className="text-sm text-gray-500">
-            {new Date(link.createdAt).toLocaleDateString()}
-          </span>
-        );
+      case 'created': {
+        let dateStr = '';
+        if (link.createdAt) {
+          const d = new Date(link.createdAt);
+          if (!isNaN(d.getTime())) {
+            dateStr = d.toLocaleDateString();
+          }
+        }
+        return <span className="text-sm text-gray-500">{dateStr || '—'}</span>;
+      }
       default:
         return null;
     }
   };
 
   // Function to sort links within a group
-  const sortGroupLinks = (groupLinks: typeof links) => {
+  const sortGroupLinks = (groupLinks: Link[]) => {
     return [...groupLinks].sort((a, b) => {
       let cmp = 0;
-      
+
       switch (localSortKey) {
         case 'name':
-          const aTitle = a.metadata.title || '';
-          const bTitle = b.metadata.title || '';
+          const aTitle = (a.metadata && a.metadata.title) || '';
+          const bTitle = (b.metadata && b.metadata.title) || '';
           cmp = aTitle.localeCompare(bTitle);
           break;
         case 'url':
           cmp = a.url.localeCompare(b.url);
           break;
         case 'labels':
-          const aLabels = a.labels.join(', ');
-          const bLabels = b.labels.join(', ');
+          const aLabels =
+            a.labels && a.labels.length ? a.labels.join(', ') : '';
+          const bLabels =
+            b.labels && b.labels.length ? b.labels.join(', ') : '';
           cmp = aLabels.localeCompare(bLabels);
           break;
         case 'status':
@@ -713,84 +1371,135 @@ export const LinkList: React.FC = () => {
           cmp = priorityOrder[a.priority] - priorityOrder[b.priority];
           break;
         case 'created':
-          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          cmp =
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
           break;
         default:
           cmp = 0;
       }
-      
+
       return localSortDir === 'asc' ? cmp : -cmp;
     });
   };
 
-  const SortHeader: React.FC<{col: string; label:string}> = ({col,label})=>{
-      const is = sortKey === 'labels' ? localSortKey === col : sortKey === col;
-      const currentSortDir = sortKey === 'labels' ? localSortDir : sdir;
-      
-      const handleSort = async (e: React.MouseEvent | React.KeyboardEvent) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsSorting(true);
-              try {
-          if (sortKey === 'labels') {
-            // Local sorting for label groups
-            if (localSortKey === col) {
-              setLocalSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
-            } else {
-              setLocalSortKey(col);
-              setLocalSortDir('asc');
-            }
-          } else {
-            // Global sorting for regular view
-                toggleSort(col as any);
-          }
-              } finally {
-                setTimeout(() => setIsSorting(false), 100);
-              }
-      };
+  const SortHeader: React.FC<{ col: string; label: string }> = ({
+    col,
+    label,
+  }) => {
+    const is = sortKey === 'labels' ? localSortKey === col : sortKey === col;
+    const currentSortDir = sortKey === 'labels' ? localSortDir : sdir;
 
-      return (
-        <div className="flex items-center gap-2 w-full">
-          <button
-            onClick={handleSort}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                handleSort(e);
-              }
-            }}
-            className={`flex items-center gap-2 rounded-md px-2 py-1 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
-              is 
-                ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 shadow-sm' 
-                : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'
-            } ${isSorting ? 'opacity-75' : ''}`}
-            tabIndex={0}
-            role="button"
-            aria-label={`Sort by ${label}${is ? ` (${currentSortDir === 'asc' ? 'ascending' : 'descending'})` : ''}`}
-            aria-pressed={is}
-            disabled={isSorting}
-          >
-            <span className="font-semibold text-sm">{label}</span>
-            {is ? (
-              currentSortDir === 'asc' ? (
-                <ChevronUp size={14} className="text-blue-600" />
-              ) : (
-                <ChevronDown size={14} className="text-blue-600" />
-              )
+    const handleSort = async (e: React.MouseEvent | React.KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsSorting(true);
+      try {
+        if (sortKey === 'labels') {
+          // Local sorting for label groups
+          if (localSortKey === col) {
+            setLocalSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+          } else {
+            setLocalSortKey(col);
+            setLocalSortDir('asc');
+          }
+        } else {
+          // Global sorting for regular view
+          toggleSort(col as any);
+        }
+      } finally {
+        setTimeout(() => setIsSorting(false), 100);
+      }
+    };
+
+    return (
+      <div className="flex items-center gap-1.5 w-full">
+        <button
+          onClick={handleSort}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              handleSort(e);
+            }
+          }}
+          className={`flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+            is
+              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 shadow-sm'
+              : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'
+          } ${isSorting ? 'opacity-75' : ''}`}
+          tabIndex={0}
+          role="button"
+          aria-label={`Sort by ${label}${is ? ` (${currentSortDir === 'asc' ? 'ascending' : 'descending'})` : ''}`}
+          aria-pressed={is}
+          disabled={isSorting}
+        >
+          <span className="font-semibold text-xs">{label}</span>
+          {is ? (
+            currentSortDir === 'asc' ? (
+              <ChevronUp size={12} className="text-blue-600" />
             ) : (
-              <div className="w-3.5 h-3.5 opacity-30" />
-            )}
-          </button>
-        </div>
-      );
+              <ChevronDown size={12} className="text-blue-600" />
+            )
+          ) : (
+            <div className="w-3 h-3 opacity-30" />
+          )}
+        </button>
+      </div>
+    );
   };
+
+  const SelectionBanner: React.FC<{ count: number }> = ({ count }) => (
+    <div className="flex flex-wrap items-center justify-between gap-4 p-3 bg-blue-50/80 border border-blue-200 rounded-lg shadow-md backdrop-blur-sm">
+      <span className="text-sm font-semibold text-blue-900">
+        {count} link{count === 1 ? '' : 's'} selected
+      </span>
+      <div className="flex flex-wrap items-center gap-5 ml-auto pr-2">
+        <Button
+          size="md"
+          variant="primary"
+          onClick={startChat}
+          title="Start AI chat"
+        >
+          <MessageSquare className="w-4 h-4" />
+          Chat
+        </Button>
+        <Button
+          size="md"
+          variant="success"
+          onClick={copySelectedLinksInfo}
+          title="Copy info"
+        >
+          <Copy className="w-4 h-4" />
+          Copy
+        </Button>
+        <Button
+          size="md"
+          variant="warning"
+          className="inline-flex items-center gap-2"
+          onClick={() => handleChatGPTExport(getSelectedLinks())}
+          title="Export to ChatGPT"
+        >
+          <ExternalLink className="w-4 h-4" />
+          GPT
+        </Button>
+        <Button
+          size="md"
+          variant="secondary"
+          onClick={archiveSelected}
+          title="Archive"
+        >
+          <Archive className="w-4 h-4" />
+          Archive
+        </Button>
+      </div>
+    </div>
+  );
 
   // Grouping view when sorted by labels
   if (sortKey === 'labels') {
     // Build groups; include 'Unlabeled' for none
-    const groups: Record<string, typeof links> = {};
-    const archivedArr: typeof links = [];
-    const deletedArr: typeof links = [];
-    for (const link of links) {
+    const groups: Record<string, Link[]> = {};
+    const archivedArr: Link[] = [];
+    const deletedArr: Link[] = [];
+    for (const link of storeLinks) {
       if (link.status === 'archived') {
         archivedArr.push(link);
         continue;
@@ -800,7 +1509,7 @@ export const LinkList: React.FC = () => {
         continue;
       }
       // active links grouped by labels
-      if (link.labels.length === 0) {
+      if (!link.labels || link.labels.length === 0) {
         (groups['Unlabeled'] ||= []).push(link);
       } else {
         for (const label of link.labels) {
@@ -834,8 +1543,10 @@ export const LinkList: React.FC = () => {
 
     // Apply custom order for groups that exist
     if (groupOrder.length > 0) {
-      const customOrdered = groupOrder.filter(k => sortedLabelKeys.includes(k));
-      const remaining = sortedLabelKeys.filter(k => !groupOrder.includes(k));
+      const customOrdered = groupOrder.filter((k) =>
+        sortedLabelKeys.includes(k)
+      );
+      const remaining = sortedLabelKeys.filter((k) => !groupOrder.includes(k));
       sortedLabelKeys = [...customOrdered, ...remaining];
     }
 
@@ -844,7 +1555,7 @@ export const LinkList: React.FC = () => {
 
     const gridTemplate = {
       gridTemplateColumns: `40px repeat(${columns.length}, 1fr)`,
-      gap: '0'
+      gap: '0',
     } as React.CSSProperties;
 
     const labelMap: Record<string, string> = {
@@ -858,97 +1569,106 @@ export const LinkList: React.FC = () => {
 
     return (
       <div className="space-y-6">
-        {/* Table Settings Bar */}
-        <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              Settings auto-saved
+        {/* Clean Table Settings Bar */}
+        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="font-medium text-green-700">
+                Settings auto-saved
+              </span>
             </span>
             <button
               onClick={setBestView}
-              className="flex items-center gap-1 text-gray-500 hover:text-green-600 transition-colors duration-200"
+              className="group flex items-center gap-1.5 px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 hover:text-green-800 rounded-md transition-colors duration-200"
               title="Apply recommended table layout"
             >
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              Best View
+              <div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div>
+              <span className="font-medium">Best View</span>
             </button>
             <button
               onClick={() => setShowColumnSettings(!showColumnSettings)}
-              className="flex items-center gap-1 text-gray-500 hover:text-blue-600 transition-colors duration-200"
+              className="group flex items-center gap-1.5 px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 hover:text-blue-800 rounded-md transition-colors duration-200"
               title="Toggle column visibility settings"
             >
-              <Settings size={14} />
-              Columns
+              <Settings
+                size={12}
+                className="group-hover:rotate-180 transition-transform duration-200"
+              />
+              <span className="font-medium">Columns</span>
             </button>
             <button
               onClick={resetTableSettings}
-              className="text-gray-500 hover:text-red-600 transition-colors duration-200"
+              className="group flex items-center gap-1.5 px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 hover:text-red-800 rounded-md transition-colors duration-200"
               title="Reset all table settings to defaults"
             >
-              Reset Settings
+              <span className="font-medium">Reset Settings</span>
             </button>
           </div>
-          <div className="text-xs text-gray-500">
-            Drag headers to reorder • Drag edges to resize
-          </div>
+          {/* Hint removed per request */}
         </div>
 
-        {/* Column Visibility Settings */}
+        {/* Clean Column Visibility Settings */}
         {showColumnSettings && (
-          <div className="px-4 py-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+          <div className="px-3 py-3 bg-white border border-gray-200 rounded-lg shadow-md">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-gray-700">Column Visibility</h3>
+              <h3 className="text-sm font-semibold text-gray-900">
+                Column Visibility
+              </h3>
               <button
                 onClick={() => setShowColumnSettings(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                className="w-5 h-5 bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 rounded flex items-center justify-center transition-colors duration-200"
               >
                 ×
               </button>
             </div>
-            
-            {/* Best View Preset Button */}
-            <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+
+            {/* Clean Best View Preset Button */}
+            <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-medium text-blue-800">Recommended View</h4>
-                  <p className="text-xs text-blue-600 mt-1">Optimized layout for best readability</p>
+                  <h4 className="text-xs font-semibold text-blue-900">
+                    Recommended View
+                  </h4>
+                  <p className="text-xs text-blue-700 mt-0.5">
+                    Optimized layout for best readability
+                  </p>
                 </div>
                 <button
                   onClick={setBestView}
-                  className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition-colors duration-200"
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors duration-200"
                 >
                   Apply Best View
                 </button>
               </div>
             </div>
-            
-            <div className="grid grid-cols-2 gap-2">
+
+            <div className="grid grid-cols-2 gap-1">
               {DEFAULT_COLUMNS.map((col) => (
-                <div key={col} className="space-y-2">
+                <div key={col} className="space-y-1">
                   {/* Column Visibility */}
                   <button
                     onClick={() => toggleColumnVisibility(col)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all duration-200 w-full ${
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors duration-200 w-full ${
                       visibleColumns[col]
                         ? 'bg-blue-50 text-blue-700 border border-blue-200'
                         : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
                     }`}
                   >
                     {visibleColumns[col] ? (
-                      <Eye size={14} className="text-blue-600" />
+                      <Eye size={10} className="text-blue-600" />
                     ) : (
-                      <EyeOff size={14} className="text-gray-400" />
+                      <EyeOff size={10} className="text-gray-400" />
                     )}
                     <span>{labelMap[col] || col}</span>
                   </button>
-                  
+
                   {/* Text Presentation Mode - only show if column is visible */}
                   {visibleColumns[col] && (
                     <div className="flex gap-1">
                       <button
                         onClick={() => updateTextPresentationMode(col, 'wrap')}
-                        className={`px-2 py-1 text-xs rounded transition-all duration-200 ${
+                        className={`px-1 py-0.5 text-xs rounded transition-colors duration-200 ${
                           textPresentationMode[col] === 'wrap'
                             ? 'bg-green-100 text-green-700 border border-green-200'
                             : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
@@ -959,7 +1679,7 @@ export const LinkList: React.FC = () => {
                       </button>
                       <button
                         onClick={() => updateTextPresentationMode(col, 'clip')}
-                        className={`px-2 py-1 text-xs rounded transition-all duration-200 ${
+                        className={`px-1 py-0.5 text-xs rounded transition-colors duration-200 ${
                           textPresentationMode[col] === 'clip'
                             ? 'bg-green-100 text-green-700 border border-green-200'
                             : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
@@ -970,7 +1690,7 @@ export const LinkList: React.FC = () => {
                       </button>
                       <button
                         onClick={() => updateTextPresentationMode(col, 'words')}
-                        className={`px-2 py-1 text-xs rounded transition-all duration-200 ${
+                        className={`px-1 py-0.5 text-xs rounded transition-colors duration-200 ${
                           textPresentationMode[col] === 'words'
                             ? 'bg-green-100 text-green-700 border border-green-200'
                             : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
@@ -988,48 +1708,64 @@ export const LinkList: React.FC = () => {
         )}
 
         {selectedIds.length > 0 && (
-          <div className="flex items-center justify-between mb-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex flex-wrap items-center justify-between gap-4 p-3 bg-blue-50/80 border border-blue-200 rounded-lg shadow-md backdrop-blur-sm fixed top-2 left-4 right-4 z-20">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-blue-700">
-                <CheckCircle className="w-4 h-4" />
-                <span className="font-medium">
-                  {selectedIds.length} link{selectedIds.length === 1 ? '' : 's'} selected
-                </span>
-              </div>
-              <div className="text-xs text-blue-600">
-                Right-click any link for individual actions
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                  <CheckCircle className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-blue-900">
+                    {selectedIds.length} link
+                    {selectedIds.length === 1 ? '' : 's'} selected
+                  </div>
+                  <div className="text-xs text-blue-600 font-medium">
+                    ✨ Ready for AI analysis • Right-click for individual
+                    actions
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="secondary" 
-                size="sm" 
+            <div className="flex flex-wrap items-center gap-5 ml-auto pr-2">
+              <Button
+                variant="primary"
+                size="md"
                 onClick={startChat}
-                className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                className="inline-flex items-center gap-2"
                 title="Start AI chat with selected links"
               >
-                <MessageSquare className="w-3 h-3" />
-                Start Chat
+                <MessageSquare className="w-4 h-4" />
+                Start AI Chat
               </Button>
-              <Button 
-                variant="secondary" 
-                size="sm" 
+              <Button
+                variant="success"
+                size="md"
                 onClick={copySelectedLinksInfo}
-                className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
+                className="inline-flex items-center gap-2"
                 title="Copy all link information to clipboard"
                 data-copy-button="bulk"
               >
-                <Copy className="w-3 h-3" />
+                <Copy className="w-4 h-4" />
                 Copy Info
               </Button>
-              <Button 
-                variant="secondary" 
-                size="sm" 
+              <Button
+                variant="warning"
+                size="md"
+                onClick={() => handleChatGPTExport(getSelectedLinks())}
+                className="inline-flex items-center gap-2"
+                title="Export selected links to ChatGPT for analysis"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Export to ChatGPT
+              </Button>
+              <Button
+                variant="secondary"
+                size="md"
                 onClick={archiveSelected}
-                className="flex items-center gap-2 bg-gray-600 text-white hover:bg-gray-700"
+                className="inline-flex items-center gap-2"
                 title="Archive selected links"
               >
-                <Archive className="w-3 h-3" />
+                <Archive className="w-4 h-4" />
                 Archive
               </Button>
             </div>
@@ -1039,8 +1775,8 @@ export const LinkList: React.FC = () => {
           <div
             key={label}
             className={`border border-gray-200 rounded-xl overflow-hidden transition-all duration-200 shadow-sm ${
-              dragOverGroup === label 
-                ? 'border-blue-400 bg-blue-50 shadow-lg' 
+              dragOverGroup === label
+                ? 'border-blue-400 bg-blue-50 shadow-lg'
                 : 'hover:shadow-md'
             }`}
             draggable
@@ -1052,242 +1788,322 @@ export const LinkList: React.FC = () => {
             onDrop={(e) => onGroupDrop(e, label)}
             onDragLeave={() => setDragOverGroup(null)}
           >
-            <div className="bg-gradient-to-r from-gray-100 to-gray-200 px-4 py-3 text-sm font-semibold flex items-center justify-between group-header border-b border-gray-200">
-              <span className="text-gray-700">{label.charAt(0).toUpperCase() + label.slice(1)}</span>
+            {/* Selection banner is shown globally at the top; avoid duplicating per-group banners */}
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 text-sm font-bold flex items-center justify-between group-header border-b border-gray-200">
+              <span className="text-gray-800 flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                {label.charAt(0).toUpperCase() + label.slice(1)}
+              </span>
               <span className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <button
                   type="button"
                   aria-label="Move up"
-                  className="p-1.5 hover:bg-gray-300 rounded-md transition-all duration-200"
+                  className="p-2 hover:bg-white rounded-lg transition-all duration-200 hover:shadow-md transform hover:scale-110"
                   onClick={() => moveGroup(label, 'up')}
                 >
-                  <ChevronUp size={14} />
+                  <ChevronUp size={14} className="text-gray-600" />
                 </button>
                 <button
                   type="button"
                   aria-label="Move down"
-                  className="p-1.5 hover:bg-gray-300 rounded-md transition-all duration-200"
+                  className="p-2 hover:bg-white rounded-lg transition-all duration-200 hover:shadow-md transform hover:scale-110"
                   onClick={() => moveGroup(label, 'down')}
                 >
-                  <ChevronDown size={14} />
+                  <ChevronDown size={14} className="text-gray-600" />
                 </button>
               </span>
             </div>
             {/* Single table for perfect alignment */}
             <div className="overflow-x-auto">
-              <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50 text-xs font-semibold uppercase text-gray-600 border-b border-gray-200 text-left">
-              {/* select all checkbox */}
-                  <th className="w-10 px-3 py-3 border-r">
-                    <div className="flex items-center justify-center">
-                <HeaderCheckbox
-                  groupLinks={groups[label] as any}
-                  selectedIds={selectedIds}
-                  toggleSelectAll={toggleSelectAll}
-                />
-              </div>
-                  </th>
-                  {columns.filter(col => visibleColumns[col]).map((col) => (
-                    <th
-                  key={col}
-                      style={{ minWidth: getColumnWidth(col) }}
-                      className={`px-4 py-3 border-r select-none cursor-move transition-all duration-150 relative text-left ${
-                        resizingColumn === col
-                          ? 'bg-blue-50 border-blue-300 shadow-sm'
-                          : dragOverColumn === col 
-                      ? 'bg-blue-100 border-blue-300' 
-                      : 'hover:bg-gray-50'
-                  }`}
-                  draggable
-                  onDragStart={(e) => onDragStart(e, col)}
-                  onDragOver={(e) => {
-                    onDragOver(e);
-                    setDragOverColumn(col);
-                  }}
-                  onDrop={(e) => onDrop(e, col)}
-                  onDragLeave={() => setDragOverColumn(null)}
-                  onMouseDown={(e) => {
-                    // Prevent drag when clicking the sort button
-                    if ((e.target as HTMLElement).closest('button')) {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                      <div className="flex items-center gap-2">
-                        <div className="p-1 rounded hover:bg-gray-200 transition-colors duration-200">
-                          <GripVertical 
-                            size={14} 
-                            className="text-gray-500 opacity-70 hover:opacity-100 transition-opacity duration-200 cursor-move" 
-                          />
-                        </div>
-                  <SortHeader col={col} label={labelMap[col]} />
-                </div>
-                      {/* Resize handle */}
-                      <div
-                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors duration-200 ${
-                          resizingColumn === col 
-                            ? 'bg-blue-600 shadow-lg' 
-                            : 'hover:bg-blue-500'
-                        }`}
-                        onMouseDown={(e) => onResizeStart(e, col)}
-                        title="Drag to resize column"
-                      />
-                      {/* Width indicator during resize */}
-                      {resizingColumn === col && (
-                        <div className="absolute -top-8 right-0 bg-blue-600 text-white text-xs px-2 py-1 rounded shadow-lg z-10">
-                          {getColumnWidth(col)}px
-            </div>
-                      )}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {sortGroupLinks(groups[label]).map((l) => (
-                  <tr key={l.id} className="group relative hover:bg-gray-50 transition-all duration-200">
-                    {/* Checkbox column */}
-                    <td className="w-10 px-3 py-3 border-r border-gray-100">
+              <table className="w-full min-w-full table-fixed">
+                <thead>
+                  <tr className="bg-gray-50 text-xs font-semibold uppercase text-gray-600 border-b border-gray-200 text-left">
+                    {/* select all checkbox */}
+                    <th className="w-10 px-3 py-3 border-r align-top">
                       <div className="flex items-center justify-center">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                  setSelectedIds((prev) => {
-                              if (prev.includes(l.id)) {
-                    return prev.filter((id) => id !== l.id);
-                              } else {
-                                return [...prev, l.id];
-                              }
-                            });
-                          }}
-                          onContextMenu={(e) => {
-                            e.preventDefault();
-                            setContextMenu({
-                              show: true,
-                              x: e.clientX,
-                              y: e.clientY,
-                              link: l
-                            });
-                          }}
-                          title={
-                            l.status === 'archived'
-                              ? 'Done – right-click for more options / left-click to select'
-                              : selectedIds.includes(l.id)
-                              ? 'Selected – right-click for more options'
-                              : 'Left-click to select / right-click for more options'
-                          }
-                          className="p-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-md transition-all duration-200 hover:bg-gray-100"
-                        >
-                          {l.status === 'archived' ? (
-                            <CheckCircle size={18} className="text-green-600" />
-                          ) : selectedIds.includes(l.id) ? (
-                            <CheckSquare size={18} className="text-blue-600" />
-                          ) : (
-                            <Square size={18} className="text-gray-400 group-hover:text-gray-600" />
-                          )}
-                        </button>
+                        <HeaderCheckbox
+                          groupLinks={groups[label] as any}
+                          selectedIds={selectedIds}
+                          toggleSelectAll={toggleSelectAll}
+                        />
                       </div>
-                    </td>
-                    {/* Data columns */}
-                    {columns.filter(c => visibleColumns[c]).map((c) => (
-                      <td 
-                        key={c} 
-                        style={{ minWidth: getColumnWidth(c) }}
-                        className="px-4 py-3 border-r border-gray-100 text-left"
-                      >
-                                        <div className={`${getTextPresentationClass(c)} text-left`}>
-                  {renderCellContent(l, c)}
-                </div>
-                      </td>
-                    ))}
+                    </th>
+                    {columns
+                      .filter((col) => visibleColumns[col])
+                      .map((col) => (
+                        <th
+                          key={col}
+                          style={{ minWidth: getColumnWidth(col) }}
+                          className={`px-4 py-3 border-r select-none cursor-move transition-all duration-150 relative text-left ${
+                            resizingColumn === col
+                              ? 'bg-blue-50 border-blue-300 shadow-sm'
+                              : dragOverColumn === col
+                                ? 'bg-blue-200 border-blue-400 shadow-lg ring-2 ring-blue-300'
+                                : 'hover:bg-gray-50'
+                          }`}
+                          onDragEnter={(e) => onDragEnter(e, col)}
+                          onDragOver={(e) => onDragOver(e)}
+                          onDrop={(e) => onDrop(e, col)}
+                          onDragLeave={(e) => setDragOverColumn(null)}
+                          onMouseDown={(e) => {
+                            // Only prevent drag when clicking the sort button, allow drag handle
+                            if (
+                              (e.target as HTMLElement).closest('button') &&
+                              !(e.target as HTMLElement).closest(
+                                '[data-drag-handle="true"]'
+                              )
+                            ) {
+                              e.preventDefault();
+                            }
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            {/* Dedicated drag handle */}
+                            <div
+                              className="p-2 rounded bg-blue-50 hover:bg-blue-100 transition-colors duration-200 cursor-move border border-blue-200 hover:border-blue-300"
+                              title="Drag to reorder column"
+                              data-drag-handle="true"
+                              draggable
+                              onDragStart={(e) => onDragStart(e as any, col)}
+                              onDragEnd={(e) => onDragEnd(e as any)}
+                              style={{ touchAction: 'none' }}
+                            >
+                              <GripVertical
+                                size={16}
+                                className="text-blue-600"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <SortHeader col={col} label={labelMap[col]} />
+                            </div>
+                          </div>
+                          {/* Resize handle */}
+                          <div
+                            className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors duration-200 ${
+                              resizingColumn === col
+                                ? 'bg-blue-600 shadow-lg'
+                                : 'hover:bg-blue-500'
+                            }`}
+                            onMouseDown={(e) => onResizeStart(e, col)}
+                            title="Drag to resize column"
+                          />
+                          {/* Width indicator during resize */}
+                          {resizingColumn === col && (
+                            <div className="absolute -top-8 right-0 bg-blue-600 text-white text-xs px-2 py-1 rounded shadow-lg z-10">
+                              {getColumnWidth(col)}px
+                            </div>
+                          )}
+                        </th>
+                      ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {sortGroupLinks(groups[label]).map((l) => (
+                    <tr
+                      key={l.id}
+                      className="group relative hover:bg-gray-50 transition-all duration-200"
+                    >
+                      {/* Checkbox column */}
+                      <td className="w-10 px-3 py-3 border-r border-gray-100">
+                        <div className="flex items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              setSelectedIds((prev) => {
+                                if (prev.includes(l.id)) {
+                                  return prev.filter((id) => id !== l.id);
+                                } else {
+                                  return [...prev, l.id];
+                                }
+                              });
+                            }}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              setContextMenu({
+                                show: true,
+                                x: e.clientX,
+                                y: e.clientY,
+                                link: l,
+                              });
+                            }}
+                            title={
+                              l.status === 'archived'
+                                ? 'Done – right-click for more options / left-click to select'
+                                : selectedIds.includes(l.id)
+                                  ? 'Selected – right-click for more options'
+                                  : 'Left-click to select / right-click for more options'
+                            }
+                            className="p-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-md transition-all duration-200 hover:bg-gray-100"
+                          >
+                            {l.status === 'archived' ? (
+                              <CheckCircle
+                                size={16}
+                                className="text-green-600"
+                              />
+                            ) : selectedIds.includes(l.id) ? (
+                              <CheckSquare
+                                size={16}
+                                className="text-blue-600"
+                              />
+                            ) : (
+                              <Square
+                                size={16}
+                                className="text-gray-400 group-hover:text-gray-600"
+                              />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                      {/* Data columns */}
+                      {columns
+                        .filter((c) => visibleColumns[c])
+                        .map((c) => (
+                          <td
+                            key={c}
+                            style={{ minWidth: getColumnWidth(c) }}
+                            className="px-4 py-3 border-r border-gray-100 text-left"
+                          >
+                            <div
+                              className={`${getTextPresentationClass(c)} text-left`}
+                            >
+                              {renderCellContent(l, c)}
+                            </div>
+                          </td>
+                        ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             {/* Chat panel anchored under this label group */}
             {chatLinks && anchorLabel === label && (
-              <div className="px-3 py-4 bg-gray-50 border-t">
-                <MultiChatPanel links={chatLinks} onClose={() => setChatLinks(null)} />
+              <div className="px-2 py-3 bg-gray-50 border-t">
+                <MultiChatPanel
+                  links={chatLinks}
+                  onClose={() => setChatLinks(null)}
+                />
               </div>
             )}
           </div>
         ))}
         {/* fallback: if anchor label missing (e.g., selection cleared) render at end */}
         {chatLinks && !anchorLabel && (
-          <div className="mt-6">
-            <MultiChatPanel links={chatLinks} onClose={() => setChatLinks(null)} />
+          <div className="mt-4">
+            <MultiChatPanel
+              links={chatLinks}
+              onClose={() => setChatLinks(null)}
+            />
           </div>
         )}
 
         {/* Context Menu */}
         {contextMenu.show && contextMenu.link && (
           <div
-            className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px]"
+            className="fixed z-50 bg-white border border-gray-200 rounded-md shadow-md py-1 min-w-[160px]"
             style={{
               left: contextMenu.x,
               top: contextMenu.y,
             }}
-            onMouseLeave={() => setContextMenu({ show: false, x: 0, y: 0, link: null })}
+            onMouseLeave={resetContextMenu}
           >
             <button
               onClick={() => {
                 startChatWithSingleLink(contextMenu.link!);
-                setContextMenu({ show: false, x: 0, y: 0, link: null });
+                resetContextMenu();
               }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 flex items-center gap-2"
+              className="w-full px-2 py-1 text-left text-xs hover:bg-blue-50 flex items-center gap-1.5"
             >
-              <MessageSquare className="w-4 h-4 text-blue-600" />
+              <MessageSquare className="w-3 h-3 text-blue-600" />
               Start Chat
             </button>
             <button
               onClick={() => {
-                copySingleLinkInfo(contextMenu.link!);
-                setContextMenu({ show: false, x: 0, y: 0, link: null });
+                if (contextMenu.link) {
+                  openEditor(contextMenu.link);
+                }
+                resetContextMenu();
               }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-green-50 flex items-center gap-2"
+              className="w-full px-2 py-1 text-left text-xs hover:bg-green-50 flex items-center gap-1.5"
+            >
+              <Edit2 className="w-3 h-3 text-green-600" />
+              Edit Link
+            </button>
+            <button
+              onClick={() => {
+                copySingleLinkInfo(contextMenu.link!);
+                resetContextMenu();
+              }}
+              className="w-full px-2 py-1 text-left text-xs hover:bg-green-50 flex items-center gap-1.5"
               data-context-menu="copy"
             >
-              <Copy className="w-4 h-4 text-green-600" />
+              <Copy className="w-3 h-3 text-green-600" />
               Copy Info
             </button>
             <button
               onClick={() => {
-                void updateLink(contextMenu.link!.id, { 
-                  status: contextMenu.link!.status === 'archived' ? 'active' : 'archived' 
-                });
-                setContextMenu({ show: false, x: 0, y: 0, link: null });
+                handleChatGPTExport([contextMenu.link!]);
+                resetContextMenu();
               }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+              className="w-full px-2 py-1 text-left text-xs hover:bg-orange-50 flex items-center gap-1.5"
             >
-              <Archive className="w-4 h-4 text-gray-600" />
-              {contextMenu.link!.status === 'archived' ? 'Mark Active' : 'Mark Archived'}
+              <ExternalLink className="w-3 h-3 text-orange-600" />
+              Export to ChatGPT
+            </button>
+            <button
+              onClick={() => {
+                // Update extension storage directly
+                window.postMessage(
+                  {
+                    type: 'SRT_UPDATE_LINKS_STATUS',
+                    links: [
+                      {
+                        id: contextMenu.link!.id,
+                        status:
+                          contextMenu.link!.status === 'archived'
+                            ? 'active'
+                            : 'archived',
+                      },
+                    ],
+                  },
+                  '*'
+                );
+                resetContextMenu();
+                // Refresh the links to show updated status
+                setTimeout(() => {
+                  loadLinks();
+                }, 500);
+              }}
+              className="w-full px-2 py-1 text-left text-xs hover:bg-gray-50 flex items-center gap-1.5"
+            >
+              <Archive className="w-3 h-3 text-gray-600" />
+              {contextMenu.link!.status === 'archived'
+                ? 'Mark Active'
+                : 'Mark Archived'}
             </button>
             <hr className="my-1" />
             <button
               onClick={() => {
-                setSelectedIds(prev => 
-                  prev.includes(contextMenu.link!.id) 
-                    ? prev.filter(id => id !== contextMenu.link!.id)
+                setSelectedIds((prev) =>
+                  prev.includes(contextMenu.link!.id)
+                    ? prev.filter((id) => id !== contextMenu.link!.id)
                     : [...prev, contextMenu.link!.id]
                 );
-                setContextMenu({ show: false, x: 0, y: 0, link: null });
+                resetContextMenu();
               }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-purple-50 flex items-center gap-2"
+              className="w-full px-2 py-1 text-left text-xs hover:bg-purple-50 flex items-center gap-1.5"
             >
-              <CheckSquare className="w-4 h-4 text-purple-600" />
-              {selectedIds.includes(contextMenu.link!.id) ? 'Deselect' : 'Select'}
+              <CheckSquare className="w-3 h-3 text-purple-600" />
+              {selectedIds.includes(contextMenu.link!.id)
+                ? 'Deselect'
+                : 'Select'}
             </button>
           </div>
         )}
 
         {/* Click outside to close context menu */}
         {contextMenu.show && (
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setContextMenu({ show: false, x: 0, y: 0, link: null })}
-          />
+          <div className="fixed inset-0 z-40" onClick={resetContextMenu} />
         )}
       </div>
     );
@@ -1307,7 +2123,10 @@ export const LinkList: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+    <div
+      ref={rootRef}
+      className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden"
+    >
       {/* Table Settings Bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200 text-xs text-gray-600">
         <div className="flex items-center gap-4">
@@ -1339,16 +2158,16 @@ export const LinkList: React.FC = () => {
             Reset Settings
           </button>
         </div>
-        <div className="text-xs text-gray-500">
-          Drag headers to reorder • Drag edges to resize
-        </div>
+        {/* helper hint removed */}
       </div>
 
       {/* Column Visibility Settings */}
       {showColumnSettings && (
         <div className="px-4 py-3 bg-white border border-gray-200 rounded-lg shadow-sm mx-4 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-700">Column Visibility</h3>
+            <h3 className="text-sm font-medium text-gray-700">
+              Column Visibility
+            </h3>
             <button
               onClick={() => setShowColumnSettings(false)}
               className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
@@ -1356,13 +2175,17 @@ export const LinkList: React.FC = () => {
               ×
             </button>
           </div>
-          
+
           {/* Best View Preset Button */}
           <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-sm font-medium text-blue-800">Recommended View</h4>
-                <p className="text-xs text-blue-600 mt-1">Optimized layout for best readability</p>
+                <h4 className="text-sm font-medium text-blue-800">
+                  Recommended View
+                </h4>
+                <p className="text-xs text-blue-600 mt-1">
+                  Optimized layout for best readability
+                </p>
               </div>
               <button
                 onClick={setBestView}
@@ -1372,7 +2195,7 @@ export const LinkList: React.FC = () => {
               </button>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-2">
             {DEFAULT_COLUMNS.map((col) => (
               <div key={col} className="space-y-2">
@@ -1392,7 +2215,7 @@ export const LinkList: React.FC = () => {
                   )}
                   <span>{labelMap[col] || col}</span>
                 </button>
-                
+
                 {/* Text Presentation Mode - only show if column is visible */}
                 {visibleColumns[col] && (
                   <div className="flex gap-1">
@@ -1438,192 +2261,274 @@ export const LinkList: React.FC = () => {
       )}
 
       {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between p-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-b border-blue-500 shadow-lg">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-lg">
-                <MessageSquare size={20} className="text-white" />
+        <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                <MessageSquare size={16} className="text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-lg">Selected for AI Chat</h3>
-                <p className="text-blue-100 text-sm">Ready to analyze your research</p>
+                <h3 className="font-semibold text-gray-900">
+                  Selected for AI Chat
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Ready to analyze your research
+                </p>
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <div className="text-sm text-blue-100">Selected</div>
-              <div className="text-xl font-bold">{selectedIds.length} link{selectedIds.length === 1 ? '' : 's'}</div>
+              <div className="text-xs text-gray-500">Selected</div>
+              <div className="text-lg font-semibold text-gray-900">
+                {selectedIds.length} link{selectedIds.length === 1 ? '' : 's'}
+              </div>
             </div>
-            
-            <div className="flex gap-2">
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                onClick={archiveSelected} 
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50"
+
+            <div className="flex flex-wrap items-center gap-5 ml-auto pr-2">
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={archiveSelected}
+                className="bg-white hover:bg-gray-50 text-gray-700 border-gray-300 hover:border-gray-400"
               >
-              <Archive size={16} className="mr-2" />
+                <Archive size={14} className="mr-1.5" />
                 Archive
               </Button>
-              
-              <Button 
-                variant="secondary" 
-                size="sm" 
+
+              <Button
+                variant="secondary"
+                size="md"
                 onClick={copySelectedLinksInfo}
-                className="bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700 font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                className="bg-green-100 hover:bg-green-200 text-green-700 border-green-200 hover:border-green-300"
                 data-copy-button="bulk"
               >
-                <Copy size={16} className="mr-2" />
+                <Copy size={14} className="mr-1.5" />
                 Copy Info
               </Button>
-              
-              <Button 
-                variant="primary" 
-                size="sm" 
-                onClick={startChat} 
-                className="bg-white text-blue-600 hover:bg-gray-100 font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+
+              <Button
+                variant="warning"
+                size="md"
+                onClick={() => handleChatGPTExport(getSelectedLinks())}
+                className="inline-flex items-center gap-2"
+                title="Export selected links to ChatGPT for analysis"
               >
-                <MessageSquare size={16} className="mr-2" />
+                <ExternalLink className="w-4 h-4" />
+                Export to ChatGPT
+              </Button>
+
+              <Button
+                variant="primary"
+                size="md"
+                onClick={startChat}
+                className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 hover:border-blue-700"
+              >
+                <MessageSquare size={14} className="mr-1.5" />
                 Start AI Chat
-            </Button>
-          </div>
+              </Button>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
-        <thead>
-          <tr className="bg-gray-50 text-xs font-semibold uppercase text-gray-600 border-b border-gray-200 text-left">
-        {/* select all checkbox header */}
-            <th className="w-10 px-3 py-3 border-r">
-              <div className="flex items-center justify-center">
-          <input
-            type="checkbox"
-            onChange={(e) => toggleSelectAll(e.target.checked, links)}
-            checked={links.length > 0 && links.every((l) => selectedIds.includes(l.id))}
-                  className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-          />
+      {!storeLinks ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading links...</p>
+          </div>
         </div>
-            </th>
-            {columns.filter(col => visibleColumns[col]).map((col, index)=>(
-              <th
-            key={col}
-                style={{ minWidth: getColumnWidth(col) }}
-                className={`px-4 py-3 border-r select-none cursor-move transition-all duration-150 relative text-left ${
-                  resizingColumn === col
-                    ? 'bg-blue-50 border-blue-300 shadow-sm'
-                    : dragOverColumn === col 
-                    ? 'bg-blue-100 border-blue-300' 
-                    : 'hover:bg-gray-50'
-                }`}
-            draggable
-            onDragStart={(e) => onDragStart(e, col)}
-            onDragOver={(e) => {
-              onDragOver(e);
-              setDragOverColumn(col);
-            }}
-            onDrop={(e) => onDrop(e, col)}
-            onDragLeave={() => setDragOverColumn(null)}
-            onMouseDown={(e) => {
-              // Prevent drag when clicking the sort button
-              if ((e.target as HTMLElement).closest('button')) {
-                e.preventDefault();
-              }
-            }}
-          >
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded hover:bg-gray-200 transition-colors duration-200">
-                    <GripVertical 
-                      size={14} 
-                      className="text-gray-500 opacity-70 hover:opacity-100 transition-opacity duration-200 cursor-move" 
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full table-fixed">
+            <thead>
+              <tr className="bg-gray-50 text-xs font-semibold uppercase text-gray-600 border-b border-gray-200 text-left">
+                {/* select all checkbox header */}
+                <th className="w-10 px-3 py-3 border-r">
+                  <div className="flex items-center justify-center">
+                    <input
+                      type="checkbox"
+                      onChange={(e) =>
+                        toggleSelectAll(e.target.checked, storeLinks || [])
+                      }
+                      checked={
+                        storeLinks &&
+                        storeLinks.length > 0 &&
+                        storeLinks.every((l) => selectedIds.includes(l.id))
+                      }
+                      className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                     />
                   </div>
-            <SortHeader col={col} label={labelMap[col]} />
-          </div>
-                {/* Resize handle */}
-                <div
-                  className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors duration-200 ${
-                    resizingColumn === col 
-                      ? 'bg-blue-600 shadow-lg' 
-                      : 'hover:bg-blue-500'
-                  }`}
-                  onMouseDown={(e) => onResizeStart(e, col)}
-                  title="Drag to resize column"
-                />
-                {/* Width indicator during resize */}
-                {resizingColumn === col && (
-                  <div className="absolute -top-8 right-0 bg-blue-600 text-white text-xs px-2 py-1 rounded shadow-lg z-10">
-                    {getColumnWidth(col)}px
-      </div>
-                )}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-        {links.map((l, index) => (
-            <tr key={l.id} className="group relative hover:bg-gray-50 transition-all duration-200">
-              {/* Checkbox column */}
-              <td className="w-10 px-3 py-3 border-r border-gray-100">
-                <div className="flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-              setSelectedIds((prev) => {
-                        if (prev.includes(l.id)) {
-                return prev.filter((id) => id !== l.id);
-                        } else {
-                          return [...prev, l.id];
+                </th>
+                {columns
+                  .filter((col) => visibleColumns[col])
+                  .map((col, index) => (
+                    <th
+                      key={col}
+                      style={{ minWidth: getColumnWidth(col) }}
+                      className={`px-4 py-3 border-r select-none cursor-move transition-all duration-150 relative text-left align-top ${
+                        resizingColumn === col
+                          ? 'bg-blue-50 border-blue-300 shadow-sm'
+                          : draggedColumn === col
+                            ? 'bg-yellow-100 border-yellow-400 shadow-lg ring-2 ring-yellow-300'
+                            : dragOverColumn === col
+                              ? 'bg-blue-200 border-blue-400 shadow-lg ring-2 ring-blue-300'
+                              : 'hover:bg-gray-50'
+                      }`}
+                      onDragEnter={(e) => onDragEnter(e, col)}
+                      onDragOver={(e) => onDragOver(e)}
+                      onDrop={(e) => onDrop(e, col)}
+                      onDragLeave={(e) => onDragLeave(e)}
+                      onMouseDown={(e) => {
+                        // Only prevent drag when clicking the sort button, allow drag handle
+                        if (
+                          (e.target as HTMLElement).closest('button') &&
+                          !(e.target as HTMLElement).closest(
+                            '[data-drag-handle="true"]'
+                          )
+                        ) {
+                          e.preventDefault();
                         }
-                      });
-                    }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      void updateLink(l.id, { status: l.status === 'archived' ? 'active' : 'archived' });
-                    }}
-                    title={
-                      l.status === 'archived'
-                        ? 'Done – right-click to mark active / left-click to select'
-                        : selectedIds.includes(l.id)
-                        ? 'Selected – right-click to mark done'
-                        : 'Left-click to select / right-click to mark done'
-                    }
-                    className="p-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-md transition-all duration-200 hover:bg-gray-100"
-                  >
-                    {l.status === 'archived' ? (
-                      <CheckCircle size={18} className="text-green-600" />
-                    ) : selectedIds.includes(l.id) ? (
-                      <CheckSquare size={18} className="text-blue-600" />
-                    ) : (
-                      <Square size={18} className="text-gray-400 group-hover:text-gray-600" />
-                    )}
-                  </button>
-                </div>
-              </td>
-              {/* Data columns */}
-              {columns.filter(c => visibleColumns[c]).map((c) => (
-                <td 
-                  key={c} 
-                  style={{ minWidth: getColumnWidth(c) }}
-                  className="px-4 py-3 border-r border-gray-100 text-left"
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        {/* Dedicated drag handle */}
+                        <div
+                          className="p-2 rounded bg-blue-50 hover:bg-blue-100 transition-colors duration-200 cursor-move border border-blue-200 hover:border-blue-300"
+                          title="Drag to reorder column"
+                          data-drag-handle="true"
+                          draggable
+                          onDragStart={(e) => onDragStart(e as any, col)}
+                          onDragEnd={(e) => onDragEnd(e as any)}
+                          style={{ touchAction: 'none' }}
+                        >
+                          <GripVertical size={16} className="text-blue-600" />
+                        </div>
+
+                        {/* Column label and sort button */}
+                        <div className="flex-1">
+                          <SortHeader col={col} label={labelMap[col]} />
+                        </div>
+                      </div>
+                      {/* Resize handle */}
+                      <div
+                        className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize transition-colors duration-200 ${
+                          resizingColumn === col
+                            ? 'bg-blue-600 shadow-lg'
+                            : 'hover:bg-blue-500'
+                        }`}
+                        onMouseDown={(e) => onResizeStart(e, col)}
+                        title="Drag to resize column"
+                      />
+                      {/* Width indicator during resize */}
+                      {resizingColumn === col && (
+                        <div className="absolute -top-8 right-0 bg-blue-600 text-white text-xs px-2 py-1 rounded shadow-lg z-10">
+                          {getColumnWidth(col)}px
+                        </div>
+                      )}
+                    </th>
+                  ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {storeLinks?.map((l, index) => (
+                <tr
+                  key={l.id}
+                  className="group relative hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-300 border-l-4 border-l-transparent hover:border-l-blue-500"
                 >
-                  <div className={`${getTextPresentationClass(c)} text-left`}>
-                    {renderCellContent(l, c)}
-                  </div>
-                </td>
+                  {/* Checkbox column */}
+                  <td className="w-10 px-3 py-3 border-r border-gray-100">
+                    <div className="flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          setSelectedIds((prev) => {
+                            if (prev.includes(l.id)) {
+                              return prev.filter((id) => id !== l.id);
+                            } else {
+                              return [...prev, l.id];
+                            }
+                          });
+                        }}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          // Update extension storage directly
+                          window.postMessage(
+                            {
+                              type: 'SRT_UPDATE_LINKS_STATUS',
+                              links: [
+                                {
+                                  id: l.id,
+                                  status:
+                                    l.status === 'archived'
+                                      ? 'active'
+                                      : 'archived',
+                                },
+                              ],
+                            },
+                            '*'
+                          );
+                          // Refresh the links to show updated status
+                          setTimeout(() => {
+                            loadLinks();
+                          }, 500);
+                        }}
+                        title={
+                          l.status === 'archived'
+                            ? 'Done – right-click to mark active / left-click to select'
+                            : selectedIds.includes(l.id)
+                              ? 'Selected – right-click to mark done'
+                              : 'Left-click to select / right-click to mark done'
+                        }
+                        className="p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg transition-all duration-300 hover:bg-blue-100 hover:scale-110 transform"
+                      >
+                        {l.status === 'archived' ? (
+                          <CheckCircle size={18} className="text-green-600" />
+                        ) : selectedIds.includes(l.id) ? (
+                          <CheckSquare size={18} className="text-blue-600" />
+                        ) : (
+                          <Square
+                            size={18}
+                            className="text-gray-400 group-hover:text-gray-600"
+                          />
+                        )}
+                      </button>
+                    </div>
+                  </td>
+                  {/* Data columns */}
+                  {columns
+                    .filter((c) => visibleColumns[c])
+                    .map((c) => (
+                      <td
+                        key={c}
+                        style={{ minWidth: getColumnWidth(c) }}
+                        className="px-4 py-3 border-r border-gray-100 text-left align-top"
+                      >
+                        <div
+                          className={`${getTextPresentationClass(c)} text-left`}
+                        >
+                          {renderCellContent(l, c)}
+                        </div>
+                      </td>
+                    ))}
+                </tr>
               ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      </div>
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* Empty state is now handled by the parent component */}
       {chatLinks && (
-        <div className="mt-6">
-          <MultiChatPanel links={chatLinks} onClose={() => setChatLinks(null)} />
+        <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm">
+          <div className="absolute inset-4 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
+            <MultiChatPanel
+              links={chatLinks}
+              onClose={() => setChatLinks(null)}
+            />
+          </div>
         </div>
       )}
       {pendingSummaries > 0 && (
@@ -1631,17 +2536,74 @@ export const LinkList: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
             <span className="font-medium">
-              AI is generating summaries for {pendingSummaries} link{pendingSummaries === 1 ? '' : 's'}…
+              AI is generating summaries for {pendingSummaries} link
+              {pendingSummaries === 1 ? '' : 's'}…
             </span>
+            <button
+              onClick={() => setPendingSummaries(0)}
+              className="ml-2 text-white/80 hover:text-white text-sm underline"
+              title="Dismiss this notification"
+            >
+              Dismiss
+            </button>
           </div>
         </div>
       )}
-      <Modal isOpen={open} onClose={() => setOpen(false)} title="Add Link">
-        <LinkForm onSuccess={() => setOpen(false)} />
+
+      {/* Copy Feedback Toast */}
+      {copyFeedback.show && (
+        <div
+          className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl border-2 backdrop-blur-sm transform transition-all duration-300 ${
+            copyFeedback.type === 'success'
+              ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-green-400'
+              : 'bg-gradient-to-r from-red-500 to-pink-500 text-white border-red-400'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                copyFeedback.type === 'success' ? 'bg-green-400' : 'bg-red-400'
+              }`}
+            >
+              {copyFeedback.type === 'success' ? (
+                <CheckCircle size={16} className="text-white" />
+              ) : (
+                <X size={16} className="text-white" />
+              )}
+            </div>
+            <span className="font-semibold">{copyFeedback.message}</span>
+          </div>
+        </div>
+      )}
+      <Modal
+        key={`edit-modal-${editingLink?.id || 'none'}`}
+        isOpen={editOpen}
+        onClose={() => {
+          setEditOpen(false);
+          setEditingLink(null);
+        }}
+        title="Edit Link"
+      >
+        {editingLink && (
+          <LinkForm
+            existing={editingLink}
+            onSuccess={() => {
+              setEditOpen(false);
+              setEditingLink(null);
+            }}
+          />
+        )}
       </Modal>
+
+      {/* ChatGPT Export Modal */}
+      <ChatGPTExportModal
+        isOpen={chatGPTExportOpen}
+        onClose={() => setChatGPTExportOpen(false)}
+        links={chatGPTExportLinks}
+      />
     </div>
   );
-};
+});
 
 function HeaderCheckbox({
   groupLinks,
@@ -1653,8 +2615,11 @@ function HeaderCheckbox({
   toggleSelectAll: (checked: boolean, visibleLinks: Link[]) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
-  const isChecked = groupLinks.every((l) => selectedIds.includes(l.id)) && groupLinks.length > 0;
-  const isIndeterminate = !isChecked && groupLinks.some((l) => selectedIds.includes(l.id));
+  const isChecked =
+    groupLinks.every((l) => selectedIds.includes(l.id)) &&
+    groupLinks.length > 0;
+  const isIndeterminate =
+    !isChecked && groupLinks.some((l) => selectedIds.includes(l.id));
   useEffect(() => {
     if (ref.current) ref.current.indeterminate = isIndeterminate;
   }, [isIndeterminate]);

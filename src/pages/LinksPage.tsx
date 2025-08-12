@@ -7,33 +7,28 @@ import { useLinkStore } from '../stores/linkStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useHotkeys } from '../hooks/useHotkeys';
 import { diagnosticService } from '../services/diagnosticService';
-import { AlertTriangle, Settings, Plus, BarChart3, Filter, Search } from 'lucide-react';
+import { useSettings } from '../contexts/SettingsContext';
+import { AlertTriangle, Plus, BarChart3 } from 'lucide-react';
+
 
 export const LinksPage: React.FC = () => {
   const [open, setOpen] = useState(false);
-  const [diagnosticOpen, setDiagnosticOpen] = useState(false);
   const [issueNotification, setIssueNotification] = useState<{
     show: boolean;
     critical: number;
     warnings: number;
   }>({ show: false, critical: 0, warnings: 0 });
   const { rawLinks, setStatusFilter } = useLinkStore();
-  const { setShowOnboarding, hasSeenOnboarding, setDontShowOnboarding } = useSettingsStore();
+  const { hasSeenOnboarding } = useSettingsStore();
+  const settings = useSettings();
+  const { showOnboarding, showDiagnostics } = settings;
 
   const total = rawLinks.length;
   const active = rawLinks.filter((l) => l.status === 'active').length;
   const archived = rawLinks.filter((l) => l.status === 'archived').length;
   const highPriority = rawLinks.filter((l) => l.priority === 'high').length;
 
-  const handleShowOnboarding = () => {
-    // Reset the "don't show again" preference when manually showing onboarding
-    setDontShowOnboarding(false);
-    setShowOnboarding(true);
-  };
 
-  const handleShowDiagnostics = () => {
-    setDiagnosticOpen(true);
-  };
 
   const isNewUser = total === 0 && !hasSeenOnboarding;
 
@@ -60,114 +55,85 @@ export const LinksPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
       {/* Page Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Research Links</h1>
-              <p className="text-gray-600 mt-1">Save, organize, and chat with your web research</p>
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/60 px-6 py-4">
+        <div className="max-w-full mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <BarChart3 className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                    Research Links
+                  </h1>
+                  <p className="text-gray-600 text-sm">Save, organize, and chat with your web research</p>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleShowOnboarding}
-                className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 bg-white hover:bg-gray-50 rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md"
-                title="Show setup guide"
-              >
-                <span className="text-sm font-medium">Help</span>
-              </button>
-              <button
-                onClick={handleShowDiagnostics}
-                className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 bg-white hover:bg-gray-50 rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md"
-                title="Run system diagnostics"
-              >
-                <Settings className="w-4 h-4" />
-                <span className="text-sm font-medium">Diagnostics</span>
-              </button>
-            </div>
+
           </div>
 
-          {/* Stats Overview */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600">Total Links</p>
-                  <p className="text-2xl font-bold text-blue-900">{total}</p>
-                </div>
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <BarChart3 className="w-4 h-4 text-blue-600" />
-                </div>
-              </div>
+          {/* Compact Stats Overview */}
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-gray-600">Total:</span>
+              <span className="font-semibold text-gray-900">{total}</span>
             </div>
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-600">Active</p>
-                  <p className="text-2xl font-bold text-green-900">{active}</p>
-                </div>
-                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-gray-600">Active:</span>
+              <span className="font-semibold text-green-600">{active}</span>
             </div>
-            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-yellow-600">Archived</p>
-                  <p className="text-2xl font-bold text-yellow-900">{archived}</p>
-                </div>
-                <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+              <span className="text-gray-600">Archived:</span>
+              <span className="font-semibold text-orange-600">{archived}</span>
             </div>
-            <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-red-600">High Priority</p>
-                  <p className="text-2xl font-bold text-red-900">{highPriority}</p>
-                </div>
-                <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <span className="text-gray-600">Priority:</span>
+              <span className="font-semibold text-red-600">{highPriority}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-full mx-auto px-6 py-4">
         {/* Welcome banner for new users */}
         {isNewUser && <WelcomeBanner />}
 
-        {/* Subtle Issue notification banner - positioned lower */}
+        {/* Clean Issue notification banner */}
         {issueNotification.show && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-6 shadow-sm">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex-shrink-0">
-                  <AlertTriangle className="w-4 h-4 text-gray-500" />
+                  <div className="w-6 h-6 bg-amber-500 rounded-md flex items-center justify-center">
+                    <AlertTriangle className="w-3 h-3 text-white" />
+                  </div>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs text-amber-800">
                     {issueNotification.critical > 0 && (
-                      <span className="font-medium text-gray-700">
+                      <span className="font-semibold text-amber-900">
                         {issueNotification.critical} issue{issueNotification.critical > 1 ? 's' : ''}
                       </span>
                     )}
                     {issueNotification.critical > 0 && issueNotification.warnings > 0 && ' and '}
                     {issueNotification.warnings > 0 && (
-                      <span className="font-medium text-gray-700">
+                      <span className="font-semibold text-amber-900">
                         {issueNotification.warnings} warning{issueNotification.warnings > 1 ? 's' : ''}
                       </span>
                     )}
                     {' '}detected. 
                     <button
-                      onClick={() => setDiagnosticOpen(true)}
-                      className="text-blue-600 hover:text-blue-800 font-medium ml-1 underline"
+                      onClick={showDiagnostics}
+                      className="text-blue-600 hover:text-blue-800 font-semibold ml-1 underline"
                     >
                       Run diagnostics
                     </button>
@@ -177,7 +143,7 @@ export const LinksPage: React.FC = () => {
               </div>
               <button
                 onClick={() => setIssueNotification({ show: false, critical: 0, warnings: 0 })}
-                className="text-gray-400 hover:text-gray-600 text-sm"
+                className="text-amber-500 hover:text-amber-700 text-sm w-5 h-5 flex items-center justify-center rounded hover:bg-amber-100 transition-colors"
               >
                 ×
               </button>
@@ -185,34 +151,31 @@ export const LinksPage: React.FC = () => {
           </div>
         )}
 
-        {/* Filters and Actions Bar */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 shadow-sm">
+        {/* Clean Filters and Actions Bar */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200/50 p-3 mb-4 shadow-sm relative z-50">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="flex items-center gap-2 text-gray-500">
-                <Search className="w-4 h-4" />
-                <span className="text-sm font-medium">Filters</span>
-              </div>
-              <LinkFilters />
+            <LinkFilters />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setOpen(true)}
+                className="group inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+              >
+                <Plus className="w-4 h-4" />
+                Add Link
+              </button>
+
             </div>
-            <button
-              onClick={() => setOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              <Plus className="w-4 h-4" />
-              Add Link
-            </button>
           </div>
         </div>
 
-        {/* Links Content */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Enhanced Links Content */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 shadow-md overflow-hidden">
           {total === 0 ? (
             <EmptyState
               type="links"
               onAction={() => setOpen(true)}
               showOnboarding={true}
-              onShowOnboarding={handleShowOnboarding}
+              onShowOnboarding={showOnboarding}
             />
           ) : (
             <LinkList />
@@ -221,14 +184,9 @@ export const LinksPage: React.FC = () => {
       </div>
 
       {/* Modals */}
-      <Modal isOpen={open} onClose={() => setOpen(false)} title="Add Link">
-        <LinkForm onSuccess={() => setOpen(false)} />
-      </Modal>
-
-      <DiagnosticModal 
-        isOpen={diagnosticOpen} 
-        onClose={() => setDiagnosticOpen(false)} 
-      />
-    </div>
+              <Modal isOpen={open} onClose={() => setOpen(false)} title="Add Link">
+            <LinkForm onSuccess={() => setOpen(false)} />
+          </Modal>
+        </div>
   );
 };

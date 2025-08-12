@@ -1,221 +1,515 @@
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.type === 'CLEAR_ALL_LINKS') {
-    chrome.storage.local.remove(['pendingUpserts', 'links'], () => {
-      sendResponse?.({ ok: true });
-    });
-    return true; // async
-  }
-  if (msg.type === 'SAVE_LINK') {
-    const payload = msg.payload;
+// Enhanced background script for Smart Research Tracker
+// Handles data processing, AI enrichment, and dashboard synchronization
 
-    // Build full Link object compatible with Dexie schema
-    const linkForDexie = {
+console.log('[Smart Research Tracker] Enhanced background script loaded');
+
+// Respond to diagnostic pings from the dashboard for reliable detection
+try {
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg?.action === 'ping' || msg?.type === 'SRT_PING') {
+      const manifest = chrome.runtime.getManifest();
+      sendResponse({
+        extensionId: chrome.runtime.id || 'smart-research-tracker',
+        source: 'smart-research-tracker-extension',
+        status: 'ok',
+        message: 'Extension is working',
+        version: manifest?.version || '0.0.0',
+        timestamp: Date.now()
+      });
+      return true;
+    }
+    
+
+  });
+} catch (_) {
+  // no-op
+}
+
+// Enhanced link processing with better metadata extraction
+class EnhancedLinkProcessor {
+  constructor() {
+    this.pendingQueue = [];
+    this.processingQueue = [];
+    this.maxRetries = 3;
+    this.retryDelay = 1000;
+  }
+
+  async processLink(payload) {
+    try {
+      console.log('[SRT] Processing link:', payload.url);
+      
+      if (!payload.url) {
+        throw new Error('No URL provided');
+      }
+      
+      // Build enhanced Link object
+      const linkForDexie = this.buildLinkObject(payload);
+      
+      // Store in chrome.storage for legacy compatibility
+      try {
+        await this.storeInChromeStorage(payload, linkForDexie.id);
+      } catch (error) {
+        console.error('[SRT] Chrome storage failed:', error);
+        throw new Error('Failed to save to local storage');
+      }
+      
+      // Broadcast to dashboard
+      try {
+        await this.broadcastToDashboard(linkForDexie);
+      } catch (error) {
+        console.error('[SRT] Dashboard broadcast failed:', error);
+        // Don't throw here, just log - the link is still saved
+      }
+      
+      // Process page content for AI enrichment (non-blocking)
+      try {
+        await this.processPageContent(payload, linkForDexie);
+      } catch (error) {
+        console.error('[SRT] Page content processing failed:', error);
+        // Don't throw here, just log - the link is still saved
+      }
+      
+      // Update badge
+      try {
+        this.updateBadge();
+      } catch (error) {
+        console.error('[SRT] Badge update failed:', error);
+        // Don't throw here, just log
+      }
+      
+      return { success: true, linkId: linkForDexie.id };
+    } catch (error) {
+      console.error('[SRT] Link processing failed:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Unknown error occurred',
+        details: error.stack
+      };
+    }
+  }
+
+  buildLinkObject(payload) {
+    const now = new Date();
+    
+    return {
       id: crypto.randomUUID(),
       url: payload.url,
       metadata: {
         title: payload.title || '',
         description: payload.description || '',
-        image: '',
+        image: payload.image || '',
+        author: payload.author || '',
+        publishedTime: payload.publishedTime || '',
+        modifiedTime: payload.modifiedTime || '',
+        siteName: payload.siteName || '',
+        keywords: payload.keywords || '',
+        structuredData: payload.structuredData || {}
       },
-      labels: payload.label ? [payload.label] : [],
-      priority: payload.priority || 'low',
+      labels: payload.label ? [payload.label] : ['research'], // Default label if none provided
+      priority: payload.priority || 'medium',
       status: 'active',
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
       boardId: payload.boardId || null,
+      source: 'extension',
+      tabId: payload.tabId,
+      pageText: payload.pageText || ''
     };
+  }
 
-    // Persist to chrome.storage as raw payload (legacy)
-    chrome.storage.local.get(['links'], (res) => {
-      const links = res.links || [];
-      const normUrl = payload.url.replace(/\/+$/, '').toLowerCase();
-      const exists = links.some((l) => (l.url || '').replace(/\/+$/, '').toLowerCase() === normUrl);
-      if (!exists) {
-        links.push({ ...payload, savedAt: Date.now(), id: linkForDexie.id });
-      } else {
-        console.debug?.('Duplicate link ignored', payload.url);
-      }
-      chrome.storage.local.set({ links }, () => {
-        console.log('Link saved to chrome.storage', payload);
+  async storeInChromeStorage(payload, linkId) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.get(['links'], (res) => {
+        const links = res.links || [];
+        const normUrl = payload.url.replace(/\/+$/, '').toLowerCase();
+        const exists = links.some((l) => (l.url || '').replace(/\/+$/, '').toLowerCase() === normUrl);
         
-        // Update badge to show number of saved items
-        chrome.action.setBadgeText({ text: links.length.toString() });
-        chrome.action.setBadgeBackgroundColor({ color: '#10b981' });
-        
-        sendResponse?.({ ok: true });
-      });
-
-      // store label if new
-      if (payload.label) {
-        chrome.storage.local.get(['labels'], (r2) => {
-          const labels = new Set(r2.labels || []);
-          labels.add(payload.label);
-          chrome.storage.local.set({ labels: Array.from(labels) });
-        });
-      }
-    });
-
-    // Broadcast to all tabs so contentScript can add to Dexie
-    const APP_URL_PATTERNS = ['http://localhost:5173/*', 'https://smartresearchtracker.vercel.app/*'];
-
-    const storePending = (item) => {
-      chrome.storage.local.get(['pendingUpserts'], (r) => {
-        const arr = r.pendingUpserts || [];
-        arr.push(item);
-        chrome.storage.local.set({ pendingUpserts: arr });
-      });
-    };
-
-    const flushPending = () => {
-      chrome.storage.local.get(['pendingUpserts'], (r) => {
-        const queue = r.pendingUpserts || [];
-        if (!queue.length) return;
-        chrome.tabs.query({ url: APP_URL_PATTERNS }, (tabs) => {
-          if (!tabs.length) return; // still no dashboard
-          const tabId = tabs[0].id;
-          if (tabId === undefined) return;
-          const toSend = queue.splice(0, queue.length);
-          toSend.forEach((item) => {
-            chrome.tabs.sendMessage(tabId, item, () => {
-              if (chrome.runtime.lastError) {
-                // push back
-                queue.push(item);
-              }
-              chrome.storage.local.set({ pendingUpserts: queue });
-            });
+        if (!exists) {
+          links.push({ 
+            ...payload, 
+            savedAt: Date.now(), 
+            id: linkId,
+            processed: true
           });
-        });
-      });
-    };
-
-    // run flush every 30s
-    setInterval(flushPending, 30_000);
-
-    const broadcastUpsert = (linkObj, summariesArr = []) => {
-      chrome.tabs.query({ url: APP_URL_PATTERNS }, (tabs) => {
-        if (!tabs.length) {
-          storePending({ type: 'UPSERT_LINK', link: linkObj, summaries: summariesArr });
-          return;
-        }
-        tabs.forEach((t) => {
-          if (t.id === undefined) return;
-          chrome.tabs.sendMessage(t.id, { type: 'UPSERT_LINK', link: linkObj, summaries: summariesArr }, () => {
+          
+          chrome.storage.local.set({ links }, () => {
             if (chrome.runtime.lastError) {
-              console.debug?.('UPSERT_LINK send error', chrome.runtime.lastError.message);
-              storePending({ type: 'UPSERT_LINK', link: linkObj, summaries: summariesArr });
+              reject(chrome.runtime.lastError);
+            } else {
+              console.log('[SRT] Link saved to chrome.storage:', payload.url);
+              resolve();
             }
           });
-        });
+        } else {
+          console.debug('[SRT] Duplicate link ignored:', payload.url);
+          resolve();
+        }
       });
-    };
+    });
+  }
 
-    // send initial upsert with no summaries yet (summaries may be added later)
-    broadcastUpsert(linkForDexie, []);
+  async broadcastToDashboard(linkObj, summaries = []) {
+    const APP_URL_PATTERNS = [
+      'http://localhost:5174/*',
+      'http://localhost:5173/*', 
+      'https://smartresearchtracker.vercel.app/*',
+      'http://127.0.0.1:5174/*',
+      'http://127.0.0.1:5173/*'
+    ];
 
-    /** Helper to broadcast summary to dashboard */
-    const broadcastSummary = (summaryObj) => {
-      broadcastUpsert(linkForDexie, [summaryObj]);
-    };
+    try {
+      const tabs = await this.queryTabs(APP_URL_PATTERNS);
+      
+      if (tabs.length === 0) {
+        // Dashboard not open, queue for later
+        this.queueForLater({ type: 'UPSERT_LINK', link: linkObj, summaries });
+        return;
+      }
 
-    // Base endpoint can be configured via chrome.storage.local.set({ apiBase: 'https://your-domain.com' })
-    const getApiBase = (cb) => {
-      chrome.storage.local.get(['apiBase'], (res) => {
-        cb(res.apiBase || 'https://smartresearchtracker.vercel.app');
-      });
-    };
-
-    /** Helper to call enrich backend */
-    const callEnrich = (pageText) => {
-      getApiBase((base) => {
-        fetch(`${base.replace(/\/$/, '')}/api/enrich`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ linkId: linkForDexie.id, url: linkForDexie.url, text: pageText }),
+      // Send to all dashboard tabs
+      const promises = tabs.map(tab => 
+        this.sendMessageToTab(tab.id, { 
+          type: 'UPSERT_LINK', 
+          link: linkObj, 
+          summaries 
         })
-          .then((r) => r.json())
-          .then((data) => {
-            if (!data?.summary) return;
-            const tldrSummary = {
-              id: crypto.randomUUID(),
-              linkId: linkForDexie.id,
-              kind: 'tldr',
-              content: data.summary,
-              embedding: data.embeddings?.[0] || undefined,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            };
-            broadcastSummary(tldrSummary);
-          })
-          .catch((err) => console.debug?.('enrich fetch error', err));
-      });
-    };
+      );
 
-    // Use pageText if provided from popup extraction, else capture via executeScript
-    let initialText = payload.pageText || '';
+      await Promise.allSettled(promises);
+      console.log('[SRT] Link broadcasted to dashboard');
+    } catch (error) {
+      console.error('[SRT] Dashboard broadcast failed:', error);
+      this.queueForLater({ type: 'UPSERT_LINK', link: linkObj, summaries });
+    }
+  }
 
-    const processText = (pageText) => {
-      if (!pageText) return;
+  async processPageContent(payload, linkObj) {
+    try {
+      let pageText = payload.pageText || '';
+      
+      // If no page text provided, extract from tab
+      if (!pageText && payload.tabId) {
+        pageText = await this.extractPageText(payload.tabId);
+      }
+
+      if (!pageText) {
+        console.debug('[SRT] No page text available for processing');
+        return;
+      }
 
       // Store raw summary
-      const rawSummary = {
-        id: crypto.randomUUID(),
-        linkId: linkForDexie.id,
-        kind: 'raw',
-        content: pageText,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      broadcastSummary(rawSummary);
+      const rawSummary = this.createSummary(linkObj.id, 'raw', pageText);
+      await this.broadcastSummary(rawSummary);
 
-      // Call backend enrich
-      callEnrich(pageText);
-    };
-
-    if (initialText) {
-      processText(initialText.slice(0, 500_000));
-    } else {
-      // Capture page text from the active tab as fallback
-      const tabId = payload.tabId;
-      if (tabId !== undefined) {
-        chrome.scripting.executeScript(
-          {
-            target: { tabId },
-            func: () => document.body.innerText.slice(0, 500_000),
-          },
-          async (res) => {
-            let pageText = '';
-            if (chrome.runtime.lastError) {
-              console.debug?.('executeScript error:', chrome.runtime.lastError.message);
-            } else {
-              pageText = res?.[0]?.result || '';
-            }
-
-          // Fallback via jina.ai if executeScript gave nothing
-          if (!pageText) {
-            try {
-              const clean = linkForDexie.url.replace(/^https?:\/\//, '');
-              const jin = await fetch(`https://r.jina.ai/http://${clean}`).then((r) => (r.ok ? r.text() : ''));
-              pageText = jin.slice(0, 500_000);
-            } catch (err) {
-              console.debug?.('jina.ai fetch failed', err);
-            }
-          }
-
-          processText(pageText);
-        },
-        );
-      }
+      // Enrich with AI
+      await this.enrichWithAI(linkObj, pageText);
+      
+    } catch (error) {
+      console.error('[SRT] Page content processing failed:', error);
     }
+  }
 
-    return true; // keep message channel open for async sendResponse
+  async extractPageText(tabId) {
+    try {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: async () => {
+          try {
+            // Use the enhanced extraction from content script if available
+            if (window.SRTContentScript?.extractPageData) {
+              return await window.SRTContentScript.extractPageData();
+            }
+            
+            // Fallback to basic extraction
+            return {
+              title: document.title || '',
+              description: document.querySelector('meta[name="description"]')?.content || '',
+              text: document.body?.innerText || '',
+              metadata: {
+                author: document.querySelector('meta[name="author"]')?.content || '',
+                publishedTime: document.querySelector('meta[property="article:published_time"]')?.content || '',
+                siteName: document.querySelector('meta[property="og:site_name"]')?.content || ''
+              }
+            };
+          } catch (error) {
+            console.error('[SRT] Content script extraction failed:', error);
+            // Return basic fallback
+            return {
+              title: document.title || '',
+              description: document.querySelector('meta[name="description"]')?.content || '',
+              text: document.body?.innerText || '',
+              metadata: {}
+            };
+          }
+        }
+      });
+
+      const pageData = results?.[0]?.result;
+      return pageData?.text || '';
+    } catch (error) {
+      console.debug('[SRT] Page text extraction failed:', error);
+      return '';
+    }
+  }
+
+  async enrichWithAI(linkObj, pageText) {
+    try {
+      const apiBase = await this.getApiBase();
+      const response = await fetch(`${apiBase}/api/enrich`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          linkId: linkObj.id,
+          url: linkObj.url,
+          text: pageText.slice(0, 100000) // Limit text size
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Enrich API returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data?.summary) {
+        const tldrSummary = this.createSummary(
+          linkObj.id, 
+          'tldr', 
+          data.summary, 
+          data.embeddings?.[0]
+        );
+        await this.broadcastSummary(tldrSummary);
+      }
+    } catch (error) {
+      console.debug('[SRT] AI enrichment failed:', error);
+    }
+  }
+
+  createSummary(linkId, kind, content, embedding = null) {
+    return {
+      id: crypto.randomUUID(),
+      linkId,
+      kind,
+      content,
+      embedding,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+
+  async broadcastSummary(summaryObj) {
+    try {
+      const APP_URL_PATTERNS = [
+        'http://localhost:5174/*',
+        'http://localhost:5173/*', 
+        'https://smartresearchtracker.vercel.app/*',
+        'http://127.0.0.1:5174/*',
+        'http://127.0.0.1:5173/*'
+      ];
+
+      const tabs = await this.queryTabs(APP_URL_PATTERNS);
+      
+      if (tabs.length === 0) {
+        this.queueForLater({ type: 'ADD_SUMMARY', payload: summaryObj });
+        return;
+      }
+
+      const promises = tabs.map(tab => 
+        this.sendMessageToTab(tab.id, { 
+          type: 'ADD_SUMMARY', 
+          payload: summaryObj 
+        })
+      );
+
+      await Promise.allSettled(promises);
+      console.log('[SRT] Summary broadcasted:', summaryObj.kind);
+    } catch (error) {
+      console.error('[SRT] Summary broadcast failed:', error);
+      this.queueForLater({ type: 'ADD_SUMMARY', payload: summaryObj });
+    }
+  }
+
+  queueForLater(message) {
+    this.pendingQueue.push({
+      ...message,
+      timestamp: Date.now(),
+      retries: 0
+    });
+    
+    // Store in chrome.storage for persistence
+    chrome.storage.local.set({ 
+      pendingUpserts: this.pendingQueue 
+    });
+  }
+
+  async flushPendingQueue() {
+    if (this.pendingQueue.length === 0) return;
+
+          const APP_URL_PATTERNS = [
+        'http://localhost:5174/*',
+        'http://localhost:5173/*', 
+        'https://smartresearchtracker.vercel.app/*',
+        'http://127.0.0.1:5174/*',
+        'http://127.0.0.1:5173/*'
+      ];
+
+    try {
+      const tabs = await this.queryTabs(APP_URL_PATTERNS);
+      if (tabs.length === 0) return;
+
+      const toProcess = [...this.pendingQueue];
+      this.pendingQueue = [];
+
+      for (const message of toProcess) {
+        try {
+          const promises = tabs.map(tab => 
+            this.sendMessageToTab(tab.id, message)
+          );
+          
+          await Promise.allSettled(promises);
+          console.log('[SRT] Pending message processed:', message.type);
+        } catch (error) {
+          console.error('[SRT] Failed to process pending message:', error);
+          message.retries++;
+          
+          if (message.retries < this.maxRetries) {
+            this.pendingQueue.push(message);
+          }
+        }
+      }
+
+      // Update storage
+      chrome.storage.local.set({ pendingUpserts: this.pendingQueue });
+    } catch (error) {
+      console.error('[SRT] Queue flush failed:', error);
+    }
+  }
+
+  async queryTabs(patterns) {
+    return new Promise((resolve) => {
+      chrome.tabs.query({ url: patterns }, (tabs) => {
+        resolve(tabs || []);
+      });
+    });
+  }
+
+  async sendMessageToTab(tabId, message) {
+    // Ensure content script is present; if not, inject and retry once
+    const tryOnce = () => new Promise((resolve, reject) => {
+      chrome.tabs.sendMessage(tabId, message, (response) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(response);
+        }
+      });
+    });
+
+    try {
+      return await tryOnce();
+    } catch (err) {
+      const msg = err?.message || '';
+      const missing = /Receiving end does not exist|Could not establish connection/i.test(msg);
+      if (!missing) throw err;
+      try {
+        await chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] });
+      } catch (_) {}
+      await new Promise(r => setTimeout(r, 150));
+      return await tryOnce();
+    }
+  }
+
+  async getApiBase() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(['apiBase'], (res) => {
+        resolve(res.apiBase || 'https://smartresearchtracker.vercel.app');
+      });
+    });
+  }
+
+  updateBadge() {
+    chrome.storage.local.get(['links'], (res) => {
+      const links = res.links || [];
+      chrome.action.setBadgeText({ text: links.length.toString() });
+      chrome.action.setBadgeBackgroundColor({ color: '#10b981' });
+    });
+  }
+
+  async clearAllData() {
+    try {
+      // Clear chrome.storage
+      await new Promise((resolve) => {
+        chrome.storage.local.remove(['links', 'pendingUpserts', 'labels'], resolve);
+      });
+
+      // Clear pending queue
+      this.pendingQueue = [];
+      
+      // Reset badge
+      chrome.action.setBadgeText({ text: '0' });
+      
+      console.log('[SRT] All data cleared');
+    } catch (error) {
+      console.error('[SRT] Clear data failed:', error);
+    }
+  }
+}
+
+const linkProcessor = new EnhancedLinkProcessor();
+
+// Message handling
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  console.log('[SRT] Background received message:', msg.type);
+
+  switch (msg.type) {
+    case 'SAVE_LINK':
+      console.log('[SRT] Processing SAVE_LINK message...');
+      linkProcessor.processLink(msg.payload)
+        .then(result => {
+          console.log('[SRT] SAVE_LINK result:', result);
+          sendResponse?.(result);
+        })
+        .catch(error => {
+          console.error('[SRT] SAVE_LINK failed:', error);
+          sendResponse?.({ 
+            success: false, 
+            error: error.message || 'Unknown error',
+            details: error.stack
+          });
+        });
+      return true;
+
+    case 'CLEAR_ALL_LINKS':
+      console.log('[SRT] Processing CLEAR_ALL_LINKS message...');
+      linkProcessor.clearAllData()
+        .then(() => {
+          console.log('[SRT] CLEAR_ALL_LINKS completed');
+          sendResponse?.({ success: true });
+        })
+        .catch(error => {
+          console.error('[SRT] CLEAR_ALL_LINKS failed:', error);
+          sendResponse?.({ 
+            success: false, 
+            error: error.message || 'Unknown error' 
+          });
+        });
+      return true;
+
+    case 'DATA_UPDATED':
+      // Dashboard notified us of data change, update badge
+      console.log('[SRT] Processing DATA_UPDATED message...');
+      linkProcessor.updateBadge();
+      return false;
+
+    default:
+      console.warn('[SRT] Unknown message type:', msg.type);
+      return false;
   }
 });
 
-// Create context menu items
+// Context menu setup
 chrome.runtime.onInstalled.addListener(() => {
-  // Remove existing context menu items
   chrome.contextMenus.removeAll(() => {
-    // Create new context menu items
     chrome.contextMenus.create({
       id: 'openDashboard',
       title: '📊 Open Smart Research Dashboard',
@@ -227,50 +521,157 @@ chrome.runtime.onInstalled.addListener(() => {
       title: '💾 Save to Smart Research',
       contexts: ['page', 'link', 'selection']
     });
+
+    chrome.contextMenus.create({
+      id: 'separator1',
+      type: 'separator',
+      contexts: ['page', 'link', 'selection']
+    });
+
+    chrome.contextMenus.create({
+      id: 'quickSave',
+      title: '⚡ Quick Save (Current Page)',
+      contexts: ['page']
+    });
   });
   
-  // Initialize badge with current link count
-  chrome.storage.local.get(['links'], (res) => {
-    const links = res.links || [];
-    chrome.action.setBadgeText({ text: links.length.toString() });
-    chrome.action.setBadgeBackgroundColor({ color: '#10b981' });
+  // Initialize badge
+  linkProcessor.updateBadge();
+  
+  // Load pending queue from storage
+  chrome.storage.local.get(['pendingUpserts'], (res) => {
+    if (res.pendingUpserts) {
+      linkProcessor.pendingQueue = res.pendingUpserts;
+    }
   });
 });
 
-// Handle context menu clicks
+// Context menu handling
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === 'openDashboard') {
-    // Try to open the dashboard in a new tab
-    chrome.tabs.create({ url: 'http://localhost:5173/' }, (newTab) => {
-      // If localhost fails, try the production URL
-      if (chrome.runtime.lastError) {
-        chrome.tabs.create({ url: 'https://smartresearchtracker.vercel.app/' }, (prodTab) => {
-          if (chrome.runtime.lastError) {
-            // Show notification if both URLs fail
-            chrome.notifications.create({
-              type: 'basic',
-              iconUrl: 'icons/icon.svg',
-              title: 'Smart Research Tracker',
-              message: 'Could not open dashboard. Make sure the app is running.'
-            });
-          }
-        });
-      }
-    });
-  } else if (info.menuItemId === 'saveToResearch') {
-    // Open the popup to save the current page or selected link
-    chrome.action.openPopup();
+  switch (info.menuItemId) {
+    case 'openDashboard':
+      openDashboard();
+      break;
+      
+    case 'saveToResearch':
+      chrome.action.openPopup();
+      break;
+      
+    case 'quickSave':
+      quickSave(tab);
+      break;
   }
 });
 
-// Add notification permission to manifest
-chrome.runtime.onInstalled.addListener(() => {
-  // Request notification permission
-  if (chrome.notifications) {
-    chrome.notifications.getPermissionLevel((level) => {
-      if (level === 'denied') {
-        console.log('Notification permission denied');
-      }
+// Dashboard opening with fallback
+async function openDashboard() {
+  const urls = [
+    'http://localhost:5174/',
+    'http://localhost:5173/',
+    'http://127.0.0.1:5174/',
+    'http://127.0.0.1:5173/',
+    'https://smartresearchtracker.vercel.app/'
+  ];
+
+  for (const url of urls) {
+    try {
+      await new Promise((resolve, reject) => {
+        chrome.tabs.create({ url }, (tab) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(tab);
+          }
+        });
+      });
+      return; // Success
+    } catch (error) {
+      console.debug('[SRT] Failed to open dashboard at:', url);
+    }
+  }
+
+  // All URLs failed
+  chrome.notifications.create({
+    type: 'basic',
+    iconUrl: 'icons/icon.svg',
+    title: 'Smart Research Tracker',
+    message: 'Could not open dashboard. Make sure the app is running.'
+  });
+}
+
+// Quick save functionality
+async function quickSave(tab) {
+  if (!tab?.url || tab.url.startsWith('chrome://')) {
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon.svg',
+      title: 'Smart Research Tracker',
+      message: 'Cannot save this page type.'
     });
+    return;
+  }
+
+  try {
+    // Extract basic page data
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => ({
+        title: document.title || '',
+        description: document.querySelector('meta[name="description"]')?.content || '',
+        text: document.body?.innerText?.slice(0, 10000) || ''
+      })
+    });
+
+    const pageData = results?.[0]?.result || {};
+    
+    // Process the link
+    const result = await linkProcessor.processLink({
+      url: tab.url,
+      title: pageData.title,
+      description: pageData.description,
+      pageText: pageData.text,
+      tabId: tab.id,
+      priority: 'medium',
+      label: 'quick-save'
+    });
+
+    if (result.success) {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icons/icon.svg',
+        title: 'Smart Research Tracker',
+        message: 'Page saved successfully!'
+      });
+    } else {
+      throw new Error(result.error);
+    }
+  } catch (error) {
+    console.error('[SRT] Quick save failed:', error);
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon.svg',
+      title: 'Smart Research Tracker',
+      message: 'Failed to save page. Please try again.'
+    });
+  }
+}
+
+// Periodic queue flushing
+setInterval(() => {
+  linkProcessor.flushPendingQueue();
+}, 30000); // Every 30 seconds
+
+// Handle extension startup
+chrome.runtime.onStartup.addListener(() => {
+  console.log('[SRT] Extension started');
+  linkProcessor.updateBadge();
+});
+
+// Handle tab updates to flush queue when dashboard opens
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && 
+      (tab.url?.includes('localhost:5173') || tab.url?.includes('localhost:5174') || tab.url?.includes('smartresearchtracker.vercel.app'))) {
+    // Dashboard tab loaded, flush pending queue
+    setTimeout(() => linkProcessor.flushPendingQueue(), 1000);
   }
 }); 

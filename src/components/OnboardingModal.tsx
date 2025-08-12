@@ -1161,12 +1161,20 @@ VITE_ENABLE_ANALYTICS=false`}
     }
   };
 
+  const handleClose = () => {
+    // Save the "don't show again" preference when closing
+    if (onDontShowAgain) {
+      onDontShowAgain(dontShowAgain);
+    }
+    onClose();
+  };
+
   const currentStepData = steps[currentStep];
 
   return (
     <Modal 
       isOpen={isOpen} 
-      onClose={onClose} 
+      onClose={handleClose} 
       title=""
       maxWidthClass="max-w-4xl w-full mx-2 sm:mx-4"
     >
@@ -1246,37 +1254,42 @@ VITE_ENABLE_ANALYTICS=false`}
               Previous
             </Button>
             
-            {currentStep === steps.length - 1 && (
-              <label className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
-                <input
-                  type="checkbox"
-                  checked={dontShowAgain}
-                  onChange={(e) => setDontShowAgain(e.target.checked)}
-                  className="rounded border-gray-300"
-                />
-                Don't show this again
-              </label>
-            )}
+            <label className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+              <input
+                type="checkbox"
+                checked={dontShowAgain}
+                onChange={(e) => setDontShowAgain(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              Don't show this again
+            </label>
           </div>
 
           <div className="flex items-center gap-2">
             {currentStep < steps.length - 1 ? (
-              <Button
-                onClick={nextStep}
-                size="sm"
-                className="flex items-center gap-2 px-6 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
-              >
-                Next Step
-                <ArrowRight className="w-3 h-3" />
-              </Button>
+              <>
+                {currentStep === 0 && (
+                  <Button
+                    onClick={handleClose}
+                    variant="secondary"
+                    size="sm"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg hover:shadow-md transition-all duration-200"
+                  >
+                    Skip Setup
+                  </Button>
+                )}
+                <Button
+                  onClick={nextStep}
+                  size="sm"
+                  className="flex items-center gap-2 px-6 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  Next Step
+                  <ArrowRight className="w-3 h-3" />
+                </Button>
+              </>
             ) : (
               <Button
-                onClick={() => {
-                  if (onDontShowAgain) {
-                    onDontShowAgain(dontShowAgain);
-                  }
-                  onClose();
-                }}
+                onClick={handleClose}
                 size="sm"
                 className="flex items-center gap-2 px-6 py-2 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all duration-200"
               >

@@ -27,3 +27,21 @@ if (rootElement) {
 } else {
   console.error('❌ Root element not found');
 }
+
+// Listen for extension broadcasts and refresh link list immediately
+try {
+  window.addEventListener('message', (event: MessageEvent) => {
+    if (event?.data?.type === 'SRT_DB_UPDATED') {
+      import('./stores/linkStore').then(({ useLinkStore }) => {
+        useLinkStore.getState().fetchLinks();
+      });
+    }
+  });
+  document.addEventListener('srt-db-updated', () => {
+    import('./stores/linkStore').then(({ useLinkStore }) => {
+      useLinkStore.getState().fetchLinks();
+    });
+  });
+} catch (_) {
+  // ignore
+}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Link } from '../../types/Link';
@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { aiSummaryService } from '../../services/aiSummaryService';
 import { LoadingSpinner, Button } from '..';
 import { ErrorBanner } from '../ErrorBanner';
-import { RefreshCcw, Edit3, Check, X as XIcon, Copy, Check as CheckIcon, Plus, Settings } from 'lucide-react';
+import { RefreshCcw, Edit3, Check, X as XIcon, Copy, Check as CheckIcon, Plus, Settings, Key } from 'lucide-react';
 import { getPageText } from '../../utils/pageCache';
 
 interface Props {
@@ -31,6 +31,7 @@ interface CustomPrompt {
 }
 
 export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
+  console.log('MultiChatPanel rendered with links:', links);
   const [messages, setMessages] = useState<LocalMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -50,6 +51,13 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
   const [editingPrompt, setEditingPrompt] = useState<CustomPrompt | null>(null);
   const [newPromptName, setNewPromptName] = useState('');
   const [newPromptContent, setNewPromptContent] = useState('');
+  const [selectedModel, setSelectedModel] = useState('gpt-4o');
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Debug conversation state
+  console.log('Current conversation state:', conversation);
+  console.log('Current messages state:', messages);
+  console.log('Buttons should be visible:', !!conversation);
 
   // Load custom prompts from localStorage
   useEffect(() => {
@@ -63,31 +71,157 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
     }
   }, []);
 
+  // Initialize chat when component mounts (only once)
+  useEffect(() => {
+    if (links && links.length > 0 && !isInitialized) {
+      console.log('Initializing chat with links:', links);
+      setIsInitialized(true);
+      void buildContext(links);
+    } else if (!links || links.length === 0) {
+      console.log('No links provided for chat initialization');
+    }
+  }, [links, isInitialized]); // Only run when links change and not already initialized
+
   // Save custom prompts to localStorage
   const saveCustomPrompts = (prompts: CustomPrompt[]) => {
     localStorage.setItem('customPrompts', JSON.stringify(prompts));
     setCustomPrompts(prompts);
   };
 
-  const buildContext = async (selectedLinks: Link[]) => {
+  const buildContext = useCallback(async (selectedLinks: Link[], forceNew = false) => {
     setContextReady(false);
     setError(null);
+    setInput(''); // Clear input field
+    setEditingMessageId(null); // Clear any editing state
+    setEditContent(''); // Clear edit content
+    setCopiedMessageId(null); // Clear copy feedback
+    
+    // Show loading state
+    setLoading(true);
+    
     let conv: Conversation | null = null;
     try {
+      // Check if we have any links selected
+      if (!selectedLinks || selectedLinks.length === 0) {
+        setError('No links selected. Please select at least one link to start a conversation.');
+        setLoading(false);
+        return;
+      }
+      
+      // If forcing new conversation, end the current one first
+      if (forceNew && conversation) {
+        try {
+          await chatService.endConversation(conversation.id);
+          console.log('Ended previous conversation for new chat');
+        } catch (err) {
+          console.warn('Failed to end previous conversation:', err);
+        }
+      }
+      
+      console.log('Calling chatService.startConversation with linkIds:', selectedLinks.map((l) => l.id));
       conv = await chatService.startConversation(selectedLinks.map((l) => l.id));
+      console.log('Received conversation from chatService:', conv);
       setConversation(conv);
-      const hist = await chatService.getMessages(conv.id);
-      setMessages(
-        hist
-          .filter((m) => m.role !== 'system')
-          .map((m) => ({ id: m.id, role: m.role as 'user' | 'assistant', content: m.content }))
-      );
+      
+      // Load existing messages from the conversation
+      const existingMessages = await chatService.getMessages(conv.id);
+      
+      if (existingMessages.length > 0) {
+        // Convert database messages to local format, filtering out system messages
+        const localMessages: LocalMsg[] = existingMessages
+          .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+          .map(msg => ({
+            id: msg.id,
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content
+          }));
+        
+        setMessages(localMessages);
+        console.log(`Loaded ${existingMessages.length} existing messages from conversation ${conv.id}`);
+      } else {
+        // This is a new conversation - add welcome message
+        const welcomeMsg: LocalMsg = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `🎯 **Research Assistant Ready!**
+
+I'm ready to help you analyze your selected research materials. I have access to ${selectedLinks.length} link${selectedLinks.length === 1 ? '' : 's'}:
+
+${selectedLinks.map((link, index) => `**${index + 1}.** ${link.metadata?.title || link.url}`).join('\n')}
+
+**What would you like to know?** You can ask me to:
+- Summarize the key points
+- Compare different sources
+- Find specific information
+- Analyze trends or patterns
+- Generate insights and recommendations
+
+Just type your question below! 👇`
+        };
+        
+        setMessages([welcomeMsg]);
+        console.log('Started new conversation with welcome message');
+      }
+      
+      setContextReady(true);
+      
     } catch (err: any) {
       console.error('Failed to start conversation', err);
-      setError(err.message || 'Failed to start conversation. Please try again.');
+      const errorMessage = err.message || 'Failed to start conversation. Please try again.';
+      setError(errorMessage);
+      
+      // Add helpful error message
+      const errorMsg: LocalMsg = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `❌ **Unable to start conversation**
+
+${errorMessage}
+
+**Troubleshooting:**
+1. Check your internet connection
+2. Ensure you have an API key configured
+3. Try selecting different links
+4. Refresh the page and try again
+
+If the problem persists, use the diagnostic modal to check your configuration.`
+      };
+      
+      setMessages([errorMsg]);
+    } finally {
+      setLoading(false);
     }
 
-    let ctx = 'You are a helpful research assistant. The user selected multiple pages. Use the info below. Respond in the same language that the user uses in their question, unless they explicitly request a different language.\n';
+    let ctx = `You are an expert research assistant powered by GPT-4o, designed to help users analyze and understand their research materials. You have access to multiple pages of content that the user has selected.
+
+Your capabilities:
+- Analyze and synthesize information from multiple sources
+- Provide detailed, well-structured responses
+- Identify patterns, connections, and insights across different materials
+- Answer questions with depth and accuracy
+- Suggest research directions and questions
+- Help organize and categorize information
+
+Response Formatting Guidelines:
+- Use clear headings (##) to organize your responses into logical sections
+- Use bullet points and numbered lists for better readability
+- Highlight key points using **bold text** for emphasis
+- Use code blocks for technical terms, commands, or structured data
+- Include blockquotes for important quotes or citations
+- Break up long paragraphs into digestible chunks
+- Use tables when comparing multiple items or presenting structured data
+- Always provide clear, actionable insights rather than just summaries
+
+Content Guidelines:
+- Respond in the same language the user uses, unless they request otherwise
+- Provide comprehensive, thoughtful answers with proper structure
+- Use the context from the selected pages to inform your responses
+- Be analytical and insightful rather than just summarizing
+- Ask clarifying questions when needed
+- Cite specific information from the provided sources when relevant
+- Use markdown formatting to improve readability and visual hierarchy
+
+The user has selected ${selectedLinks.length} page${selectedLinks.length === 1 ? '' : 's'} for analysis. Use the information below to provide intelligent, research-focused assistance with clear, well-formatted responses.\n`;
     setSystemPrompt(ctx);
     await Promise.all(
       selectedLinks.map(async (link) => {
@@ -124,15 +258,17 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
     );
     setSystemPrompt(ctx);
     setContextReady(true);
-  };
+  }, []); // Empty dependencies to prevent re-creation
+
+  // This useEffect was causing infinite re-renders - removed
 
   useEffect(() => {
-    void buildContext(links);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [links]);
-
-  useEffect(() => {
-    if (autoScroll) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (autoScroll && listRef.current && bottomRef.current) {
+      listRef.current.scrollTo({
+        top: listRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   }, [messages, loading, autoScroll]);
 
   const handleScroll = () => {
@@ -179,36 +315,80 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
 
   const send = async (contentOverride?: string) => {
     const content = (contentOverride ?? input).trim();
-    if (!content || !conversation || !contextReady) return;
+    console.log('Send function called with:', { content, conversation: !!conversation, contextReady });
+    if (!content || !conversation || !contextReady) {
+      console.log('Send function returning early:', { 
+        noContent: !content, 
+        noConversation: !conversation, 
+        notContextReady: !contextReady 
+      });
+      return;
+    }
+    
     setLoading(true);
     if (!contentOverride) setInput('');
-
     setError(null);
+    
+    let assistantPlaceholderId: string | null = null;
+    
     try {
       const userMsg: LocalMsg = { id: crypto.randomUUID(), role: 'user', content };
-      const assistantPlaceholder: LocalMsg = { id: crypto.randomUUID(), role: 'assistant', content: '' };
+      const assistantPlaceholder: LocalMsg = { 
+        id: crypto.randomUUID(), 
+        role: 'assistant', 
+        content: '🤔 Thinking...' 
+      };
+      assistantPlaceholderId = assistantPlaceholder.id;
       setMessages((prev) => [...prev, userMsg, assistantPlaceholder]);
 
+      console.log('Sending message to chat service...');
       const newMsgs = await chatService.sendMessage(conversation, content, (partial) => {
         setMessages((prev) =>
-          prev.map((m) => (m.id === assistantPlaceholder.id ? { ...m, content: partial } : m)),
+          prev.map((m) => (m.id === assistantPlaceholderId ? { ...m, content: partial } : m)),
         );
-      });
+      }, selectedModel);
 
+      console.log('Received response from chat service:', newMsgs);
       const finalAssistant = newMsgs.find((m) => m.role === 'assistant');
       if (finalAssistant) {
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === assistantPlaceholder.id ? { id: finalAssistant.id, role: 'assistant', content: finalAssistant.content } : m,
+            m.id === assistantPlaceholderId ? { id: finalAssistant.id, role: 'assistant', content: finalAssistant.content } : m,
           ),
         );
+        console.log('Updated messages with assistant response');
       }
     } catch (err: any) {
       console.error('Chat failed', err);
-      setError(err.message || 'Chat failed. Please try again.');
-    }
+      const errorMessage = err.message || 'Chat failed. Please try again.';
+      setError(errorMessage);
+      
+      // Replace the placeholder with an error message
+      if (assistantPlaceholderId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantPlaceholderId ? { 
+              id: m.id, 
+              role: 'assistant', 
+              content: `❌ **Chat Error**
 
-    setLoading(false);
+${errorMessage}
+
+**Possible solutions:**
+1. Check your internet connection
+2. Verify your API key is configured correctly
+3. Ensure your API key has sufficient credits
+4. Try asking a simpler question
+5. Check the diagnostic modal for configuration issues
+
+If the problem persists, try refreshing the page or selecting different links.`
+            } : m
+          )
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const startEditMessage = (messageId: string, currentContent: string) => {
@@ -319,12 +499,122 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
           <p className="text-sm text-gray-500">Ask questions about your selected pages</p>
         </div>
         <div className="flex items-center gap-2">
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            className="text-sm border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="gpt-4o">GPT-4o (Best)</option>
+            <option value="gpt-4o-mini">GPT-4o Mini (Fast)</option>
+            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+          </select>
+          <button
+            onClick={() => {
+              setContextReady(false);
+              setLoading(true);
+              void buildContext(links);
+            }}
+            disabled={loading}
+            className="text-sm text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50"
+            title="Refresh chat context"
+          >
+            <RefreshCcw size={14} />
+          </button>
           <button 
             onClick={() => navigate('/chat-history')} 
             className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            title="View all chat history"
           >
             Chat History
           </button>
+          {conversation && (
+            <div className="text-xs text-gray-500">
+              {messages.filter(m => m.role === 'user').length} messages
+            </div>
+          )}
+          {conversation && (
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  console.log('New Chat button clicked');
+                  
+                  // First, properly end the current conversation if it exists
+                  if (conversation) {
+                    try {
+                      console.log('Ending current conversation:', conversation.id);
+                      await chatService.endConversation(conversation.id);
+                      console.log('Successfully ended conversation');
+                    } catch (err) {
+                      console.warn('Failed to end conversation:', err);
+                    }
+                  }
+                  
+                  // Clear all state
+                  setMessages([]);
+                  setContextReady(false);
+                  setConversation(null);
+                  setError(null);
+                  setInput('');
+                  setEditingMessageId(null);
+                  setEditContent('');
+                  setCopiedMessageId(null);
+                  setIsInitialized(false); // Reset initialization flag
+                  
+                  // Force a completely fresh start
+                  setTimeout(() => {
+                    void buildContext(links, true);
+                  }, 100);
+                }}
+                className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                title="Start a new chat"
+              >
+                New Chat
+              </button>
+              <button
+                onClick={() => {
+                  console.log('Clear Chat button clicked');
+                  console.log('Current messages before clear:', messages);
+                  console.log('Current conversation:', conversation);
+                  
+                  // Just clear messages but keep the same conversation
+                  setMessages([]);
+                  setInput('');
+                  setEditingMessageId(null);
+                  setEditContent('');
+                  setCopiedMessageId(null);
+                  
+                  // Add welcome message back
+                  const welcomeMsg: LocalMsg = {
+                    id: crypto.randomUUID(),
+                    role: 'assistant',
+                    content: `🎯 **Chat Cleared!**
+
+I'm ready to help you analyze your selected research materials. I have access to ${links.length} link${links.length === 1 ? '' : 's'}:
+
+${links.map((link, index) => `**${index + 1}.** ${link.metadata?.title || link.url}`).join('\n')}
+
+**What would you like to know?** You can ask me to:
+- Summarize the key points
+- Compare different sources
+- Find specific information
+- Analyze trends or patterns
+- Generate insights and recommendations
+
+Just type your question below! 👇`
+                  };
+                  
+                  console.log('Setting welcome message:', welcomeMsg);
+                  setMessages([welcomeMsg]);
+                  console.log('Clear Chat operation completed');
+                }}
+                className="text-xs text-gray-600 hover:text-gray-800 transition-colors"
+                title="Clear current chat messages"
+              >
+                Clear Chat
+              </button>
+            </div>
+          )}
           <button 
             onClick={onClose} 
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -333,6 +623,46 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
           </button>
         </div>
       </div>
+      
+      {/* API Key Setup Warning */}
+      {!import.meta.env.VITE_OPENAI_API_KEY && (
+        <div className="p-4 bg-yellow-50 border-b border-yellow-200">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              <Key className="w-5 h-5 text-yellow-600 mt-0.5" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-yellow-800 mb-1">
+                API Key Required
+              </h4>
+              <p className="text-sm text-yellow-700 mb-3">
+                To use the AI chat functionality, you need to configure an OpenAI API key.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    onClose();
+                    // Trigger diagnostic modal
+                    window.dispatchEvent(new CustomEvent('showDiagnostics'));
+                  }}
+                  size="sm"
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                >
+                  Configure API Key
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => window.open('https://platform.openai.com/api-keys', '_blank')}
+                  className="text-yellow-700 border-yellow-300 hover:bg-yellow-100"
+                >
+                  Get API Key
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Quick Prompts */}
       <div className="p-4 border-b border-gray-200">
@@ -350,7 +680,10 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
           {allPrompts.map((prompt, index) => (
             <button
               key={index}
-              onClick={() => send(prompt)}
+              onClick={() => {
+                console.log('Quick prompt clicked:', prompt, { contextReady, loading });
+                send(prompt);
+              }}
               disabled={!contextReady || loading}
               className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                 !contextReady || loading 
@@ -576,12 +909,31 @@ export const MultiChatPanel: React.FC<Props> = ({ links, onClose }) => {
                     {m.role === 'assistant' ? (
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm as any]}
-                        className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-code:bg-gray-200 prose-code:px-1 prose-code:py-0.5 prose-code:rounded"
+                        className="prose prose-sm max-w-none 
+                          prose-headings:text-gray-900 prose-headings:font-semibold prose-headings:mb-2 prose-headings:mt-4
+                          prose-h1:text-lg prose-h1:border-b prose-h1:border-gray-200 prose-h1:pb-1
+                          prose-h2:text-base prose-h2:text-gray-800
+                          prose-h3:text-sm prose-h3:text-gray-700
+                          prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-3
+                          prose-strong:text-gray-900 prose-strong:font-semibold
+                          prose-em:text-gray-600 prose-em:italic
+                          prose-code:bg-gray-100 prose-code:text-gray-800 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:font-mono
+                          prose-pre:bg-gray-50 prose-pre:border prose-pre:border-gray-200 prose-pre:rounded-lg prose-pre:p-3 prose-pre:overflow-x-auto
+                          prose-blockquote:border-l-4 prose-blockquote:border-blue-200 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-600
+                          prose-ul:list-disc prose-ul:pl-5 prose-ul:space-y-1
+                          prose-ol:list-decimal prose-ol:pl-5 prose-ol:space-y-1
+                          prose-li:text-gray-700 prose-li:leading-relaxed
+                          prose-hr:border-gray-200 prose-hr:my-4
+                          prose-a:text-blue-600 prose-a:underline prose-a:decoration-blue-300 prose-a:underline-offset-2
+                          prose-table:border-collapse prose-table:w-full prose-table:my-4
+                          prose-th:border prose-th:border-gray-300 prose-th:bg-gray-50 prose-th:px-3 prose-th:py-2 prose-th:text-left prose-th:font-semibold
+                          prose-td:border prose-td:border-gray-300 prose-td:px-3 prose-td:py-2
+                          [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
                       >
                         {m.content}
                       </ReactMarkdown>
                     ) : (
-                      <span className="whitespace-pre-wrap text-sm">{m.content}</span>
+                      <span className="whitespace-pre-wrap text-sm leading-relaxed">{m.content}</span>
                     )}
                     
                     {/* Action buttons for messages */}

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Popup Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Popup and ChatGPT Export Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Basic Popup Test</h2>
+        <p>This tests if your browser allows popups from this site.</p>
+        <button onclick="testBasicPopup()">Test Basic Popup</button>
+        <div id="basic-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. ChatGPT URL Test</h2>
+        <p>This tests opening ChatGPT directly.</p>
+        <button onclick="testChatGPTPopup()">Open ChatGPT</button>
+        <div id="chatgpt-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Clipboard Test</h2>
+        <p>This tests if clipboard operations work.</p>
+        <button onclick="testClipboard()">Test Clipboard</button>
+        <div id="clipboard-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Full Export Simulation</h2>
+        <p>This simulates the full ChatGPT export process.</p>
+        <button onclick="testFullExport()">Test Full Export</button>
+        <div id="export-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Browser Information</h2>
+        <div id="browser-info"></div>
+    </div>
+
+    <script>
+        // Display browser information
+        document.getElementById('browser-info').innerHTML = `
+            <p><strong>User Agent:</strong> ${navigator.userAgent}</p>
+            <p><strong>Platform:</strong> ${navigator.platform}</p>
+            <p><strong>Secure Context:</strong> ${window.isSecureContext}</p>
+            <p><strong>Clipboard API Available:</strong> ${!!navigator.clipboard}</p>
+            <p><strong>Current URL:</strong> ${window.location.href}</p>
+        `;
+
+        function testBasicPopup() {
+            const result = document.getElementById('basic-result');
+            try {
+                const popup = window.open('https://www.google.com', '_blank');
+                if (popup) {
+                    result.innerHTML = '<p class="success">✅ Popup opened successfully!</p>';
+                    setTimeout(() => popup.close(), 2000);
+                } else {
+                    result.innerHTML = '<p class="error">❌ Popup was blocked by browser</p>';
+                }
+            } catch (error) {
+                result.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        function testChatGPTPopup() {
+            const result = document.getElementById('chatgpt-result');
+            try {
+                const popup = window.open('https://chat.openai.com/', '_blank');
+                if (popup) {
+                    result.innerHTML = '<p class="success">✅ ChatGPT opened successfully!</p>';
+                } else {
+                    result.innerHTML = '<p class="error">❌ ChatGPT popup was blocked</p>';
+                }
+            } catch (error) {
+                result.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testClipboard() {
+            const result = document.getElementById('clipboard-result');
+            result.innerHTML = '<p>🔄 Testing clipboard functionality...</p>';
+            
+            try {
+                const testText = 'Test clipboard content - ' + new Date().toISOString();
+                
+                // Method 1: Modern Clipboard API
+                if (navigator.clipboard && window.isSecureContext) {
+                    try {
+                        await navigator.clipboard.writeText(testText);
+                        result.innerHTML = '<p class="success">✅ Modern clipboard API works!</p>';
+                        return;
+                    } catch (error) {
+                        result.innerHTML = `<p class="warning">⚠️ Modern clipboard API failed: ${error.message}</p>`;
+                    }
+                } else {
+                    result.innerHTML = '<p class="warning">⚠️ Modern clipboard API not available (not secure context)</p>';
+                }
+                
+                // Method 2: Legacy fallback
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = testText;
+                    textArea.style.cssText = `
+                        position: fixed;
+                        left: -999999px;
+                        top: -999999px;
+                        width: 1px;
+                        height: 1px;
+                        opacity: 0;
+                        pointer-events: none;
+                        z-index: -1;
+                    `;
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    
+                    const copySuccess = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    if (copySuccess) {
+                        result.innerHTML = '<p class="success">✅ Legacy clipboard method works!</p>';
+                    } else {
+                        throw new Error('document.execCommand("copy") returned false');
+                    }
+                } catch (error) {
+                    result.innerHTML = `
+                        <p class="error">❌ All clipboard methods failed</p>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Browser Info:</strong></p>
+                        <ul>
+                            <li>Secure Context: ${window.isSecureContext}</li>
+                            <li>Clipboard API: ${!!navigator.clipboard}</li>
+                            <li>User Agent: ${navigator.userAgent}</li>
+                        </ul>
+                        <p><strong>Solution:</strong> Try using HTTPS or allow clipboard permissions</p>
+                    `;
+                }
+            } catch (error) {
+                result.innerHTML = `<p class="error">❌ Unexpected error: ${error.message}</p>`;
+            }
+        }
+
+        async function testFullExport() {
+            const result = document.getElementById('export-result');
+            result.innerHTML = '<p>🔄 Testing full export process...</p>';
+            
+            try {
+                // Step 1: Copy content to clipboard
+                const testContent = `# Test Export Content
+
+## Link 1: Example Article
+**URL:** https://example.com/article1
+**Title:** Test Article Title
+**Summary:** This is a test summary for the export functionality.
+
+## Link 2: Another Example
+**URL:** https://example.com/article2
+**Title:** Another Test Article
+**Summary:** Second test summary for verification.
+
+---
+*Exported from Smart Research Tracker*`;
+
+                // Copy to clipboard
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(testContent);
+                } else {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = testContent;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                }
+
+                // Step 2: Open ChatGPT
+                const popup = window.open('https://chat.openai.com/', '_blank');
+                
+                if (popup) {
+                    result.innerHTML = `
+                        <p class="success">✅ Full export completed!</p>
+                        <p>📋 Content copied to clipboard</p>
+                        <p>🌐 ChatGPT opened in new tab</p>
+                        <p><strong>Next steps:</strong></p>
+                        <ol>
+                            <li>Go to the ChatGPT tab</li>
+                            <li>Paste the content (Cmd/Ctrl+V)</li>
+                            <li>Start your analysis</li>
+                        </ol>
+                    `;
+                } else {
+                    result.innerHTML = `
+                        <p class="warning">⚠️ Partial success</p>
+                        <p>📋 Content copied to clipboard</p>
+                        <p>❌ ChatGPT popup was blocked</p>
+                        <p><strong>Manual steps:</strong></p>
+                        <ol>
+                            <li>Open ChatGPT manually: <a href="https://chat.openai.com/" target="_blank">https://chat.openai.com/</a></li>
+                            <li>Paste the content (Cmd/Ctrl+V)</li>
+                            <li>Start your analysis</li>
+                        </ol>
+                    `;
+                }
+            } catch (error) {
+                result.innerHTML = `<p class="error">❌ Export failed: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html> 

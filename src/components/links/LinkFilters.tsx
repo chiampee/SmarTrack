@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLinkStore } from '../../stores/linkStore';
-import { Input } from '..';
-import { ChevronDown, GripVertical } from 'lucide-react';
+import { ChevronDown, Search, Filter } from 'lucide-react';
 
-interface DraggableFilterProps {
+interface FilterSelectProps {
   value: string;
   onChange: (value: string) => void;
   options: { value: string; label: string }[];
@@ -11,7 +10,7 @@ interface DraggableFilterProps {
   className?: string;
 }
 
-const DraggableFilter: React.FC<DraggableFilterProps> = ({
+const FilterSelect: React.FC<FilterSelectProps> = ({
   value,
   onChange,
   options,
@@ -19,126 +18,63 @@ const DraggableFilter: React.FC<DraggableFilterProps> = ({
   className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [dragOverItem, setDragOverItem] = useState<string | null>(null);
-  const [orderedOptions, setOrderedOptions] = useState(options);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selectedOption = options.find(opt => opt.value === value);
 
-  // Load custom order from localStorage
+  // Close dropdown when clicking outside
   useEffect(() => {
-    const savedOrder = localStorage.getItem(`filterOrder_${placeholder}`);
-    if (savedOrder) {
-      try {
-        const order = JSON.parse(savedOrder);
-        const reordered = order.map((val: string) => 
-          options.find(opt => opt.value === val)
-        ).filter(Boolean);
-        const remaining = options.filter(opt => !order.includes(opt.value));
-        setOrderedOptions([...reordered, ...remaining]);
-      } catch {
-        setOrderedOptions(options);
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      const container = containerRef.current;
+      if (container && target && !container.contains(target)) {
+        setIsOpen(false);
       }
-    } else {
-      setOrderedOptions(options);
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
-  }, [options, placeholder]);
 
-  const onDragStart = (e: React.DragEvent<HTMLLIElement>, optionValue: string) => {
-    e.dataTransfer.setData('text/plain', optionValue);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const onDragOver = (e: React.DragEvent<HTMLLIElement>) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const onDrop = (e: React.DragEvent<HTMLLIElement>, targetValue: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const sourceValue = e.dataTransfer.getData('text/plain');
-    if (sourceValue && sourceValue !== targetValue) {
-      setOrderedOptions(prev => {
-        const newOrder = [...prev];
-        const fromIdx = newOrder.findIndex(opt => opt.value === sourceValue);
-        const toIdx = newOrder.findIndex(opt => opt.value === targetValue);
-        if (fromIdx === -1 || toIdx === -1) return prev;
-        
-        const [movedItem] = newOrder.splice(fromIdx, 1);
-        newOrder.splice(toIdx, 0, movedItem);
-        
-        // Save the new order to localStorage
-        const orderValues = newOrder.map(opt => opt.value);
-        localStorage.setItem(`filterOrder_${placeholder}`, JSON.stringify(orderValues));
-        
-        return newOrder;
-      });
-    }
-    setDragOverItem(null);
-  };
-
-  const selectedOption = orderedOptions.find(opt => opt.value === value);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
 
   return (
-    <div className={`relative ${className}`}>
+    <div ref={containerRef} className={`relative z-50 filter-select ${className}`}>
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3 py-2 text-sm bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        onClick={() => {
+          console.log('🔽 Dropdown clicked, current state:', isOpen);
+          setIsOpen(!isOpen);
+        }}
+        className="w-full flex items-center justify-between px-3 py-2 text-sm bg-white border border-gray-200 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
       >
-        <div className="flex items-center gap-2">
-          <GripVertical 
-            size={12} 
-            className="text-gray-400 opacity-50 hover:opacity-100 transition-opacity duration-200" 
-          />
-          <span className={selectedOption ? 'text-gray-900' : 'text-gray-500'}>
-            {selectedOption ? selectedOption.label : placeholder}
-          </span>
-        </div>
-        <ChevronDown size={16} className="text-gray-400" />
+        <span className={selectedOption ? 'text-gray-900' : 'text-gray-500'}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown size={14} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-          <div className="px-3 py-2 text-xs text-gray-500 border-b border-gray-200 bg-gray-50">
-            Drag to reorder options
-          </div>
-          <ul className="py-1 max-h-60 overflow-auto">
-            {orderedOptions.map((option) => (
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
+          <ul className="py-1 max-h-48 overflow-y-auto">
+            {options.map((option) => (
               <li
                 key={option.value}
-                className={`flex items-center px-3 py-2 text-sm cursor-pointer transition-colors ${
-                  dragOverItem === option.value
-                    ? 'bg-blue-100 border-blue-300'
-                    : option.value === value
+                className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
+                  option.value === value
                     ? 'bg-blue-50 text-blue-700'
-                    : 'hover:bg-gray-100 text-gray-900'
+                    : 'hover:bg-gray-50 text-gray-900'
                 }`}
-                draggable
-                onDragStart={(e) => {
-                  e.stopPropagation();
-                  onDragStart(e, option.value);
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onDragOver(e);
-                  setDragOverItem(option.value);
-                }}
-                onDrop={(e) => onDrop(e, option.value)}
-                onDragLeave={(e) => {
-                  e.preventDefault();
-                  setDragOverItem(null);
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
+                onClick={() => {
+                  console.log('✅ Option selected:', option.value);
                   onChange(option.value);
                   setIsOpen(false);
                 }}
               >
-                <GripVertical 
-                  size={14} 
-                  className="text-gray-400 mr-2 cursor-move hover:text-gray-600" 
-                  onMouseDown={(e) => e.stopPropagation()}
-                />
                 {option.label}
               </li>
             ))}
@@ -163,22 +99,36 @@ export const LinkFilters: React.FC = () => {
   const [search, setSearch] = useState(searchTerm || '');
 
   useEffect(() => {
-    const id = setTimeout(() => setSearchTerm(search), 300);
+    const id = setTimeout(() => {
+      setSearchTerm(search.trim() === '' ? '' : search);
+    }, 300);
     return () => clearTimeout(id);
   }, [search, setSearchTerm]);
 
   return (
-    <div className="flex flex-wrap gap-3 bg-gray-50/90 backdrop-blur px-4 py-3 sticky top-12 z-30 border-b border-gray-200 shadow-sm">
-      <Input
-        placeholder="Search title or URL..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-48"
-        id="searchInput"
-      />
-      <DraggableFilter
+    <div className="flex items-center gap-3 flex-wrap relative">
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search links..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 w-80"
+        />
+      </div>
+
+      {/* Filter Icon */}
+      <div className="flex items-center gap-2 text-gray-500">
+        <Filter className="w-4 h-4" />
+        <span className="text-xs font-medium uppercase tracking-wide">Filters</span>
+      </div>
+
+      {/* Status Filter */}
+      <FilterSelect
         value={statusFilter || ''}
-        onChange={(value) => setStatusFilter(value as 'active' | 'archived' | 'deleted' | undefined)}
+        onChange={(value) => setStatusFilter(value === '' ? undefined : value as 'active' | 'archived' | 'deleted')}
         options={[
           { value: '', label: 'All Status' },
           { value: 'active', label: 'Active' },
@@ -188,9 +138,11 @@ export const LinkFilters: React.FC = () => {
         placeholder="All Status"
         className="w-32"
       />
-      <DraggableFilter
+
+      {/* Priority Filter */}
+      <FilterSelect
         value={priorityFilter || ''}
-        onChange={(value) => setPriorityFilter(value as 'low' | 'medium' | 'high' | undefined)}
+        onChange={(value) => setPriorityFilter(value === '' ? undefined : value as 'low' | 'medium' | 'high')}
         options={[
           { value: '', label: 'All Priority' },
           { value: 'low', label: 'Low' },
@@ -200,15 +152,17 @@ export const LinkFilters: React.FC = () => {
         placeholder="All Priority"
         className="w-32"
       />
-      <DraggableFilter
+
+      {/* Sort Filter */}
+      <FilterSelect
         value={sortKey}
         onChange={(value) => setSortKey(value as 'createdAt' | 'labels')}
         options={[
-          { value: 'createdAt', label: 'Date' },
-          { value: 'labels', label: 'Labels' },
+          { value: 'createdAt', label: 'Sort by Date' },
+          { value: 'labels', label: 'Sort by Labels' },
         ]}
         placeholder="Sort by"
-        className="w-32"
+        className="w-36"
       />
     </div>
   );

@@ -18,9 +18,11 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   footer,
   maxWidthClass = 'max-w-lg',
-}) => (
+}) => {
+  console.log('Modal render - isOpen:', isOpen, 'title:', title);
+  return (
   <Transition show={isOpen} as={Fragment}>
-    <Dialog onClose={onClose} className="fixed inset-0 z-50 overflow-y-auto">
+    <Dialog onClose={onClose} className="fixed inset-0 z-[9999] overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center p-4 text-center">
         <Transition.Child
           as={Fragment}
@@ -75,6 +77,7 @@ export const Modal: React.FC<ModalProps> = ({
       </div>
     </Dialog>
   </Transition>
-);
+  );
+};
 
 export default Modal;

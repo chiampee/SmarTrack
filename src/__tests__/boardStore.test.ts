@@ -1,24 +1,67 @@
-import { expect, vi, it, beforeEach } from 'vitest';
+import { expect, vi, it, beforeEach, describe } from 'vitest';
 import { useBoardStore } from '../stores/boardStore';
 import { Board } from '../types/Board';
 
-const boards: Board[] = [
-  { id: 'b1', title: 'One', description: '', color: '#fff', createdAt: new Date(), updatedAt: new Date() },
-  { id: 'b2', title: 'Two', description: '', color: '#000', createdAt: new Date(), updatedAt: new Date() },
+// ============================================================================
+// TEST DATA
+// ============================================================================
+
+const sampleBoards: Board[] = [
+  { 
+    id: 'b1', 
+    title: 'One', 
+    description: '', 
+    color: '#fff', 
+    createdAt: new Date(), 
+    updatedAt: new Date() 
+  },
+  { 
+    id: 'b2', 
+    title: 'Two', 
+    description: '', 
+    color: '#000', 
+    createdAt: new Date(), 
+    updatedAt: new Date() 
+  },
 ];
+
+// ============================================================================
+// MOCKS
+// ============================================================================
 
 vi.mock('../services/boardService', () => ({
   boardService: {
-    getAll: vi.fn(async () => boards),
+    getAll: vi.fn(async () => sampleBoards),
   },
 }));
 
-beforeEach(() => {
-  useBoardStore.setState({ boards: [], loading: false });
-});
+describe('📋 Board Store', () => {
+  
+  // ============================================================================
+  // TEST SETUP
+  // ============================================================================
+  
+  beforeEach(() => {
+    // Reset store to clean state before each test
+    useBoardStore.setState({ boards: [], loading: false });
+  });
 
-it('loads boards', async () => {
-  const st = useBoardStore.getState();
-  await st.loadBoards();
-  expect(useBoardStore.getState().boards.length).toBe(2);
+  // ============================================================================
+  // LOADING TESTS
+  // ============================================================================
+  
+  describe('📥 Loading Functionality', () => {
+    
+    it('✅ should load boards successfully', async () => {
+      // Arrange
+      const store = useBoardStore.getState();
+      
+      // Act
+      await store.loadBoards();
+      
+      // Assert
+      const loadedBoards = useBoardStore.getState().boards;
+      expect(loadedBoards.length).toBe(2);
+    });
+  });
 }); 

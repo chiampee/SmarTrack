@@ -5,27 +5,32 @@ export const apiKeySetupService = {
   validateApiKey(apiKey: string): boolean {
     // OpenAI API keys start with 'sk-' and are typically 51 characters long
     // But some newer keys might have different lengths, so we'll be more flexible
-    return apiKey.startsWith('sk-') && apiKey.length >= 20 && apiKey.length <= 100;
+    return (
+      apiKey.startsWith('sk-') && apiKey.length >= 20 && apiKey.length <= 100
+    );
   },
 
   /**
    * Tests the API key by making a real API call to OpenAI
    */
-  async testApiKey(apiKey: string): Promise<{ success: boolean; message: string; errorType?: string }> {
+  async testApiKey(
+    apiKey: string
+  ): Promise<{ success: boolean; message: string; errorType?: string }> {
     try {
       // Make a simple API call to test the key
+      // Use a lightweight, cache-busting request and allow failure without crashing UI
       const response = await fetch('https://api.openai.com/v1/models', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
       });
 
       if (response.ok) {
         return {
           success: true,
-          message: 'API key is valid and working!'
+          message: 'API key is valid and working!',
         };
       } else {
         // Handle different error types based on status code
@@ -33,49 +38,61 @@ export const apiKeySetupService = {
           case 401:
             return {
               success: false,
-              message: 'API Key Not Found: The API key you provided doesn\'t exist in our system.',
-              errorType: 'API Key Not Found'
+              message:
+                "API Key Not Found: The API key you provided doesn't exist in our system.",
+              errorType: 'API Key Not Found',
             };
           case 402:
             return {
               success: false,
-              message: 'Insufficient Credits: Your OpenAI account doesn\'t have enough credits for API calls.',
-              errorType: 'Insufficient Credits'
+              message:
+                "Insufficient Credits: Your OpenAI account doesn't have enough credits for API calls.",
+              errorType: 'Insufficient Credits',
             };
           case 429:
             return {
               success: false,
-              message: 'Rate Limit Exceeded: You\'ve made too many API requests in a short time period.',
-              errorType: 'Rate Limit Exceeded'
+              message:
+                "Rate Limit Exceeded: You've made too many API requests in a short time period.",
+              errorType: 'Rate Limit Exceeded',
             };
           case 403:
             return {
               success: false,
-              message: 'Access Denied: Your API key doesn\'t have the required permissions.',
-              errorType: 'Model Access Restricted'
+              message:
+                "Access Denied: Your API key doesn't have the required permissions.",
+              errorType: 'Model Access Restricted',
             };
           default:
             return {
               success: false,
               message: `API Error (${response.status}): ${response.statusText}`,
-              errorType: 'Network Connection Issue'
+              errorType: 'Network Connection Issue',
             };
         }
       }
     } catch (error) {
-      // Handle network errors
+      // Handle network/CORS errors gracefully
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return {
+          success: false,
+          message: 'Network timeout: Unable to reach OpenAI. Try again later.',
+          errorType: 'Network Connection Issue',
+        };
+      }
       if (error instanceof TypeError && error.message.includes('fetch')) {
         return {
           success: false,
-          message: 'Network Connection Issue: Unable to connect to OpenAI\'s servers.',
-          errorType: 'Network Connection Issue'
+          message:
+            'Network/CORS Issue: Your browser blocked the test request. You can still paste your API key; features may work in production.',
+          errorType: 'Network Connection Issue',
         };
       }
-      
+
       return {
         success: false,
         message: `Test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        errorType: 'Network Connection Issue'
+        errorType: 'Network Connection Issue',
       };
     }
   },
@@ -83,13 +100,16 @@ export const apiKeySetupService = {
   /**
    * Creates or updates the .env.local file with the provided API key
    */
-  async setupApiKey(apiKey: string): Promise<{ success: boolean; message: string; envContent?: string }> {
+  async setupApiKey(
+    apiKey: string
+  ): Promise<{ success: boolean; message: string; envContent?: string }> {
     try {
       // First validate the API key format
       if (!this.validateApiKey(apiKey)) {
         return {
           success: false,
-          message: 'Invalid API key format. OpenAI API keys should start with "sk-" and be at least 20 characters long.'
+          message:
+            'Invalid API key format. OpenAI API keys should start with "sk-" and be at least 20 characters long.',
         };
       }
 
@@ -98,7 +118,7 @@ export const apiKeySetupService = {
       if (!testResult.success) {
         return {
           success: false,
-          message: testResult.message
+          message: testResult.message,
         };
       }
 
@@ -110,8 +130,8 @@ export const apiKeySetupService = {
 VITE_OPENAI_API_KEY=${apiKey}
 
 # Optional: Customize AI behavior
-VITE_OPENAI_MODEL=gpt-4o-mini
-VITE_OPENAI_EMBED_MODEL=text-embedding-3-small
+VITE_OPENAI_MODEL=gpt-4o
+VITE_OPENAI_EMBED_MODEL=text-embedding-3-large
 
 # Optional: Custom settings
 VITE_MAX_SUMMARY_LENGTH=500
@@ -122,13 +142,14 @@ VITE_ENABLE_ANALYTICS=false
       // Instead, we'll provide the content for download and instructions
       return {
         success: true,
-        message: 'API key validated and tested successfully! Please follow the instructions below to complete setup.',
-        envContent
+        message:
+          'API key validated and tested successfully! Please follow the instructions below to complete setup.',
+        envContent,
       };
     } catch (error) {
       return {
         success: false,
-        message: `Failed to setup API key: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `Failed to setup API key: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   },
@@ -152,8 +173,10 @@ VITE_ENABLE_ANALYTICS=false
    * Checks if the API key is already configured
    */
   isApiKeyConfigured(): boolean {
-    return !!import.meta.env.VITE_OPENAI_API_KEY && 
-           import.meta.env.VITE_OPENAI_API_KEY !== 'sk-your-key-here' &&
-           import.meta.env.VITE_OPENAI_API_KEY.length > 0;
-  }
-}; 
+    return (
+      !!import.meta.env.VITE_OPENAI_API_KEY &&
+      import.meta.env.VITE_OPENAI_API_KEY !== 'sk-your-key-here' &&
+      import.meta.env.VITE_OPENAI_API_KEY.length > 0
+    );
+  },
+};
