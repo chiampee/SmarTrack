@@ -1,11 +1,33 @@
 import { db } from '../db/smartResearchDB';
+import { errorHandler, createDatabaseError } from '../utils/errorHandler';
 import { AISummary, SummaryKind } from '../types/AISummary';
 import { aiService, ChatMessage } from './aiService';
 import { Link } from '../types/Link';
 
 export const aiSummaryService = {
   async getByLink(linkId: string) {
-    return db.summaries.where('linkId').equals(linkId).toArray() as Promise<AISummary[]>;
+    try {
+      // Try to get summaries from extension storage first
+      if (typeof window !== 'undefined' && (window as any).chrome?.storage?.local) {
+        return new Promise<AISummary[]>((resolve) => {
+          try {
+            (window as any).chrome.storage.local.get(['summaries'], (res: any) => {
+              const summaries = res?.summaries || [];
+              const linkSummaries = summaries.filter((s: any) => s.linkId === linkId);
+              resolve(linkSummaries as AISummary[]);
+            });
+          } catch {
+            resolve([]);
+          }
+        });
+      }
+      
+      // Fallback to IndexedDB if extension storage not available
+      return (await db.summaries.where('linkId').equals(linkId).toArray()) as AISummary[];
+    } catch (err) {
+      try { errorHandler.handleError(createDatabaseError(err as Error, { source: 'aiSummaryService.getByLink' })); } catch {}
+      return [] as AISummary[];
+    }
   },
   async create(summary: AISummary) {
     summary.createdAt = new Date();
@@ -21,6 +43,33 @@ export const aiSummaryService = {
       }
     }
 
+    try {
+      // Try to store in extension storage first
+      if (typeof window !== 'undefined' && (window as any).chrome?.storage?.local) {
+        await new Promise<void>((resolve, reject) => {
+          try {
+            (window as any).chrome.storage.local.get(['summaries'], (res: any) => {
+              const summaries = res?.summaries || [];
+              summaries.push(summary);
+              (window as any).chrome.storage.local.set({ summaries }, () => {
+                if ((window as any).chrome.runtime.lastError) {
+                  reject(new Error((window as any).chrome.runtime.lastError.message));
+                } else {
+                  resolve();
+                }
+              });
+            });
+          } catch (err) {
+            reject(err);
+          }
+        });
+        return;
+      }
+    } catch (err) {
+      console.debug('Extension storage failed, falling back to IndexedDB:', err);
+    }
+
+    // Fallback to IndexedDB if extension storage not available
     await db.addSummary(summary);
   },
   async generate(link: Link, kind: SummaryKind, customPrompt?: string): Promise<AISummary> {

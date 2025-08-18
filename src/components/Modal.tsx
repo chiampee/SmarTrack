@@ -1,4 +1,5 @@
-import React, { Fragment } from 'react';
+import React, { Fragment, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Dialog, Transition } from '@headlessui/react';
 import { X } from 'lucide-react';
 
@@ -9,6 +10,7 @@ interface ModalProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   maxWidthClass?: string; // tailwind max-w-* class
+  dataId?: string; // diagnostic hook for querying in DOM
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -18,11 +20,30 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   footer,
   maxWidthClass = 'max-w-lg',
+  dataId,
 }) => {
-  console.log('Modal render - isOpen:', isOpen, 'title:', title);
-  return (
+  // Diagnostics to trace modal lifecycle
+  useEffect(() => {
+    console.log('[Modal] state change', { isOpen, title });
+  }, [isOpen, title]);
+  useEffect(() => {
+    console.log('[Modal] mounted', { title });
+    return () => console.log('[Modal] unmounted', { title });
+  }, [title]);
+  const portalContainer = useMemo(() => {
+    if (typeof document === 'undefined') return null;
+    let node = document.getElementById('srt-modal-root');
+    if (!node) {
+      node = document.createElement('div');
+      node.setAttribute('id', 'srt-modal-root');
+      document.body.appendChild(node);
+    }
+    return node;
+  }, []);
+
+  const content = (
   <Transition show={isOpen} as={Fragment}>
-    <Dialog onClose={onClose} className="fixed inset-0 z-[9999] overflow-y-auto">
+    <Dialog open={isOpen} onClose={onClose} className="fixed inset-0 z-[9999] overflow-y-auto" data-modal-id={dataId} data-modal-title={title || ''}>
       <div className="flex min-h-screen items-center justify-center p-4 text-center">
         <Transition.Child
           as={Fragment}
@@ -45,7 +66,7 @@ export const Modal: React.FC<ModalProps> = ({
           leaveFrom="opacity-100 scale-100 translate-y-0"
           leaveTo="opacity-0 scale-95 translate-y-4"
         >
-          <div className={`relative w-full ${maxWidthClass} transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all border border-gray-100`}>
+          <Dialog.Panel className={`relative w-full ${maxWidthClass} transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all border border-gray-100`}>
             {/* Enhanced Header */}
             {title && (
               <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
@@ -65,19 +86,26 @@ export const Modal: React.FC<ModalProps> = ({
             
             {/* Content Area */}
             <div className="px-6 py-6">
-              {children}
+              {/* Scrollable body constrained to viewport */}
+              <div className="max-h-[75vh] overflow-y-auto">
+                {children}
+              </div>
               {footer && (
-                <div className="pt-6 mt-6 border-t border-gray-100">
+                // Sticky footer that remains visible while body scrolls
+                <div className="sticky bottom-0 left-0 right-0 bg-white pt-4 mt-4 border-t border-gray-100">
                   {footer}
                 </div>
               )}
             </div>
-          </div>
+          </Dialog.Panel>
         </Transition.Child>
       </div>
     </Dialog>
   </Transition>
   );
+
+  if (!portalContainer) return content;
+  return createPortal(content, portalContainer);
 };
 
 export default Modal;

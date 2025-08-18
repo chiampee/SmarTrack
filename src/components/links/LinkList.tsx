@@ -26,31 +26,27 @@ import {
   X,
   ExternalLink,
   Edit2,
+  Trash,
+  Plus,
 } from 'lucide-react';
-import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { createRoot } from 'react-dom/client';
 import { Link } from '../../types/Link';
 import { aiSummaryService } from '../../services/aiSummaryService';
 import { LinkForm } from './LinkForm';
+import { LinkFilters } from './LinkFilters';
 
 const DEFAULT_COLUMNS = [
   'name',
   'url',
+  'description',
   'labels',
   'status',
   'priority',
   'created',
 ] as const;
 
-export const LinkList = React.memo(() => {
-  const componentId = useRef(`LinkList-${Math.random().toString(36).substr(2, 9)}`);
-  
-  useEffect(() => {
-    console.log(`LinkList ${componentId.current} mounted`);
-    return () => {
-      console.log(`LinkList ${componentId.current} unmounted`);
-    };
-  }, []);
-
+export const LinkList: React.FC = () => {
   const {
     sortKey,
     sortDir: sdir,
@@ -58,10 +54,11 @@ export const LinkList = React.memo(() => {
     links: storeLinks,
     loading,
     loadLinks,
+    deleteLink,
   } = useLinkStore();
+  const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<Link | null>(null);
-  const modalStateRef = useRef({ editOpen: false, editingLink: null });
   const rootRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState<string[]>([...DEFAULT_COLUMNS]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -90,6 +87,7 @@ export const LinkList = React.memo(() => {
         if (Object.keys(saved).length === 0) {
           const bestViewWidths = {
             name: 350, // Much wider for titles to prevent truncation
+            description: 200, // Good width for description text
             labels: 150, // Good for multiple labels
             status: 100, // Adequate for status
             priority: 100, // Adequate for priority
@@ -133,34 +131,103 @@ export const LinkList = React.memo(() => {
     link: null,
   });
 
-  // Keep ref in sync with state
-  useEffect(() => {
-    modalStateRef.current = { editOpen, editingLink };
-  }, [editOpen, editingLink]);
-
-  // Monitor modal state changes
-  useEffect(() => {
-    console.log('Modal state changed - editOpen:', editOpen, 'editingLink:', editingLink?.id);
-  }, [editOpen, editingLink]);
-
   // Helper to open the edit modal reliably
-  const openEditor = useCallback((link: Link) => {
-    console.log('openEditor called with link:', link.id);
-    console.log('Current editOpen state:', editOpen);
-    console.log('Current editingLink state:', editingLink);
-    console.log('Ref state:', modalStateRef.current);
-    
+  const openEditor = (link: Link) => {
+    console.log('[Links] openEditor called', {
+      id: link.id,
+      url: link.url,
+      title: link.metadata?.title,
+    });
     setEditingLink(link);
-    setEditOpen(true);
-    
-    console.log('State setters called');
-    
-    // Check state after a tick
+    // Defer opening by a tick to ensure editingLink is set before rendering form
     setTimeout(() => {
-      console.log('After timeout - state:', { editOpen, editingLink });
-      console.log('After timeout - ref:', modalStateRef.current);
-    }, 100);
-  }, [editOpen, editingLink]);
+      console.log('[Links] Setting editOpen=true');
+      setEditOpen(true);
+      // Ensure an editor is visible even if the Headless UI modal fails to mount
+      setShowEditFallback(true);
+      // After a short delay, if neither modal nor fallback is present, render an emergency editor portal
+      window.setTimeout(() => {
+        const hasHeadless = !!document.querySelector('[data-modal-id="edit-link-modal"]');
+        const hasFallback = !!document.getElementById('edit-link-modal-fallback');
+        const hasEmergency = !!document.getElementById('srt-emergency-editor');
+        if (!hasHeadless && !hasFallback && !hasEmergency) {
+          try {
+            const container = document.createElement('div');
+            container.id = 'srt-emergency-editor';
+            container.style.position = 'fixed';
+            container.style.inset = '0';
+            container.style.zIndex = '2147483647';
+            container.style.background = 'rgba(0,0,0,0.5)';
+            container.style.display = 'flex';
+            container.style.alignItems = 'center';
+            container.style.justifyContent = 'center';
+            document.body.appendChild(container);
+            const panel = document.createElement('div');
+            panel.style.width = '100%';
+            panel.style.maxWidth = '640px';
+            panel.style.margin = '0 16px';
+            panel.style.background = '#fff';
+            panel.style.borderRadius = '12px';
+            panel.style.boxShadow = '0 10px 30px rgba(0,0,0,0.25)';
+            container.appendChild(panel);
+            const root = createRoot(panel);
+            const onClose = () => {
+              try { root.unmount(); } catch {}
+              try { container.remove(); } catch {}
+            };
+            root.render(
+              <div>
+                <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h3 style={{ margin: 0, fontSize: 18 }}>Edit Link</h3>
+                  <button aria-label="Close" onClick={onClose} style={{ padding: 8, borderRadius: 8, background: 'transparent', border: '1px solid #eee' }}>×</button>
+                </div>
+                <div style={{ padding: 16 }}>
+                  <LinkForm existing={link} onSuccess={onClose} />
+                </div>
+              </div>
+            );
+          } catch (err) {
+            console.error('[Links] Failed to mount emergency editor', err);
+          }
+        }
+      }, 120);
+    }, 0);
+  };
+
+  // Ensure modal robustness: ESC closes, body scroll locks, and emergency container is cleaned
+  useEffect(() => {
+    const cleanupEmergencyContainer = () => {
+      const el = document.getElementById('srt-emergency-editor');
+      if (el) {
+        try { el.remove(); } catch {}
+      }
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        console.debug('[Links] ESC pressed – closing editor');
+        setEditOpen(false);
+        setEditingLink(null);
+        cleanupEmergencyContainer();
+      }
+    };
+
+    if (editOpen) {
+      // Lock scroll while editor is open
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', onKey);
+      return () => {
+        document.body.style.overflow = prev;
+        window.removeEventListener('keydown', onKey);
+        cleanupEmergencyContainer();
+      };
+    }
+
+    // When closed ensure cleanup as well
+    cleanupEmergencyContainer();
+    return undefined;
+  }, [editOpen]);
 
   // Defensive: delegate clicks for inline edit buttons to ensure the modal opens
   useEffect(() => {
@@ -168,26 +235,79 @@ export const LinkList = React.memo(() => {
     if (!root) return;
     const handler = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
-      if (!target) return;
+      if (!target) {
+        console.debug('[Links] edit capture: event without target');
+        return;
+      }
+      // Helpful trace of the click path
+      try {
+        const path = (e.composedPath?.() || [])
+          .slice(0, 5)
+          .map((n: any) => n?.nodeName || n?.tagName || typeof n)
+          .join(' > ');
+        console.debug('[Links] edit capture: click path:', path);
+      } catch {}
       const editBtn = target.closest(
         '[data-edit-button="inline"]'
       ) as HTMLElement | null;
-      if (!editBtn) return;
+      if (!editBtn) {
+        return;
+      }
       const linkId = editBtn.getAttribute('data-link-id');
-      if (!linkId) return; // let React handler run
+      if (!linkId) {
+        console.debug('[Links] edit capture: button without data-link-id');
+        return; // let React handler run
+      }
       const link = storeLinks.find((l) => l.id === linkId);
-      if (!link) return; // let React handler run
+      if (!link) {
+        console.debug('[Links] edit capture: link not found in store for id', linkId);
+        return; // let React handler run
+      }
       e.preventDefault();
       e.stopPropagation();
+      console.debug('[Links] edit capture: opening editor for id', linkId);
       openEditor(link);
     };
+    console.debug('[Links] Installing edit capture handler on root');
     root.addEventListener('click', handler, true);
-    return () => root.removeEventListener('click', handler, true);
-  }, [storeLinks, openEditor]);
+    return () => {
+      console.debug('[Links] Removing edit capture handler from root');
+      root.removeEventListener('click', handler, true);
+    };
+  }, [storeLinks]);
+
+  // Trace modal state changes and data availability
+  useEffect(() => {
+    console.debug('[Links] editOpen state changed:', editOpen);
+  }, [editOpen]);
+  useEffect(() => {
+    console.debug('[Links] editingLink updated:', editingLink?.id, editingLink?.metadata?.title);
+  }, [editingLink]);
+
+  // If the modal doesn't appear, enable a simple fallback overlay
+  useEffect(() => {
+    if (editOpen) {
+      const t = window.setTimeout(() => {
+        const node = document.querySelector('[data-modal-id="edit-link-modal"]');
+        const present = !!node;
+        console.debug('[Links] modal DOM presence:', present);
+        if (present) {
+          setShowEditFallback(false);
+        } else {
+          setShowEditFallback(true);
+        }
+      }, 80);
+      return () => window.clearTimeout(t);
+    } else {
+      setShowEditFallback(false);
+    }
+  }, [editOpen]);
 
   // ChatGPT export modal state
   const [chatGPTExportOpen, setChatGPTExportOpen] = useState(false);
   const [chatGPTExportLinks, setChatGPTExportLinks] = useState<Link[]>([]);
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
+  const [showEditFallback, setShowEditFallback] = useState(false);
 
   // Text presentation mode state
   const [textPresentationMode, setTextPresentationMode] = useState<
@@ -229,6 +349,7 @@ export const LinkList = React.memo(() => {
           const bestViewVisibility = {
             name: true, // Always show name - most important
             url: false, // Hide URL to save space - can be accessed via name link
+            description: true, // Show description for context
             labels: true, // Show labels for categorization
             status: true, // Show status for quick overview
             priority: true, // Show priority for task management
@@ -253,6 +374,7 @@ export const LinkList = React.memo(() => {
         const bestViewVisibility = {
           name: true, // Always show name - most important
           url: false, // Hide URL to save space - can be accessed via name link
+          description: true, // Show description for context
           labels: true, // Show labels for categorization
           status: true, // Show status for quick overview
           priority: true, // Show priority for task management
@@ -309,6 +431,7 @@ export const LinkList = React.memo(() => {
     const map: Record<string, string> = {
       name: 'name',
       url: 'url',
+      description: 'description',
       labels: 'labels',
       status: 'status',
       priority: 'priority',
@@ -549,10 +672,66 @@ export const LinkList = React.memo(() => {
     }
   };
 
+  const deleteSelected = async () => {
+    if (!selectedIds.length) return;
+    console.log('[Dashboard] Deleting links:', selectedIds);
+    try {
+      const selectedLinks = getSelectedLinks();
+      if (selectedLinks.length > 0) {
+        // Delete from the database
+        for (const link of selectedLinks) {
+          await deleteLink(link.id);
+        }
+        
+        // Also notify the extension to remove these links
+        try {
+          window.postMessage(
+            {
+              type: 'SRT_DELETE_LINKS',
+              linkIds: selectedLinks.map(link => link.id),
+            },
+            '*'
+          );
+          console.log('[Dashboard] Delete request sent to extension');
+        } catch (error) {
+          console.warn(
+            '[Dashboard] Failed to notify extension:',
+            error
+          );
+        }
+      }
+
+      console.log('[Dashboard] Links deleted successfully');
+      setSelectedIds([]);
+      // Refresh the links to show updated status
+      setTimeout(() => {
+        loadLinks();
+      }, 500);
+    } catch (error) {
+      console.error('[Dashboard] Failed to delete links:', error);
+    }
+  };
+
   useEffect(() => {
     // Ensure links are loaded on mount
     void loadLinks();
   }, [loadLinks]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + Delete for bulk delete
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Delete' && selectedIds.length > 0) {
+        e.preventDefault();
+        setBulkDeleteConfirmOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedIds.length]);
 
   useEffect(() => {
     // Only run this check if we have links and it's not already running
@@ -1110,6 +1289,7 @@ export const LinkList = React.memo(() => {
     const bestViewVisibility = {
       name: true, // Always show name - most important
       url: true, // Show URL for better context
+      description: true, // Show description for context
       labels: true, // Show labels for categorization
       status: true, // Show status for quick overview
       priority: true, // Show priority for task management
@@ -1119,6 +1299,7 @@ export const LinkList = React.memo(() => {
     const bestViewWidths = {
       name: 450, // Much wider for titles to prevent truncation
       url: 300, // Good for URLs
+      description: 250, // Good width for description text
       labels: 200, // Good for multiple labels
       status: 120, // Adequate for status
       priority: 120, // Adequate for priority
@@ -1127,6 +1308,7 @@ export const LinkList = React.memo(() => {
 
     const bestViewTextMode = {
       name: 'words' as const, // Show first 4 words for names
+      description: 'words' as const, // Show first few words for description
       labels: 'wrap' as const, // Full labels
       status: 'wrap' as const, // Full status
       priority: 'wrap' as const, // Full priority
@@ -1252,19 +1434,14 @@ export const LinkList = React.memo(() => {
             </button>
             <button
               type="button"
-              onPointerDown={(e) => {
-                console.log('Pencil onPointerDown triggered for link:', link.id);
-                e.preventDefault();
-                e.stopPropagation();
-                openEditor(link);
-              }}
+              aria-label="Edit link"
               onClick={(e) => {
-                console.log('Pencil onClick triggered for link:', link.id);
                 e.preventDefault();
                 e.stopPropagation();
+                console.debug('[Links] Inline edit button clicked for id', link.id);
                 openEditor(link);
               }}
-              className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-blue-600 relative z-10"
+              className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-blue-600"
               title="Edit link"
               data-edit-button="inline"
               data-link-id={link.id}
@@ -1284,6 +1461,19 @@ export const LinkList = React.memo(() => {
           >
             {formatText(link.url, col)}
           </a>
+        );
+      case 'description':
+        const description = link.metadata?.description || '';
+        return (
+          <div className="text-sm text-gray-600">
+            {description ? (
+              <span title={description} className="line-clamp-2">
+                {formatText(description, col)}
+            </span>
+            ) : (
+              <span className="text-gray-400 italic">No description</span>
+            )}
+          </div>
         );
       case 'labels':
         return (
@@ -1355,6 +1545,11 @@ export const LinkList = React.memo(() => {
           break;
         case 'url':
           cmp = a.url.localeCompare(b.url);
+          break;
+        case 'description':
+          const aDesc = (a.metadata && a.metadata.description) || '';
+          const bDesc = (b.metadata && b.metadata.description) || '';
+          cmp = aDesc.localeCompare(bDesc);
           break;
         case 'labels':
           const aLabels =
@@ -1561,6 +1756,7 @@ export const LinkList = React.memo(() => {
     const labelMap: Record<string, string> = {
       name: 'Name',
       url: 'Link',
+      description: 'Description',
       labels: 'Labels',
       priority: 'Priority',
       status: 'Status',
@@ -1603,6 +1799,30 @@ export const LinkList = React.memo(() => {
               title="Reset all table settings to defaults"
             >
               <span className="font-medium">Reset Settings</span>
+            </button>
+            <button
+              onClick={() => {
+                console.log('[Dashboard] Debug: Current store state:', {
+                  rawLinks: storeLinks?.length || 0,
+                  loading,
+                  error: useLinkStore.getState().error
+                });
+                
+                // Test extension communication
+                if (typeof window !== 'undefined' && (window as any).chrome?.storage) {
+                  (window as any).chrome.storage.local.get(['links'], (result: any) => {
+                    console.log('[Dashboard] Debug: Chrome storage result:', result);
+                    alert(`Chrome storage contains ${result.links?.length || 0} links`);
+                  });
+                } else {
+                  console.log('[Dashboard] Debug: Chrome storage not available');
+                  alert('Chrome storage not available');
+                }
+              }}
+              className="group flex items-center gap-1.5 px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-800 rounded-md transition-colors duration-200"
+              title="Debug extension communication"
+            >
+              <span className="font-medium">🐛 Debug</span>
             </button>
           </div>
           {/* Hint removed per request */}
@@ -1720,8 +1940,7 @@ export const LinkList = React.memo(() => {
                     {selectedIds.length === 1 ? '' : 's'} selected
                   </div>
                   <div className="text-xs text-blue-600 font-medium">
-                    ✨ Ready for AI analysis • Right-click for individual
-                    actions
+                    ✨ Ready for AI analysis • Right-click for individual actions • <kbd className="px-1 py-0.5 bg-blue-100 rounded text-xs">Ctrl+Delete</kbd> to delete
                   </div>
                 </div>
               </div>
@@ -1767,6 +1986,16 @@ export const LinkList = React.memo(() => {
               >
                 <Archive className="w-4 h-4" />
                 Archive
+              </Button>
+              <Button
+                variant="danger"
+                size="md"
+                onClick={() => setBulkDeleteConfirmOpen(true)}
+                className="inline-flex items-center gap-2"
+                title="Delete selected links permanently"
+              >
+                <Trash className="w-4 h-4" />
+                Delete
               </Button>
             </div>
           </div>
@@ -2019,9 +2248,10 @@ export const LinkList = React.memo(() => {
             </button>
             <button
               onClick={() => {
-                if (contextMenu.link) {
-                  openEditor(contextMenu.link);
-                }
+                setOpen(true);
+                // Set the existing link for editing
+                const linkToEdit = contextMenu.link!;
+                // You can add state to track which link is being edited
                 resetContextMenu();
               }}
               className="w-full px-2 py-1 text-left text-xs hover:bg-green-50 flex items-center gap-1.5"
@@ -2156,6 +2386,30 @@ export const LinkList = React.memo(() => {
             title="Reset all table settings to defaults"
           >
             Reset Settings
+          </button>
+          <button
+            onClick={() => {
+              console.log('[Dashboard] Debug: Current store state:', {
+                rawLinks: storeLinks?.length || 0,
+                loading,
+                error: useLinkStore.getState().error
+              });
+              
+              // Test extension communication
+              if (typeof window !== 'undefined' && (window as any).chrome?.storage) {
+                (window as any).chrome.storage.local.get(['links'], (result: any) => {
+                  console.log('[Dashboard] Debug: Chrome storage result:', result);
+                  alert(`Chrome storage contains ${result.links?.length || 0} links`);
+                });
+              } else {
+                console.log('[Dashboard] Debug: Chrome storage not available');
+                alert('Chrome storage not available');
+              }
+            }}
+            className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
+            title="Debug extension communication"
+          >
+            🐛 Debug
           </button>
         </div>
         {/* helper hint removed */}
@@ -2575,19 +2829,25 @@ export const LinkList = React.memo(() => {
           </div>
         </div>
       )}
+      <Modal isOpen={open} onClose={() => setOpen(false)} title="Add Link" dataId="add-link-modal" maxWidthClass="max-w-md">
+        <LinkForm onSuccess={() => setOpen(false)} />
+      </Modal>
       <Modal
-        key={`edit-modal-${editingLink?.id || 'none'}`}
         isOpen={editOpen}
         onClose={() => {
+          console.debug('[Links] Closing edit modal');
           setEditOpen(false);
           setEditingLink(null);
         }}
         title="Edit Link"
+        dataId="edit-link-modal"
+        maxWidthClass="max-w-md"
       >
         {editingLink && (
           <LinkForm
             existing={editingLink}
             onSuccess={() => {
+              console.debug('[Links] Edit saved – closing modal');
               setEditOpen(false);
               setEditingLink(null);
             }}
@@ -2601,9 +2861,130 @@ export const LinkList = React.memo(() => {
         onClose={() => setChatGPTExportOpen(false)}
         links={chatGPTExportLinks}
       />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <Modal isOpen={bulkDeleteConfirmOpen} onClose={() => setBulkDeleteConfirmOpen(false)} title="Delete Selected Links">
+        <div className="space-y-4">
+          <div className="text-gray-700">
+            <p className="mb-2">Are you sure you want to delete {selectedIds.length} selected link{selectedIds.length === 1 ? '' : 's'}?</p>
+            <div className="bg-gray-50 p-3 rounded-md max-h-40 overflow-y-auto">
+              {getSelectedLinks().map((link, index) => (
+                <div key={link.id} className="mb-2 last:mb-0">
+                  <p className="font-medium text-gray-900 text-sm">{link.metadata?.title || 'Untitled Link'}</p>
+                  <p className="text-xs text-gray-600 truncate">{link.url}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              This action cannot be undone. All selected links and their associated data (summaries, chat history, etc.) will be permanently removed.
+            </p>
+          </div>
+          
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={() => setBulkDeleteConfirmOpen(false)}
+              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors duration-200"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                await deleteSelected();
+                setBulkDeleteConfirmOpen(false);
+              }}
+              className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors duration-200"
+            >
+              Delete {selectedIds.length} Link{selectedIds.length === 1 ? '' : 's'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Clean Filters and Actions Bar */}
+      <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200/50 p-3 mb-4 shadow-sm relative z-50">
+        <div className="flex items-center justify-between">
+          <LinkFilters />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                console.log('[Dashboard] Debug: Current store state:', {
+                  rawLinks: storeLinks?.length || 0,
+                  loading,
+                  error: useLinkStore.getState().error
+                });
+                
+                // Test extension communication
+                if (typeof window !== 'undefined' && (window as any).chrome?.storage) {
+                  (window as any).chrome.storage.local.get(['links'], (result: any) => {
+                    console.log('[Dashboard] Debug: Chrome storage result:', result);
+                    alert(`Chrome storage contains ${result.links?.length || 0} links`);
+                  });
+                } else {
+                  console.log('[Dashboard] Debug: Chrome storage not available');
+                  alert('Chrome storage not available');
+                }
+              }}
+              className="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+            >
+              🐛 Debug
+            </button>
+
+
+          </div>
+        </div>
+      </div>
+
+      {editOpen && showEditFallback && (
+        <div
+          id="edit-link-modal-fallback"
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50"
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 2147483647, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => {
+            console.debug('[Links] Fallback modal backdrop click – closing');
+            setEditOpen(false);
+            setEditingLink(null);
+          }}
+        >
+          {/* Debug: Rendering fallback edit overlay */}
+          <div
+            className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-xl mx-4"
+            style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 480, margin: '0 16px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Edit Link</h3>
+              <button
+                aria-label="Close"
+                className="p-2 rounded hover:bg-gray-100"
+                onClick={() => {
+                  console.debug('[Links] Fallback modal close button');
+                  setEditOpen(false);
+                  setEditingLink(null);
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="px-6 py-6">
+              {editingLink && (
+                <LinkForm
+                  existing={editingLink}
+                  onSuccess={() => {
+                    console.debug('[Links] Fallback edit saved – closing');
+                    setEditOpen(false);
+                    setEditingLink(null);
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-});
+};
 
 function HeaderCheckbox({
   groupLinks,

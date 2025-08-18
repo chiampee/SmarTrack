@@ -3,6 +3,64 @@
 
 console.log('[Smart Research Tracker] Enhanced background script loaded');
 
+// Robust URL normalizer for duplicate detection
+function normalizeUrlForCompare(rawUrl) {
+  try {
+    const u = new URL(String(rawUrl || '').trim());
+    const host = (u.hostname || '').replace(/^www\./i, '');
+    // Drop query and hash; keep only host + pathname
+    let path = decodeURIComponent(u.pathname || '/');
+    // Remove trailing slashes
+    path = path.replace(/\/+$/, '');
+    // Treat root as empty path to keep host only
+    if (path === '/') path = '';
+    return `${host}${path}`.toLowerCase();
+  } catch (_) {
+    // Fallback best-effort normalization
+    return String(rawUrl || '')
+      .trim()
+      .replace(/#.*/, '')
+      .replace(/\?.*/, '')
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./i, '')
+      .replace(/\/+$/, '')
+      .toLowerCase();
+  }
+}
+
+// Track tabs where the content script has announced readiness
+const __SRT_readyTabs = new Set();
+// Suppress transient tab connection rejections (navigation/race)
+self.addEventListener('unhandledrejection', (e) => {
+  const msg = (e.reason && e.reason.message) || '';
+  if (/Could not establish connection|Receiving end does not exist/i.test(msg)) {
+    e.preventDefault();
+    console.debug('[SRT] Ignored transient tab connection error:', msg);
+  }
+});
+
+// Listen for readiness pings from content scripts
+chrome.runtime.onMessage.addListener((msg, sender) => {
+  if (msg?.type === 'CS_READY' && sender?.tab?.id) {
+    __SRT_readyTabs.add(sender.tab.id);
+  }
+});
+
+// Clean up registry on tab lifecycle
+chrome.tabs.onRemoved.addListener((tabId) => __SRT_readyTabs.delete(tabId));
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status === 'loading') __SRT_readyTabs.delete(tabId);
+});
+
+// Periodic stuck links check (every 30 seconds)
+setInterval(() => {
+  try {
+    linkProcessor.updateBadge();
+  } catch (error) {
+    console.debug('[SRT] Periodic badge update failed:', error);
+  }
+}, 30000);
+
 // Respond to diagnostic pings from the dashboard for reliable detection
 try {
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -42,12 +100,134 @@ class EnhancedLinkProcessor {
         throw new Error('No URL provided');
       }
       
+      // Check for duplicates first
+      console.log('[SRT] Starting duplicate check...');
+      const duplicateCheck = await this.checkForDuplicates(payload.url);
+      console.log('[SRT] Duplicate check completed:', duplicateCheck);
+      
+      if (duplicateCheck.hasDuplicates) {
+        console.log('[SRT] Duplicates detected, returning duplicate response');
+        return {
+          success: false,
+          isDuplicate: true,
+          duplicateInfo: duplicateCheck,
+          message: 'Duplicate link detected'
+        };
+      }
+      
+      console.log('[SRT] No duplicates, proceeding with save...');
+      
       // Build enhanced Link object
       const linkForDexie = this.buildLinkObject(payload);
       
-      // Store in chrome.storage for legacy compatibility
+      // Store in chrome.storage as a NEW link (not updating existing)
       try {
-        await this.storeInChromeStorage(payload, linkForDexie.id);
+        await this.storeNewLinkInChromeStorage(payload, linkForDexie.id);
+      } catch (error) {
+        console.error('[SRT] Chrome storage failed:', error);
+        throw new Error('Failed to save to local storage');
+      }
+      
+      // Broadcast to dashboard
+      try {
+        await this.broadcastToDashboard(linkForDexie);
+      } catch (error) {
+        console.error('[SRT] Dashboard broadcast failed:', error);
+        // Don't throw here, just log - the link is still saved
+      }
+      
+      // Process page content for AI enrichment (non-blocking)
+      try {
+        await this.processPageContent(payload, linkForDexie);
+      } catch (error) {
+        console.error('[SRT] Page content processing failed:', error);
+        // Don't throw here, just log - the link is still saved
+      }
+      
+      // Update badge
+      try {
+        this.updateBadge();
+      } catch (error) {
+        console.error('[SRT] Badge update failed:', error);
+        // Don't throw here, just log
+      }
+      
+      return { success: true, linkId: linkForDexie.id };
+    } catch (error) {
+      console.error('[SRT] Link processing failed:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Unknown error occurred',
+        details: error.stack
+      };
+    }
+  }
+
+  async checkForDuplicates(url) {
+    try {
+      console.log('[SRT] Checking for duplicates for URL:', url);
+      
+      const links = await new Promise((resolve) => {
+        chrome.storage.local.get(['links'], (res) => {
+          resolve(res.links || []);
+        });
+      });
+
+      console.log('[SRT] Total links in storage:', links.length);
+
+      const normalizedUrl = normalizeUrlForCompare(url);
+      console.log('[SRT] Normalized URL:', normalizedUrl);
+
+      const duplicates = links.filter(link => {
+        const linkUrl = normalizeUrlForCompare(link.url);
+        const isDuplicate = linkUrl === normalizedUrl;
+        console.log('[SRT] Comparing:', linkUrl, 'vs', normalizedUrl, '=', isDuplicate);
+        if (isDuplicate) {
+          console.log('[SRT] Found duplicate:', link.url, 'with title:', link.metadata?.title || link.title);
+        }
+        return isDuplicate;
+      });
+
+      console.log('[SRT] Duplicates found:', duplicates.length);
+
+      if (duplicates.length > 0) {
+        const result = {
+          hasDuplicates: true,
+          count: duplicates.length,
+          duplicates: duplicates.map(link => ({
+            id: link.id,
+            url: link.url,
+            title: link.metadata?.title || link.title || 'Untitled',
+            description: link.metadata?.description || link.description || '',
+            labels: link.labels || link.label ? [link.label] : ['research'],
+            priority: link.priority || 'medium',
+            status: link.status || 'active',
+            createdAt: link.createdAt || link.savedAt,
+            updatedAt: link.updatedAt || link.savedAt
+          }))
+        };
+        console.log('[SRT] Duplicate check result:', result);
+        return result;
+      }
+
+      console.log('[SRT] No duplicates found');
+      return { hasDuplicates: false, count: 0, duplicates: [] };
+    } catch (error) {
+      console.error('[SRT] Duplicate check failed:', error);
+      return { hasDuplicates: false, count: 0, duplicates: [] };
+    }
+  }
+
+  async saveLinkWithConfirmation(payload, duplicateInfo) {
+    try {
+      console.log('[SRT] Saving link with user confirmation:', payload.url);
+      
+      // Build enhanced Link object
+      const linkForDexie = this.buildLinkObject(payload);
+      
+      // Store in chrome.storage as a NEW link (not updating existing)
+      try {
+        await this.storeNewLinkInChromeStorage(payload, linkForDexie.id);
       } catch (error) {
         console.error('[SRT] Chrome storage failed:', error);
         throw new Error('Failed to save to local storage');
@@ -96,7 +276,8 @@ class EnhancedLinkProcessor {
       url: payload.url,
       metadata: {
         title: payload.title || '',
-        description: payload.description || '',
+        // Ensure popup-provided description wins
+        description: payload.description || payload.metadata?.description || '',
         image: payload.image || '',
         author: payload.author || '',
         publishedTime: payload.publishedTime || '',
@@ -121,29 +302,78 @@ class EnhancedLinkProcessor {
     return new Promise((resolve, reject) => {
       chrome.storage.local.get(['links'], (res) => {
         const links = res.links || [];
-        const normUrl = payload.url.replace(/\/+$/, '').toLowerCase();
-        const exists = links.some((l) => (l.url || '').replace(/\/+$/, '').toLowerCase() === normUrl);
-        
-        if (!exists) {
-          links.push({ 
-            ...payload, 
-            savedAt: Date.now(), 
+        const normUrl = normalizeUrlForCompare(payload.url);
+        const existingIndex = links.findIndex((l) => normalizeUrlForCompare(l.url) === normUrl);
+
+        if (existingIndex === -1) {
+          // New link
+          links.push({
+            ...payload,
+            normalizedUrl: normUrl,
+            savedAt: Date.now(),
             id: linkId,
-            processed: true
-          });
-          
-          chrome.storage.local.set({ links }, () => {
-            if (chrome.runtime.lastError) {
-              reject(chrome.runtime.lastError);
-            } else {
-              console.log('[SRT] Link saved to chrome.storage:', payload.url);
-              resolve();
-            }
+            processed: true,
+            updatedAt: new Date().toISOString(),
           });
         } else {
-          console.debug('[SRT] Duplicate link ignored:', payload.url);
-          resolve();
+          // Upsert existing: merge new data so the latest save is reflected in the dashboard
+          const current = links[existingIndex] || {};
+          links[existingIndex] = {
+            ...current,
+            ...payload,
+            normalizedUrl: current.normalizedUrl || normUrl,
+            id: current.id || linkId,
+            processed: true,
+            // Ensure we keep/refresh timestamps
+            createdAt: current.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          console.log('[SRT] Link updated in chrome.storage (upsert):', payload.url);
         }
+
+        chrome.storage.local.set({ links }, () => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            console.log('[SRT] Links persisted. Total:', links.length);
+            try { chrome.runtime.sendMessage({ type: 'DATA_UPDATED', timestamp: Date.now() }); } catch (_) {}
+            resolve();
+          }
+        });
+      });
+    });
+  }
+
+  async storeNewLinkInChromeStorage(payload, linkId) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.get(['links'], (res) => {
+        const links = res.links || [];
+        const normUrl = normalizeUrlForCompare(payload.url);
+        
+        // Always add as a new link, even if URL exists
+        const newLink = {
+          ...payload,
+          normalizedUrl: normUrl,
+          savedAt: Date.now(),
+          id: linkId,
+          processed: true,
+          updatedAt: new Date().toISOString(),
+          // Mark as duplicate for tracking
+          isDuplicate: true,
+          duplicateOf: payload.url
+        };
+        
+        links.push(newLink);
+
+        chrome.storage.local.set({ links }, () => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            console.log('[SRT] Duplicate link saved as new entry:', payload.url);
+            try { chrome.runtime.sendMessage({ type: 'DATA_UPDATED', timestamp: Date.now() }); } catch (_) {}
+            resolve();
+          }
+        });
       });
     });
   }
@@ -152,17 +382,24 @@ class EnhancedLinkProcessor {
     const APP_URL_PATTERNS = [
       'http://localhost:5174/*',
       'http://localhost:5173/*', 
+      'https://localhost:5174/*',
+      'https://localhost:5173/*',
       'https://smartresearchtracker.vercel.app/*',
       'http://127.0.0.1:5174/*',
-      'http://127.0.0.1:5173/*'
+      'http://127.0.0.1:5173/*',
+      'https://127.0.0.1:5174/*',
+      'https://127.0.0.1:5173/*'
     ];
 
     try {
-      const tabs = await this.queryTabs(APP_URL_PATTERNS);
+      // Only target tabs that have announced readiness
+      const allTabs = await this.queryTabs(APP_URL_PATTERNS);
+      const tabs = (allTabs || []).filter(t => __SRT_readyTabs.has(t.id));
       
       if (tabs.length === 0) {
-        // Dashboard not open, queue for later
+        // Dashboard not open, queue for later AND proactively set badge to indicate pending item
         this.queueForLater({ type: 'UPSERT_LINK', link: linkObj, summaries });
+        try { this.updateBadge(); } catch (_) {}
         return;
       }
 
@@ -186,24 +423,58 @@ class EnhancedLinkProcessor {
   async processPageContent(payload, linkObj) {
     try {
       let pageText = payload.pageText || '';
-      
-      // If no page text provided, extract from tab
+      // Guard: only attempt script execution on eligible tabs
       if (!pageText && payload.tabId) {
-        pageText = await this.extractPageText(payload.tabId);
+        const tabOk = await new Promise((resolve) => {
+          try {
+            chrome.tabs.get(payload.tabId, (tab) => {
+              if (chrome.runtime.lastError) return resolve(false);
+              const url = tab?.url || '';
+              const isHttp = /^https?:\/\//i.test(url);
+              const isSpecial = /^(about:|chrome:|edge:|chrome-extension:)/i.test(url);
+              resolve(Boolean(tab?.id) && isHttp && !isSpecial);
+            });
+          } catch (_) { resolve(false); }
+        });
+        if (!tabOk) return;
+        try {
+          const injected = await new Promise((resolve) => {
+            chrome.scripting.executeScript({
+              target: { tabId: payload.tabId },
+              func: async () => {
+                try {
+                  if (window.SRTContentScript?.extractPageData) {
+                    return await window.SRTContentScript.extractPageData();
+                  }
+                  return {
+                    title: document.title || '',
+                    description: document.querySelector('meta[name="description"]')?.content || '',
+                    text: document.body?.innerText || '',
+                    metadata: {}
+                  };
+                } catch (err) {
+                  console.debug('[SRT] Inline extraction failed:', err);
+                  return { title: document.title || '', description: '', text: document.body?.innerText || '', metadata: {} };
+                }
+              }
+            }, (res) => resolve(res?.[0]?.result || null));
+          });
+          if (injected?.text && !pageText) pageText = injected.text;
+        } catch (e) {
+          console.debug('[SRT] Script execute failed:', e);
+        }
       }
 
-      if (!pageText) {
-        console.debug('[SRT] No page text available for processing');
-        return;
+      // Create a raw summary and broadcast
+      if (pageText) {
+        const rawSummary = this.createSummary(linkObj.id, 'raw', pageText);
+        await this.broadcastSummary(rawSummary);
       }
 
-      // Store raw summary
-      const rawSummary = this.createSummary(linkObj.id, 'raw', pageText);
-      await this.broadcastSummary(rawSummary);
-
-      // Enrich with AI
-      await this.enrichWithAI(linkObj, pageText);
-      
+      // Kick off AI enrichment
+      try {
+        await this.enrichWithAI(linkObj, pageText || '');
+      } catch (_) {}
     } catch (error) {
       console.error('[SRT] Page content processing failed:', error);
     }
@@ -307,7 +578,8 @@ class EnhancedLinkProcessor {
         'http://127.0.0.1:5173/*'
       ];
 
-      const tabs = await this.queryTabs(APP_URL_PATTERNS);
+      const allTabs = await this.queryTabs(APP_URL_PATTERNS);
+      const tabs = (allTabs || []).filter(t => __SRT_readyTabs.has(t.id));
       
       if (tabs.length === 0) {
         this.queueForLater({ type: 'ADD_SUMMARY', payload: summaryObj });
@@ -354,7 +626,8 @@ class EnhancedLinkProcessor {
       ];
 
     try {
-      const tabs = await this.queryTabs(APP_URL_PATTERNS);
+      const allTabs = await this.queryTabs(APP_URL_PATTERNS);
+      const tabs = (allTabs || []).filter(t => __SRT_readyTabs.has(t.id));
       if (tabs.length === 0) return;
 
       const toProcess = [...this.pendingQueue];
@@ -378,8 +651,9 @@ class EnhancedLinkProcessor {
         }
       }
 
-      // Update storage
+      // Update storage and badge
       chrome.storage.local.set({ pendingUpserts: this.pendingQueue });
+      try { this.updateBadge(); } catch (_) {}
     } catch (error) {
       console.error('[SRT] Queue flush failed:', error);
     }
@@ -394,29 +668,29 @@ class EnhancedLinkProcessor {
   }
 
   async sendMessageToTab(tabId, message) {
-    // Ensure content script is present; if not, inject and retry once
-    const tryOnce = () => new Promise((resolve, reject) => {
-      chrome.tabs.sendMessage(tabId, message, (response) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          resolve(response);
-        }
-      });
+    // Robust send that never throws; injects content script once if needed
+    const tryOnce = () => new Promise((resolve) => {
+      try {
+        chrome.tabs.sendMessage(tabId, message, (response) => {
+          if (chrome.runtime.lastError) {
+            resolve({ ok: false, error: chrome.runtime.lastError.message || 'send_failed' });
+          } else {
+            resolve(response ?? { ok: true });
+          }
+        });
+      } catch (e) {
+        resolve({ ok: false, error: e?.message || 'send_failed' });
+      }
     });
 
-    try {
-      return await tryOnce();
-    } catch (err) {
-      const msg = err?.message || '';
-      const missing = /Receiving end does not exist|Could not establish connection/i.test(msg);
-      if (!missing) throw err;
-      try {
-        await chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] });
-      } catch (_) {}
+    let result = await tryOnce();
+    const missing = typeof result === 'object' && result && result.ok === false && /Receiving end does not exist|Could not establish connection/i.test(result.error || '');
+    if (missing) {
+      try { await chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] }); } catch (_) {}
       await new Promise(r => setTimeout(r, 150));
-      return await tryOnce();
+      result = await tryOnce();
     }
+    return result;
   }
 
   async getApiBase() {
@@ -428,10 +702,145 @@ class EnhancedLinkProcessor {
   }
 
   updateBadge() {
-    chrome.storage.local.get(['links'], (res) => {
-      const links = res.links || [];
-      chrome.action.setBadgeText({ text: links.length.toString() });
-      chrome.action.setBadgeBackgroundColor({ color: '#10b981' });
+    // Count only "stuck" links - links that exist in extension but aren't displayed on dashboard
+    this.countStuckLinks().then(stuckCount => {
+      const badgeText = stuckCount > 0 ? stuckCount.toString() : '';
+      chrome.action.setBadgeText({ text: badgeText });
+      
+      // Color coding: red for stuck links, green for no issues
+      const badgeColor = stuckCount > 0 ? '#ef4444' : '#10b981';
+      chrome.action.setBadgeBackgroundColor({ color: badgeColor });
+      
+      console.log(`[SRT] Badge updated: ${stuckCount} stuck links`);
+    }).catch(error => {
+      console.error('[SRT] Badge update failed:', error);
+      // Fallback to showing total count if stuck detection fails
+      chrome.storage.local.get(['links'], (res) => {
+        const links = res.links || [];
+        chrome.action.setBadgeText({ text: links.length.toString() });
+        chrome.action.setBadgeBackgroundColor({ color: '#10b981' });
+      });
+    });
+  }
+
+  async countStuckLinks() {
+    try {
+      // Get all links from extension storage
+      const extensionLinks = await new Promise((resolve) => {
+        chrome.storage.local.get(['links'], (res) => {
+          resolve(res.links || []);
+        });
+      });
+
+      if (extensionLinks.length === 0) {
+        return 0;
+      }
+
+      // Find dashboard tabs that are ready to receive messages
+      const dashboardTabs = await this.getReadyDashboardTabs([
+        "http://localhost:5173/*",
+        "https://localhost:5173/*",
+        "http://localhost:5174/*",
+        "https://localhost:5174/*", 
+        "https://smartresearchtracker.vercel.app/*"
+      ]);
+
+      if (dashboardTabs.length === 0) {
+        // No dashboard tabs open - all links are potentially stuck
+        return extensionLinks.length;
+      }
+
+      // Check each dashboard tab to see which links are actually displayed
+      let stuckLinks = new Set(extensionLinks.map(link => link.url));
+      
+      for (const tab of dashboardTabs) {
+        try {
+          // Use a more reliable method to check displayed links
+          const displayedLinks = await this.getDisplayedLinksFromTab(tab.id);
+          
+          if (displayedLinks && displayedLinks.length > 0) {
+            // Remove links that are displayed on this dashboard tab
+            displayedLinks.forEach(link => {
+              stuckLinks.delete(link.url);
+            });
+          }
+        } catch (error) {
+          console.debug(`[SRT] Could not check tab ${tab.id} for displayed links:`, error);
+          // If we can't check a tab, assume all links might be stuck
+          continue;
+        }
+      }
+
+      return stuckLinks.size;
+    } catch (error) {
+      console.error('[SRT] Error counting stuck links:', error);
+      throw error;
+    }
+  }
+
+  async getDisplayedLinksFromTab(tabId) {
+    return new Promise((resolve) => {
+      let timeout;
+      let responseReceived = false;
+      
+      // Set up a listener for the response from the content script
+      const messageListener = (message, sender) => {
+        if (sender.tab?.id === tabId && message.type === 'SRT_DISPLAYED_LINKS_RESPONSE') {
+          responseReceived = true;
+          clearTimeout(timeout);
+          chrome.runtime.onMessage.removeListener(messageListener);
+          resolve(message.links || []);
+        }
+      };
+      
+      // Listen for the response
+      chrome.runtime.onMessage.addListener(messageListener);
+      
+      // Send the request to the content script
+      try {
+        chrome.tabs.sendMessage(tabId, { type: 'SRT_GET_DISPLAYED_LINKS' }, (response) => {
+          // Check if we got a direct response (content script might use sendResponse)
+          if (response && response.links) {
+            responseReceived = true;
+            clearTimeout(timeout);
+            chrome.runtime.onMessage.removeListener(messageListener);
+            resolve(response.links || []);
+            return;
+          }
+          
+          if (chrome.runtime.lastError) {
+            console.debug(`[SRT] Could not send message to tab ${tabId}:`, chrome.runtime.lastError.message);
+            // Fallback: try to inject content script and retry
+            chrome.scripting.executeScript({
+              target: { tabId: tabId },
+              files: ['contentScript.js']
+            }, () => {
+              setTimeout(() => {
+                chrome.tabs.sendMessage(tabId, { type: 'SRT_GET_DISPLAYED_LINKS' });
+              }, 100);
+            });
+          }
+        });
+      } catch (error) {
+        console.debug(`[SRT] Error sending message to tab ${tabId}:`, error);
+      }
+      
+      // Set a timeout to avoid hanging
+      timeout = setTimeout(() => {
+        if (!responseReceived) {
+          chrome.runtime.onMessage.removeListener(messageListener);
+          console.debug(`[SRT] Timeout waiting for displayed links response from tab ${tabId}`);
+          resolve([]);
+        }
+      }, 2000);
+    });
+  }
+
+  async getReadyDashboardTabs(patterns) {
+    return new Promise((resolve) => {
+      chrome.tabs.query({ url: patterns }, (tabs) => {
+        resolve(tabs || []);
+      });
     });
   }
 
@@ -462,6 +871,33 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   console.log('[SRT] Background received message:', msg.type);
 
   switch (msg.type) {
+    case 'CS_READY':
+      try { linkProcessor.flushPendingQueue(); } catch (_) {}
+      return false;
+    case 'GET_LINKS':
+      try {
+        chrome.storage.local.get(['links'], (res) => {
+          sendResponse?.({ links: res.links || [] });
+        });
+      } catch (e) {
+        sendResponse?.({ links: [] });
+      }
+      return true;
+    case 'INJECT_CONTENT_SCRIPT':
+      // Best-effort injection into active tab for debugging/assist
+      try {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          const tab = tabs?.[0];
+          if (!tab?.id) return sendResponse?.({ success: false });
+          chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['contentScript.js'] }, () => {
+            sendResponse?.({ success: true });
+          });
+        });
+      } catch (_) {
+        sendResponse?.({ success: false });
+      }
+      return true;
+
     case 'SAVE_LINK':
       console.log('[SRT] Processing SAVE_LINK message...');
       linkProcessor.processLink(msg.payload)
@@ -496,10 +932,32 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return true;
 
     case 'DATA_UPDATED':
-      // Dashboard notified us of data change, update badge
       console.log('[SRT] Processing DATA_UPDATED message...');
       linkProcessor.updateBadge();
       return false;
+      
+    case 'REFRESH_BADGE':
+      console.log('[SRT] Manually refreshing badge...');
+      linkProcessor.updateBadge();
+      sendResponse?.({ success: true });
+      return true;
+
+    case 'SAVE_LINK_CONFIRMED':
+      console.log('[SRT] Processing SAVE_LINK_CONFIRMED message...');
+      linkProcessor.saveLinkWithConfirmation(msg.payload, msg.duplicateInfo)
+        .then(result => {
+          console.log('[SRT] SAVE_LINK_CONFIRMED result:', result);
+          sendResponse?.(result);
+        })
+        .catch(error => {
+          console.error('[SRT] SAVE_LINK_CONFIRMED failed:', error);
+          sendResponse?.({ 
+            success: false, 
+            error: error.message || 'Unknown error',
+            details: error.stack
+          });
+        });
+      return true;
 
     default:
       console.warn('[SRT] Unknown message type:', msg.type);

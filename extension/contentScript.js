@@ -67,6 +67,12 @@ function exposeExtensionPresence() {
 
 exposeExtensionPresence();
 
+// Announce readiness to background so it messages only ready tabs
+try { chrome.runtime?.sendMessage?.({ type: 'CS_READY' }); } catch (_) {}
+window.addEventListener('load', () => {
+  try { chrome.runtime?.sendMessage?.({ type: 'CS_READY' }); } catch (_) {}
+});
+
 // --- Auto-paste when opened by SRT via window.name payload ---
 try {
   const wn = window.name || '';
@@ -127,364 +133,119 @@ try {
   console.log('[SRT] window.name inspection failed:', e);
 }
 
-const DB_NAME = 'SmartResearchDB';
-const DB_VERSION = 8;
-const REQUIRED_STORES = ['links', 'summaries', 'settings'];
-
-// Enhanced database management with better error handling
-class EnhancedDBManager {
-  constructor() {
-    this.db = null;
-    this.isInitialized = false;
-    this.retryCount = 0;
-    this.maxRetries = 3;
-    this.useFallbackStorage = false;
+// Simple in-memory cache for links (guard against double-injection)
+try {
+  if (!window.__SRT_cachedLinks) {
+    window.__SRT_cachedLinks = [];
   }
+} catch (_) {}
+let __SRT_cachedLinks = (typeof window !== 'undefined' && window.__SRT_cachedLinks) || [];
+try { if (typeof window !== 'undefined') window.__SRT_cachedLinks = __SRT_cachedLinks; } catch (_) {}
 
-  async ensureStores(db) {
-    const missingStores = REQUIRED_STORES.filter(
-      (store) => !db.objectStoreNames.contains(store)
-    );
-
-    if (missingStores.length === 0) {
-      return db;
-    }
-
-    const newVersion = db.version + 1;
-    db.close();
-
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, newVersion);
-
-      req.onupgradeneeded = (event) => {
-        const upDB = event.target.result;
-
-        missingStores.forEach((store) => {
-          if (!upDB.objectStoreNames.contains(store)) {
-            const objStore = upDB.createObjectStore(store, { keyPath: 'id' });
-
-            if (store === 'links') {
-              objStore.createIndex('url', 'url', { unique: false });
-              objStore.createIndex('createdAt', 'createdAt', { unique: false });
-              objStore.createIndex('labels', 'labels', {
-                unique: false,
-                multiEntry: true,
-              });
-            }
-
-            if (store === 'summaries') {
-              objStore.createIndex('linkId', 'linkId', { unique: false });
-              objStore.createIndex('kind', 'kind', { unique: false });
-            }
-          }
-        });
-      };
-
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  async openDB() {
-    if (this.db && this.isInitialized) {
-      return this.db;
-    }
-
-    return new Promise((resolve, reject) => {
-      const attemptOpen = async (versionSpecified = true) => {
-        try {
-          const req = versionSpecified
-            ? indexedDB.open(DB_NAME, DB_VERSION)
-            : indexedDB.open(DB_NAME);
-
-          req.onupgradeneeded = async (event) => {
-            const db = event.target.result;
-            await this.ensureStores(db);
-          };
-
-          req.onsuccess = async () => {
-            try {
-              const db = req.result;
-              await this.ensureStores(db);
-              this.db = db;
-              this.isInitialized = true;
-              this.retryCount = 0;
-              resolve(db);
-            } catch (error) {
-              reject(error);
-            }
-          };
-
-          req.onerror = () => {
-            if (
-              req.error?.name === 'VersionError' &&
-              versionSpecified &&
-              this.retryCount < this.maxRetries
-            ) {
-              this.retryCount++;
-              attemptOpen(false);
-            } else {
-              reject(req.error);
-            }
-          };
-        } catch (error) {
-          reject(error);
-        }
-      };
-
-      attemptOpen();
-    });
-  }
-
-  async addLink(link) {
-    // Always try fallback first if we're on a restricted site
-    if (this.useFallbackStorage || this.shouldUseFallback()) {
-      return this.addLinkFallback(link);
-    }
-
-    try {
-      const db = await this.openDB();
-      const tx = db.transaction('links', 'readwrite');
-      const store = tx.objectStore('links');
-
-      // Enhanced duplicate detection
-      const normalizedUrl = this.normalizeUrl(link.url);
-      const existingLinks = await this.getAllLinks();
-      const isDuplicate = existingLinks.some(
-        (l) => this.normalizeUrl(l.url) === normalizedUrl
-      );
-
-      if (isDuplicate) {
-        console.debug('[SRT] Duplicate link detected:', link.url);
-        return { success: false, reason: 'duplicate' };
-      }
-
-      return new Promise((resolve, reject) => {
-        const request = store.put(link);
-
-        request.onsuccess = () => {
-          console.log('[SRT] Link added successfully:', link.url);
-          this.notifyDashboardUpdate();
-          resolve({ success: true, link });
-        };
-
-        request.onerror = () => {
-          console.error('[SRT] Failed to add link:', request.error);
-          this.useFallbackStorage = true;
-          this.addLinkFallback(link).then(resolve).catch(reject);
-        };
-      });
-    } catch (error) {
-      console.error(
-        '[SRT] IndexedDB failed, falling back to chrome.storage:',
-        error
-      );
-      this.useFallbackStorage = true;
-      return this.addLinkFallback(link);
-    }
-  }
-
-  shouldUseFallback() {
-    // Check if we're on a site that likely blocks IndexedDB
-    const restrictedDomains = [
-      'gmail.com',
-      'google.com',
-      'workspace.google.com',
-      'outlook.com',
-      'office.com',
-      'microsoft.com',
-      'github.com',
-      'gitlab.com',
-      'stackoverflow.com',
-      'stackexchange.com',
-    ];
-
-    const currentDomain = window.location.hostname.toLowerCase();
-    const isRestricted = restrictedDomains.some((domain) =>
-      currentDomain.includes(domain)
-    );
-
-    // Also use fallback if we've had any IndexedDB errors
-    if (this.useFallbackStorage) {
-      return true;
-    }
-
-    return isRestricted;
-  }
-
-  async addLinkFallback(link) {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['links'], (result) => {
-        const links = result.links || [];
-
-        // Check for duplicates
-        const normalizedUrl = this.normalizeUrl(link.url);
-        const isDuplicate = links.some(
-          (l) => this.normalizeUrl(l.url) === normalizedUrl
-        );
-
-        if (isDuplicate) {
-          console.debug('[SRT] Duplicate link detected (fallback):', link.url);
-          resolve({ success: false, reason: 'duplicate' });
-          return;
-        }
-
-        // Add new link
-        links.push(link);
-        chrome.storage.local.set({ links }, () => {
-          console.log('[SRT] Link added successfully (fallback):', link.url);
-          this.notifyDashboardUpdate();
-          resolve({ success: true, link });
-        });
-      });
-    });
-  }
-
-  async addSummary(summary) {
-    const db = await this.openDB();
-    const tx = db.transaction('summaries', 'readwrite');
-    const store = tx.objectStore('summaries');
-
-    return new Promise((resolve, reject) => {
-      const request = store.put(summary);
-
-      request.onsuccess = () => {
-        console.log(
-          '[SRT] Summary added successfully for link:',
-          summary.linkId
-        );
-        this.notifyDashboardUpdate();
-        resolve({ success: true, summary });
-      };
-
-      request.onerror = () => {
-        console.error('[SRT] Failed to add summary:', request.error);
-        reject(request.error);
-      };
-    });
-  }
-
-  async getAllLinks() {
-    // Always try fallback first if we're on a restricted site
-    if (this.useFallbackStorage || this.shouldUseFallback()) {
-      return this.getAllLinksFallback();
-    }
-
-    try {
-      const db = await this.openDB();
-      const tx = db.transaction('links', 'readonly');
-      const store = tx.objectStore('links');
-
-      return new Promise((resolve, reject) => {
-        const request = store.getAll();
-
-        request.onsuccess = () => {
-          resolve(request.result || []);
-        };
-
-        request.onerror = () => {
-          this.useFallbackStorage = true;
-          this.getAllLinksFallback().then(resolve).catch(reject);
-        };
-      });
-    } catch (error) {
-      console.error(
-        '[SRT] IndexedDB failed, falling back to chrome.storage:',
-        error
-      );
-      this.useFallbackStorage = true;
-      return this.getAllLinksFallback();
-    }
-  }
-
-  async getAllLinksFallback() {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['links'], (result) => {
-        resolve(result.links || []);
-      });
-    });
-  }
-
-  async getLabels() {
-    try {
-      const links = await this.getAllLinks();
-      const labelSet = new Set();
-
-      links.forEach((link) => {
-        if (link.labels && Array.isArray(link.labels)) {
-          link.labels.forEach((label) => labelSet.add(label));
-        }
-      });
-
-      return Array.from(labelSet);
-    } catch (error) {
-      console.error('[SRT] Error getting labels:', error);
-      return [];
-    }
-  }
-
-  normalizeUrl(url) {
-    return url.replace(/\/+$/, '').toLowerCase();
-  }
-
-  // Notify dashboard of data changes
-  notifyDashboardUpdate() {
-    // Send message to any open dashboard tabs (background may use this)
-    try {
-      chrome.runtime.sendMessage({
-        type: 'DATA_UPDATED',
-        timestamp: Date.now(),
-      });
-    } catch (_) {}
-
-    // Also notify the page directly so the dashboard React app can refresh
-    try {
-      window.postMessage(
-        { type: 'SRT_DB_UPDATED', timestamp: Date.now() },
-        '*'
-      );
-      document.dispatchEvent(new CustomEvent('srt-db-updated'));
-    } catch (_) {}
-  }
-
-  // Enhanced data cleanup
-  async clearAllData() {
-    try {
-      const db = await this.openDB();
-      const tx = db.transaction(['links', 'summaries'], 'readwrite');
-
-      await Promise.all([
-        new Promise((resolve, reject) => {
-          const linksRequest = tx.objectStore('links').clear();
-          linksRequest.onsuccess = resolve;
-          linksRequest.onerror = reject;
-        }),
-        new Promise((resolve, reject) => {
-          const summariesRequest = tx.objectStore('summaries').clear();
-          summariesRequest.onsuccess = resolve;
-          summariesRequest.onerror = reject;
-        }),
-      ]);
-
-      console.log('[SRT] All data cleared successfully');
-      this.notifyDashboardUpdate();
-    } catch (error) {
-      console.error('[SRT] Error clearing data:', error);
-    }
+// Safe helpers to read/write links without requiring live chrome.* context
+function __SRT_getLinksSafe() {
+  try {
+    if (__SRT_cachedLinks && __SRT_cachedLinks.length) return __SRT_cachedLinks;
+    return [];
+  } catch (_) {
+    return [];
   }
 }
 
-const dbManager = new EnhancedDBManager();
+function __SRT_setLinksSafe(links) {
+  try { 
+    __SRT_cachedLinks = Array.isArray(links) ? links : []; 
+  } catch (_) { 
+    __SRT_cachedLinks = []; 
+  }
+  
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.local?.set) {
+      chrome.storage.local.set({ links: __SRT_cachedLinks }, () => {});
+    }
+  } catch (_) {}
+}
+
+// Load cached links from chrome storage
+try {
+  if (typeof chrome !== 'undefined' && chrome.storage?.local?.get) {
+    chrome.storage.local.get(['links'], (res) => {
+      __SRT_cachedLinks = res?.links || [];
+    });
+    chrome.storage?.onChanged?.addListener?.((changes, area) => {
+      if (area === 'local' && changes.links) {
+        __SRT_cachedLinks = changes.links.newValue || [];
+      }
+    });
+  }
+} catch (_) {}
+
+// Fallback storage helpers (chrome.storage.local only)
+async function __SRT_addLinkFallback(link) {
+  return new Promise((resolve) => {
+    try {
+      chrome.storage.local.get(['links'], (result) => {
+        const links = result?.links || [];
+        const normalize = (u) => String(u || '').replace(/\/+$/, '').toLowerCase();
+        const exists = links.some((l) => normalize(l.url) === normalize(link.url));
+        if (exists) {
+          // Upsert existing
+          const idx = links.findIndex((l) => normalize(l.url) === normalize(link.url));
+          links[idx] = { ...links[idx], ...link, updatedAt: new Date().toISOString() };
+        } else {
+          links.push(link);
+        }
+        chrome.storage.local.set({ links }, () => {
+          __SRT_cachedLinks = links;
+          try { window.postMessage({ type: 'SRT_DB_UPDATED' }, '*'); } catch (_) {}
+          resolve({ success: true, link });
+        });
+      });
+    } catch (error) {
+      console.debug('[SRT] addLinkFallback failed:', error);
+      resolve({ success: false, error: String(error) });
+    }
+  });
+}
+
+async function __SRT_addSummaryFallback(summary) {
+  return new Promise((resolve) => {
+    try {
+      chrome.storage.local.get(['summaries'], (result) => {
+        const summaries = result?.summaries || [];
+        summaries.push(summary);
+        chrome.storage.local.set({ summaries }, () => resolve({ success: true, summary }));
+      });
+    } catch (error) {
+      console.debug('[SRT] addSummaryFallback failed:', error);
+      resolve({ success: false, error: String(error) });
+    }
+  });
+}
+
+async function __SRT_clearAllDataFallback() {
+  return new Promise((resolve) => {
+    try {
+      chrome.storage.local.remove(['links', 'pendingUpserts', 'labels', 'summaries'], () => {
+        __SRT_cachedLinks = [];
+        try { window.postMessage({ type: 'SRT_DB_UPDATED' }, '*'); } catch (_) {}
+        resolve({ success: true });
+      });
+    } catch (error) {
+      console.debug('[SRT] clearAllDataFallback failed:', error);
+      resolve({ success: false, error: String(error) });
+    }
+  });
+}
+
+// Content script is now simplified - no IndexedDB operations
 
 // Enhanced message handling with better error recovery
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   console.log('[SRT] Received message:', msg.type);
 
   // Always use fallback storage to avoid any DOMException issues
-  if (!dbManager.useFallbackStorage) {
-    console.log('[SRT] Forcing fallback storage to prevent DOMException');
-    dbManager.useFallbackStorage = true;
-  }
+  // (dbManager removed; we exclusively use fallback helpers here)
 
   // Handle messages immediately with fallback storage
   handleMessage(msg, sender, sendResponse);
@@ -494,10 +255,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 function handleMessage(msg, sender, sendResponse) {
   switch (msg.type) {
     case 'GET_LABELS':
-      dbManager
-        .getLabels()
-        .then((labels) => sendResponse?.({ labels }))
-        .catch(() => sendResponse?.({ labels: [] }));
+      try {
+        const links = __SRT_getLinksSafe();
+        const labelSet = new Set();
+        (links || []).forEach((l) => Array.isArray(l.labels) && l.labels.forEach((x) => labelSet.add(String(x))));
+        sendResponse?.({ labels: Array.from(labelSet) });
+      } catch (_) {
+        sendResponse?.({ labels: [] });
+      }
       break;
 
     case 'UPSERT_LINK':
@@ -527,13 +292,25 @@ function handleMessage(msg, sender, sendResponse) {
         });
       break;
 
+    case 'SRT_GET_DISPLAYED_LINKS':
+      try {
+        // Background script is checking which links are actually displayed on this dashboard
+        const currentLinks = __SRT_getLinksSafe();
+        console.log('[SRT] Background checking displayed links, current count:', currentLinks.length);
+        
+        // Send back the links this dashboard is currently showing
+        sendResponse?.({ links: currentLinks });
+      } catch (error) {
+        console.debug('[SRT] Error getting displayed links:', error);
+        // Send empty response if we can't get the links
+        sendResponse?.({ links: [] });
+      }
+      break;
+
     case 'CLEAR_ALL_DATA':
-      dbManager
-        .clearAllData()
-        .then(() => sendResponse?.({ success: true }))
-        .catch((error) =>
-          sendResponse?.({ success: false, error: error.message })
-        );
+      __SRT_clearAllDataFallback()
+        .then((res) => sendResponse?.(res))
+        .catch((error) => sendResponse?.({ success: false, error: String(error) }));
       break;
 
     default:
@@ -575,7 +352,7 @@ async function handleUpsertLink(link, summaries = []) {
     console.log('[SRT] Full link object:', safeLink);
 
     // Always use fallback storage to prevent DOMException
-    const linkResult = await dbManager.addLinkFallback(safeLink);
+    const linkResult = await __SRT_addLinkFallback(safeLink);
 
     if (linkResult.success && summaries.length > 0) {
       const safeSummaries = summaries.map((summary) => ({
@@ -623,8 +400,8 @@ async function handleUpsertLink(link, summaries = []) {
 
 async function handleAddLink(linkData) {
   try {
-    const result = await dbManager.addLink(linkData);
-    return { ok: result.success, link: result.link };
+    const result = await __SRT_addLinkFallback(linkData);
+    return { ok: Boolean(result?.success), link: result?.link };
   } catch (error) {
     console.error('[SRT] ADD_LINK failed:', error);
     throw error;
@@ -633,7 +410,7 @@ async function handleAddLink(linkData) {
 
 async function handleAddSummary(summaryData) {
   try {
-    const result = await dbManager.addSummary(summaryData);
+    const result = await __SRT_addSummaryFallback(summaryData);
     try {
       window.postMessage(
         { type: 'SRT_ADD_SUMMARY', summary: summaryData },
@@ -871,99 +648,154 @@ function cleanText(text) {
     .slice(0, 500000); // Limit size
 }
 
-// Listen for messages from the dashboard
+// Listen for messages from the dashboard (also respond to PING reliably)
 window.addEventListener('message', (event) => {
+  if (event.data?.type === 'SRT_PING') {
+    try {
+      const manifest = (chrome?.runtime?.getManifest && chrome.runtime.getManifest()) || {};
+      window.postMessage({
+        type: 'SRT_PONG',
+        extensionId: chrome?.runtime?.id || '',
+        source: 'smart-research-tracker-extension',
+        status: 'ok',
+        version: manifest.version || '',
+        timestamp: Date.now(),
+      }, '*');
+    } catch (_) {}
+  }
   if (event.data?.type === 'SRT_CLEAR_ALL_LINKS') {
     console.log('[SRT] Clearing all data...');
-    dbManager.clearAllData();
+    __SRT_clearAllDataFallback();
   }
 
   if (event.data?.type === 'SRT_GET_LINKS') {
-    // Dashboard requesting links from extension storage
-    chrome.storage.local.get(['links'], (result) => {
-      const links = result.links || [];
-      console.log(
-        '[SRT] Dashboard requested links, sending',
-        links.length,
-        'links'
-      );
-
-      // Send response back to dashboard
-      window.postMessage(
-        {
-          type: 'SRT_LINKS_RESPONSE',
-          messageId: event.data.messageId,
-          links: links,
-        },
-        '*'
-      );
+    const messageId = event.data.messageId;
+    const respond = (links) => {
+      try { window.postMessage({ type: 'SRT_LINKS_RESPONSE', messageId, links }, '*'); } catch (_) {}
+    };
+    const getFromBackground = () => new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage({ type: 'GET_LINKS' }, (resp) => {
+          if (Array.isArray(resp?.links)) return resolve(resp.links);
+          resolve(null);
+        });
+      } catch (_) { resolve(null); }
     });
+    const getFromChromeStorage = () => new Promise((resolve) => {
+      try {
+        chrome.storage?.local?.get?.(['links'], (res) => resolve(res?.links || null));
+      } catch (_) { resolve(null); }
+    });
+    (async () => {
+      let links = await getFromBackground();
+      if (!links || links.length === 0) {
+        links = await getFromChromeStorage();
+      }
+      if (!links || links.length === 0) {
+        try { links = __SRT_getLinksSafe(); } catch (_) { links = []; }
+      }
+      console.log('[SRT] Dashboard requested links, sending', (links || []).length, 'links');
+      respond(links || []);
+    })();
+  }
+
+  if (event.data?.type === 'SRT_GET_DISPLAYED_LINKS') {
+    // Background script is checking which links are actually displayed on this dashboard
+    try {
+      // Get the current links that this dashboard is displaying
+      const currentLinks = __SRT_getLinksSafe();
+      console.log('[SRT] Background checking displayed links, current count:', currentLinks.length);
+      
+      // Send back the links this dashboard is currently showing
+      try {
+        window.postMessage({ 
+          type: 'SRT_DISPLAYED_LINKS_RESPONSE', 
+          links: currentLinks 
+        }, '*');
+      } catch (_) {}
+    } catch (error) {
+      console.debug('[SRT] Error getting displayed links:', error);
+      // Send empty response if we can't get the links
+      try {
+        window.postMessage({ 
+          type: 'SRT_DISPLAYED_LINKS_RESPONSE', 
+          links: [] 
+        }, '*');
+      } catch (_) {}
+    }
   }
 
   if (event.data?.type === 'SRT_UPDATE_LINKS_STATUS') {
-    // Dashboard updating link statuses
-    chrome.storage.local.get(['links'], (result) => {
-      const links = result.links || [];
-      const updatedLinks = links.map((link) => {
+    // Dashboard updating link statuses (safe/local only)
+    try {
+      const current = __SRT_getLinksSafe();
+      const updatedLinks = current.map((link) => {
         const update = event.data.links.find((u) => u.id === link.id);
-        if (update) {
-          return { ...link, status: update.status };
-        }
-        return link;
+        return update ? { ...link, status: update.status } : link;
       });
-
-      chrome.storage.local.set({ links: updatedLinks }, () => {
-        console.log('[SRT] Updated link statuses in extension storage');
-      });
-    });
+      __SRT_setLinksSafe(updatedLinks);
+      console.log('[SRT] Updated link statuses (cached/local)');
+    } catch (_) {}
   }
 
   if (event.data?.type === 'SRT_UPDATE_LINK') {
     const { id, changes, messageId } = event.data || {};
-    chrome.storage.local.get(['links'], (result) => {
-      const links = result.links || [];
+    try {
+      const links = __SRT_getLinksSafe();
       const updatedLinks = links.map((link) => {
         if (link.id === id) {
-          const updated = {
-            ...link,
-            ...changes,
-            updatedAt: new Date().toISOString(),
-          };
-          if (changes?.metadata) {
-            updated.metadata = { ...link.metadata, ...changes.metadata };
-          }
-          if (changes?.labels) {
-            updated.labels = Array.isArray(changes.labels)
-              ? changes.labels
-              : link.labels;
-          }
+          const updated = { ...link, ...changes, updatedAt: new Date().toISOString() };
+          if (changes?.metadata) updated.metadata = { ...link.metadata, ...changes.metadata };
+          if (changes?.labels) updated.labels = Array.isArray(changes.labels) ? changes.labels : link.labels;
           return updated;
         }
         return link;
       });
-      chrome.storage.local.set({ links: updatedLinks }, () => {
-        // Notify dashboard and acknowledge
-        try {
-          window.postMessage({ type: 'SRT_DB_UPDATED' }, '*');
-        } catch (_) {}
-        try {
-          window.postMessage({ type: 'SRT_UPDATE_LINK_OK', messageId }, '*');
-        } catch (_) {}
-      });
-    });
+      __SRT_setLinksSafe(updatedLinks);
+      try { window.postMessage({ type: 'SRT_DB_UPDATED' }, '*'); } catch (_) {}
+      try { window.postMessage({ type: 'SRT_UPDATE_LINK_OK', messageId }, '*'); } catch (_) {}
+    } catch (_) {}
+  }
+
+  if (event.data?.type === 'SRT_REMOVE_LINK') {
+    const { id, messageId } = event.data || {};
+    try {
+      const links = __SRT_getLinksSafe();
+      const updatedLinks = links.filter((link) => link.id !== id);
+      __SRT_setLinksSafe(updatedLinks);
+      try { window.postMessage({ type: 'SRT_DB_UPDATED' }, '*'); } catch (_) {}
+      try { window.postMessage({ type: 'SRT_REMOVE_LINK_OK', messageId }, '*'); } catch (_) {}
+    } catch (_) {}
+  }
+
+  if (event.data?.type === 'SRT_ADD_LINK') {
+    const { link, messageId } = event.data || {};
+    try {
+      const links = __SRT_getLinksSafe();
+      const normalize = (u) => (u || '').toString().replace(/\/+$/, '').toLowerCase();
+      const idx = links.findIndex((l) => normalize(l.url) === normalize(link?.url) || l.id === link?.id);
+      if (idx === -1 && link) {
+        links.push(link);
+      } else if (idx !== -1 && link) {
+        // Upsert: merge fields so repeated saves update existing record
+        links[idx] = { ...links[idx], ...link, updatedAt: new Date().toISOString() };
+      }
+      __SRT_setLinksSafe(links);
+      try { window.postMessage({ type: 'SRT_DB_UPDATED' }, '*'); } catch (_) {}
+      try { window.postMessage({ type: 'SRT_ADD_LINK_OK', messageId }, '*'); } catch (_) {}
+    } catch (_) {}
   }
 });
 
 // Skip IndexedDB initialization entirely - use fallback storage only
-console.log(
-  '[SRT] Using fallback storage (chrome.storage.local) - no IndexedDB initialization needed'
-);
-dbManager.useFallbackStorage = true;
+console.log('[SRT] Using fallback storage (chrome.storage.local) - no IndexedDB initialization needed');
 
 // Export for testing
 if (typeof window !== 'undefined') {
   window.SRTContentScript = {
-    dbManager,
+    addLinkFallback: __SRT_addLinkFallback,
+    addSummaryFallback: __SRT_addSummaryFallback,
+    clearAllDataFallback: __SRT_clearAllDataFallback,
     extractPageData,
     extractStructuredData,
     extractMetadata,

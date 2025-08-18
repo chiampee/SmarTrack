@@ -25,6 +25,7 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const navigate = useNavigate();
   const [contextOpen, setContextOpen] = useState(false);
@@ -44,6 +45,11 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
     if (isOpen) {
       void initConversation();
     }
+  }, [isOpen]);
+
+  // Focus input when modal opens
+  useEffect(() => {
+    if (isOpen) setTimeout(() => inputRef.current?.focus(), 50);
   }, [isOpen]);
 
   useEffect(() => {
@@ -181,6 +187,7 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
         Context
       </Button>
       <textarea
+        ref={inputRef}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => {
@@ -239,7 +246,7 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
             ))}
           </div>
           <div
-            className="max-h-96 overflow-y-auto space-y-3 relative"
+            className="max-h-[60vh] md:max-h-[70vh] overflow-y-auto space-y-3 relative"
             ref={listRef}
             onScroll={handleScroll}
           >

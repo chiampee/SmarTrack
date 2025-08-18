@@ -168,7 +168,7 @@ export const aiService = {
     }
 
     // Try free API endpoint
-    const freeAPIAvailable = await checkFreeAPI();
+    const freeAPIAvailable = false; // disable free API path in frontend to avoid 404 in dev
     if (freeAPIAvailable) {
       try {
         return await this.callFreeAPI(messages, opts);

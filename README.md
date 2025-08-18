@@ -12,25 +12,23 @@ A powerful browser extension and web dashboard for saving, organizing, and analy
 - 💬 **Advanced AI Chat** - Interactive chat interface with conversation history and context management
 - 📊 **Real-time Dashboard** - Beautiful web interface for managing your research
 - 🔄 **Seamless Sync** - Extension and dashboard work together seamlessly
-- 📱 **Offline Support** - Works fully offline with local IndexedDB storage
+- 💾 **Resilient Storage** - Extension-first storage with IndexedDB fallback
 - 🚀 **One-click Export** - Export to ChatGPT format with a single click
 - 🎯 **Smart Context Management** - AI remembers conversation history and link context
 - 🔧 **Robust Error Handling** - Comprehensive error recovery and user-friendly messages
 
-## 🆕 Recent Updates (v1.1.0)
+## 🆕 Recent Updates (v1.2.0)
 
-### ✅ **Fixed Issues**
-- **Chat Functionality** - Completely resolved infinite re-render issues
-- **Button Interactions** - Clear Chat, New Chat, and Quick Prompts now work perfectly
-- **Conversation Management** - Proper conversation history persistence and context building
-- **State Management** - Stable component rendering and state updates
-- **WebSocket Connections** - Fixed Vite development server connection issues
+### ✅ **Fixed/Improved**
+- Extension context errors: hardened content script and background messaging
+- Invalid URL patterns fixed for localhost dashboards
+- IndexedDB resilience: lazy init + graceful fallbacks when blocked
 
-### 🚀 **New Features**
-- **Enhanced Chat Interface** - Improved conversation flow and user experience
-- **Better Error Recovery** - Automatic retry mechanisms and fallback options
-- **Debugging Tools** - Comprehensive logging for troubleshooting
-- **Performance Optimizations** - Reduced unnecessary re-renders and improved responsiveness
+### 🚀 **New/Changed**
+- Duplicate detection before save with a confirmation flow
+- Badge logic uses displayed links reported by tabs (no false positives)
+- Content script simplified (no IndexedDB) and uses safe cached storage
+- Add Link is now available only from Quick Actions in the sidebar
 
 ## 🚀 Quick Start
 
@@ -176,10 +174,13 @@ If you used `scripts\install.bat`, you get additional Windows features:
 ### Using the Dashboard
 
 1. **Open the dashboard** at http://localhost:5173
-2. **View your saved links** in a beautiful table format
-3. **Filter and search** by labels, status, or text
-4. **Start AI chat** with selected links for analysis
-5. **Export to ChatGPT** format for further processing
+2. **Add Link** from the sidebar under **Quick Actions** (this is the only place with the Add Link button)
+3. **View your saved links** in a clean, filterable list
+4. **Filter and search** by labels, status, or text
+5. **Start AI chat** with selected links for analysis
+6. **Export to ChatGPT** format for further processing
+
+> Note: Most saves should be done via the browser extension. The in-app Add Link is intentionally scoped to Quick Actions for a cleaner UI.
 
 ### AI Chat Features
 
@@ -211,6 +212,7 @@ smart-research-tracker/
 │   ├── popup.js          # Extension popup
 │   ├── background.js     # Background script
 │   └── contentScript.js  # Content script
+│       (MV3 service worker + ready/handshake messaging; extension-first storage)
 ├── api/                   # Serverless API functions
 ├── docs/                  # Documentation
 ├── scripts/               # Setup and utility scripts
@@ -306,9 +308,13 @@ Smart Research Tracker includes a comprehensive error handling system with user-
 
 ### Documentation
 
+- [User Guide](docs/user-guide.md) - Complete user documentation and usage instructions
+- [Extension Architecture](docs/extension-architecture.md) - Technical architecture and implementation details
+- [Duplicate Detection System](docs/duplicate-detection-system.md) - How duplicate detection works
+- [New Badge Logic](docs/new-badge-logic.md) - Stuck links detection and badge system
 - [Error Handling Guide](docs/error-handling-guide.md) - Comprehensive error handling documentation
 - [Chat Troubleshooting](docs/chat-troubleshooting.md) - Chat functionality troubleshooting
-- [Button Fixes Summary](docs/button-fixes-summary.md) - Recent UI improvements
+- [Database Schema](docs/database-schema.md) - IndexedDB (Dexie) tables, indexes, and migrations
 - [Troubleshooting Guide](TROUBLESHOOTING.md) - Common issues and solutions
 - [Test Page](http://localhost:5173/test-extension.html) - Diagnostic tools
 

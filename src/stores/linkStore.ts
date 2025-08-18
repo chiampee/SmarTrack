@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Link } from '../types/Link';
 import { linkService } from '../services/linkService';
 import { db } from '../db/smartResearchDB';
+import { errorHandler, createDatabaseError, createExtensionError } from '../utils/errorHandler';
 
 type SortKey = 'createdAt' | 'labels';
 type SortDir = 'asc' | 'desc';
@@ -16,6 +17,8 @@ interface LinkState {
   sortKey: SortKey;
   sortDir: SortDir;
   searchTerm?: string;
+  isClearing: boolean; // Flag to prevent auto-refresh during clearing
+  isMirroring: boolean; // Flag to prevent DB hooks from refetching during mirror
   loadLinks: () => Promise<void>;
   addLink: (link: Link) => Promise<void>;
   updateLink: (id: string, changes: Partial<Link>) => Promise<void>;
@@ -28,6 +31,9 @@ interface LinkState {
   setSearchTerm: (term: string) => void;
   applyFilters: () => void;
   fetchLinks: () => Promise<void>;
+  // Extension bridge helpers
+  getLinksFromExtension: () => Promise<Link[]>;
+  injectContentScriptAndRetry: (messageId: string) => Promise<Link[]>;
 }
 
 // Function to normalize link structure from extension
@@ -38,18 +44,36 @@ function normalizeLinkStructure(link: any): Link {
     metadata: {
       title: link.metadata?.title || link.title || 'Untitled',
       description: link.metadata?.description || link.description || '',
-      image: link.metadata?.image || link.image || '',
-      author: link.metadata?.author || link.author || '',
-      publishedTime: link.metadata?.publishedTime || link.publishedTime || '',
-      siteName: link.metadata?.siteName || link.siteName || ''
+      image: link.metadata?.image || link.image || ''
     },
     labels: Array.isArray(link.labels) ? link.labels : (link.label ? [link.label] : ['research']),
     priority: link.priority || 'medium',
     status: link.status || 'active',
-    createdAt: link.createdAt || new Date().toISOString(),
-    updatedAt: link.updatedAt || new Date().toISOString(),
+    createdAt: link.createdAt ? new Date(link.createdAt) : new Date(),
+    updatedAt: link.updatedAt ? new Date(link.updatedAt) : new Date(),
     boardId: link.boardId || null
   };
+}
+
+// URL normalizer for cross-source comparisons
+function normalizeUrlForCompare(u: string): string {
+  return (u || '').toString().replace(/\/+$/, '').toLowerCase();
+}
+
+// Deduplicate links by URL, keeping the most recent one
+function deduplicateLinks(links: Link[]): Link[] {
+  const urlMap = new Map<string, Link>();
+  
+  for (const link of links) {
+    const normalizedUrl = normalizeUrlForCompare(link.url);
+    const existing = urlMap.get(normalizedUrl);
+    
+    if (!existing || new Date(link.updatedAt) > new Date(existing.updatedAt)) {
+      urlMap.set(normalizedUrl, link);
+    }
+  }
+  
+  return Array.from(urlMap.values());
 }
 
 const savedSort = (() => {
@@ -78,6 +102,8 @@ const linkStore = create<LinkState>()((set, get) => ({
   sortKey: savedSort?.key || 'labels',
   sortDir: savedSort?.dir || 'desc',
   searchTerm: undefined,
+  isClearing: false,
+  isMirroring: false,
   async loadLinks() {
     try {
       await get().fetchLinks();
@@ -86,53 +112,243 @@ const linkStore = create<LinkState>()((set, get) => ({
     }
   },
   fetchLinks: async function () {
+    // Don't fetch if we're in the middle of clearing
+    if (get().isClearing) {
+      console.log('🔄 Skipping fetchLinks during clear operation');
+      return;
+    }
+    
     set({ loading: true, error: undefined });
     
-    try {
-      // First try to get links from the extension's storage
-      const extensionLinks = await this.getLinksFromExtension();
-      if (extensionLinks.length > 0) {
-        console.log('[Dashboard] Found', extensionLinks.length, 'links from extension storage');
-        console.log('[Dashboard] First link structure:', extensionLinks[0]);
-        set({ rawLinks: extensionLinks, loading: false });
+      try {
+        // Check if we should skip extension storage (after clearing)
+        let skipLegacy = localStorage.getItem('skipExtensionStorage') === 'true';
+        const skipUntilRaw = localStorage.getItem('skipExtensionStorageUntil');
+        const skipUntil = skipUntilRaw ? parseInt(skipUntilRaw, 10) : 0;
+        const now = Date.now();
+        // Auto-cleanup expired flags
+        if (skipUntil && now >= skipUntil) {
+          try { localStorage.removeItem('skipExtensionStorageUntil'); } catch {}
+          // If legacy is set but TTL expired, clear legacy too
+          if (skipLegacy) {
+            try { localStorage.removeItem('skipExtensionStorage'); } catch {}
+            skipLegacy = false;
+          }
+        }
+        const skipExtension = skipLegacy || (skipUntil && now < skipUntil);
+
+        // Even if skipping extension (e.g., right after clear), prefer background links if available
+        if (skipExtension) {
+          try {
+            const w: any = window as any;
+            if (w?.chrome?.runtime?.sendMessage) {
+              const bgLinks: Link[] = await new Promise((resolve) => {
+                try {
+                  w.chrome.runtime.sendMessage({ type: 'GET_LINKS' }, (resp: any) => {
+                    const arr = Array.isArray(resp?.links) ? resp.links : [];
+                    resolve(arr.map(normalizeLinkStructure));
+                  });
+                } catch {
+                  resolve([]);
+                }
+              });
+              if (bgLinks.length > 0) {
+                console.log('[Dashboard] Using background links despite skipExtensionStorage flag');
+                const deduplicatedLinks = deduplicateLinks(bgLinks);
+                set({ rawLinks: deduplicatedLinks, loading: false });
+                get().applyFilters();
+
+                // Opportunistically mirror to Dexie during skip window as well
+                try {
+                  const existing: Link[] = await db.links.toArray();
+                  const existingIds = new Set(existing.map((l: Link) => l.id));
+                  const toInsert = bgLinks.filter((l: Link) => !existingIds.has(l.id));
+                  if (toInsert.length > 0) {
+                    set({ isMirroring: true });
+                    try {
+                      await db.links.bulkPut(toInsert as Link[]);
+                      console.log('[Dashboard] Mirrored', toInsert.length, 'background links into local DB');
+                    } finally {
+                      set({ isMirroring: false });
+                    }
+                  }
+                } catch (mirrorErr) {
+                  console.warn('[Dashboard] Failed to mirror background links:', mirrorErr);
+                }
+
+                return;
+              }
+            }
+          } catch {}
+        }
+
+        if (!skipExtension) {
+          // First try to get links from the extension's storage
+          const extensionLinks = await this.getLinksFromExtension();
+          if (extensionLinks.length > 0) {
+          console.log('[Dashboard] Found', extensionLinks.length, 'links from extension storage');
+          console.log('[Dashboard] First link structure:', extensionLinks[0]);
+
+          // De-dupe against existing local DB entries to avoid missing/overridden items
+          try {
+            const localExisting: Link[] = await db.links.toArray();
+            const seen = new Set(localExisting.map((l) => normalizeUrlForCompare(l.url)));
+            const merged = [
+              ...extensionLinks,
+              ...localExisting.filter((l) => !seen.has(normalizeUrlForCompare(l.url)))
+            ];
+            const deduplicatedMerged = deduplicateLinks(merged);
+            set({ rawLinks: deduplicatedMerged, loading: false });
+          } catch {
+            const deduplicatedLinks = deduplicateLinks(extensionLinks);
+            set({ rawLinks: deduplicatedLinks, loading: false });
+          }
+          get().applyFilters();
+
+          // Opportunistically mirror to Dexie so fallback always has data
+          try {
+            const existing: Link[] = await db.links.toArray();
+            const existingIds = new Set(existing.map((l: Link) => l.id));
+            const toInsert = extensionLinks.filter((l: Link) => !existingIds.has(l.id));
+            if (toInsert.length > 0) {
+              // Prevent hooks from triggering recursive fetch during mirror
+              set({ isMirroring: true });
+              try {
+                await db.links.bulkPut(toInsert as Link[]);
+                console.log('[Dashboard] Mirrored', toInsert.length, 'extension links into local DB for fallback');
+              } finally {
+                set({ isMirroring: false });
+              }
+            }
+          } catch (mirrorErr) {
+            console.warn('[Dashboard] Failed to mirror links into local DB:', mirrorErr);
+          }
+
+          return;
+          }
+        }
+
+        // Fallback: load from local IndexedDB via service
+        console.log('[Dashboard] No links from extension or skipping extension storage – loading from local database');
+        const localLinks = await linkService.getAll();
+        set({ rawLinks: localLinks || [], loading: false });
         get().applyFilters();
-        return;
+
+        // Retry extension fetch shortly after page load in case the content script loads late
+        setTimeout(async () => {
+          try {
+            const retryLinks = await get().getLinksFromExtension();
+            if (retryLinks.length > 0) {
+              console.log('[Dashboard] Late extension response – switching to extension storage');
+              const deduplicatedRetryLinks = deduplicateLinks(retryLinks);
+              set({ rawLinks: deduplicatedRetryLinks });
+              get().applyFilters();
+            }
+          } catch {}
+        }, 1500);
+      } catch (error) {
+        console.error('[Dashboard] Error fetching links:', error);
+        // Notify user that the extension may not be available
+        try {
+          errorHandler.handleError(createExtensionError(error as Error, { source: 'fetchLinks' }));
+        } catch {}
+        try {
+          // As a last resort, attempt local DB even on error
+          const localLinks = await linkService.getAll();
+          set({ rawLinks: localLinks || [], loading: false });
+          get().applyFilters();
+        } catch (dbErr) {
+          try {
+            errorHandler.handleError(createDatabaseError(dbErr as Error, { source: 'fetchLinks' }));
+          } catch {}
+          set({ rawLinks: [], loading: false, error: 'Failed to load links' });
+        }
       }
-      
-      console.log('[Dashboard] No links from extension');
-      set({ rawLinks: [], loading: false });
-      get().applyFilters();
-    } catch (error) {
-      console.error('[Dashboard] Error fetching links from extension:', error);
-      set({ rawLinks: [], loading: false, error: 'Failed to load links from extension' });
-    }
   },
 
   getLinksFromExtension: async function () {
+    // Check if we should skip extension storage
+    let skipLegacy = localStorage.getItem('skipExtensionStorage') === 'true';
+    const skipUntilRaw = localStorage.getItem('skipExtensionStorageUntil');
+    const skipUntil = skipUntilRaw ? parseInt(skipUntilRaw, 10) : 0;
+    const now = Date.now();
+    // Auto-cleanup expired flags
+    if (skipUntil && now >= skipUntil) {
+      try { localStorage.removeItem('skipExtensionStorageUntil'); } catch {}
+      if (skipLegacy) {
+        try { localStorage.removeItem('skipExtensionStorage'); } catch {}
+        skipLegacy = false;
+      }
+    }
+    const skipExtension = skipLegacy || (skipUntil && now < skipUntil);
+    if (skipExtension) {
+      // During skip window, still try robust background channel, but avoid postMessage
+      console.log('[Dashboard] Skipping content-script storage due to clear operation; trying background channel');
+      const w: any = window as any;
+      if (w?.chrome?.runtime?.sendMessage) {
+        try {
+          return await new Promise<Link[]>((resolve) => {
+            try {
+              w.chrome.runtime.sendMessage({ type: 'GET_LINKS' }, (resp: any) => {
+                const arr = Array.isArray(resp?.links) ? resp.links : [];
+                const normalizedLinks = arr.map(normalizeLinkStructure);
+                const deduplicatedLinks = deduplicateLinks(normalizedLinks);
+                resolve(deduplicatedLinks);
+              });
+            } catch {
+              resolve([]);
+            }
+          });
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    }
+
+    // Use window.postMessage communication since chrome.storage is not available from web page context
+    console.log('[Dashboard] Using extension communication (bg + postMessage)...');
     return new Promise<Link[]>((resolve) => {
+      let settled = false;
+      
       // Try to get links from extension using window.postMessage
       const messageId = 'get-links-' + Date.now();
       let timeout: NodeJS.Timeout;
       
-            const handleResponse = async (event: MessageEvent) => {
+      const handleResponse = async (event: MessageEvent) => {
         if (event.data && event.data.type === 'SRT_LINKS_RESPONSE' && event.data.messageId === messageId) {
           window.removeEventListener('message', handleResponse);
           clearTimeout(timeout);
           
           if (event.data.links) {
-            console.log('[Dashboard] Received', event.data.links.length, 'links from extension');
+            console.log('[Dashboard] Received', event.data.links.length, 'links from extension via postMessage');
             // Normalize the link data structure
             const normalizedLinks = event.data.links.map(normalizeLinkStructure);
             console.log('[Dashboard] Normalized first link:', normalizedLinks[0]);
             
+            // Deduplicate links to prevent React key conflicts
+            const deduplicatedLinks = deduplicateLinks(normalizedLinks);
+            console.log('[Dashboard] After deduplication:', deduplicatedLinks.length, 'links');
+            
             // Don't save to local database to avoid Dexie conflicts
             // Panel operations will work directly with extension storage
             console.log('[Dashboard] Using extension storage for panel operations');
-            
-            resolve(normalizedLinks);
+            if (!settled) { settled = true; resolve(deduplicatedLinks); }
           } else {
-            resolve([]);
+            if (!settled) { settled = true; resolve([]); }
           }
+        }
+        if (event.data && event.data.type === 'SRT_LINKS_ERROR' && event.data.messageId === messageId) {
+          // Extension context invalidated; schedule a retry after a short delay
+          window.removeEventListener('message', handleResponse);
+          clearTimeout(timeout);
+          console.warn('[Dashboard] Extension context invalidated, retrying shortly...');
+          setTimeout(() => {
+            if (!settled) {
+              settled = true;
+              this.getLinksFromExtension().then(resolve).catch(() => resolve([]));
+            }
+          }, 1000);
         }
       };
       
@@ -141,24 +357,103 @@ const linkStore = create<LinkState>()((set, get) => ({
       // Set timeout to avoid hanging
       timeout = setTimeout(() => {
         window.removeEventListener('message', handleResponse);
-        console.log('[Dashboard] Extension not responding, using local storage');
-        resolve([]);
+        console.log('[Dashboard] Extension not responding via postMessage, trying to inject content script...');
+        
+        // Try to inject content script and retry
+        this.injectContentScriptAndRetry(messageId).then((links) => {
+          if (!settled) { settled = true; resolve(links); }
+        }).catch(() => {
+          if (!settled) { settled = true; resolve([]); }
+        });
       }, 2000);
       
-      // Request links from extension
-      window.postMessage({
-        type: 'SRT_GET_LINKS',
-        messageId: messageId
-      }, '*');
+      // Primary: background GET_LINKS (robust during reloads)
+      let w: any = window as any;
+      if (w?.chrome?.runtime?.sendMessage) {
+        try {
+          w.chrome.runtime.sendMessage({ type: 'GET_LINKS' }, (resp: any) => {
+            // Only settle if background actually has links; otherwise let postMessage fallback run
+            if (!settled && Array.isArray(resp?.links) && resp.links.length > 0) {
+              const normalized = resp.links.map(normalizeLinkStructure);
+              const deduplicated = deduplicateLinks(normalized);
+              settled = true; resolve(deduplicated);
+            }
+          });
+        } catch (_) {}
+      }
+      // Secondary: postMessage bridge to content script
+      try { window.postMessage({ type: 'SRT_GET_LINKS', messageId }, '*'); } catch (_) {}
       
       // Also try to inject the content script if it's not loaded
-      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+      w = (window as any);
+      if (typeof w !== 'undefined' && w.chrome?.runtime?.sendMessage) {
         try {
-          chrome.runtime.sendMessage({ type: 'INJECT_CONTENT_SCRIPT' });
+          w.chrome.runtime.sendMessage({ type: 'INJECT_CONTENT_SCRIPT' });
         } catch (_) {
           // Ignore errors - extension might not be available
         }
       }
+    });
+  },
+
+  // Helper method to inject content script and retry communication
+  injectContentScriptAndRetry: async function (messageId: string): Promise<Link[]> {
+    return new Promise((resolve, reject) => {
+      const w = window as any;
+      if (typeof w === 'undefined' || !w.chrome?.scripting) {
+        reject(new Error('Chrome scripting API not available'));
+        return;
+      }
+
+      console.log('[Dashboard] Injecting content script...');
+      
+      // Try to inject content script into current tab
+      w.chrome.scripting.executeScript({
+        target: { tabId: (window as any).chrome.tabs.TAB_ID_NONE },
+        files: ['extension/contentScript.js']
+      }).then(() => {
+        console.log('[Dashboard] Content script injected, retrying communication...');
+        
+        // Wait a bit for script to initialize, then retry
+        setTimeout(() => {
+          const retryMessageId = 'retry-' + Date.now();
+          
+          const handleRetryResponse = (event: MessageEvent) => {
+            if (event.data && event.data.type === 'SRT_LINKS_RESPONSE' && event.data.messageId === retryMessageId) {
+              window.removeEventListener('message', handleRetryResponse);
+              
+              if (event.data.links) {
+                console.log('[Dashboard] Retry successful, received', event.data.links.length, 'links');
+                const normalizedLinks = event.data.links.map(normalizeLinkStructure);
+                const deduplicatedLinks = deduplicateLinks(normalizedLinks);
+                resolve(deduplicatedLinks);
+              } else {
+                resolve([]);
+              }
+            }
+          };
+          
+          window.addEventListener('message', handleRetryResponse);
+          
+          // Send retry request
+           window.postMessage({
+            type: 'SRT_GET_LINKS',
+            messageId: retryMessageId
+          }, '*');
+          
+          // Timeout for retry
+          setTimeout(() => {
+            window.removeEventListener('message', handleRetryResponse);
+            console.log('[Dashboard] Retry failed, rejecting');
+            reject(new Error('Retry failed'));
+          }, 3000);
+          
+        }, 500);
+        
+      }).catch((error: unknown) => {
+        console.error('[Dashboard] Content script injection failed:', error);
+        reject(error as Error);
+      });
     });
   },
 
@@ -225,8 +520,31 @@ const linkStore = create<LinkState>()((set, get) => ({
     await get().loadLinks();
   },
   async clearAll() {
-    await linkService.clearAll();
-    await get().loadLinks();
+    console.log('🗑️ Clearing all links from store...');
+    
+    // Set clearing flag to prevent auto-refresh
+    set({ isClearing: true });
+    
+    try {
+      // Clear the service
+      await linkService.clearAll();
+      
+      // Reset the store state to empty
+      set({ 
+        links: [], 
+        rawLinks: [], 
+        loading: false, 
+        error: undefined 
+      });
+      
+      console.log('✅ Store state cleared');
+    } finally {
+      // Re-enable auto-refresh after a delay
+      setTimeout(() => {
+        set({ isClearing: false });
+        console.log('🔄 Auto-refresh re-enabled');
+      }, 3000);
+    }
   },
   setStatusFilter(status) {
     console.log('🔄 Setting status filter:', status);
@@ -282,8 +600,12 @@ const linkStore = create<LinkState>()((set, get) => ({
 ['creating', 'updating', 'deleting'].forEach((hook) => {
   // @ts-ignore – dynamic hook name
   db.links.hook(hook, () => {
-    // Load links but avoid infinite loop
-    linkStore.getState().fetchLinks();
+    const { isClearing, isMirroring } = linkStore.getState();
+    if (!isClearing && !isMirroring) {
+      linkStore.getState().fetchLinks();
+    } else {
+      console.log('🔄 Skipping auto-refresh during clear/mirror operation');
+    }
   });
 });
 
@@ -291,14 +613,27 @@ const linkStore = create<LinkState>()((set, get) => ({
 if (typeof window !== 'undefined') {
   window.addEventListener('message', (event: MessageEvent) => {
     if (event?.data?.type === 'SRT_DB_UPDATED' || event?.data?.type === 'SRT_UPSERT_LINK') {
-      linkStore.getState().fetchLinks();
+      // Don't auto-refresh if we're in the middle of clearing
+      if (!linkStore.getState().isClearing) {
+        linkStore.getState().fetchLinks();
+      } else {
+        console.log('🔄 Skipping auto-refresh during clear operation');
+      }
     }
   });
   document.addEventListener('srt-db-updated', () => {
-    linkStore.getState().fetchLinks();
+    if (!linkStore.getState().isClearing) {
+      linkStore.getState().fetchLinks();
+    } else {
+      console.log('🔄 Skipping auto-refresh during clear operation');
+    }
   });
   document.addEventListener('srt-upsert-link', () => {
-    linkStore.getState().fetchLinks();
+    if (!linkStore.getState().isClearing) {
+      linkStore.getState().fetchLinks();
+    } else {
+      console.log('🔄 Skipping auto-refresh during clear operation');
+    }
   });
 }
 

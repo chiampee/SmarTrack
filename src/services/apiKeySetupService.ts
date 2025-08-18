@@ -84,7 +84,7 @@ export const apiKeySetupService = {
         return {
           success: false,
           message:
-            'Network/CORS Issue: Your browser blocked the test request. You can still paste your API key; features may work in production.',
+            'Network Connection Issue: Network/CORS Issue: Your browser blocked the test request. You can still paste your API key; features may work in production.',
           errorType: 'Network Connection Issue',
         };
       }

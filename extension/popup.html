@@ -52,6 +52,212 @@
         color: #374151;
       }
       
+      /* Duplicate Popup Styles */
+      .duplicate-popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+      
+      .duplicate-popup-content {
+        background: white;
+        border-radius: 8px;
+        padding: 16px;
+        max-width: 90%;
+        max-height: 80%;
+        overflow-y: auto;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      }
+      
+      .duplicate-popup-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      
+      .duplicate-popup-header h3 {
+        margin: 0;
+        font-size: 14px;
+        color: #dc2626;
+      }
+      
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 2px;
+        border-radius: 3px;
+        color: #6b7280;
+        transition: all 0.2s;
+      }
+      
+      .close-btn:hover {
+        background: #f3f4f6;
+        color: #374151;
+      }
+      
+      .duplicate-info {
+        margin-bottom: 16px;
+      }
+      
+      .duplicate-info p {
+        margin: 0 0 12px 0;
+        font-size: 12px;
+        color: #374151;
+      }
+      
+      .duplicate-list {
+        max-height: 120px;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        padding: 8px;
+        background: #f9fafb;
+      }
+      
+      .duplicate-item {
+        padding: 8px;
+        margin-bottom: 6px;
+        background: white;
+        border-radius: 4px;
+        border: 1px solid #e5e7eb;
+        font-size: 11px;
+      }
+      
+      .duplicate-item:last-child {
+        margin-bottom: 0;
+      }
+      
+      .duplicate-item-title {
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 4px;
+      }
+      
+      .duplicate-item-details {
+        color: #6b7280;
+        font-size: 10px;
+      }
+      
+      .duplicate-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+      
+      .btn-warning {
+        background: #f59e0b;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .btn-warning:hover {
+        background: #d97706;
+      }
+      
+      .btn-secondary {
+        background: #6b7280;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .btn-secondary:hover {
+        background: #4b5563;
+      }
+      
+      /* Duplicate Status Styles */
+      .duplicate-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        margin: 8px 0;
+        background: #f0f9ff;
+        border: 1px solid #0ea5e9;
+        border-radius: 6px;
+        font-size: 11px;
+      }
+      
+      .duplicate-status-icon {
+        font-size: 14px;
+        color: #0ea5e9;
+      }
+      
+      .duplicate-status-text {
+        flex: 1;
+      }
+      
+      .duplicate-status-title {
+        font-weight: 600;
+        color: #0c4a6e;
+        margin-bottom: 2px;
+      }
+      
+      .duplicate-status-details {
+        color: #0369a1;
+        font-size: 10px;
+      }
+      
+      .duplicate-status.checking {
+        background: #f0f9ff;
+        border-color: #0ea5e9;
+      }
+      
+      .duplicate-status.duplicate-found {
+        background: #fef3c7;
+        border-color: #f59e0b;
+      }
+      
+      .duplicate-status.duplicate-found .duplicate-status-icon {
+        color: #f59e0b;
+      }
+      
+      .duplicate-status.duplicate-found .duplicate-status-title {
+        color: #92400e;
+      }
+      
+      .duplicate-status.duplicate-found .duplicate-status-details {
+        color: #b45309;
+      }
+      
+      .duplicate-status.no-duplicates {
+        background: #dcfce7;
+        border-color: #22c55e;
+      }
+      
+      .duplicate-status.no-duplicates .duplicate-status-icon {
+        color: #22c55e;
+      }
+      
+      .duplicate-status.no-duplicates .duplicate-status-title {
+        color: #166534;
+      }
+      
+      .duplicate-status.no-duplicates .duplicate-status-details {
+        color: #15803d;
+      }
+      
       h3 {
         margin: 0 0 12px 0;
         font-size: 16px;
@@ -241,6 +447,21 @@
         grid-template-columns: 1fr 1fr;
         gap: 6px;
       }
+      .label-field { display: flex; gap: 6px; align-items: center; }
+      .label-field select { flex: 1; }
+      .inline-delete {
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        color: #6b7280;
+        cursor: pointer;
+        font-size: 12px;
+        padding: 4px 6px;
+        border-radius: 6px;
+        line-height: 1;
+      }
+      .inline-delete:hover { color: #b91c1c; background: #fee2e2; border-color: #fecaca; }
+      .inline-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+      /* simplified: no save/cancel buttons in add flow */
     </style>
   </head>
   <body>
@@ -277,9 +498,13 @@
         
         <div class="field-group">
           <label class="field-label">Label</label>
-          <select id="labelSelect" style="display:none;"></select>
-          <input id="labelInput" placeholder="Add a label (optional)" style="display:none;" />
+          <div class="label-field">
+            <select id="labelSelect" style="display:none;"></select>
+            <input id="labelInput" placeholder="Type new label… (Enter to add)" style="display:none; flex:1;" />
+            <button id="inlineDeleteLabel" class="inline-delete" title="Delete selected label">✕</button>
+          </div>
         </div>
+        
         
         <div class="field-group">
           <label class="field-label">Description</label>
@@ -296,6 +521,14 @@
         </div>
       </div>
 
+      <div id="duplicateStatus" class="duplicate-status" style="display: none;">
+        <div class="duplicate-status-icon">🔍</div>
+        <div class="duplicate-status-text">
+          <div class="duplicate-status-title">Checking for duplicates...</div>
+          <div class="duplicate-status-details">Scanning your research library</div>
+        </div>
+      </div>
+
       <button id="saveBtn" class="btn btn-primary" disabled>
         💾 Save to Research
       </button>
@@ -308,8 +541,32 @@
     </div>
 
     <hr class="divider">
-    
 
+    <!-- Duplicate Confirmation Popup -->
+    <div id="duplicatePopup" class="duplicate-popup" style="display: none;">
+      <div class="duplicate-popup-content">
+        <div class="duplicate-popup-header">
+          <h3>⚠️ Duplicate Link Detected</h3>
+          <button id="closeDuplicatePopup" class="close-btn" title="Close">✕</button>
+        </div>
+        
+        <div class="duplicate-info">
+          <p>This URL has already been saved <span id="duplicateCount">0</span> time(s).</p>
+          <div id="duplicateList" class="duplicate-list">
+            <!-- Duplicate links will be populated here -->
+          </div>
+        </div>
+        
+        <div class="duplicate-actions">
+          <button id="saveAnywayBtn" class="btn btn-warning">
+            💾 Save Anyway
+          </button>
+          <button id="cancelSaveBtn" class="btn btn-secondary">
+            ❌ Cancel
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Minimal Settings Panel -->
     <div id="minimalSettingsPanel" class="section" style="display: none;">

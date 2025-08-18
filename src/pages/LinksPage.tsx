@@ -18,12 +18,13 @@ export const LinksPage: React.FC = () => {
     critical: number;
     warnings: number;
   }>({ show: false, critical: 0, warnings: 0 });
-  const { rawLinks, setStatusFilter } = useLinkStore();
+  const { links, rawLinks, loading, loadLinks, setStatusFilter } = useLinkStore();
   const { hasSeenOnboarding } = useSettingsStore();
   const settings = useSettings();
   const { showOnboarding, showDiagnostics } = settings;
 
   const total = rawLinks.length;
+  const totalFiltered = links.length;
   const active = rawLinks.filter((l) => l.status === 'active').length;
   const archived = rawLinks.filter((l) => l.status === 'archived').length;
   const highPriority = rawLinks.filter((l) => l.priority === 'high').length;
@@ -53,6 +54,19 @@ export const LinksPage: React.FC = () => {
     const timer = setTimeout(checkForIssues, 2000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Ensure links are loaded on mount and on focus/visibility changes
+  useEffect(() => {
+    void loadLinks();
+    const handleFocus = () => { void loadLinks(); };
+    const handleVis = () => { if (document.visibilityState === 'visible') { void loadLinks(); } };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVis);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVis);
+    };
+  }, [loadLinks]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
@@ -155,25 +169,15 @@ export const LinksPage: React.FC = () => {
         <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200/50 p-3 mb-4 shadow-sm relative z-50">
           <div className="flex items-center justify-between">
             <LinkFilters />
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setOpen(true)}
-                className="group inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
-              >
-                <Plus className="w-4 h-4" />
-                Add Link
-              </button>
-
-            </div>
+            
           </div>
         </div>
 
         {/* Enhanced Links Content */}
         <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 shadow-md overflow-hidden">
-          {total === 0 ? (
+          {totalFiltered === 0 && !loading ? (
             <EmptyState
               type="links"
-              onAction={() => setOpen(true)}
               showOnboarding={true}
               onShowOnboarding={showOnboarding}
             />
@@ -184,9 +188,9 @@ export const LinksPage: React.FC = () => {
       </div>
 
       {/* Modals */}
-              <Modal isOpen={open} onClose={() => setOpen(false)} title="Add Link">
-            <LinkForm onSuccess={() => setOpen(false)} />
-          </Modal>
+      <Modal isOpen={open} onClose={() => setOpen(false)} title="Add Link" maxWidthClass="max-w-md">
+        <LinkForm onSuccess={() => setOpen(false)} />
+      </Modal>
         </div>
   );
 };

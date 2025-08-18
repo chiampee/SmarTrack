@@ -108,6 +108,7 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
                     <Plus className="w-3 h-3 group-hover:rotate-90 transition-transform duration-300" />
                     Add Link
                   </Button>
+
                   {rawLinks.length > 0 && (
                     <Button
                       size="sm"
@@ -218,6 +219,16 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
                         <Activity className="w-3 h-3 text-gray-400" />
                         <span>Diagnostics</span>
                       </button>
+                      <button 
+                        onClick={() => {
+                          setConfirmOpen(true);
+                          onClose();
+                        }}
+                        className="group flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200 w-full"
+                      >
+                        <Trash2 className="w-3 h-3 text-red-400" />
+                        <span>Clear All Links</span>
+                      </button>
                       {/* Development only - Reset Onboarding */}
                       {import.meta.env.DEV && (
                         <button 
@@ -255,7 +266,7 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
         <Modal
           isOpen={confirmOpen}
           onClose={() => setConfirmOpen(false)}
-          title="Delete All Links"
+          title="Clear All Links"
           footer={
             <div className="flex justify-end gap-3">
               <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
@@ -267,9 +278,15 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
                   await clearAll();
                   setConfirmOpen(false);
                   onClose();
+                  
+                  // Force a page refresh after clearing to ensure clean state
+                  setTimeout(() => {
+                    console.log('🔄 Reloading page to ensure clean state');
+                    window.location.reload();
+                  }, 2000);
                 }}
               >
-                Delete All
+                Clear All Links
               </Button>
             </div>
           }
@@ -283,8 +300,13 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
               </div>
             </div>
             <p className="text-gray-700">
-              Are you sure you want to delete all {rawLinks.length} links? This will permanently remove all your saved research links.
+              Are you sure you want to clear all {rawLinks.length} links from your database? This will permanently remove all your saved research links, summaries, and chat history.
             </p>
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <strong>Note:</strong> This will also clear any AI summaries and chat conversations associated with these links.
+              </p>
+            </div>
           </div>
         </Modal>
       </aside>

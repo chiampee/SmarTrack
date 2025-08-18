@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link as LinkType } from '../../types/Link';
 import { Badge } from '..';
-import { Square, CheckSquare, CheckCircle, Info, MessageSquare, Edit2, Trash } from 'lucide-react';
+import { Square, CheckSquare, CheckCircle, Info, MessageSquare, Edit2, Trash, ExternalLink } from 'lucide-react';
 import { ContextInspectorModal } from '../ai/ContextInspectorModal';
 import { AISummaryModal } from '../ai/AISummaryModal';
 import { Modal } from '..';
@@ -40,6 +40,9 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
   const [historyOpen, setHistoryOpen] = useState(false);
   const [summaryStatus, setSummaryStatus] = useState<string>('');
   const [contextOpen, setContextOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [contextMenuOpen, setContextMenuOpen] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [editing, setEditing] = useState<{
     field?: 'title' | 'labels' | 'priority' | 'status';
   }>({});
@@ -55,7 +58,7 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
     }
   });
 
-  useEffect(() => {
+    useEffect(() => {
     (async () => {
       try {
         const summaries = await aiSummaryService.getByLink(link.id);
@@ -73,6 +76,45 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
         setSummaryStatus(parts.join('  '));
       } catch {}
     })();
+  }, [link.id]);
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setContextMenuOpen(false);
+    };
+
+    if (contextMenuOpen) {
+      document.addEventListener('click', handleClickOutside);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          setContextMenuOpen(false);
+        }
+      });
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [contextMenuOpen]);
+
+  // Keyboard shortcuts for the link row
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle keys when the row is focused or hovered
+      const rowElement = document.querySelector(`[data-link-id="${link.id}"]`);
+      if (!rowElement?.matches(':hover')) return;
+
+      if (e.key === 'Delete' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setDeleteConfirmOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [link.id]);
 
   const startEdit = (
@@ -114,6 +156,39 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
     setMenuOpen(false);
   };
 
+  const openLinkInNewTab = () => {
+    try {
+      const href = link.url.startsWith('http') ? link.url : `https://${link.url}`;
+      const win = window.open(href, '_blank', 'noopener,noreferrer');
+      // If popup blocked or failed, fall back to programmatic anchor click
+      if (!win || win.closed || typeof win.closed === 'undefined') {
+        const a = document.createElement('a');
+        a.href = href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        // Attach temporarily to ensure some browsers honor the click
+        document.body.appendChild(a);
+        a.click();
+        // Clean up
+        setTimeout(() => {
+          try { document.body.removeChild(a); } catch {}
+        }, 0);
+      }
+    } catch {
+      try {
+        const a = document.createElement('a');
+        a.href = link.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          try { document.body.removeChild(a); } catch {}
+        }, 0);
+      } catch (_) {}
+    }
+  };
+
   // Function to get column width with constraints
   // Function to format text based on presentation mode
   const formatText = (text: string, column: string) => {
@@ -150,6 +225,7 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
     const defaultWidths: Record<string, number> = {
       name: 300,    // Much wider for names to prevent truncation
       url: 200,     // Wider for URLs
+      description: 200, // Good width for description text
       labels: 150,  // Wider for multiple labels
       status: 100,  // Adequate for status
       priority: 100, // Adequate for priority
@@ -204,21 +280,33 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
               (() => {
                 const limited = formatText(displayName, col);
                 return (
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer line-clamp-1 transition-colors duration-200"
-                    title={displayName}
-                    onDoubleClick={() => startEdit('title', link.metadata.title || '')}
-                  >
-                    {limited}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer line-clamp-1 transition-colors duration-200 min-w-0"
+                      title={displayName}
+                      onDoubleClick={() => startEdit('title', link.metadata.title || '')}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openLinkInNewTab(); }}
+                    >
+                      {limited}
+                    </a>
+                    <button
+                      type="button"
+                      aria-label="Open link in new tab"
+                      onClick={(e) => { e.stopPropagation(); openLinkInNewTab(); }}
+                      className="shrink-0 p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      title="Open link in new tab"
+                    >
+                      <ExternalLink size={14} />
+                    </button>
                     {link.status === 'archived' && (
-                      <Badge variant="warning" className="ml-2 hidden sm:inline-flex">
+                      <Badge variant="warning" className="ml-1 hidden sm:inline-flex shrink-0">
                         Archived
                       </Badge>
                     )}
-                  </a>
+                  </div>
                 );
               })()
             )}
@@ -233,6 +321,7 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
               rel="noreferrer"
               className="text-blue-600 hover:text-blue-700 hover:underline truncate transition-colors duration-200 font-medium"
               title={link.url}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openLinkInNewTab(); }}
             >
               {(() => {
                 try {
@@ -245,6 +334,19 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
                 }
               })()}
             </a>
+          </div>
+        );
+      case 'description':
+        const description = link.metadata?.description || '';
+        return (
+          <div className="text-sm text-gray-600">
+            {description ? (
+              <span title={description} className="line-clamp-2">
+                {formatText(description, col)}
+              </span>
+            ) : (
+              <span className="text-gray-400 italic">No description</span>
+            )}
           </div>
         );
       case 'created':
@@ -379,7 +481,14 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
     <div className="group relative hover:bg-gray-50 transition-all duration-200">
       <table className="w-full">
         <tbody>
-          <tr>
+          <tr
+            data-link-id={link.id}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setContextMenuPosition({ x: e.clientX, y: e.clientY });
+              setContextMenuOpen(true);
+            }}
+          >
             {/* Checkbox column - always present for alignment */}
             <td className="w-10 px-3 py-3 border-r border-gray-100">
               <div className="flex items-center justify-center">
@@ -434,6 +543,10 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
       
       {/* Actions overlay - positioned absolutely to not affect table layout */}
       <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 px-2 py-1">
+        {/* Quick delete hint */}
+        <div className="text-xs text-gray-400 mr-2 hidden group-hover:block">
+          Press <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Delete</kbd> to delete
+        </div>
         {summaryStatus && (
           <button
             type="button"
@@ -444,6 +557,21 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
             <Info size={16} />
           </button>
         )}
+        <button
+          type="button"
+          onClick={() => {
+            try {
+              const href = link.url.startsWith('http') ? link.url : `https://${link.url}`;
+              window.open(href, '_blank', 'noopener,noreferrer');
+            } catch {
+              window.open(link.url, '_blank', 'noopener,noreferrer');
+            }
+          }}
+          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all duration-200"
+          title="Open link in new tab"
+        >
+          <ExternalLink size={16} />
+        </button>
         <button
           type="button"
           onClick={() => setChatOpen(true)}
@@ -470,13 +598,107 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
         </button>
         <button
           type="button"
-          onClick={() => deleteLink(link.id)}
+          onClick={() => setDeleteConfirmOpen(true)}
           className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all duration-200"
           title="Delete link"
         >
           <Trash size={16} />
         </button>
       </div>
+      
+      {/* Context Menu */}
+      {contextMenuOpen && (
+        <div 
+          className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[200px]"
+          style={{ 
+            left: contextMenuPosition.x, 
+            top: contextMenuPosition.y,
+            transform: 'translate(-50%, -100%)'
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                const href = link.url.startsWith('http') ? link.url : `https://${link.url}`;
+                window.open(href, '_blank', 'noopener,noreferrer');
+              } catch {
+                window.open(link.url, '_blank', 'noopener,noreferrer');
+              }
+              setContextMenuOpen(false);
+            }}
+            className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          >
+            <ExternalLink size={16} />
+            Open Link
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setEditOpen(true);
+              setContextMenuOpen(false);
+            }}
+            className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          >
+            <Edit2 size={16} />
+            Edit Link
+          </button>
+          
+          {summaryStatus && (
+            <button
+              type="button"
+              onClick={() => {
+                setSummaryOpen(true);
+                setContextMenuOpen(false);
+              }}
+              className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+            >
+              <Info size={16} />
+              View AI Summary
+            </button>
+          )}
+          
+          <button
+            type="button"
+            onClick={() => {
+              setChatOpen(true);
+              setContextMenuOpen(false);
+            }}
+            className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          >
+            <MessageSquare size={16} />
+            Chat about this link
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => {
+              setContextOpen(true);
+              setContextMenuOpen(false);
+            }}
+            className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          >
+            <Info size={16} />
+            View Context
+          </button>
+          
+          <div className="border-t border-gray-200 my-1"></div>
+          
+          <button
+            type="button"
+            onClick={() => {
+              setDeleteConfirmOpen(true);
+              setContextMenuOpen(false);
+            }}
+            className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
+          >
+            <Trash size={16} />
+            Delete Link
+          </button>
+        </div>
+      )}
+      
       <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Link">
         <LinkForm existing={link} onSuccess={() => setEditOpen(false)} />
       </Modal>
@@ -487,6 +709,47 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
         isOpen={contextOpen}
         onClose={() => setContextOpen(false)}
       />
+      
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Delete Link">
+        <div className="space-y-4">
+          <div className="text-gray-700">
+            <p className="mb-2">Are you sure you want to delete this link?</p>
+            <div className="bg-gray-50 p-3 rounded-md">
+              <p className="font-medium text-gray-900">{link.metadata?.title || 'Untitled Link'}</p>
+              <p className="text-sm text-gray-600 truncate">{link.url}</p>
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              This action cannot be undone. The link and all associated data (summaries, chat history, etc.) will be permanently removed.
+            </p>
+          </div>
+          
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={() => setDeleteConfirmOpen(false)}
+              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors duration-200"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await deleteLink(link.id);
+                  setDeleteConfirmOpen(false);
+                } catch (error) {
+                  console.error('Failed to delete link:', error);
+                }
+              }}
+              className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors duration-200"
+            >
+              Delete Permanently
+            </button>
+          </div>
+        </div>
+      </Modal>
+      
       {historyOpen && (
         <ChatModal link={link} isOpen={historyOpen} onClose={() => setHistoryOpen(false)} />
       )}
