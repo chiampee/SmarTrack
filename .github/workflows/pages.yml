@@ -46,6 +46,32 @@ jobs:
         run: |
           cp dist/index.html dist/404.html || true
 
+      - name: Ensure GitHub Pages site (REST fallback)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            try {
+              await github.request('GET /repos/{owner}/{repo}/pages', { owner, repo });
+              core.info('Pages site already exists');
+            } catch (e) {
+              if (e.status === 404) {
+                core.info('Pages site not found. Creating with build_type=workflow...');
+                try {
+                  await github.request('POST /repos/{owner}/{repo}/pages', {
+                    owner,
+                    repo,
+                    build_type: 'workflow'
+                  });
+                  core.info('Pages site created');
+                } catch (err) {
+                  core.warning(`Create Pages site via REST failed: ${err.status} ${err.message}`);
+                }
+              } else {
+                core.warning(`Get Pages site failed: ${e.status} ${e.message}`);
+              }
+            }
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v4
 
