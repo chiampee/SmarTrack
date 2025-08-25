@@ -317,6 +317,7 @@ const linkStore = create<LinkState>()((set, get) => ({
       
       const handleResponse = async (event: MessageEvent) => {
         if (event.data && event.data.type === 'SRT_LINKS_RESPONSE' && event.data.messageId === messageId) {
+          console.log('[Dashboard] Received SRT_LINKS_RESPONSE for', messageId);
           window.removeEventListener('message', handleResponse);
           clearTimeout(timeout);
           
@@ -357,7 +358,7 @@ const linkStore = create<LinkState>()((set, get) => ({
       // Set timeout to avoid hanging
       timeout = setTimeout(() => {
         window.removeEventListener('message', handleResponse);
-        console.log('[Dashboard] Extension not responding via postMessage, trying to inject content script...');
+        console.log('[Dashboard] Extension not responding via postMessage for', messageId, ', trying fallback...');
         
         // Try to inject content script and retry
         this.injectContentScriptAndRetry(messageId).then((links) => {
@@ -382,7 +383,10 @@ const linkStore = create<LinkState>()((set, get) => ({
         } catch (_) {}
       }
       // Secondary: postMessage bridge to content script
-      try { window.postMessage({ type: 'SRT_GET_LINKS', messageId }, '*'); } catch (_) {}
+      try { 
+        console.log('[Dashboard] Posting SRT_GET_LINKS with', messageId);
+        window.postMessage({ type: 'SRT_GET_LINKS', messageId }, '*'); 
+      } catch (_) { console.warn('[Dashboard] Failed to post SRT_GET_LINKS'); }
       
       // Also try to inject the content script if it's not loaded
       w = (window as any);

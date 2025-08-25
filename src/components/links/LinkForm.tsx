@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input, Button, LoadingSpinner, Select } from '..';
 import { Link } from '../../types/Link';
 import { useLinkStore } from '../../stores/linkStore';
 import { linkStore } from '../../stores/linkStore';
 import { fetchMetadata } from '../../utils/metadata';
 import { aiService } from '../../services/aiService';
+import { suggestLabelsForDraft, suggestPriorityForDraft, suggestBoardForDraft } from '../../services/suggestionService';
+import { useBoardStore } from '../../stores/boardStore';
 
 interface Props {
   onSuccess: () => void;
@@ -26,6 +28,13 @@ export const LinkForm: React.FC<Props> = ({ onSuccess, existing }) => {
   );
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string>('');
+  const [labelSuggestions, setLabelSuggestions] = useState<string[]>([]);
+  const [prioritySuggestion, setPrioritySuggestion] = useState<Link['priority'] | null>(null);
+  const [autoAppliedLabels, setAutoAppliedLabels] = useState<boolean>(false);
+  const [autoAppliedPriority, setAutoAppliedPriority] = useState<boolean>(false);
+  const [boardId, setBoardId] = useState<string>(existing?.boardId || '');
+  const [autoAppliedBoard, setAutoAppliedBoard] = useState<boolean>(false);
+  const { boards, loadBoards } = useBoardStore();
   const { addLink } = useLinkStore();
   const { updateLink } = useLinkStore();
 
@@ -33,6 +42,71 @@ export const LinkForm: React.FC<Props> = ({ onSuccess, existing }) => {
   const descLimit = 500;
   const descCount = description.length;
   const descNearLimit = descCount > descLimit - 50;
+
+  // Load boards on mount for the selector
+  useEffect(() => {
+    void loadBoards();
+  }, [loadBoards]);
+
+  // Auto-suggest labels and priority as the user types (debounced)
+  useEffect(() => {
+    if (existing) return; // only auto-suggest for new links
+    const handle = setTimeout(async () => {
+      try {
+        console.log('[Suggest] Effect triggered with:', { url, name, description });
+        const state = linkStore.getState();
+        let existingLinks = state.rawLinks || [];
+        if (!existingLinks.length) {
+          try {
+            await state.fetchLinks();
+            existingLinks = linkStore.getState().rawLinks || [];
+          } catch {}
+        }
+        if (!existingLinks.length) {
+          // Use filtered list as a fallback for suggestions to avoid empty state
+          const filtered = linkStore.getState().links || [];
+          if (filtered.length) {
+            console.log('[Suggest] Falling back to filtered links for suggestions:', filtered.length);
+            existingLinks = filtered;
+          }
+        }
+        console.log('[Suggest] Existing links available:', existingLinks.length);
+        try { await loadBoards(); } catch {}
+
+        const suggestions = suggestLabelsForDraft({ url, title: name, description }, existingLinks);
+        setLabelSuggestions(suggestions);
+        console.log('[Suggest] Label suggestions:', suggestions);
+
+        if (!autoAppliedLabels && (!labels || labels.trim().length === 0) && suggestions.length) {
+          const prefill = suggestions.slice(0, 3).join(', ');
+          if (prefill) {
+            console.log('[Suggest] Auto-prefilling labels with:', prefill);
+            setLabels(prefill);
+            setAutoAppliedLabels(true);
+          }
+        }
+
+        const p = suggestPriorityForDraft({ url, title: name, description }, existingLinks);
+        setPrioritySuggestion(p);
+        if (!autoAppliedPriority && p) {
+          console.log('[Suggest] Auto-setting priority:', p);
+          setPriority(p);
+          setAutoAppliedPriority(true);
+        }
+
+        if (!autoAppliedBoard) {
+          const bid = suggestBoardForDraft({ url, title: name, description }, existingLinks);
+          if (bid) {
+            console.log('[Suggest] Auto-selecting boardId:', bid);
+            setBoardId(bid);
+            setAutoAppliedBoard(true);
+          }
+        }
+      } catch {}
+    }, 500);
+    return () => clearTimeout(handle);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url, name, description]);
 
   return (
     <form
@@ -57,7 +131,9 @@ export const LinkForm: React.FC<Props> = ({ onSuccess, existing }) => {
               .filter(Boolean),
             priority,
             status,
+            boardId: boardId || undefined,
           });
+          console.log('[Suggest] Updated existing link with boardId:', boardId || undefined);
           setLoading(false);
           onSuccess();
           return;
@@ -119,12 +195,14 @@ export const LinkForm: React.FC<Props> = ({ onSuccess, existing }) => {
             .filter(Boolean),
           priority,
           status,
+          boardId: boardId || undefined,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
 
         // Add the placeholder link immediately.
         await addLink(link);
+        console.log('[Suggest] Created new link with boardId:', boardId || undefined);
         setLoading(false);
         onSuccess();
 
@@ -377,8 +455,64 @@ export const LinkForm: React.FC<Props> = ({ onSuccess, existing }) => {
           placeholder="research, ai, cybersecurity, tag1, tag2"
           className="py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
         />
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="text-[12px] px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
+            onClick={async () => {
+              try {
+                // Ensure we use the latest in-memory links from the dashboard
+                await linkStore.getState().fetchLinks();
+                const existingLinks = linkStore.getState().rawLinks || [];
+                const suggestions = suggestLabelsForDraft(
+                  { url, title: name, description },
+                  existingLinks,
+                );
+                setLabelSuggestions(suggestions);
+                const p = suggestPriorityForDraft({ url, title: name, description }, existingLinks);
+                setPrioritySuggestion(p);
+              } catch {}
+            }}
+          >
+            Suggest from dashboard
+          </button>
+
+          {labelSuggestions.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className="text-[12px] px-2 py-1 rounded-full border border-gray-300 hover:border-gray-400 text-gray-700"
+              onClick={() => {
+                const current = labels.split(',').map((l) => l.trim()).filter(Boolean);
+                if (!current.includes(s)) {
+                  const next = [...current, s].join(', ');
+                  setLabels(next);
+                }
+              }}
+              title="Click to add label"
+            >
+              + {s}
+            </button>
+          ))}
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Board (optional)
+            </label>
+            <select
+              value={boardId}
+              onChange={(e) => setBoardId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+            >
+              <option value="">No board</option>
+              {boards.map((b) => (
+                <option key={b.id} value={b.id}>{b.title}</option>
+              ))}
+            </select>
+          </div>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
               Priority
@@ -392,6 +526,15 @@ export const LinkForm: React.FC<Props> = ({ onSuccess, existing }) => {
               <option value="medium" className="py-2">Medium Priority</option>
               <option value="high" className="py-2">High Priority</option>
             </select>
+            {prioritySuggestion && (
+              <button
+                type="button"
+                className="text-[12px] mt-1 text-blue-700 hover:text-blue-900 underline"
+                onClick={() => setPriority(prioritySuggestion)}
+              >
+                Apply suggested: {prioritySuggestion}
+              </button>
+            )}
           </div>
           
           <div className="space-y-2">

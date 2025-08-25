@@ -95,3 +95,6 @@ Use `await db.clearAll()` to remove data across tables. This runs in safe, separ
 - Error paths use `logError(scope, error)` for consistent reporting.
 
 
+
+
+

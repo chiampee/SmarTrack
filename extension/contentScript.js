@@ -139,7 +139,7 @@ try {
     window.__SRT_cachedLinks = [];
   }
 } catch (_) {}
-let __SRT_cachedLinks = (typeof window !== 'undefined' && window.__SRT_cachedLinks) || [];
+var __SRT_cachedLinks = (typeof window !== 'undefined' && window.__SRT_cachedLinks) || [];
 try { if (typeof window !== 'undefined') window.__SRT_cachedLinks = __SRT_cachedLinks; } catch (_) {}
 
 // Safe helpers to read/write links without requiring live chrome.* context

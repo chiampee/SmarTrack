@@ -5,211 +5,296 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Extension Test Page</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        .test-section {
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        .status {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-        }
-        .success { background-color: #d4edda; color: #155724; }
-        .error { background-color: #f8d7da; color: #721c24; }
-        .info { background-color: #d1ecf1; color: #0c5460; }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { margin: 5px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 4px; max-height: 300px; overflow-y: auto; }
     </style>
 </head>
 <body>
-    <h1>Smart Research Tracker Extension Test</h1>
+    <h1>🔧 Smart Research Tracker Extension Test</h1>
     
-    <div class="test-section">
-        <h2>Extension Status</h2>
-        <div id="extensionStatus" class="status info">Checking extension status...</div>
-        <button onclick="checkExtension()">Check Extension</button>
+    <div class="test-section info">
+        <h3>📋 Test Instructions</h3>
+        <ol>
+            <li>Make sure the extension is loaded in Chrome (<code>chrome://extensions/</code>)</li>
+            <li>Click "Check Extension Status" below</li>
+            <li>If extension is working, try "Test Link Storage"</li>
+            <li>Check the console and logs below for detailed information</li>
+        </ol>
     </div>
 
-    <div class="test-section">
-        <h2>Content Script Test</h2>
-        <div id="contentScriptStatus" class="status info">Checking content script...</div>
-        <button onclick="testContentScript()">Test Content Script</button>
+    <div class="test-section info">
+        <h3>🔍 Extension Detection</h3>
+        <button onclick="checkExtensionStatus()">Check Extension Status</button>
+        <div id="extension-status">Click button to check...</div>
     </div>
 
-    <div class="test-section">
-        <h2>Data Extraction Test</h2>
-        <div id="extractionStatus" class="status info">Ready to test extraction...</div>
-        <button onclick="testExtraction()">Test Data Extraction</button>
-        <div id="extractionResult" style="margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 5px; display: none;"></div>
+    <div class="test-section info">
+        <h3>💾 Link Storage Test</h3>
+        <button onclick="testLinkStorage()">Test Link Storage</button>
+        <button onclick="addTestLink()">Add Test Link</button>
+        <button onclick="getAllLinks()">Get All Links</button>
+        <div id="link-storage-results"></div>
     </div>
 
-    <div class="test-section">
-        <h2>Storage Test</h2>
-        <div id="storageStatus" class="status info">Ready to test storage...</div>
-        <button onclick="testStorage()">Test Storage</button>
-        <button onclick="clearStorage()">Clear Storage</button>
+    <div class="test-section info">
+        <h3>📡 Message Communication Test</h3>
+        <button onclick="testMessageCommunication()">Test Message Communication</button>
+        <div id="message-results"></div>
+    </div>
+
+    <div class="test-section info">
+        <h3>📝 Console Log</h3>
+        <div id="console-log" class="log"></div>
+        <button onclick="clearLog()">Clear Log</button>
     </div>
 
     <script>
-        // Check if extension is loaded
-        function checkExtension() {
-            const statusDiv = document.getElementById('extensionStatus');
-            
-            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
-                statusDiv.className = 'status success';
-                statusDiv.textContent = '✅ Extension is loaded and active';
-            } else {
-                statusDiv.className = 'status error';
-                statusDiv.textContent = '❌ Extension not detected';
-            }
+        // Console logging
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('console-log');
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logEntry.className = type;
+            logDiv.appendChild(logEntry);
+            console.log(`[${timestamp}] ${message}`);
         }
 
-        // Test content script
-        function testContentScript() {
-            const statusDiv = document.getElementById('contentScriptStatus');
-            
-            if (window.SRTContentScript) {
-                statusDiv.className = 'status success';
-                statusDiv.textContent = '✅ Content script is loaded';
-            } else {
-                statusDiv.className = 'status error';
-                statusDiv.textContent = '❌ Content script not found';
-            }
+        function clearLog() {
+            document.getElementById('console-log').innerHTML = '';
         }
 
-        // Test data extraction
-        async function testExtraction() {
-            const statusDiv = document.getElementById('extractionStatus');
-            const resultDiv = document.getElementById('extractionResult');
+        // Check if extension is installed and accessible
+        function checkExtensionStatus() {
+            const statusDiv = document.getElementById('extension-status');
+            statusDiv.innerHTML = 'Checking...';
             
-            try {
-                statusDiv.className = 'status info';
-                statusDiv.textContent = '🔄 Testing data extraction...';
-                
-                let extractedData;
-                
-                if (window.SRTContentScript?.extractPageData) {
-                    extractedData = await window.SRTContentScript.extractPageData();
+            log('🔍 Starting extension status check...');
+            
+            // Method 1: Check for extension presence markers
+            const hasExtensionMarkers = document.documentElement.hasAttribute('data-smart-research-tracker') ||
+                                       document.querySelector('[data-smart-research-tracker]');
+            
+            log(`Extension markers: ${hasExtensionMarkers ? '✅ Found' : '❌ Not found'}`);
+            
+            // Method 2: Check for chrome runtime
+            const hasChromeRuntime = typeof chrome !== 'undefined' && chrome.runtime;
+            log(`Chrome runtime: ${hasChromeRuntime ? '✅ Available' : '❌ Not available'}`);
+            
+            // Method 3: Check for chrome.storage
+            const hasChromeStorage = typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local;
+            log(`Chrome storage: ${hasChromeStorage ? '✅ Available' : '❌ Not available'}`);
+            
+            // Method 4: Try to send a ping message
+            let pingResponse = false;
+            const messageId = 'ping-' + Date.now();
+            
+            const handlePingResponse = (event) => {
+                if (event.data && event.data.type === 'SRT_PONG' && event.data.messageId === messageId) {
+                    pingResponse = true;
+                    window.removeEventListener('message', handlePingResponse);
+                    log('✅ Extension responded to ping');
+                }
+            };
+            
+            window.addEventListener('message', handlePingResponse);
+            
+            // Send ping
+            log('📤 Sending ping message to extension...');
+            window.postMessage({
+                type: 'SRT_PING',
+                messageId: messageId
+            }, '*');
+            
+            // Wait a bit for response
+            setTimeout(() => {
+                let status = '';
+                if (hasExtensionMarkers) {
+                    status += '✅ Extension markers detected<br>';
                 } else {
-                    // Fallback extraction
-                    extractedData = {
-                        title: document.title || '',
-                        description: document.querySelector('meta[name="description"]')?.content || '',
-                        text: document.body?.innerText || '',
-                        metadata: {
-                            author: document.querySelector('meta[name="author"]')?.content || '',
-                            publishedTime: document.querySelector('meta[property="article:published_time"]')?.content || '',
-                            siteName: document.querySelector('meta[property="og:site_name"]')?.content || ''
-                        }
-                    };
+                    status += '❌ No extension markers found<br>';
                 }
                 
-                statusDiv.className = 'status success';
-                statusDiv.textContent = '✅ Data extraction successful';
+                if (hasChromeRuntime) {
+                    status += '✅ Chrome runtime available<br>';
+                } else {
+                    status += '❌ Chrome runtime not available<br>';
+                }
                 
-                resultDiv.style.display = 'block';
-                resultDiv.innerHTML = `
-                    <h4>Extracted Data:</h4>
-                    <p><strong>Title:</strong> ${extractedData.title}</p>
-                    <p><strong>Description:</strong> ${extractedData.description}</p>
-                    <p><strong>Text Length:</strong> ${extractedData.text?.length || 0} characters</p>
-                    <p><strong>Author:</strong> ${extractedData.metadata?.author || 'Not found'}</p>
-                    <p><strong>Published:</strong> ${extractedData.metadata?.publishedTime || 'Not found'}</p>
-                    <p><strong>Site Name:</strong> ${extractedData.metadata?.siteName || 'Not found'}</p>
-                `;
+                if (hasChromeStorage) {
+                    status += '✅ Chrome storage available<br>';
+                } else {
+                    status += '❌ Chrome storage not available<br>';
+                }
                 
-            } catch (error) {
-                statusDiv.className = 'status error';
-                statusDiv.textContent = `❌ Extraction failed: ${error.message}`;
-                console.error('Extraction error:', error);
+                if (pingResponse) {
+                    status += '✅ Extension responded to ping<br>';
+                } else {
+                    status += '❌ Extension did not respond to ping<br>';
+                }
+                
+                statusDiv.innerHTML = status;
+                
+                if (hasExtensionMarkers || hasChromeRuntime || hasChromeStorage || pingResponse) {
+                    statusDiv.className = 'test-section success';
+                } else {
+                    statusDiv.className = 'test-section error';
+                }
+                
+                log(`Extension status check complete. Markers: ${hasExtensionMarkers}, Runtime: ${hasChromeRuntime}, Storage: ${hasChromeStorage}, Ping: ${pingResponse}`);
+            }, 2000);
+        }
+
+        // Test link storage directly
+        function testLinkStorage() {
+            const resultsDiv = document.getElementById('link-storage-results');
+            resultsDiv.innerHTML = 'Testing...';
+            
+            log('💾 Testing link storage...');
+            
+            // Try to access chrome.storage directly
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                log('✅ Chrome storage available, testing access...');
+                chrome.storage.local.get(['links'], (result) => {
+                    const links = result.links || [];
+                    log(`📊 Chrome storage test: Found ${links.length} links`);
+                    resultsDiv.innerHTML = `
+                        <h4>Chrome Storage Results:</h4>
+                        <p>Found ${links.length} links in storage</p>
+                        <pre>${JSON.stringify(links, null, 2)}</pre>
+                    `;
+                });
+            } else {
+                log('❌ Chrome storage not available');
+                resultsDiv.innerHTML = '<p>Chrome storage not available</p>';
             }
         }
 
-        // Test storage
-        async function testStorage() {
-            const statusDiv = document.getElementById('storageStatus');
+        // Add a test link
+        function addTestLink() {
+            log('➕ Adding test link...');
             
-            try {
-                statusDiv.className = 'status info';
-                statusDiv.textContent = '🔄 Testing storage...';
-                
-                // Test chrome.storage.local
-                const testData = { test: 'data', timestamp: Date.now() };
-                
-                await new Promise((resolve, reject) => {
-                    chrome.storage.local.set(testData, () => {
+            const testLink = {
+                id: 'test-' + Date.now(),
+                url: 'https://example.com/test',
+                metadata: {
+                    title: 'Test Link',
+                    description: 'This is a test link for debugging'
+                },
+                labels: ['test', 'debug'],
+                priority: 'medium',
+                status: 'active',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.get(['links'], (result) => {
+                    const links = result.links || [];
+                    links.push(testLink);
+                    chrome.storage.local.set({ links }, () => {
                         if (chrome.runtime.lastError) {
-                            reject(chrome.runtime.lastError);
+                            log(`❌ Failed to add test link: ${chrome.runtime.lastError.message}`);
                         } else {
-                            resolve();
+                            log(`✅ Test link added successfully: ${testLink.url}`);
+                            document.getElementById('link-storage-results').innerHTML = `
+                                <h4>Test Link Added:</h4>
+                                <pre>${JSON.stringify(testLink, null, 2)}</pre>
+                            `;
                         }
                     });
                 });
-                
-                const result = await new Promise((resolve, reject) => {
-                    chrome.storage.local.get(['test'], (res) => {
-                        if (chrome.runtime.lastError) {
-                            reject(chrome.runtime.lastError);
-                        } else {
-                            resolve(res);
-                        }
-                    });
-                });
-                
-                if (result.test) {
-                    statusDiv.className = 'status success';
-                    statusDiv.textContent = '✅ Storage test successful';
-                } else {
-                    throw new Error('Data not retrieved');
-                }
-                
-            } catch (error) {
-                statusDiv.className = 'status error';
-                statusDiv.textContent = `❌ Storage test failed: ${error.message}`;
-                console.error('Storage error:', error);
+            } else {
+                log('❌ Cannot add test link - Chrome storage not available');
             }
         }
 
-        // Clear storage
-        function clearStorage() {
-            const statusDiv = document.getElementById('storageStatus');
+        // Get all links
+        function getAllLinks() {
+            const resultsDiv = document.getElementById('link-storage-results');
+            resultsDiv.innerHTML = 'Fetching...';
             
-            chrome.storage.local.clear(() => {
-                if (chrome.runtime.lastError) {
-                    statusDiv.className = 'status error';
-                    statusDiv.textContent = `❌ Clear failed: ${chrome.runtime.lastError.message}`;
-                } else {
-                    statusDiv.className = 'status success';
-                    statusDiv.textContent = '✅ Storage cleared successfully';
-                }
-            });
+            log('📥 Fetching all links...');
+            
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.get(['links'], (result) => {
+                    const links = result.links || [];
+                    log(`📊 Retrieved ${links.length} links from storage`);
+                    resultsDiv.innerHTML = `
+                        <h4>All Links in Storage:</h4>
+                        <p>Total: ${links.length} links</p>
+                        <pre>${JSON.stringify(links, null, 2)}</pre>
+                    `;
+                });
+            } else {
+                resultsDiv.innerHTML = '<p>Chrome storage not available</p>';
+                log('❌ Chrome storage not available');
+            }
         }
+
+        // Test message communication
+        function testMessageCommunication() {
+            const resultsDiv = document.getElementById('message-results');
+            resultsDiv.innerHTML = 'Testing...';
+            
+            log('📡 Testing message communication...');
+            
+            const messageId = 'test-' + Date.now();
+            let responseReceived = false;
+            
+            const handleResponse = (event) => {
+                if (event.data && event.data.type === 'SRT_LINKS_RESPONSE' && event.data.messageId === messageId) {
+                    responseReceived = true;
+                    const links = event.data.links || [];
+                    log(`✅ Message communication test: Received ${links.length} links`);
+                    resultsDiv.innerHTML = `
+                        <h4>Message Communication Test:</h4>
+                        <p>✅ Extension responded with ${links.length} links</p>
+                        <pre>${JSON.stringify(links, null, 2)}</pre>
+                    `;
+                    window.removeEventListener('message', handleResponse);
+                }
+            };
+            
+            window.addEventListener('message', handleResponse);
+            
+            // Request links
+            log('📤 Sending SRT_GET_LINKS message...');
+            window.postMessage({
+                type: 'SRT_GET_LINKS',
+                messageId: messageId
+            }, '*');
+            
+            // Timeout after 3 seconds
+            setTimeout(() => {
+                if (!responseReceived) {
+                    resultsDiv.innerHTML = `
+                        <h4>Message Communication Test:</h4>
+                        <p>❌ No response received from extension</p>
+                        <p>This suggests the extension content script is not loaded or not responding</p>
+                    `;
+                    log('❌ Message communication test: No response received');
+                }
+            }, 3000);
+        }
+
+        // Listen for any messages from the extension
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type) {
+                log(`📨 Received message: ${event.data.type}`, 'info');
+            }
+        });
 
         // Auto-check on load
         window.addEventListener('load', () => {
-            setTimeout(() => {
-                checkExtension();
-                testContentScript();
-            }, 1000);
+            log('🚀 Page loaded, ready for testing...');
         });
     </script>
 </body>
