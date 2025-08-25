@@ -32,6 +32,17 @@ A powerful browser extension and web dashboard for saving, organizing, and analy
 
 ## 🚀 Quick Start
 
+### Use it without any development setup (recommended for users)
+
+- **Hosted Dashboard**: [smart-research-tracker (Vercel)](https://smart-research-tracker-jjh48shzs-chiampees-projects.vercel.app)
+- **Install the Extension**:
+  1) Open Chrome → go to `chrome://extensions/`
+  2) Enable Developer mode
+  3) Click "Load unpacked" and select the `extension/` folder in this repo
+  4) In the popup (⚙️), make sure Dashboard URL points to the hosted URL above (it defaults to it)
+
+That’s it. Click the extension icon on any page and press "Save to Research"; click "Dashboard" in the popup to open your hosted dashboard.
+
 ### Prerequisites
 - **Node.js** (v16 or higher)
 - **pnpm** (recommended) or npm
@@ -90,7 +101,10 @@ npm run dev
 pnpm run start:mac
 ```
 
-The dashboard will be available at: **http://localhost:5173**
+The dashboard will be available at:
+
+- **Hosted (no dev needed)**: [https://smart-research-tracker-jjh48shzs-chiampees-projects.vercel.app](https://smart-research-tracker-jjh48shzs-chiampees-projects.vercel.app)
+- **Local dev**: `http://localhost:5173`
 
 > **Note**: The development server will automatically reload when you make changes to the code.
 
@@ -173,7 +187,7 @@ If you used `scripts\install.bat`, you get additional Windows features:
 
 ### Using the Dashboard
 
-1. **Open the dashboard** at http://localhost:5173
+1. **Open the dashboard** at [https://smart-research-tracker-jjh48shzs-chiampees-projects.vercel.app](https://smart-research-tracker-jjh48shzs-chiampees-projects.vercel.app) (or `http://localhost:5173` in dev)
 2. **Add Link** from the sidebar under **Quick Actions** (this is the only place with the Add Link button)
 3. **View your saved links** in a clean, filterable list
 4. **Filter and search** by labels, status, or text
@@ -316,7 +330,8 @@ Smart Research Tracker includes a comprehensive error handling system with user-
 - [Chat Troubleshooting](docs/chat-troubleshooting.md) - Chat functionality troubleshooting
 - [Database Schema](docs/database-schema.md) - IndexedDB (Dexie) tables, indexes, and migrations
 - [Troubleshooting Guide](TROUBLESHOOTING.md) - Common issues and solutions
-- [Test Page](http://localhost:5173/test-extension.html) - Diagnostic tools
+- [Test Page (hosted)](https://smart-research-tracker-jjh48shzs-chiampees-projects.vercel.app/test-extension.html) - Diagnostic tools
+- [Test Page (local dev)](http://localhost:5173/test-extension.html) - Diagnostic tools
 
 ## 🧪 Testing
 
