@@ -516,8 +516,8 @@ document.getElementById('openDashboardBtn')?.addEventListener('click', async () 
     updateButton(btn, '🔄 Opening...', true);
     
     const settings = await getStorageSync({
-              dashboardUrl: 'http://localhost:5174/',
-      fallbackUrl: 'https://smartresearchtracker.vercel.app/'
+              dashboardUrl: 'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/',
+      fallbackUrl: 'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/'
     });
 
     // Try to open dashboard
@@ -573,7 +573,7 @@ document.getElementById('closeMinimalSettings')?.addEventListener('click', () =>
 async function loadMinimalSettings() {
   try {
     const settings = await getStorageSync({
-              dashboardUrl: 'http://localhost:5174/',
+              dashboardUrl: 'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/',
       autoFillTitle: true,
       autoClose: true
     });
@@ -595,7 +595,7 @@ async function loadMinimalSettings() {
 document.getElementById('saveMinimalSettings')?.addEventListener('click', async () => {
   try {
     const settings = {
-              dashboardUrl: document.getElementById('minimalDashboardUrl')?.value?.trim() || 'http://localhost:5174/',
+              dashboardUrl: document.getElementById('minimalDashboardUrl')?.value?.trim() || 'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/',
       autoFillTitle: document.getElementById('minimalAutoFill')?.checked || false,
       autoClose: document.getElementById('minimalAutoClose')?.checked || false
     };
@@ -671,7 +671,7 @@ function getStorageSync(keys) {
   const result = {};
   keys && Object.keys(keys).forEach?.(() => {}); // noop to satisfy shapes
   return Promise.resolve({
-    dashboardUrl: localStorage.getItem('srt_dashboardUrl') || 'http://localhost:5174/',
+    dashboardUrl: localStorage.getItem('srt_dashboardUrl') || 'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/',
     autoFillTitle: localStorage.getItem('srt_autoFillTitle') === 'true',
     autoClose: localStorage.getItem('srt_autoClose') !== 'false',
   });

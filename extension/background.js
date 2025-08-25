@@ -385,6 +385,7 @@ class EnhancedLinkProcessor {
       'https://localhost:5174/*',
       'https://localhost:5173/*',
       'https://smartresearchtracker.vercel.app/*',
+      'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/*',
       'http://127.0.0.1:5174/*',
       'http://127.0.0.1:5173/*',
       'https://127.0.0.1:5174/*',
@@ -574,6 +575,7 @@ class EnhancedLinkProcessor {
         'http://localhost:5174/*',
         'http://localhost:5173/*', 
         'https://smartresearchtracker.vercel.app/*',
+        'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/*',
         'http://127.0.0.1:5174/*',
         'http://127.0.0.1:5173/*'
       ];
@@ -621,6 +623,7 @@ class EnhancedLinkProcessor {
         'http://localhost:5174/*',
         'http://localhost:5173/*', 
         'https://smartresearchtracker.vercel.app/*',
+        'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/*',
         'http://127.0.0.1:5174/*',
         'http://127.0.0.1:5173/*'
       ];
@@ -696,7 +699,7 @@ class EnhancedLinkProcessor {
   async getApiBase() {
     return new Promise((resolve) => {
       chrome.storage.local.get(['apiBase'], (res) => {
-        resolve(res.apiBase || 'https://smartresearchtracker.vercel.app');
+        resolve(res.apiBase || 'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app');
       });
     });
   }
@@ -1028,7 +1031,8 @@ async function openDashboard() {
     'http://localhost:5173/',
     'http://127.0.0.1:5174/',
     'http://127.0.0.1:5173/',
-    'https://smartresearchtracker.vercel.app/'
+    'https://smartresearchtracker.vercel.app/',
+    'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/'
   ];
 
   for (const url of urls) {
