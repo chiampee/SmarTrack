@@ -4,6 +4,32 @@ A powerful browser extension and web dashboard for saving, organizing, and analy
 
 ![Smart Research Tracker](https://img.shields.io/badge/Version-1.1.0-blue) ![License](https://img.shields.io/badge/License-MIT-green) ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-orange) ![Status](https://img.shields.io/badge/Status-Stable-green)
 
+## Start here (60 seconds)
+
+1) Build and open the dashboard
+- macOS/Linux:
+```bash
+pnpm install && pnpm build && open dist/index.html
+```
+- Windows (PowerShell):
+```powershell
+npm install; npm run build; start dist\index.html
+```
+
+2) Load the Chrome extension
+- Visit `chrome://extensions` → enable Developer mode → "Load unpacked" → select the `extension/` folder
+- In extension Details, enable "Allow access to file URLs"
+
+3) Point the extension to your dashboard
+- Click the extension → gear (⚙️) → set Dashboard URL:
+  - macOS/Linux: `file:///ABSOLUTE/PATH/TO/dist/index.html`
+  - Windows: `file:///C:/ABSOLUTE/PATH/TO/dist/index.html`
+
+4) Optional: enable AI chat
+- In the dashboard → Settings → toggle "Use my OpenAI API key" → paste your key
+
+Done. Click the extension on any page → Save to Research → open Dashboard.
+
 ## ✨ Features
 
 - 🔗 **Smart Link Saving** - Save web pages with automatic metadata extraction
