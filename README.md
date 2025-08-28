@@ -30,6 +30,15 @@ npm install; npm run build; start dist\index.html
 
 Done. Click the extension on any page → Save to Research → open Dashboard.
 
+### Pick one install path
+- Local file (no hosting): use the steps above. Fastest way to start.
+- Vercel (optional): import repo → deploy → set Dashboard URL to your Vercel URL.
+
+### Troubleshooting (quick)
+- Dashboard won’t open: check the Dashboard URL (must be file:///…/dist/index.html or your https URL).
+- Chat not working: in Dashboard → Settings, enable “Use my OpenAI API key” and paste your key.
+- Extension can’t access local file: in chrome://extensions, enable “Allow access to file URLs”.
+
 ## ✨ Features
 
 - 🔗 **Smart Link Saving** - Save web pages with automatic metadata extraction
