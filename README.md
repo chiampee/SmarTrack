@@ -49,6 +49,32 @@ Optional: Local development
 - `pnpm install` → `pnpm dev` → open `http://localhost:5173`.
 - In the extension settings, set Dashboard URL to `http://localhost:5173`.
 
+## 🛠️ Installation
+
+Prerequisites
+- Node.js 18+ (recommended), pnpm or npm, Chrome/Chromium
+
+Option A — Local file (no hosting)
+- Build: macOS/Linux `pnpm install && pnpm build && open dist/index.html`; Windows `npm install && npm run build && start dist\index.html`
+- Load the extension: `chrome://extensions` → enable Developer mode → "Load unpacked" → select the `extension/` folder
+- In extension Details, enable "Allow access to file URLs"
+- In the popup (⚙️), set Dashboard URL to your file path, e.g.:
+  - macOS/Linux: `file:///ABSOLUTE/PATH/TO/dist/index.html`
+  - Windows: `file:///C:/ABSOLUTE/PATH/TO/dist/index.html`
+- AI chat: open Dashboard → Settings → enable "Use my OpenAI API key" and paste your key
+
+Option B — Static hosting (GitHub Pages/Cloudflare/Netlify/etc.)
+- Build: `pnpm build`
+- Deploy the `dist/` folder to any static host
+- In the extension popup (⚙️), set Dashboard URL to your site URL (e.g. `https://your-site.example`)
+- AI chat: users can add their own OpenAI key in Dashboard Settings; no server needed
+
+Option C — Vercel (serverless, optional)
+- Import the repo to Vercel and deploy (uses `vercel.json`)
+- Optional server-only providers: set `TOGETHER_API_KEY`, `GROQ_API_KEY`, `FIREWORKS_API_KEY` in Vercel env
+- Do not set any `VITE_*` keys unless you want client-side access
+- The dashboard will use `/api/chat` automatically when deployed
+
 ### 🍎 macOS-Specific Features
 
 If you used `pnpm run setup:mac`, you get additional macOS features:
