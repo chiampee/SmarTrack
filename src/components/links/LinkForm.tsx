@@ -5,7 +5,7 @@ import { useLinkStore } from '../../stores/linkStore';
 import { linkStore } from '../../stores/linkStore';
 import { fetchMetadata } from '../../utils/metadata';
 import { aiService } from '../../services/aiService';
-import { suggestLabelsForDraft, suggestPriorityForDraft, suggestBoardForDraft } from '../../services/suggestionService';
+import { suggestLabelsForDraft, suggestPriorityForDraft, suggestBoardForDraft } from '../../services';
 import { useBoardStore } from '../../stores/boardStore';
 
 interface Props {
