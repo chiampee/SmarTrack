@@ -384,12 +384,11 @@ class EnhancedLinkProcessor {
       'http://localhost:5173/*', 
       'https://localhost:5174/*',
       'https://localhost:5173/*',
-      'https://smartresearchtracker.vercel.app/*',
-      'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/*',
       'http://127.0.0.1:5174/*',
       'http://127.0.0.1:5173/*',
       'https://127.0.0.1:5174/*',
-      'https://127.0.0.1:5173/*'
+      'https://127.0.0.1:5173/*',
+      'file://*/*'
     ];
 
     try {
@@ -573,11 +572,10 @@ class EnhancedLinkProcessor {
     try {
       const APP_URL_PATTERNS = [
         'http://localhost:5174/*',
-        'http://localhost:5173/*', 
-        'https://smartresearchtracker.vercel.app/*',
-        'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/*',
+        'http://localhost:5173/*',
         'http://127.0.0.1:5174/*',
-        'http://127.0.0.1:5173/*'
+        'http://127.0.0.1:5173/*',
+        'file://*/*'
       ];
 
       const allTabs = await this.queryTabs(APP_URL_PATTERNS);
@@ -621,11 +619,10 @@ class EnhancedLinkProcessor {
 
           const APP_URL_PATTERNS = [
         'http://localhost:5174/*',
-        'http://localhost:5173/*', 
-        'https://smartresearchtracker.vercel.app/*',
-        'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/*',
+        'http://localhost:5173/*',
         'http://127.0.0.1:5174/*',
-        'http://127.0.0.1:5173/*'
+        'http://127.0.0.1:5173/*',
+        'file://*/*'
       ];
 
     try {
@@ -698,8 +695,10 @@ class EnhancedLinkProcessor {
 
   async getApiBase() {
     return new Promise((resolve) => {
-      chrome.storage.local.get(['apiBase'], (res) => {
-        resolve(res.apiBase || 'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app');
+      chrome.storage.local.get(['apiBase', 'dashboardUrl'], (res) => {
+        const stored = res.apiBase || res.dashboardUrl || '';
+        if (stored && /^https?:\/\//i.test(stored)) return resolve(stored.replace(/\/?$/,'') );
+        resolve('http://localhost:5174');
       });
     });
   }
@@ -1026,30 +1025,42 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 // Dashboard opening with fallback
 async function openDashboard() {
-  const urls = [
+  try {
+    // Try user-configured dashboard URL first (supports file:/// and http(s))
+    const syncSettings = await new Promise((resolve) => chrome.storage.sync.get({ dashboardUrl: '' }, resolve));
+    const localSettings = await new Promise((resolve) => chrome.storage.local.get({ apiBase: '', dashboardUrl: '' }, resolve));
+    const candidates = [syncSettings.dashboardUrl, localSettings.dashboardUrl, localSettings.apiBase].filter(Boolean);
+    for (const u of candidates) {
+      try {
+        if (u) {
+          await new Promise((resolve, reject) => {
+            chrome.tabs.create({ url: u }, (tab) => {
+              if (chrome.runtime.lastError) reject(chrome.runtime.lastError); else resolve(tab);
+            });
+          });
+          return;
+        }
+      } catch (_) {}
+    }
+  } catch (e) {
+    // fall through to defaults
+  }
+
+  const defaults = [
     'http://localhost:5174/',
     'http://localhost:5173/',
     'http://127.0.0.1:5174/',
-    'http://127.0.0.1:5173/',
-    'https://smartresearchtracker.vercel.app/',
-    'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/'
+    'http://127.0.0.1:5173/'
   ];
-
-  for (const url of urls) {
+  for (const url of defaults) {
     try {
       await new Promise((resolve, reject) => {
         chrome.tabs.create({ url }, (tab) => {
-          if (chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError);
-          } else {
-            resolve(tab);
-          }
+          if (chrome.runtime.lastError) reject(chrome.runtime.lastError); else resolve(tab);
         });
       });
-      return; // Success
-    } catch (error) {
-      console.debug('[SRT] Failed to open dashboard at:', url);
-    }
+      return;
+    } catch (_) {}
   }
 
   // All URLs failed
@@ -1132,7 +1143,7 @@ chrome.runtime.onStartup.addListener(() => {
 // Handle tab updates to flush queue when dashboard opens
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && 
-      (tab.url?.includes('localhost:5173') || tab.url?.includes('localhost:5174') || tab.url?.includes('smartresearchtracker.vercel.app'))) {
+      (tab.url?.startsWith('file:///') || tab.url?.includes('localhost:5173') || tab.url?.includes('localhost:5174'))) {
     // Dashboard tab loaded, flush pending queue
     setTimeout(() => linkProcessor.flushPendingQueue(), 1000);
   }

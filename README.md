@@ -30,127 +30,24 @@ A powerful browser extension and web dashboard for saving, organizing, and analy
 - Content script simplified (no IndexedDB) and uses safe cached storage
 - Add Link is now available only from Quick Actions in the sidebar
 
-## 🚀 Quick Start
+## 🚀 Quick Start (2 minutes)
 
-### Use it without any development setup (recommended for users)
+1) Deploy the dashboard (Vercel)
+- Import or fork this repo in `vercel.com` and deploy. No changes needed; `vercel.json` is configured.
+- Optional env vars (server-side only): `TOGETHER_API_KEY`, `GROQ_API_KEY`, `FIREWORKS_API_KEY`.
+- Do not set any `VITE_*` keys unless you explicitly want client-side access.
 
-- **Hosted Dashboard**: [smart-research-tracker (Vercel)](https://smart-research-tracker-jjh48shzs-chiampees-projects.vercel.app)
-- **Install the Extension**:
-  1) Open Chrome → go to `chrome://extensions/`
-  2) Enable Developer mode
-  3) Click "Load unpacked" and select the `extension/` folder in this repo
-  4) In the popup (⚙️), make sure Dashboard URL points to the hosted URL above (it defaults to it)
+2) Install the Chrome extension
+- Go to `chrome://extensions` → enable Developer mode → "Load unpacked" → select the `extension/` folder.
+- In the popup (⚙️), set Dashboard URL to your Vercel URL, e.g. `https://YOUR-APP.vercel.app`.
 
-That’s it. Click the extension icon on any page and press "Save to Research"; click "Dashboard" in the popup to open your hosted dashboard.
+3) Use it
+- Click the extension on any page → Save to Research.
+- Open "Dashboard" from the popup to manage and chat.
 
-### Prerequisites
-- **Node.js** (v16 or higher)
-- **pnpm** (recommended) or npm
-- **Chrome/Chromium browser**
-
-#### macOS Users
-- **Homebrew** (automatically installed if missing)
-- **Apple Silicon Macs**: Automatic ARM64 support
-- **Intel Macs**: Full compatibility
-- **📖 Detailed guide**: [macOS Installation Guide](docs/macos-installation.md)
-
-#### Windows Users
-- **Windows 10/11** (64-bit recommended)
-- **Node.js v16+** from [nodejs.org](https://nodejs.org/)
-- **Chrome/Edge browser** for extension
-- **📖 Detailed guide**: [Windows Installation Guide](docs/windows-installation.md)
-
-### 1. Clone & Install
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/smart-research-tracker.git
-cd smart-research-tracker
-
-# Quick installation (recommended)
-# For macOS (with Homebrew and optimizations):
-pnpm run setup:mac
-
-# For other Unix systems (Linux, etc.):
-pnpm run setup
-
-# For Windows:
-scripts\install.bat
-
-# Manual installation (if scripts don't work):
-pnpm install
-# or
-npm install
-```
-
-> **Note**: The installation scripts will automatically:
-> - Check for Node.js v16+ and install if needed
-> - Install pnpm package manager
-> - Install project dependencies
-> - Create a `.env.local` file for API keys
-
-### 2. Start the Development Server
-
-```bash
-# Start the development server
-pnpm dev
-# or
-npm run dev
-
-# macOS users can also use:
-pnpm run start:mac
-```
-
-The dashboard will be available at:
-
-- **Hosted (no dev needed)**: [https://smart-research-tracker-jjh48shzs-chiampees-projects.vercel.app](https://smart-research-tracker-jjh48shzs-chiampees-projects.vercel.app)
-- **Local dev**: `http://localhost:5173`
-
-> **Note**: The development server will automatically reload when you make changes to the code.
-
-### 3. Install the Browser Extension
-
-#### Method 1: Load Unpacked Extension (Recommended for Development)
-
-1. **Open Chrome Extensions Page**
-   - Navigate to `chrome://extensions/`
-   - Enable **"Developer mode"** (toggle in top-right)
-
-2. **Load the Extension**
-   - Click **"Load unpacked"**
-   - Select the `extension/` folder from this project
-   - The extension should appear in your extensions list
-
-3. **Verify Installation**
-   - Look for "Smart Research Tracker" in your extensions
-   - The extension icon should appear in your browser toolbar
-
-#### Method 2: Build & Install (Production)
-
-```bash
-# Build the extension
-pnpm build:extension
-# or
-npm run build:extension
-
-# Then load the built extension from the dist/extension folder
-```
-
-### 4. Configure API Keys (Optional)
-
-For AI features, you can optionally set up API keys:
-
-1. **Open the Dashboard** at http://localhost:5173
-2. **Go to Settings** (gear icon) or use the diagnostic modal
-3. **Add your API keys**:
-   - OpenAI API Key (for GPT-4 summaries)
-   - Mistral API Key (alternative AI provider)
-   - Together AI Key (another alternative)
-   - Or use the built-in free AI providers
-
-> **Note**: The app works without API keys using free AI providers!
-> 
-> **Quick Setup**: Run `pnpm run setup:env` to quickly configure your OpenAI API key.
+Optional: Local development
+- `pnpm install` → `pnpm dev` → open `http://localhost:5173`.
+- In the extension settings, set Dashboard URL to `http://localhost:5173`.
 
 ### 🍎 macOS-Specific Features
 
@@ -187,7 +84,7 @@ If you used `scripts\install.bat`, you get additional Windows features:
 
 ### Using the Dashboard
 
-1. **Open the dashboard** at [https://smart-research-tracker-jjh48shzs-chiampees-projects.vercel.app](https://smart-research-tracker-jjh48shzs-chiampees-projects.vercel.app) (or `http://localhost:5173` in dev)
+1. Open the dashboard at your deployed URL or `http://localhost:5173` (dev)
 2. **Add Link** from the sidebar under **Quick Actions** (this is the only place with the Add Link button)
 3. **View your saved links** in a clean, filterable list
 4. **Filter and search** by labels, status, or text
@@ -256,26 +153,9 @@ pnpm test:db          # Test database operations
 pnpm db:reset         # Reset database (development only)
 ```
 
-### Environment Variables
-
-Create a `.env.local` file for API keys:
-
-```env
-# OpenAI (optional)
-VITE_OPENAI_API_KEY=your_openai_key_here
-
-# Mistral (optional)
-VITE_MISTRAL_API_KEY=your_mistral_key_here
-
-# Together AI (optional)
-VITE_TOGETHER_API_KEY=your_together_key_here
-
-# Groq (optional)
-VITE_GROQ_API_KEY=your_groq_key_here
-
-# Fireworks AI (optional)
-VITE_FIREWORKS_API_KEY=your_fireworks_key_here
-```
+### Environment (optional)
+- Server-side (recommended): set on Vercel – `TOGETHER_API_KEY`, `GROQ_API_KEY`, `FIREWORKS_API_KEY`.
+- Client-side `VITE_*` keys are not required; the app defaults to the serverless `/api/chat`.
 
 ## 🔧 Error Handling & Troubleshooting
 
@@ -330,7 +210,7 @@ Smart Research Tracker includes a comprehensive error handling system with user-
 - [Chat Troubleshooting](docs/chat-troubleshooting.md) - Chat functionality troubleshooting
 - [Database Schema](docs/database-schema.md) - IndexedDB (Dexie) tables, indexes, and migrations
 - [Troubleshooting Guide](TROUBLESHOOTING.md) - Common issues and solutions
-- [Test Page (hosted)](https://smart-research-tracker-jjh48shzs-chiampees-projects.vercel.app/test-extension.html) - Diagnostic tools
+- Test Page (local): open `test-extension.html` in your repo or dev server
 - [Test Page (local dev)](http://localhost:5173/test-extension.html) - Diagnostic tools
 
 ## 🧪 Testing

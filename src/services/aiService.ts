@@ -167,8 +167,8 @@ export const aiService = {
       }
     }
 
-    // Try free API endpoint
-    const freeAPIAvailable = false; // disable free API path in frontend to avoid 404 in dev
+    // Try free API endpoint (available on hosted deployments like Vercel)
+    const freeAPIAvailable = await checkFreeAPI();
     if (freeAPIAvailable) {
       try {
         return await this.callFreeAPI(messages, opts);

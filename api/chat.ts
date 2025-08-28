@@ -1,8 +1,6 @@
 // Free AI Chat API endpoint
 // Uses free-tier models from Together AI, Groq, or similar providers
 
-import type { NextRequest } from 'next/server';
-
 // Configuration for different free AI providers
 const AI_PROVIDERS = {
   together: {
@@ -87,69 +85,52 @@ async function makeAIRequest(provider: any, messages: any[]) {
   return data.choices[0]?.message?.content || 'No response from AI';
 }
 
-export async function POST(request: NextRequest) {
+// Vercel Node serverless function handler
+export default async function handler(
+  req: import('@vercel/node').VercelRequest,
+  res: import('@vercel/node').VercelResponse
+) {
   try {
-    const body = await request.json();
-    const { messages, model } = body;
-
-    if (!messages || !Array.isArray(messages)) {
-      return new Response(JSON.stringify({ 
-        error: 'Invalid messages format' 
-      }), { 
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      const provider = getBestProvider();
+      if (req.method === 'HEAD') {
+        return res.status(200).end();
+      }
+      return res.status(200).json({
+        status: 'ok',
+        provider: provider ? provider.name : 'none',
+        available: !!provider
       });
     }
 
-    // Get the best available provider
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    const { messages } = (req.body || {}) as { messages?: any[] };
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: 'Invalid messages format' });
+    }
+
     const provider = getBestProvider();
-    
     if (!provider) {
-      return new Response(JSON.stringify({ 
-        error: 'No AI provider available. Please configure API keys.' 
-      }), { 
-        status: 503,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return res.status(503).json({ error: 'No AI provider available. Please configure API keys.' });
     }
 
     console.log(`[AI Chat] Using provider: ${provider.name}`);
+    const responseText = await makeAIRequest(provider, messages);
 
-    // Make the AI request
-    const response = await makeAIRequest(provider, messages);
-
-    return new Response(JSON.stringify({
-      response,
+    return res.status(200).json({
+      response: responseText,
       provider: provider.name,
       model: provider.model
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
     });
-
-  } catch (error) {
+  } catch (error: any) {
     console.error('[AI Chat] Error:', error);
-    
-    return new Response(JSON.stringify({ 
+    return res.status(500).json({
       error: 'Failed to process chat request',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }), { 
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      details: error?.message || 'Unknown error'
     });
   }
 }
-
-// Health check endpoint
-export async function GET() {
-  const provider = getBestProvider();
-  
-  return new Response(JSON.stringify({
-    status: 'ok',
-    provider: provider ? provider.name : 'none',
-    available: !!provider
-  }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
-} 

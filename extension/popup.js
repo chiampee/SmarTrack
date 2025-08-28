@@ -516,8 +516,8 @@ document.getElementById('openDashboardBtn')?.addEventListener('click', async () 
     updateButton(btn, '🔄 Opening...', true);
     
     const settings = await getStorageSync({
-              dashboardUrl: 'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/',
-      fallbackUrl: 'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/'
+      dashboardUrl: 'http://localhost:5174/',
+      fallbackUrl: 'http://localhost:5173/'
     });
 
     // Try to open dashboard
@@ -573,7 +573,7 @@ document.getElementById('closeMinimalSettings')?.addEventListener('click', () =>
 async function loadMinimalSettings() {
   try {
     const settings = await getStorageSync({
-              dashboardUrl: 'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/',
+      dashboardUrl: 'http://localhost:5174/',
       autoFillTitle: true,
       autoClose: true
     });
@@ -595,7 +595,7 @@ async function loadMinimalSettings() {
 document.getElementById('saveMinimalSettings')?.addEventListener('click', async () => {
   try {
     const settings = {
-              dashboardUrl: document.getElementById('minimalDashboardUrl')?.value?.trim() || 'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/',
+      dashboardUrl: document.getElementById('minimalDashboardUrl')?.value?.trim() || 'http://localhost:5174/',
       autoFillTitle: document.getElementById('minimalAutoFill')?.checked || false,
       autoClose: document.getElementById('minimalAutoClose')?.checked || false
     };
@@ -671,7 +671,7 @@ function getStorageSync(keys) {
   const result = {};
   keys && Object.keys(keys).forEach?.(() => {}); // noop to satisfy shapes
   return Promise.resolve({
-    dashboardUrl: localStorage.getItem('srt_dashboardUrl') || 'https://smart-research-tracker-lm6pwbx1k-chiampees-projects.vercel.app/',
+    dashboardUrl: localStorage.getItem('srt_dashboardUrl') || 'http://localhost:5174/',
     autoFillTitle: localStorage.getItem('srt_autoFillTitle') === 'true',
     autoClose: localStorage.getItem('srt_autoClose') !== 'false',
   });
