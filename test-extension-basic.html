@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Extension Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; }
+        button { margin: 5px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Basic Extension Test</h1>
+    
+    <div class="result info">
+        <h3>Step 1: Check if Extension is Loaded</h3>
+        <button onclick="checkExtension()">Check Extension</button>
+        <div id="extension-check"></div>
+    </div>
+
+    <div class="result info">
+        <h3>Step 2: Check if Extension is Working</h3>
+        <button onclick="checkWorking()">Check if Working</button>
+        <div id="working-check"></div>
+    </div>
+
+    <div class="result info">
+        <h3>Step 3: Check Storage</h3>
+        <button onclick="checkStorage()">Check Storage</button>
+        <div id="storage-check"></div>
+    </div>
+
+    <div class="result info">
+        <h3>Step 4: Add Test Link</h3>
+        <button onclick="addTestLink()">Add Test Link</button>
+        <div id="add-link-check"></div>
+    </div>
+
+    <div class="result info">
+        <h3>Step 5: Get All Links</h3>
+        <button onclick="getAllLinks()">Get All Links</button>
+        <div id="get-links-check"></div>
+    </div>
+
+    <div id="console-output" style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-top: 20px;">
+        <h4>Console Output:</h4>
+        <div id="console-log"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const consoleDiv = document.getElementById('console-log');
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            logEntry.className = type;
+            consoleDiv.appendChild(logEntry);
+            console.log(message);
+        }
+
+        function checkExtension() {
+            log('🔍 Checking if extension is loaded...');
+            const resultDiv = document.getElementById('extension-check');
+            
+            // Check for extension markers
+            const hasMarkers = document.documentElement.hasAttribute('data-smart-research-tracker');
+            
+            if (hasMarkers) {
+                resultDiv.innerHTML = '<div class="success">✅ Extension markers found! Extension is loaded.</div>';
+                log('✅ Extension markers found');
+            } else {
+                resultDiv.innerHTML = '<div class="error">❌ No extension markers found. Extension not loaded.</div>';
+                log('❌ No extension markers found');
+            }
+            
+            // Check for chrome runtime
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+                log('✅ Chrome runtime available');
+            } else {
+                log('❌ Chrome runtime not available');
+            }
+            
+            // Check for chrome storage
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                log('✅ Chrome storage available');
+            } else {
+                log('❌ Chrome storage not available');
+            }
+        }
+
+        function checkWorking() {
+            log('🔧 Checking if extension is working...');
+            const resultDiv = document.getElementById('working-check');
+            
+            // Try to ping the extension
+            const messageId = 'ping-' + Date.now();
+            let responseReceived = false;
+            
+            const handleResponse = (event) => {
+                if (event.data && event.data.type === 'SRT_PONG') {
+                    responseReceived = true;
+                    log('✅ Extension responded to ping');
+                    resultDiv.innerHTML = '<div class="success">✅ Extension is working and responding!</div>';
+                    window.removeEventListener('message', handleResponse);
+                }
+            };
+            
+            window.addEventListener('message', handleResponse);
+            
+            // Send ping
+            log('📤 Sending ping to extension...');
+            window.postMessage({
+                type: 'SRT_PING',
+                messageId: messageId
+            }, '*');
+            
+            // Timeout after 2 seconds
+            setTimeout(() => {
+                if (!responseReceived) {
+                    log('❌ Extension did not respond to ping');
+                    resultDiv.innerHTML = '<div class="error">❌ Extension not responding to ping</div>';
+                }
+            }, 2000);
+        }
+
+        function checkStorage() {
+            log('💾 Checking storage access...');
+            const resultDiv = document.getElementById('storage-check');
+            
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.get(['links'], (result) => {
+                    const links = result.links || [];
+                    log(`📊 Storage accessible! Found ${links.length} links`);
+                    
+                    if (links.length > 0) {
+                        resultDiv.innerHTML = `
+                            <div class="success">
+                                ✅ Storage accessible! Found ${links.length} links
+                                <pre>${JSON.stringify(links[0], null, 2)}</pre>
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `
+                            <div class="info">
+                                ✅ Storage accessible but no links found
+                            </div>
+                        `;
+                    }
+                });
+            } else {
+                log('❌ Chrome storage not available');
+                resultDiv.innerHTML = '<div class="error">❌ Chrome storage not available</div>';
+            }
+        }
+
+        function addTestLink() {
+            log('➕ Adding test link...');
+            const resultDiv = document.getElementById('add-link-check');
+            
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                const testLink = {
+                    id: 'test-' + Date.now(),
+                    url: 'https://example.com/test-' + Date.now(),
+                    metadata: {
+                        title: 'Test Link ' + new Date().toLocaleTimeString(),
+                        description: 'This is a test link for debugging'
+                    },
+                    labels: ['test', 'debug'],
+                    priority: 'medium',
+                    status: 'active',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                
+                chrome.storage.local.get(['links'], (result) => {
+                    const links = result.links || [];
+                    links.push(testLink);
+                    
+                    chrome.storage.local.set({ links }, () => {
+                        if (chrome.runtime.lastError) {
+                            log(`❌ Failed to add link: ${chrome.runtime.lastError.message}`);
+                            resultDiv.innerHTML = `<div class="error">❌ Failed to add link: ${chrome.runtime.lastError.message}</div>`;
+                        } else {
+                            log(`✅ Test link added successfully! Total links: ${links.length}`);
+                            resultDiv.innerHTML = `
+                                <div class="success">
+                                    ✅ Test link added successfully! Total links: ${links.length}
+                                    <pre>${JSON.stringify(testLink, null, 2)}</pre>
+                                </div>
+                            `;
+                        }
+                    });
+                });
+            } else {
+                log('❌ Cannot add link - Chrome storage not available');
+                resultDiv.innerHTML = '<div class="error">❌ Cannot add link - Chrome storage not available</div>';
+            }
+        }
+
+        function getAllLinks() {
+            log('📥 Getting all links...');
+            const resultDiv = document.getElementById('get-links-check');
+            
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.get(['links'], (result) => {
+                    const links = result.links || [];
+                    log(`📊 Retrieved ${links.length} links from storage`);
+                    
+                    if (links.length > 0) {
+                        resultDiv.innerHTML = `
+                            <div class="success">
+                                📊 Retrieved ${links.length} links from storage
+                                <pre>${JSON.stringify(links, null, 2)}</pre>
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `
+                            <div class="info">
+                                📭 No links found in storage
+                            </div>
+                        `;
+                    }
+                });
+            } else {
+                log('❌ Chrome storage not available');
+                resultDiv.innerHTML = '<div class="error">❌ Chrome storage not available</div>';
+            }
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            log('🚀 Page loaded, waiting for extension...');
+            setTimeout(() => {
+                checkExtension();
+            }, 1000);
+        });
+
+        // Listen for messages
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type) {
+                log(`📨 Received message: ${event.data.type}`);
+            }
+        });
+    </script>
+</body>
+</html>

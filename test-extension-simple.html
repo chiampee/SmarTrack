@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Extension Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; }
+        button { margin: 5px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Simple Extension Test</h1>
+    
+    <div class="result info">
+        <h3>Step 1: Check Extension</h3>
+        <p>Make sure the extension is loaded in Chrome extensions page.</p>
+        <button onclick="checkExtension()">Check Extension</button>
+    </div>
+
+    <div class="result info">
+        <h3>Step 2: Test Storage</h3>
+        <p>Test if we can access the extension's storage.</p>
+        <button onclick="testStorage()">Test Storage</button>
+    </div>
+
+    <div class="result info">
+        <h3>Step 3: Add Test Link</h3>
+        <p>Add a test link to see if it works.</p>
+        <button onclick="addTestLink()">Add Test Link</button>
+    </div>
+
+    <div class="result info">
+        <h3>Step 4: Get All Links</h3>
+        <p>Retrieve all links from storage.</p>
+        <button onclick="getAllLinks()">Get All Links</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        function showResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function checkExtension() {
+            showResult('🔍 Checking extension...', 'info');
+            
+            // Check for extension markers
+            const hasMarkers = document.documentElement.hasAttribute('data-smart-research-tracker');
+            
+            if (hasMarkers) {
+                showResult('✅ Extension markers found! Extension is working.', 'success');
+            } else {
+                showResult('❌ No extension markers found. Extension not working.', 'error');
+            }
+            
+            // Check for chrome runtime
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+                showResult('✅ Chrome runtime available.', 'success');
+            } else {
+                showResult('❌ Chrome runtime not available.', 'error');
+            }
+            
+            // Check for chrome storage
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                showResult('✅ Chrome storage available.', 'success');
+            } else {
+                showResult('❌ Chrome storage not available.', 'error');
+            }
+        }
+
+        function testStorage() {
+            showResult('💾 Testing storage access...', 'info');
+            
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.get(['links'], (result) => {
+                    const links = result.links || [];
+                    showResult(`✅ Storage accessible! Found ${links.length} links.`, 'success');
+                    
+                    if (links.length > 0) {
+                        showResult(`<h4>First Link:</h4><pre>${JSON.stringify(links[0], null, 2)}</pre>`, 'info');
+                    }
+                });
+            } else {
+                showResult('❌ Chrome storage not available.', 'error');
+            }
+        }
+
+        function addTestLink() {
+            showResult('➕ Adding test link...', 'info');
+            
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                const testLink = {
+                    id: 'test-' + Date.now(),
+                    url: 'https://example.com/test-' + Date.now(),
+                    metadata: { 
+                        title: 'Test Link ' + new Date().toLocaleTimeString(), 
+                        description: 'This is a test link for debugging' 
+                    },
+                    labels: ['test', 'debug'],
+                    priority: 'medium',
+                    status: 'active',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                
+                chrome.storage.local.get(['links'], (result) => {
+                    const links = result.links || [];
+                    links.push(testLink);
+                    
+                    chrome.storage.local.set({ links }, () => {
+                        if (chrome.runtime.lastError) {
+                            showResult(`❌ Failed to add link: ${chrome.runtime.lastError.message}`, 'error');
+                        } else {
+                            showResult(`✅ Test link added successfully! Total links: ${links.length}`, 'success');
+                            showResult(`<h4>Added Link:</h4><pre>${JSON.stringify(testLink, null, 2)}</pre>`, 'info');
+                        }
+                    });
+                });
+            } else {
+                showResult('❌ Cannot add link - Chrome storage not available.', 'error');
+            }
+        }
+
+        function getAllLinks() {
+            showResult('📥 Getting all links...', 'info');
+            
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.get(['links'], (result) => {
+                    const links = result.links || [];
+                    showResult(`📊 Retrieved ${links.length} links from storage.`, 'success');
+                    
+                    if (links.length > 0) {
+                        showResult(`<h4>All Links:</h4><pre>${JSON.stringify(links, null, 2)}</pre>`, 'info');
+                    } else {
+                        showResult('📭 No links found in storage.', 'info');
+                    }
+                });
+            } else {
+                showResult('❌ Chrome storage not available.', 'error');
+            }
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            setTimeout(checkExtension, 1000);
+        });
+    </script>
+</body>
+</html>

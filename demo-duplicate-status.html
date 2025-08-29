@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo: Duplicate Detection Status Messages</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .demo-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .status-demo {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            margin: 15px 0;
+        }
+        .duplicate-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            margin: 8px 0;
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 6px;
+            font-size: 11px;
+        }
+        .duplicate-status-icon {
+            font-size: 14px;
+            color: #0ea5e9;
+        }
+        .duplicate-status-text {
+            flex: 1;
+        }
+        .duplicate-status-title {
+            font-weight: 600;
+            color: #0c4a6e;
+            margin-bottom: 2px;
+        }
+        .duplicate-status-details {
+            color: #0369a1;
+            font-size: 10px;
+        }
+        .duplicate-status.checking {
+            background: #f0f9ff;
+            border-color: #0ea5e9;
+        }
+        .duplicate-status.duplicate-found {
+            background: #fef3c7;
+            border-color: #f59e0b;
+        }
+        .duplicate-status.duplicate-found .duplicate-status-icon {
+            color: #f59e0b;
+        }
+        .duplicate-status.duplicate-found .duplicate-status-title {
+            color: #92400e;
+        }
+        .duplicate-status.duplicate-found .duplicate-status-details {
+            color: #b45309;
+        }
+        .duplicate-status.no-duplicates {
+            background: #dcfce7;
+            border-color: #22c55e;
+        }
+        .duplicate-status.no-duplicates .duplicate-status-icon {
+            color: #22c55e;
+        }
+        .duplicate-status.no-duplicates .duplicate-status-title {
+            color: #166534;
+        }
+        .duplicate-status.no-duplicates .duplicate-status-details {
+            color: #15803d;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button.success {
+            background: #28a745;
+        }
+        .button.warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .button.danger {
+            background: #dc3545;
+        }
+        .info-box {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .info-box h4 {
+            margin: 0 0 10px 0;
+            color: #0056b3;
+        }
+        .info-box ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .info-box li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Demo: Duplicate Detection Status Messages</h1>
+    
+    <div class="demo-section">
+        <h2>📱 What You'll See in the Extension</h2>
+        <p>When you use the Smart Research Tracker extension, you'll now see clear status messages during the duplicate detection process:</p>
+        
+        <div class="info-box">
+            <h4>🔍 Status Messages Show:</h4>
+            <ul>
+                <li><strong>When checking:</strong> "Checking for duplicates..." with blue styling</li>
+                <li><strong>When duplicates found:</strong> "⚠️ Duplicate detected!" with yellow/orange styling</li>
+                <li><strong>When no duplicates:</strong> "✅ No duplicates found!" with green styling</li>
+                <li><strong>When saving anyway:</strong> "✅ Link saved successfully!" with green styling</li>
+                <li><strong>When cancelling:</strong> "❌ Save cancelled" with yellow styling</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>🎨 Status Message Examples</h2>
+        <p>Here are the different status messages you'll see in the extension popup:</p>
+        
+        <div class="status-demo">
+            <h3>1. 🔍 Checking for Duplicates</h3>
+            <div class="duplicate-status checking">
+                <div class="duplicate-status-icon">🔍</div>
+                <div class="duplicate-status-text">
+                    <div class="duplicate-status-title">Checking for duplicates...</div>
+                    <div class="duplicate-status-details">Scanning your research library</div>
+                </div>
+            </div>
+            <p><em>This appears when you click "Save to Research" - the extension is checking if the URL already exists.</em></p>
+        </div>
+
+        <div class="status-demo">
+            <h3>2. ⚠️ Duplicate Detected</h3>
+            <div class="duplicate-status duplicate-found">
+                <div class="duplicate-status-icon">⚠️</div>
+                <div class="duplicate-status-text">
+                    <div class="duplicate-status-title">⚠️ Duplicate detected!</div>
+                    <div class="duplicate-status-details">3 existing link(s) found</div>
+                </div>
+            </div>
+            <p><em>This appears when the extension finds existing links with the same URL. The popup will also show details about the duplicates.</em></p>
+        </div>
+
+        <div class="status-demo">
+            <h3>3. ✅ No Duplicates Found</h3>
+            <div class="duplicate-status no-duplicates">
+                <div class="duplicate-status-icon">✅</div>
+                <div class="duplicate-status-text">
+                    <div class="duplicate-status-title">✅ No duplicates found!</div>
+                    <div class="duplicate-status-details">Link saved successfully</div>
+                </div>
+            </div>
+            <p><em>This appears when the URL is unique and the link is saved successfully.</em></p>
+        </div>
+
+        <div class="status-demo">
+            <h3>4. ✅ User Confirmed Save</h3>
+            <div class="duplicate-status no-duplicates">
+                <div class="duplicate-status-icon">✅</div>
+                <div class="duplicate-status-text">
+                    <div class="duplicate-status-title">✅ Link saved successfully!</div>
+                    <div class="duplicate-status-details">User confirmed saving despite duplicates</div>
+                </div>
+            </div>
+            <p><em>This appears when the user chooses "Save Anyway" in the duplicate confirmation popup.</em></p>
+        </div>
+
+        <div class="status-demo">
+            <h3>5. ❌ Save Cancelled</h3>
+            <div class="duplicate-status duplicate-found">
+                <div class="duplicate-status-icon">❌</div>
+                <div class="duplicate-status-text">
+                    <div class="duplicate-status-title">❌ Save cancelled</div>
+                    <div class="duplicate-status-details">User chose not to save duplicate link</div>
+                </div>
+            </div>
+            <p><em>This appears when the user chooses "Cancel" in the duplicate confirmation popup.</em></p>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>🧪 Test the Status Messages</h2>
+        <p>To see these status messages in action:</p>
+        
+        <ol>
+            <li><strong>Install the updated extension</strong> (already rebuilt)</li>
+            <li><strong>Open the extension popup</strong> on any webpage</li>
+            <li><strong>Click "Save to Research"</strong> to see the checking status</li>
+            <li><strong>Try saving the same URL twice</strong> to see duplicate detection</li>
+            <li><strong>Use the test page</strong> <code>test-duplicate-detection.html</code> for controlled testing</li>
+        </ol>
+
+        <div style="margin: 20px 0;">
+            <a href="test-duplicate-detection.html" class="button success">🧪 Open Test Page</a>
+            <a href="test-badge-logic.html" class="button">📊 Test Badge Logic</a>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>🎯 Benefits of Status Messages</h2>
+        
+        <h3>✅ User Experience Improvements</h3>
+        <ul>
+            <li><strong>Clear Feedback:</strong> Users always know what's happening</li>
+            <li><strong>Transparent Process:</strong> Shows the duplicate detection working</li>
+            <li><strong>Visual Indicators:</strong> Color-coded status for easy understanding</li>
+            <li><strong>Actionable Information:</strong> Users know what to expect next</li>
+        </ul>
+
+        <h3>🔧 Technical Benefits</h3>
+        <ul>
+            <li><strong>Debugging Aid:</strong> Developers can see the process flow</li>
+            <li><strong>User Confidence:</strong> Shows the extension is working intelligently</li>
+            <li><strong>Error Prevention:</strong> Users understand why actions succeed/fail</li>
+            <li><strong>Feature Awareness:</strong> Users know duplicate detection is active</li>
+        </ul>
+    </div>
+
+    <div class="demo-section">
+        <h2>📚 How It All Works Together</h2>
+        
+        <div class="info-box">
+            <h4>🔄 Complete User Flow:</h4>
+            <ol>
+                <li><strong>User clicks "Save to Research"</strong></li>
+                <li><strong>Status shows "Checking for duplicates..."</strong> (blue)</li>
+                <li><strong>Extension checks storage for duplicates</strong></li>
+                <li><strong>If duplicates found:</strong> Status shows "⚠️ Duplicate detected!" (yellow) + popup appears</li>
+                <li><strong>If no duplicates:</strong> Status shows "✅ No duplicates found!" (green) + link saves</li>
+                <li><strong>User decision:</strong> Save anyway (green success) or Cancel (yellow cancelled)</li>
+            </ol>
+        </div>
+
+        <p><strong>Result:</strong> Users get a clean, organized dashboard with full visibility into the duplicate detection process!</p>
+    </div>
+
+    <script>
+        // Add some interactivity to the demo
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🎯 Duplicate Detection Status Demo loaded');
+            console.log('📱 This shows the status messages you\'ll see in the extension popup');
+        });
+    </script>
+</body>
+</html>
