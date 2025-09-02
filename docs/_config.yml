@@ -1,0 +1,9 @@
+title: Smart Research Tracker
+description: Documentation and site
+theme: jekyll-theme-cayman
+markdown: kramdown
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+
+
