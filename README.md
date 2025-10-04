@@ -197,9 +197,11 @@ Open browser DevTools (F12) → Console tab for detailed error messages.
 
 ## 📚 Documentation
 
-- **[Manual Installation Guide](MANUAL_INSTALLATION_GUIDE.md)** - Complete step-by-step guide
-- **[Installation README](INSTALLATION_README.md)** - Quick reference
-- **[Installation Verification](INSTALLATION_VERIFICATION.md)** - Verification checklist
+- **[Documentation Index](docs/README.md)** - Complete documentation overview
+- **[Installation Guide](docs/installation/MANUAL_INSTALLATION_GUIDE.md)** - Complete step-by-step guide
+- **[Quick Installation](docs/installation/INSTALLATION_README.md)** - Quick reference
+- **[Installation Verification](docs/installation/INSTALLATION_VERIFICATION.md)** - Verification checklist
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - General troubleshooting guide
 
 ## 🔒 Security
 
@@ -231,4 +233,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 **Ready to revolutionize your research workflow!** 🔬📚
 
-For detailed installation instructions, see [MANUAL_INSTALLATION_GUIDE.md](MANUAL_INSTALLATION_GUIDE.md)
+For detailed installation instructions, see [docs/installation/MANUAL_INSTALLATION_GUIDE.md](docs/installation/MANUAL_INSTALLATION_GUIDE.md)
