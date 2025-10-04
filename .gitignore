@@ -26,3 +26,7 @@ dist-ssr
 
 dist-extension
 *.tsbuildinfo
+
+# Extension build artifacts
+*.zip
+SmartResearchTracker-extension-*.zip
