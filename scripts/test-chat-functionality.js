@@ -41,7 +41,7 @@ const dbPath = path.join(process.cwd(), 'src/db/smartResearchDB.ts');
 if (fs.existsSync(dbPath)) {
   const dbContent = fs.readFileSync(dbPath, 'utf8');
   const hasChatMessages = dbContent.includes('chatMessages!: Table<ChatMessage, string>');
-  const hasConversations = dbContent.includes('conversations!: Table<import(\'../types/Conversation\').Conversation, string>');
+  const hasConversations = dbContent.includes('conversations!: Table<Conversation, string>');
   
   if (hasChatMessages && hasConversations) {
     console.log('✅ Database schema includes chat tables');
