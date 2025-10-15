@@ -67,6 +67,7 @@ export const LinkList: React.FC = () => {
   } = useLinkStore();
   
   console.log('📋 LinkList received links from store:', storeLinks?.length || 0);
+  console.log('📋 Loading state:', loading);
   if (storeLinks && storeLinks.length > 0) {
     console.log('📋 First 3 link titles:', storeLinks.slice(0, 3).map(l => l.metadata?.title || l.url));
   }
