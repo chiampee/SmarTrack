@@ -2109,12 +2109,31 @@ export const LinkList: React.FC = () => {
                   console.log('🗑️ Setting bulkDeleteConfirmOpen to true');
                   setBulkDeleteConfirmOpen(true);
                   console.log('🗑️ bulkDeleteConfirmOpen state should now be true');
+                  
+                  // Force a re-render to see if state change is working
+                  setTimeout(() => {
+                    console.log('🗑️ After 100ms, bulkDeleteConfirmOpen should be true');
+                  }, 100);
                 }}
                 className="inline-flex items-center gap-2"
                 title="Delete selected links permanently"
               >
                 <Trash className="w-4 h-4" />
                 Delete
+              </Button>
+              
+              {/* Test button to force modal open */}
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  console.log('🧪 Test button clicked - forcing modal open');
+                  setBulkDeleteConfirmOpen(true);
+                }}
+                className="inline-flex items-center gap-2"
+                title="Test modal opening"
+              >
+                Test Modal
               </Button>
             </div>
           </div>
@@ -2991,9 +3010,13 @@ export const LinkList: React.FC = () => {
       </Modal>
 
       {/* Bulk Delete Confirmation Modal */}
+      {console.log('🗑️ Rendering DeleteConfirmationModal with isOpen:', bulkDeleteConfirmOpen)}
       <DeleteConfirmationModal
         isOpen={bulkDeleteConfirmOpen}
-        onClose={() => setBulkDeleteConfirmOpen(false)}
+        onClose={() => {
+          console.log('🗑️ DeleteConfirmationModal onClose called');
+          setBulkDeleteConfirmOpen(false);
+        }}
         onConfirm={deleteSelected}
         links={getSelectedLinks()}
         title="Delete Selected Links"
