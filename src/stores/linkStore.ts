@@ -507,7 +507,10 @@ if (typeof window !== 'undefined') {
   console.log('🎧 [Dashboard] Setting up message listener for extension broadcasts');
   
   window.addEventListener('message', async (event: MessageEvent) => {
-    console.log('📨 [Dashboard] Received message:', event?.data?.type);
+    // Only log SRT messages to avoid clutter
+    if (event?.data?.type?.startsWith?.('SRT_')) {
+      console.log('📨 [Dashboard] Received message:', event?.data?.type);
+    }
     
     // Handle link upsert from extension - save to local IndexedDB
     if (event?.data?.type === 'SRT_UPSERT_LINK' && event?.data?.link) {
