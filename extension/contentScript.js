@@ -344,15 +344,26 @@ async function handleUpsertLink(link, summaries = []) {
       updatedAt: new Date().toISOString(),
     };
 
-    console.log('[SRT] Saving link using fallback storage:', safeLink.url);
+    console.log('[SRT] Saving link directly to IndexedDB:', safeLink.url);
     console.log('[SRT] Link metadata:', safeLink.metadata);
-    console.log('[SRT] Link labels:', safeLink.labels);
-    console.log('[SRT] Link status:', safeLink.status);
-    console.log('[SRT] Link created:', safeLink.createdAt);
-    console.log('[SRT] Full link object:', safeLink);
 
-    // Always use fallback storage to prevent DOMException
-    const linkResult = await __SRT_addLinkFallback(safeLink);
+    // Save directly to IndexedDB (single source of truth)
+    const db = await __SRT_initDB();
+    const linkResult = await new Promise((resolve, reject) => {
+      const transaction = db.transaction(['links'], 'readwrite');
+      const store = transaction.objectStore('links');
+      const request = store.put(safeLink);
+      
+      request.onsuccess = () => {
+        console.log('[SRT] ✅ Link saved to IndexedDB:', safeLink.url);
+        resolve({ success: true, link: safeLink });
+      };
+      
+      request.onerror = () => {
+        console.error('[SRT] ❌ Failed to save link to IndexedDB:', request.error);
+        reject(request.error);
+      };
+    });
 
     if (linkResult.success && summaries.length > 0) {
       const safeSummaries = summaries.map((summary) => ({
@@ -787,8 +798,72 @@ window.addEventListener('message', (event) => {
   }
 });
 
-// Skip IndexedDB initialization entirely - use fallback storage only
-console.log('[SRT] Using fallback storage (chrome.storage.local) - no IndexedDB initialization needed');
+// Initialize IndexedDB for direct database access (single source of truth)
+console.log('[SRT] Initializing IndexedDB connection for direct database access');
+
+// Import Dexie from the page context if available, otherwise create our own connection
+let __SRT_db = null;
+
+async function __SRT_initDB() {
+  if (__SRT_db) return __SRT_db;
+  
+  try {
+    // Try to access existing Dexie instance from dashboard
+    if (window.smartResearchDB) {
+      console.log('[SRT] Using existing smartResearchDB from dashboard');
+      __SRT_db = window.smartResearchDB;
+      return __SRT_db;
+    }
+    
+    // Create our own IndexedDB connection using the same database
+    const dbName = 'smartResearchDB';
+    const dbVersion = 1;
+    
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(dbName, dbVersion);
+      
+      request.onerror = () => {
+        console.error('[SRT] IndexedDB open failed:', request.error);
+        reject(request.error);
+      };
+      
+      request.onsuccess = () => {
+        __SRT_db = request.result;
+        console.log('[SRT] IndexedDB connection established');
+        resolve(__SRT_db);
+      };
+      
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        
+        // Create links table if it doesn't exist
+        if (!db.objectStoreNames.contains('links')) {
+          const linksStore = db.createObjectStore('links', { keyPath: 'id' });
+          linksStore.createIndex('url', 'url', { unique: false });
+          linksStore.createIndex('createdAt', 'createdAt', { unique: false });
+        }
+        
+        // Create summaries table if it doesn't exist
+        if (!db.objectStoreNames.contains('summaries')) {
+          const summariesStore = db.createObjectStore('summaries', { keyPath: 'id' });
+          summariesStore.createIndex('linkId', 'linkId', { unique: false });
+        }
+        
+        // Create chatMessages table if it doesn't exist
+        if (!db.objectStoreNames.contains('chatMessages')) {
+          const chatStore = db.createObjectStore('chatMessages', { keyPath: 'id' });
+          chatStore.createIndex('linkId', 'linkId', { unique: false });
+        }
+      };
+    });
+  } catch (error) {
+    console.error('[SRT] Failed to initialize IndexedDB:', error);
+    throw error;
+  }
+}
+
+// Initialize DB immediately
+__SRT_initDB().catch(err => console.error('[SRT] DB init failed:', err));
 
 // Export for testing
 if (typeof window !== 'undefined') {
