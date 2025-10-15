@@ -310,6 +310,7 @@ export const LinkList: React.FC = () => {
   const [chatGPTExportOpen, setChatGPTExportOpen] = useState(false);
   const [chatGPTExportLinks, setChatGPTExportLinks] = useState<Link[]>([]);
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
+  const [testModalOpen, setTestModalOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [showEditFallback, setShowEditFallback] = useState(false);
 
@@ -2108,20 +2109,15 @@ export const LinkList: React.FC = () => {
                   console.log('🗑️ Selected links:', getSelectedLinks());
                   console.log('🗑️ Setting bulkDeleteConfirmOpen to true');
                   
-                  // Force state update with callback
+                  // Try both state variables
                   setBulkDeleteConfirmOpen(true);
+                  setTestModalOpen(true);
                   
                   // Check state immediately after
                   setTimeout(() => {
-                    console.log('🗑️ After 100ms, bulkDeleteConfirmOpen should be true');
-                    console.log('🗑️ Current state:', bulkDeleteConfirmOpen);
+                    console.log('🗑️ After 100ms, bulkDeleteConfirmOpen:', bulkDeleteConfirmOpen);
+                    console.log('🗑️ After 100ms, testModalOpen:', testModalOpen);
                   }, 100);
-                  
-                  // Also try forcing a re-render
-                  setTimeout(() => {
-                    console.log('🗑️ Forcing re-render by setting state again');
-                    setBulkDeleteConfirmOpen(true);
-                  }, 200);
                 }}
                 className="inline-flex items-center gap-2"
                 title="Delete selected links permanently"
@@ -3021,7 +3017,7 @@ export const LinkList: React.FC = () => {
       {console.log('🗑️ Rendering DeleteConfirmationModal with isOpen:', bulkDeleteConfirmOpen)}
       
       {/* Debug: Show modal state */}
-      {bulkDeleteConfirmOpen && (
+      {(bulkDeleteConfirmOpen || testModalOpen) && (
         <div style={{
           position: 'fixed',
           top: '10px',
@@ -3032,7 +3028,8 @@ export const LinkList: React.FC = () => {
           zIndex: 9999,
           borderRadius: '5px'
         }}>
-          MODAL STATE: {bulkDeleteConfirmOpen ? 'OPEN' : 'CLOSED'}
+          <div>BULK DELETE: {bulkDeleteConfirmOpen ? 'OPEN' : 'CLOSED'}</div>
+          <div>TEST MODAL: {testModalOpen ? 'OPEN' : 'CLOSED'}</div>
         </div>
       )}
       
@@ -3046,6 +3043,25 @@ export const LinkList: React.FC = () => {
         links={getSelectedLinks()}
         title="Delete Selected Links"
       />
+      
+      {/* Test Modal */}
+      {testModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: 'white',
+          border: '2px solid red',
+          padding: '20px',
+          zIndex: 10000,
+          borderRadius: '10px'
+        }}>
+          <h3>TEST MODAL IS WORKING!</h3>
+          <p>This proves the state is updating correctly.</p>
+          <button onClick={() => setTestModalOpen(false)}>Close Test Modal</button>
+        </div>
+      )}
 
       {/* Clean Filters and Actions Bar */}
       <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200/50 p-3 mb-4 shadow-sm relative z-50">
