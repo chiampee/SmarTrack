@@ -66,15 +66,17 @@ saveSettingsBtn.addEventListener('click', () => {
   });
 });
 
-// Reset settings to defaults
-resetSettingsBtn.addEventListener('click', () => {
-  if (confirm('Are you sure you want to reset all settings to defaults?')) {
-    chrome.storage.sync.set(defaultSettings, () => {
-      loadSettings();
-      showStatus('✅ Settings reset to defaults!', 'success');
-    });
-  }
-});
+// Reset settings to defaults (if button exists)
+if (resetSettingsBtn) {
+  resetSettingsBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to reset all settings to defaults?')) {
+      chrome.storage.sync.set(defaultSettings, () => {
+        loadSettings();
+        showStatus('✅ Settings reset to defaults!', 'success');
+      });
+    }
+  });
+}
 
 // Export data
 exportDataBtn.addEventListener('click', () => {
