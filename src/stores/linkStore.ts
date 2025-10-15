@@ -121,14 +121,14 @@ const linkStore = create<LinkState>()((set, get) => ({
     set({ loading: true, error: undefined });
     
     try {
-      // Use only the local database as the single source of truth
-      console.log('[Dashboard] Loading links from local database (single source)');
-      const localLinks = await linkService.getAll();
+      // Load from extension storage (chrome.storage.local) - the single source of truth
+      console.log('[Dashboard] Loading links from extension storage (chrome.storage.local)');
+      const extensionLinks = await get().getLinksFromExtension();
       
-      // Deduplicate any potential duplicates within the local database
-      const deduplicatedLinks = deduplicateLinks(localLinks || []);
+      // Deduplicate any potential duplicates
+      const deduplicatedLinks = deduplicateLinks(extensionLinks || []);
       
-      console.log('[Dashboard] Loaded', deduplicatedLinks.length, 'links from local database');
+      console.log('[Dashboard] Loaded', deduplicatedLinks.length, 'links from extension storage');
       set({ rawLinks: deduplicatedLinks, loading: false });
       get().applyFilters();
       
