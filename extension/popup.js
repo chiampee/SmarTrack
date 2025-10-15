@@ -105,17 +105,17 @@ async function loadLabels() {
       labels = ['research', 'article', 'tutorial', 'documentation', 'news', 'blog'];
     }
 
-    // Get labels from content script (Dexie)
-    if (currentTab?.id) {
+    // Get labels from content script (Dexie) - only for compatible pages
+    if (currentTab?.id && currentTab?.url && !currentTab.url.startsWith('chrome://')) {
       try {
         const response = await sendMessageToTab(currentTab.id, { type: 'GET_LABELS' });
-        if (response?.labels) {
+        if (response?.labels && Array.isArray(response.labels)) {
           const dexieLabels = response.labels;
           const allLabels = new Set([...labels, ...dexieLabels]);
           labels = Array.from(allLabels);
         }
       } catch (error) {
-        console.debug('[SRT] Content script labels fetch failed:', error);
+        // Silently ignore errors for incompatible pages
       }
     }
 
@@ -752,6 +752,23 @@ function sendMessageToBackground(message) {
 }
 
 async function ensureContentScriptLoaded(tabId) {
+  // First check if the tab is injectable
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    
+    // Skip restricted pages - these can't have content scripts
+    if (!tab.url || 
+        tab.url.startsWith('chrome://') || 
+        tab.url.startsWith('chrome-extension://') ||
+        tab.url.startsWith('edge://') ||
+        tab.url.startsWith('about:') ||
+        tab.url === 'about:blank') {
+      return false;
+    }
+  } catch (e) {
+    return false;
+  }
+
   // Try to detect presence of our exposed object first
   try {
     const presence = await chrome.scripting.executeScript({
@@ -767,7 +784,11 @@ async function ensureContentScriptLoaded(tabId) {
     const isPresent = Array.isArray(presence) ? !!presence[0]?.result : !!presence;
     if (isPresent) return true;
   } catch (e) {
-    // ignore detection error; we'll attempt injection next
+    // Silently fail for restricted pages
+    const msg = e?.message || '';
+    if (msg.includes('error page') || msg.includes('Cannot access')) {
+      return false;
+    }
   }
 
   // Attempt to inject our content script file
@@ -775,7 +796,7 @@ async function ensureContentScriptLoaded(tabId) {
     await chrome.scripting.executeScript({ target: { tabId }, files: ['contentScript.js'] });
     return true;
   } catch (e) {
-    console.warn('[SRT] Content script injection failed:', e?.message || e);
+    // Silently handle injection failures for restricted pages
     return false;
   }
 }
