@@ -19,6 +19,7 @@ interface LinkState {
   searchTerm?: string;
   isClearing: boolean; // Flag to prevent auto-refresh during clearing
   isMirroring: boolean; // Flag to prevent DB hooks from refetching during mirror
+  isFetching: boolean; // Flag to prevent concurrent fetches
   bulkDeleteModalOpen: boolean; // Moved from component state to prevent loss on re-renders
   loadLinks: () => Promise<void>;
   addLink: (link: Link) => Promise<void>;
@@ -106,6 +107,7 @@ const linkStore = create<LinkState>()((set, get) => ({
   searchTerm: undefined,
   isClearing: false,
   isMirroring: false,
+  isFetching: false,
   bulkDeleteModalOpen: false,
   async loadLinks() {
     try {
@@ -121,7 +123,13 @@ const linkStore = create<LinkState>()((set, get) => ({
       return;
     }
     
-    set({ loading: true, error: undefined });
+    // Don't fetch if already fetching (prevent concurrent fetches)
+    if (get().isFetching) {
+      console.log('🔄 Already fetching links, skipping duplicate request');
+      return;
+    }
+    
+    set({ loading: true, error: undefined, isFetching: true });
     
     try {
       // Load from extension storage (chrome.storage.local) - the single source of truth
@@ -132,7 +140,7 @@ const linkStore = create<LinkState>()((set, get) => ({
       const deduplicatedLinks = deduplicateLinks(extensionLinks || []);
       
       console.log('[Dashboard] Loaded', deduplicatedLinks.length, 'links from extension storage');
-      set({ rawLinks: deduplicatedLinks, loading: false });
+      set({ rawLinks: deduplicatedLinks, loading: false, isFetching: false });
       get().applyFilters();
       
     } catch (error) {
@@ -140,7 +148,7 @@ const linkStore = create<LinkState>()((set, get) => ({
       try {
         errorHandler.handleError(createDatabaseError(error as Error, { source: 'fetchLinks' }));
       } catch {}
-      set({ rawLinks: [], loading: false, error: 'Failed to load links from database' });
+      set({ rawLinks: [], loading: false, error: 'Failed to load links from database', isFetching: false });
     }
   },
 
