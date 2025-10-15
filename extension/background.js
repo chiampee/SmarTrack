@@ -120,23 +120,23 @@ class EnhancedLinkProcessor {
       // Build enhanced Link object
       const linkForDexie = this.buildLinkObject(payload);
       
-      // Send to content script to save in IndexedDB (single source of truth)
-      console.log('[SRT] Sending link to content script for IndexedDB save');
+      // Save to chrome.storage.local (shared storage accessible by background script)
+      console.log('[SRT] Saving link to chrome.storage.local');
       try {
-        const saveResult = await this.sendToContentScript(payload.tabId, linkForDexie);
-        console.log('[SRT] ✅ Content script saved to IndexedDB:', saveResult);
+        await this.storeNewLinkInChromeStorage(payload, linkForDexie.id);
+        console.log('[SRT] ✅ Link saved to chrome.storage.local');
       } catch (error) {
-        console.error('[SRT] ❌ IndexedDB save failed:', error);
-        throw new Error('Failed to save to IndexedDB: ' + error.message);
+        console.error('[SRT] ❌ Chrome storage save failed:', error);
+        throw new Error('Failed to save to chrome.storage: ' + error.message);
       }
       
-      // Broadcast to dashboard to trigger immediate refresh
+      // Broadcast to dashboard with the link data (dashboard will save to its IndexedDB)
       try {
         await this.broadcastToDashboard(linkForDexie);
-        console.log('[SRT] 📢 Dashboard notified');
+        console.log('[SRT] 📢 Dashboard notified with link data');
       } catch (error) {
         console.error('[SRT] Dashboard broadcast failed (not critical):', error);
-        // Don't throw - link is saved in IndexedDB
+        // Don't throw - link is saved in chrome.storage
       }
       
       // Process page content for AI enrichment (non-blocking)
