@@ -35,9 +35,12 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
   }, [isOpen, undoTimeout]);
 
   const handleConfirm = async () => {
+    console.log('🗑️ DeleteConfirmationModal: handleConfirm called');
     setLoading(true);
     try {
+      console.log('🗑️ DeleteConfirmationModal: calling onConfirm');
       await onConfirm();
+      console.log('🗑️ DeleteConfirmationModal: onConfirm completed successfully');
       setDeleted(true);
       
       // Set a timeout to auto-close after 5 seconds

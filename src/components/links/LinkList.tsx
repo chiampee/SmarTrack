@@ -681,18 +681,21 @@ export const LinkList: React.FC = () => {
   };
 
   const deleteSelected = async () => {
-    console.log('[Dashboard] deleteSelected function called');
+    console.log('🗑️ [Dashboard] deleteSelected function called');
     if (!selectedIds.length) {
-      console.log('[Dashboard] No links selected for deletion');
+      console.log('🗑️ [Dashboard] No links selected for deletion');
       return;
     }
-    console.log('[Dashboard] Deleting links:', selectedIds);
+    console.log('🗑️ [Dashboard] Deleting links:', selectedIds);
     try {
       const selectedLinks = getSelectedLinks();
+      console.log('🗑️ [Dashboard] Selected links to delete:', selectedLinks);
       if (selectedLinks.length > 0) {
         // Delete from the database
         for (const link of selectedLinks) {
+          console.log('🗑️ [Dashboard] Deleting link:', link.id, link.metadata?.title);
           await deleteLink(link.id);
+          console.log('🗑️ [Dashboard] Link deleted successfully:', link.id);
         }
         
         // Also notify the extension to remove these links
@@ -704,23 +707,24 @@ export const LinkList: React.FC = () => {
             },
             '*'
           );
-          console.log('[Dashboard] Delete request sent to extension');
+          console.log('🗑️ [Dashboard] Delete request sent to extension');
         } catch (error) {
           console.warn(
-            '[Dashboard] Failed to notify extension:',
+            '🗑️ [Dashboard] Failed to notify extension:',
             error
           );
         }
       }
 
-      console.log('[Dashboard] Links deleted successfully');
+      console.log('🗑️ [Dashboard] All links deleted successfully');
       setSelectedIds([]);
       // Refresh the links to show updated status
       setTimeout(() => {
+        console.log('🗑️ [Dashboard] Refreshing links after deletion');
         loadLinks();
       }, 500);
     } catch (error) {
-      console.error('[Dashboard] Failed to delete links:', error);
+      console.error('🗑️ [Dashboard] Failed to delete links:', error);
     }
   };
 
@@ -2099,7 +2103,11 @@ export const LinkList: React.FC = () => {
               <Button
                 variant="danger"
                 size="md"
-                onClick={() => setBulkDeleteConfirmOpen(true)}
+                onClick={() => {
+                  console.log('🗑️ Delete button clicked, selectedIds:', selectedIds);
+                  console.log('🗑️ Selected links:', getSelectedLinks());
+                  setBulkDeleteConfirmOpen(true);
+                }}
                 className="inline-flex items-center gap-2"
                 title="Delete selected links permanently"
               >
