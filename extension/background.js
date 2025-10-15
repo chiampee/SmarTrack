@@ -120,20 +120,25 @@ class EnhancedLinkProcessor {
       // Build enhanced Link object
       const linkForDexie = this.buildLinkObject(payload);
       
-      // Store in chrome.storage as a NEW link (not updating existing)
+      // CHANGED: No longer save to chrome.storage - send directly to content script for IndexedDB save
+      console.log('[SRT] Sending link to content script for IndexedDB save');
+      
+      // Send to content script to save in IndexedDB
       try {
-        await this.storeNewLinkInChromeStorage(payload, linkForDexie.id);
+        await this.sendToContentScript(payload.tabId, linkForDexie);
+        console.log('[SRT] ✅ Link sent to content script for saving');
       } catch (error) {
-        console.error('[SRT] Chrome storage failed:', error);
-        throw new Error('Failed to save to local storage');
+        console.error('[SRT] ❌ Content script save failed:', error);
+        throw new Error('Failed to save to IndexedDB: ' + error.message);
       }
       
-      // Broadcast to dashboard
+      // Also broadcast to dashboard if it's open
       try {
         await this.broadcastToDashboard(linkForDexie);
+        console.log('[SRT] 📢 Dashboard notified');
       } catch (error) {
-        console.error('[SRT] Dashboard broadcast failed:', error);
-        // Don't throw here, just log - the link is still saved
+        console.error('[SRT] Dashboard broadcast failed (not critical):', error);
+        // Don't throw - link is saved in IndexedDB via content script
       }
       
       // Process page content for AI enrichment (non-blocking)
@@ -335,6 +340,40 @@ class EnhancedLinkProcessor {
         });
       });
     });
+  }
+
+  async sendToContentScript(tabId, linkObj) {
+    if (!tabId) {
+      throw new Error('No tab ID provided');
+    }
+
+    try {
+      console.log('[SRT] Sending UPSERT_LINK to content script on tab:', tabId);
+      
+      const response = await new Promise((resolve, reject) => {
+        chrome.tabs.sendMessage(tabId, {
+          type: 'UPSERT_LINK',
+          link: linkObj,
+          summaries: []
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+
+      if (response?.success) {
+        console.log('[SRT] ✅ Content script confirmed save:', response);
+        return response;
+      } else {
+        throw new Error(response?.error || 'Content script save failed');
+      }
+    } catch (error) {
+      console.error('[SRT] Failed to send to content script:', error);
+      throw error;
+    }
   }
 
   async broadcastToDashboard(linkObj, summaries = []) {
