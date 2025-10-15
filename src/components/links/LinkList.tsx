@@ -49,13 +49,7 @@ const DEFAULT_COLUMNS = [
   'created',
 ] as const;
 
-// Render counter
-let renderCount = 0;
-
 export const LinkList: React.FC = () => {
-  renderCount++;
-  console.log('🔄 LinkList rendering, render count:', renderCount);
-  
   const {
     sortKey,
     sortDir: sdir,
@@ -65,12 +59,6 @@ export const LinkList: React.FC = () => {
     loadLinks,
     deleteLink,
   } = useLinkStore();
-  
-  console.log('📋 LinkList received links from store:', storeLinks?.length || 0);
-  console.log('📋 Loading state:', loading);
-  if (storeLinks && storeLinks.length > 0) {
-    console.log('📋 First 3 link titles:', storeLinks.slice(0, 3).map(l => l.metadata?.title || l.url));
-  }
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<Link | null>(null);
@@ -324,20 +312,6 @@ export const LinkList: React.FC = () => {
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
   const [testModalOpen, setTestModalOpen] = useState(false);
   
-  // Debug: Log when state changes
-  useEffect(() => {
-    console.log('🟢 bulkDeleteConfirmOpen changed to:', bulkDeleteConfirmOpen);
-    if (bulkDeleteConfirmOpen === false) {
-      console.trace('🔍 bulkDeleteConfirmOpen set to false, stack trace:');
-    }
-  }, [bulkDeleteConfirmOpen]);
-  
-  useEffect(() => {
-    console.log('🟢 testModalOpen changed to:', testModalOpen);
-    if (testModalOpen === false) {
-      console.trace('🔍 testModalOpen set to false, stack trace:');
-    }
-  }, [testModalOpen]);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [showEditFallback, setShowEditFallback] = useState(false);
 
@@ -817,12 +791,7 @@ export const LinkList: React.FC = () => {
 
   useEffect(() => {
     // Ensure links are loaded on mount
-    console.log('🔵 LinkList component MOUNTED');
     void loadLinks();
-    
-    return () => {
-      console.log('🔴 LinkList component UNMOUNTING');
-    };
   }, [loadLinks]);
 
   // Global keyboard shortcuts

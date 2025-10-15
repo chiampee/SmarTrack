@@ -384,8 +384,6 @@ const linkStore = create<LinkState>()((set, get) => ({
       }
       return sortDir === 'asc' ? cmp : -cmp;
     });
-    console.log('📊 Final filtered & sorted links:', links.length);
-    console.log('📋 Link titles:', links.map(l => l.metadata?.title || l.url));
     set({ links });
   },
   async addLink(link) {
