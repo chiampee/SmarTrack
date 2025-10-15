@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Message Bridge</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .log { padding: 5px; margin: 5px 0; border-left: 3px solid #ccc; }
+    .success { border-color: green; background: #e8f5e9; }
+    .error { border-color: red; background: #ffebee; }
+    .info { border-color: blue; background: #e3f2fd; }
+    button { padding: 10px 20px; margin: 10px 5px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Message Bridge Test</h1>
+  <p>This page tests if the content script can forward messages to the page via window.postMessage</p>
+  
+  <button onclick="testDirectPostMessage()">1. Test Direct postMessage</button>
+  <button onclick="testExtensionBridge()">2. Test Extension Bridge</button>
+  <button onclick="clearLogs()">Clear Logs</button>
+  
+  <div id="logs"></div>
+
+  <script>
+    const logs = document.getElementById('logs');
+    
+    function log(message, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `log ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logs.appendChild(div);
+      console.log(message);
+    }
+    
+    function clearLogs() {
+      logs.innerHTML = '';
+    }
+    
+    // Set up message listener
+    log('🎧 Setting up message listener...', 'info');
+    window.addEventListener('message', (event) => {
+      log(`📨 Received message: ${event.data?.type || 'unknown'}`, 'info');
+      if (event.data?.type === 'SRT_UPSERT_LINK') {
+        log('✅ SUCCESS! Received SRT_UPSERT_LINK message!', 'success');
+        log(`   Link: ${JSON.stringify(event.data.link, null, 2)}`, 'info');
+      } else if (event.data?.type === 'TEST_MESSAGE') {
+        log('✅ Test message received successfully!', 'success');
+      }
+    });
+    
+    function testDirectPostMessage() {
+      log('📤 Sending test message via window.postMessage...', 'info');
+      window.postMessage({ type: 'TEST_MESSAGE', data: 'Hello!' }, '*');
+    }
+    
+    function testExtensionBridge() {
+      log('📤 Asking extension to send UPSERT_LINK...', 'info');
+      log('⚠️  This requires the extension to be loaded and this tab to have content script', 'info');
+      
+      // Try to send message to extension
+      try {
+        if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+          chrome.runtime.sendMessage({
+            type: 'TEST_BRIDGE',
+            message: 'Please send a test UPSERT_LINK'
+          }, (response) => {
+            if (chrome.runtime.lastError) {
+              log(`❌ Extension error: ${chrome.runtime.lastError.message}`, 'error');
+            } else {
+              log('✅ Extension responded: ' + JSON.stringify(response), 'success');
+            }
+          });
+        } else {
+          log('❌ chrome.runtime not available - extension not loaded?', 'error');
+        }
+      } catch (e) {
+        log(`❌ Error: ${e.message}`, 'error');
+      }
+    }
+    
+    log('✅ Message listener ready!', 'success');
+    log('Click "Test Direct postMessage" to verify listener works', 'info');
+  </script>
+</body>
+</html>
+
