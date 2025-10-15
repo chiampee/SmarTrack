@@ -60,9 +60,15 @@ export const LinkList: React.FC = () => {
     deleteLink,
   } = useLinkStore();
   
-  // Subscribe to modal states directly from the store
-  const bulkDeleteModalOpen = useLinkStore((state) => state.bulkDeleteModalOpen);
-  const setBulkDeleteModalOpen = useLinkStore((state) => state.setBulkDeleteModalOpen);
+  // Use local state for the modal since Zustand subscriptions aren't working properly
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpenLocal] = useState(false);
+  
+  // Wrapper to set both local state and store state
+  const setBulkDeleteModalOpen = (open: boolean) => {
+    console.log('🔧 Setting bulkDeleteModalOpen to:', open);
+    setBulkDeleteModalOpenLocal(open);
+    useLinkStore.getState().setBulkDeleteModalOpen(open);
+  };
   
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
