@@ -49,7 +49,13 @@ const DEFAULT_COLUMNS = [
   'created',
 ] as const;
 
+// Render counter
+let renderCount = 0;
+
 export const LinkList: React.FC = () => {
+  renderCount++;
+  console.log('🔄 LinkList rendering, render count:', renderCount);
+  
   const {
     sortKey,
     sortDir: sdir,
@@ -315,10 +321,16 @@ export const LinkList: React.FC = () => {
   // Debug: Log when state changes
   useEffect(() => {
     console.log('🟢 bulkDeleteConfirmOpen changed to:', bulkDeleteConfirmOpen);
+    if (bulkDeleteConfirmOpen === false) {
+      console.trace('🔍 bulkDeleteConfirmOpen set to false, stack trace:');
+    }
   }, [bulkDeleteConfirmOpen]);
   
   useEffect(() => {
     console.log('🟢 testModalOpen changed to:', testModalOpen);
+    if (testModalOpen === false) {
+      console.trace('🔍 testModalOpen set to false, stack trace:');
+    }
   }, [testModalOpen]);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [showEditFallback, setShowEditFallback] = useState(false);
