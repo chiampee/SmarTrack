@@ -2107,13 +2107,21 @@ export const LinkList: React.FC = () => {
                   console.log('🗑️ Delete button clicked, selectedIds:', selectedIds);
                   console.log('🗑️ Selected links:', getSelectedLinks());
                   console.log('🗑️ Setting bulkDeleteConfirmOpen to true');
-                  setBulkDeleteConfirmOpen(true);
-                  console.log('🗑️ bulkDeleteConfirmOpen state should now be true');
                   
-                  // Force a re-render to see if state change is working
+                  // Force state update with callback
+                  setBulkDeleteConfirmOpen(true);
+                  
+                  // Check state immediately after
                   setTimeout(() => {
                     console.log('🗑️ After 100ms, bulkDeleteConfirmOpen should be true');
+                    console.log('🗑️ Current state:', bulkDeleteConfirmOpen);
                   }, 100);
+                  
+                  // Also try forcing a re-render
+                  setTimeout(() => {
+                    console.log('🗑️ Forcing re-render by setting state again');
+                    setBulkDeleteConfirmOpen(true);
+                  }, 200);
                 }}
                 className="inline-flex items-center gap-2"
                 title="Delete selected links permanently"
@@ -3011,6 +3019,23 @@ export const LinkList: React.FC = () => {
 
       {/* Bulk Delete Confirmation Modal */}
       {console.log('🗑️ Rendering DeleteConfirmationModal with isOpen:', bulkDeleteConfirmOpen)}
+      
+      {/* Debug: Show modal state */}
+      {bulkDeleteConfirmOpen && (
+        <div style={{
+          position: 'fixed',
+          top: '10px',
+          right: '10px',
+          background: 'red',
+          color: 'white',
+          padding: '10px',
+          zIndex: 9999,
+          borderRadius: '5px'
+        }}>
+          MODAL STATE: {bulkDeleteConfirmOpen ? 'OPEN' : 'CLOSED'}
+        </div>
+      )}
+      
       <DeleteConfirmationModal
         isOpen={bulkDeleteConfirmOpen}
         onClose={() => {
