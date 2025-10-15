@@ -167,50 +167,12 @@ class EnhancedLinkProcessor {
     try {
       console.log('[SRT] Checking for duplicates for URL:', url);
       
-      const links = await new Promise((resolve) => {
-        chrome.storage.local.get(['links'], (res) => {
-          resolve(res.links || []);
-        });
-      });
-
-      console.log('[SRT] Total links in storage:', links.length);
-
-      const normalizedUrl = normalizeUrlForCompare(url);
-      console.log('[SRT] Normalized URL:', normalizedUrl);
-
-      const duplicates = links.filter(link => {
-        const linkUrl = normalizeUrlForCompare(link.url);
-        const isDuplicate = linkUrl === normalizedUrl;
-        console.log('[SRT] Comparing:', linkUrl, 'vs', normalizedUrl, '=', isDuplicate);
-        if (isDuplicate) {
-          console.log('[SRT] Found duplicate:', link.url, 'with title:', link.metadata?.title || link.title);
-        }
-        return isDuplicate;
-      });
-
-      console.log('[SRT] Duplicates found:', duplicates.length);
-
-      if (duplicates.length > 0) {
-        const result = {
-          hasDuplicates: true,
-          count: duplicates.length,
-          duplicates: duplicates.map(link => ({
-            id: link.id,
-            url: link.url,
-            title: link.metadata?.title || link.title || 'Untitled',
-            description: link.metadata?.description || link.description || '',
-            labels: link.labels || link.label ? [link.label] : ['research'],
-            priority: link.priority || 'medium',
-            status: link.status || 'active',
-            createdAt: link.createdAt || link.savedAt,
-            updatedAt: link.updatedAt || link.savedAt
-          }))
-        };
-        console.log('[SRT] Duplicate check result:', result);
-        return result;
-      }
-
-      console.log('[SRT] No duplicates found');
+      // CHANGED: No longer check chrome.storage.local - dashboard IndexedDB is the single source of truth
+      // Duplicate checking is now handled by the dashboard when it receives the SRT_UPSERT_LINK message
+      console.log('[SRT] Duplicate check delegated to dashboard (IndexedDB)');
+      console.log('[SRT] Extension no longer maintains its own link storage');
+      
+      // Return no duplicates - dashboard will handle this
       return { hasDuplicates: false, count: 0, duplicates: [] };
     } catch (error) {
       console.error('[SRT] Duplicate check failed:', error);
@@ -225,20 +187,17 @@ class EnhancedLinkProcessor {
       // Build enhanced Link object
       const linkForDexie = this.buildLinkObject(payload);
       
-      // Store in chrome.storage as a NEW link (not updating existing)
-      try {
-        await this.storeNewLinkInChromeStorage(payload, linkForDexie.id);
-      } catch (error) {
-        console.error('[SRT] Chrome storage failed:', error);
-        throw new Error('Failed to save to local storage');
-      }
+      // CHANGED: No longer save to chrome.storage.local - dashboard handles all storage via IndexedDB
+      // The dashboard will receive the SRT_UPSERT_LINK message and save to IndexedDB
+      console.log('[SRT] Skipping chrome.storage - using dashboard IndexedDB as single source of truth');
       
-      // Broadcast to dashboard
+      // Broadcast to dashboard (dashboard will save to IndexedDB)
       try {
         await this.broadcastToDashboard(linkForDexie);
+        console.log('[SRT] Link sent to dashboard for IndexedDB storage:', linkForDexie.url);
       } catch (error) {
         console.error('[SRT] Dashboard broadcast failed:', error);
-        // Don't throw here, just log - the link is still saved
+        throw new Error('Failed to send link to dashboard. Make sure the dashboard is open.');
       }
       
       // Process page content for AI enrichment (non-blocking)
@@ -249,7 +208,7 @@ class EnhancedLinkProcessor {
         // Don't throw here, just log - the link is still saved
       }
       
-      // Update badge
+      // Update badge (will show 0 since we no longer use chrome.storage)
       try {
         this.updateBadge();
       } catch (error) {
