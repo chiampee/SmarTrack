@@ -1325,10 +1325,12 @@ export const LinkList: React.FC = () => {
   };
 
   // Define modals function that will be called later (after all state is defined)
-  const renderModals = () => (
-    <>
-      {/* Single Link Edit Modal */}
-      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Link">
+  const renderModals = () => {
+    console.log('🎬 renderModals() called, bulkDeleteModalOpen:', bulkDeleteModalOpen);
+    return (
+      <>
+        {/* Single Link Edit Modal */}
+        <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Link">
         {editingLink && (
           <LinkForm
             existing={editingLink}
@@ -1367,7 +1369,8 @@ export const LinkList: React.FC = () => {
         title="Delete Selected Links"
       />
     </>
-  );
+    );
+  };
 
   if (loading)
     return (
