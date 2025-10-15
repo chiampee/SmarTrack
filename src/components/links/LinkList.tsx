@@ -639,7 +639,11 @@ export const LinkList: React.FC = () => {
   };
 
   const archiveSelected = async () => {
-    if (!selectedIds.length) return;
+    console.log('[Dashboard] archiveSelected function called');
+    if (!selectedIds.length) {
+      console.log('[Dashboard] No links selected for archiving');
+      return;
+    }
     console.log('[Dashboard] Archiving links:', selectedIds);
     try {
       // Update the extension storage directly
@@ -3018,6 +3022,15 @@ export const LinkList: React.FC = () => {
               className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
             >
               🔧 Panel Test
+            </button>
+            <button
+              onClick={() => {
+                console.log('[Dashboard] Test button clicked - buttons are working!');
+                alert('Test button works! If you see this, button clicks are functioning.');
+              }}
+              className="px-3 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+            >
+              ✅ Test Click
             </button>
 
 

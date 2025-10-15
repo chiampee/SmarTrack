@@ -120,13 +120,22 @@ smart-research-tracker/
 │   ├── services/          # API services
 │   ├── stores/            # State management
 │   ├── db/                # Database layer
+│   ├── pages/             # Application pages
+│   ├── utils/             # Utility functions
 │   └── types/             # TypeScript types
 ├── extension/             # Browser extension source
 ├── dist-extension/        # Built extension (for Chrome)
 ├── dist/                  # Built web app (for deployment)
 ├── scripts/               # Installation and utility scripts
+├── tools/                 # Development tools and utilities
+│   ├── launchers/         # Application launchers
+│   ├── debug/             # Debug and demo pages
+│   └── tests/             # Test files and utilities
 ├── docs/                  # Documentation
-└── .env.local            # Environment variables
+├── assets/                # Static assets and releases
+├── api/                   # API endpoints
+├── backend/               # Backend services
+└── tests/                 # Test suites
 ```
 
 ## Development
