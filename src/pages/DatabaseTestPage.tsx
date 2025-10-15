@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { databaseTestRunner, TestSuite, TestResult } from '../utils/databaseTestRunner';
 import { databaseCleanup } from '../utils/databaseCleanup';
+import { linkService } from '../services/linkService';
+import { db } from '../db/smartResearchDB';
+import type { Link } from '../types/Link';
 
 export const DatabaseTestPage: React.FC = () => {
   const [testSuite, setTestSuite] = useState<TestSuite | null>(null);
@@ -9,6 +12,7 @@ export const DatabaseTestPage: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [cleanupResult, setCleanupResult] = useState<any>(null);
   const [isCleaning, setIsCleaning] = useState(false);
+  const [saveTestResult, setSaveTestResult] = useState<{ success: boolean; message: string; link?: Link } | null>(null);
 
   const loadStats = async () => {
     try {
@@ -107,9 +111,68 @@ export const DatabaseTestPage: React.FC = () => {
       console.log('✅ Orphaned data cleanup finished');
     } catch (error) {
       console.error('❌ Orphaned data cleanup failed:', error);
-      setCleanupResult({ error: error.message });
+      setCleanupResult({ error: (error as Error).message });
     } finally {
       setIsCleaning(false);
+    }
+  };
+
+  const testSaveLink = async () => {
+    setSaveTestResult(null);
+    
+    try {
+      console.log('🧪 Testing link save functionality...');
+      
+      // Create a test link
+      const testLink: Link = {
+        id: crypto.randomUUID(),
+        url: 'https://example.com/test-' + Date.now(),
+        metadata: {
+          title: 'Test Link ' + new Date().toLocaleTimeString(),
+          description: 'This is a test link to verify database saving',
+          image: ''
+        },
+        labels: ['test'],
+        priority: 'medium',
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      console.log('📝 Created test link:', testLink);
+      
+      // Try saving via linkService
+      console.log('💾 Saving via linkService...');
+      await linkService.create(testLink);
+      
+      // Verify it was saved
+      console.log('🔍 Verifying save...');
+      const retrieved = await db.getLink(testLink.id);
+      
+      if (retrieved) {
+        console.log('✅ Link saved and retrieved successfully!');
+        setSaveTestResult({
+          success: true,
+          message: `Successfully saved and retrieved link: "${testLink.metadata.title}"`,
+          link: retrieved
+        });
+        
+        // Reload stats to show updated count
+        await loadStats();
+      } else {
+        console.error('❌ Link was not found after saving!');
+        setSaveTestResult({
+          success: false,
+          message: 'Link was not found in database after saving. Save operation may have failed silently.'
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Test save failed:', error);
+      setSaveTestResult({
+        success: false,
+        message: `Save failed: ${(error as Error).message}`
+      });
     }
   };
 
@@ -130,12 +193,18 @@ export const DatabaseTestPage: React.FC = () => {
           {/* Quick Health Check */}
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Quick Health Check</h2>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-4">
               <button
                 onClick={runQuickHealthCheck}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
               >
                 Run Health Check
+              </button>
+              <button
+                onClick={testSaveLink}
+                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+              >
+                🧪 Test Save Link
               </button>
               {quickHealth && (
                 <div className={`p-3 rounded-lg ${quickHealth.healthy ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -146,6 +215,23 @@ export const DatabaseTestPage: React.FC = () => {
                 </div>
               )}
             </div>
+            
+            {/* Save Test Result */}
+            {saveTestResult && (
+              <div className={`mt-4 p-4 rounded-lg ${saveTestResult.success ? 'bg-green-100 text-green-800 border-2 border-green-300' : 'bg-red-100 text-red-800 border-2 border-red-300'}`}>
+                <div className="font-semibold mb-2">
+                  {saveTestResult.success ? '✅ Save Test Passed' : '❌ Save Test Failed'}
+                </div>
+                <div className="text-sm">{saveTestResult.message}</div>
+                {saveTestResult.link && (
+                  <div className="mt-2 text-xs bg-white bg-opacity-50 p-2 rounded">
+                    <div><strong>ID:</strong> {saveTestResult.link.id}</div>
+                    <div><strong>URL:</strong> {saveTestResult.link.url}</div>
+                    <div><strong>Created:</strong> {new Date(saveTestResult.link.createdAt).toLocaleString()}</div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Database Statistics */}
