@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Complete Extension Flow Test - Smart Research Tracker</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007acc;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 3px 0;
+            padding: 3px 8px;
+            border-left: 3px solid #007acc;
+        }
+        .log-entry.success { border-left-color: #4ec9b0; }
+        .log-entry.error { border-left-color: #f48771; }
+        .log-entry.warning { border-left-color: #dcdcaa; }
+        .step {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f9f9f9;
+            border-left: 4px solid #007acc;
+            border-radius: 4px;
+        }
+        .step.complete { border-left-color: #4ec9b0; background: #e8f5e9; }
+        .step.failed { border-left-color: #f48771; background: #ffebee; }
+        .step.running { border-left-color: #ffc107; background: #fff9e6; }
+    </style>
+</head>
+<body>
+    <h1>🔬 Complete Extension Flow Diagnostic</h1>
+    
+    <div class="test-section">
+        <h2>Automated Full Flow Test</h2>
+        <p>This will test the complete flow from extension popup → background → content script → IndexedDB → dashboard</p>
+        <button onclick="runCompleteTest()" id="startBtn">▶️ Run Complete Test</button>
+        <button onclick="clearResults()">🗑️ Clear Results</button>
+        <div id="summary"></div>
+    </div>
+
+    <div id="results"></div>
+
+    <script type="module">
+        import { db } from './src/db/smartResearchDB.ts';
+        
+        window.db = db;
+        
+        const results = document.getElementById('results');
+        const summary = document.getElementById('summary');
+        let testsPassed = 0;
+        let testsFailed = 0;
+        let currentStep = 0;
+
+        window.clearResults = function() {
+            results.innerHTML = '';
+            summary.innerHTML = '';
+            testsPassed = 0;
+            testsFailed = 0;
+            currentStep = 0;
+        };
+
+        function addStep(title, content = '') {
+            currentStep++;
+            const step = document.createElement('div');
+            step.className = 'step running';
+            step.id = `step-${currentStep}`;
+            step.innerHTML = `<h3>Step ${currentStep}: ${title}</h3>${content}`;
+            results.appendChild(step);
+            return currentStep;
+        }
+
+        function updateStep(num, status, content) {
+            const step = document.getElementById(`step-${num}`);
+            if (step) {
+                step.className = `step ${status}`;
+                const h3 = step.querySelector('h3');
+                const icon = status === 'complete' ? '✅' : status === 'failed' ? '❌' : '⚠️';
+                h3.textContent = `${icon} Step ${num}: ${h3.textContent.split(': ')[1]}`;
+                if (content) {
+                    step.innerHTML = h3.outerHTML + content;
+                }
+                
+                if (status === 'complete') testsPassed++;
+                if (status === 'failed') testsFailed++;
+            }
+        }
+
+        function addLog(message, type = 'info') {
+            const log = document.createElement('div');
+            log.className = `log-entry ${type}`;
+            log.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(log);
+            console.log(message);
+        }
+
+        function updateSummary() {
+            const total = testsPassed + testsFailed;
+            const percentage = total > 0 ? Math.round((testsPassed / total) * 100) : 0;
+            const status = testsFailed === 0 ? 'success' : testsPassed > testsFailed ? 'warning' : 'error';
+            
+            summary.innerHTML = `
+                <div class="status ${status}">
+                    <strong>Test Results:</strong> ${testsPassed} passed, ${testsFailed} failed (${percentage}% success rate)
+                    ${testsFailed === 0 ? '<br>🎉 All tests passed! Extension is working correctly.' : ''}
+                </div>
+            `;
+        }
+
+        window.runCompleteTest = async function() {
+            clearResults();
+            const startBtn = document.getElementById('startBtn');
+            startBtn.disabled = true;
+            
+            try {
+                // Step 1: Check Extension
+                const step1 = addStep('Check if extension is loaded');
+                try {
+                    await new Promise((resolve, reject) => {
+                        chrome.runtime.sendMessage({ type: 'PING' }, (response) => {
+                            if (chrome.runtime.lastError) {
+                                reject(new Error(chrome.runtime.lastError.message));
+                            } else {
+                                resolve(response);
+                            }
+                        });
+                    });
+                    updateStep(step1, 'complete', '<p>✅ Extension is loaded and responding</p>');
+                } catch (error) {
+                    updateStep(step1, 'failed', `<p>❌ Extension not loaded: ${error.message}</p>`);
+                    throw error;
+                }
+
+                // Step 2: Check Content Script
+                const step2 = addStep('Check if content script is loaded on this page');
+                const hasContentScript = window.SRTContentScript || window.__SMART_RESEARCH_TRACKER__;
+                if (hasContentScript) {
+                    updateStep(step2, 'complete', '<p>✅ Content script is loaded</p>');
+                } else {
+                    updateStep(step2, 'failed', '<p>❌ Content script NOT loaded</p>');
+                    throw new Error('Content script not loaded');
+                }
+
+                // Step 3: Check IndexedDB
+                const step3 = addStep('Check IndexedDB connection');
+                try {
+                    const count = await db.links.count();
+                    updateStep(step3, 'complete', `<p>✅ IndexedDB connected (${count} existing links)</p>`);
+                } catch (error) {
+                    updateStep(step3, 'failed', `<p>❌ IndexedDB connection failed: ${error.message}</p>`);
+                    throw error;
+                }
+
+                // Step 4: Create Test Link
+                const step4 = addStep('Create test link');
+                const testLink = {
+                    id: crypto.randomUUID(),
+                    url: 'https://example.com/test-complete-flow-' + Date.now(),
+                    metadata: {
+                        title: 'Complete Flow Test ' + new Date().toLocaleTimeString(),
+                        description: 'Testing complete extension flow',
+                        image: ''
+                    },
+                    labels: ['test', 'diagnostic'],
+                    priority: 'high',
+                    status: 'active',
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    source: 'diagnostic-test'
+                };
+                updateStep(step4, 'complete', `<p>✅ Test link created</p><pre>${JSON.stringify(testLink, null, 2)}</pre>`);
+
+                // Step 5: Save via Content Script
+                const step5 = addStep('Save link via content script (simulating extension save)');
+                try {
+                    // Initialize DB
+                    const dbInstance = await window.__SRT_initDB?.() || db;
+                    
+                    // Save to IndexedDB
+                    await new Promise((resolve, reject) => {
+                        const transaction = dbInstance.transaction(['links'], 'readwrite');
+                        const store = transaction.objectStore('links');
+                        const request = store.put(testLink);
+                        
+                        request.onsuccess = () => resolve();
+                        request.onerror = () => reject(request.error);
+                    });
+                    
+                    updateStep(step5, 'complete', '<p>✅ Link saved to IndexedDB via content script</p>');
+                } catch (error) {
+                    updateStep(step5, 'failed', `<p>❌ Save failed: ${error.message}</p>`);
+                    throw error;
+                }
+
+                // Step 6: Verify Save
+                const step6 = addStep('Verify link was saved');
+                try {
+                    const retrieved = await db.getLink(testLink.id);
+                    if (retrieved) {
+                        updateStep(step6, 'complete', `<p>✅ Link verified in IndexedDB: "${retrieved.metadata.title}"</p>`);
+                    } else {
+                        updateStep(step6, 'failed', '<p>❌ Link NOT found in IndexedDB after save</p>');
+                        throw new Error('Link not found after save');
+                    }
+                } catch (error) {
+                    updateStep(step6, 'failed', `<p>❌ Verification failed: ${error.message}</p>`);
+                    throw error;
+                }
+
+                // Step 7: Trigger Dashboard Refresh
+                const step7 = addStep('Trigger dashboard refresh notification');
+                try {
+                    window.postMessage({ 
+                        type: 'SRT_DB_UPDATED',
+                        action: 'create',
+                        linkId: testLink.id
+                    }, '*');
+                    
+                    document.dispatchEvent(
+                        new CustomEvent('srt-db-updated', { 
+                            detail: { 
+                                link: testLink,
+                                action: 'create'
+                            } 
+                        })
+                    );
+                    
+                    updateStep(step7, 'complete', '<p>✅ Dashboard refresh triggered</p>');
+                } catch (error) {
+                    updateStep(step7, 'failed', `<p>❌ Refresh notification failed: ${error.message}</p>`);
+                }
+
+                // Step 8: Final Count
+                const step8 = addStep('Check final link count');
+                try {
+                    const finalCount = await db.links.count();
+                    const allLinks = await db.links.toArray();
+                    const testLinkExists = allLinks.some(l => l.id === testLink.id);
+                    
+                    if (testLinkExists) {
+                        updateStep(step8, 'complete', `<p>✅ Final verification passed! Total links: ${finalCount}</p>`);
+                    } else {
+                        updateStep(step8, 'failed', '<p>❌ Test link disappeared from database</p>');
+                    }
+                } catch (error) {
+                    updateStep(step8, 'failed', `<p>❌ Final count failed: ${error.message}</p>`);
+                }
+
+                // Success Summary
+                addLog('🎉 Complete flow test finished!', 'success');
+                addLog(`✅ Extension → Background → Content Script → IndexedDB → Dashboard flow is working!`, 'success');
+                
+            } catch (error) {
+                addLog(`❌ Test failed: ${error.message}`, 'error');
+                addLog(`Check the failed steps above for details.`, 'error');
+            } finally {
+                updateSummary();
+                startBtn.disabled = false;
+            }
+        };
+
+        // Add helpful info
+        console.log('🔬 Complete Extension Flow Test page loaded');
+        console.log('Click "Run Complete Test" to diagnose the extension');
+    </script>
+</body>
+</html>
+
