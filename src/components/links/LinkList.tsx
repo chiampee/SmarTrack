@@ -58,6 +58,8 @@ export const LinkList: React.FC = () => {
     loading,
     loadLinks,
     deleteLink,
+    bulkDeleteModalOpen,
+    setBulkDeleteModalOpen,
   } = useLinkStore();
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -309,8 +311,6 @@ export const LinkList: React.FC = () => {
   // ChatGPT export modal state
   const [chatGPTExportOpen, setChatGPTExportOpen] = useState(false);
   const [chatGPTExportLinks, setChatGPTExportLinks] = useState<Link[]>([]);
-  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
-  const [testModalOpen, setTestModalOpen] = useState(false);
   
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [showEditFallback, setShowEditFallback] = useState(false);
@@ -683,21 +683,14 @@ export const LinkList: React.FC = () => {
   };
 
   const deleteSelected = async () => {
-    console.log('🗑️ [Dashboard] deleteSelected function called');
-    if (!selectedIds.length) {
-      console.log('🗑️ [Dashboard] No links selected for deletion');
-      return;
-    }
-    console.log('🗑️ [Dashboard] Deleting links:', selectedIds);
+    if (!selectedIds.length) return;
+    
     try {
       const selectedLinks = getSelectedLinks();
-      console.log('🗑️ [Dashboard] Selected links to delete:', selectedLinks);
       if (selectedLinks.length > 0) {
         // Delete from the database
         for (const link of selectedLinks) {
-          console.log('🗑️ [Dashboard] Deleting link:', link.id, link.metadata?.title);
           await deleteLink(link.id);
-          console.log('🗑️ [Dashboard] Link deleted successfully:', link.id);
         }
         
         // Also notify the extension to remove these links
@@ -709,24 +702,18 @@ export const LinkList: React.FC = () => {
             },
             '*'
           );
-          console.log('🗑️ [Dashboard] Delete request sent to extension');
         } catch (error) {
-          console.warn(
-            '🗑️ [Dashboard] Failed to notify extension:',
-            error
-          );
+          console.warn('[Dashboard] Failed to notify extension:', error);
         }
       }
 
-      console.log('🗑️ [Dashboard] All links deleted successfully');
       setSelectedIds([]);
       // Refresh the links to show updated status
       setTimeout(() => {
-        console.log('🗑️ [Dashboard] Refreshing links after deletion');
         loadLinks();
       }, 500);
     } catch (error) {
-      console.error('🗑️ [Dashboard] Failed to delete links:', error);
+      console.error('[Dashboard] Failed to delete links:', error);
     }
   };
 
@@ -2106,39 +2093,13 @@ export const LinkList: React.FC = () => {
                 variant="danger"
                 size="md"
                 onClick={() => {
-                  console.log('🗑️ Delete button clicked, selectedIds:', selectedIds);
-                  console.log('🗑️ Selected links:', getSelectedLinks());
-                  console.log('🗑️ Setting bulkDeleteConfirmOpen to true');
-                  
-                  // Try both state variables
-                  setBulkDeleteConfirmOpen(true);
-                  setTestModalOpen(true);
-                  
-                  // Check state immediately after
-                  setTimeout(() => {
-                    console.log('🗑️ After 100ms, bulkDeleteConfirmOpen:', bulkDeleteConfirmOpen);
-                    console.log('🗑️ After 100ms, testModalOpen:', testModalOpen);
-                  }, 100);
+                  setBulkDeleteModalOpen(true);
                 }}
                 className="inline-flex items-center gap-2"
                 title="Delete selected links permanently"
               >
                 <Trash className="w-4 h-4" />
                 Delete
-              </Button>
-              
-              {/* Test button to force modal open */}
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  console.log('🧪 Test button clicked - forcing modal open');
-                  setBulkDeleteConfirmOpen(true);
-                }}
-                className="inline-flex items-center gap-2"
-                title="Test modal opening"
-              >
-                Test Modal
               </Button>
             </div>
           </div>
@@ -3015,54 +2976,13 @@ export const LinkList: React.FC = () => {
       </Modal>
 
       {/* Bulk Delete Confirmation Modal */}
-      {console.log('🗑️ Rendering DeleteConfirmationModal with isOpen:', bulkDeleteConfirmOpen)}
-      
-      {/* Debug: Show modal state */}
-      {(bulkDeleteConfirmOpen || testModalOpen) && (
-        <div style={{
-          position: 'fixed',
-          top: '10px',
-          right: '10px',
-          background: 'red',
-          color: 'white',
-          padding: '10px',
-          zIndex: 9999,
-          borderRadius: '5px'
-        }}>
-          <div>BULK DELETE: {bulkDeleteConfirmOpen ? 'OPEN' : 'CLOSED'}</div>
-          <div>TEST MODAL: {testModalOpen ? 'OPEN' : 'CLOSED'}</div>
-        </div>
-      )}
-      
       <DeleteConfirmationModal
-        isOpen={bulkDeleteConfirmOpen}
-        onClose={() => {
-          console.log('🗑️ DeleteConfirmationModal onClose called');
-          setBulkDeleteConfirmOpen(false);
-        }}
+        isOpen={bulkDeleteModalOpen}
+        onClose={() => setBulkDeleteModalOpen(false)}
         onConfirm={deleteSelected}
         links={getSelectedLinks()}
         title="Delete Selected Links"
       />
-      
-      {/* Test Modal */}
-      {testModalOpen && (
-        <div style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: 'white',
-          border: '2px solid red',
-          padding: '20px',
-          zIndex: 10000,
-          borderRadius: '10px'
-        }}>
-          <h3>TEST MODAL IS WORKING!</h3>
-          <p>This proves the state is updating correctly.</p>
-          <button onClick={() => setTestModalOpen(false)}>Close Test Modal</button>
-        </div>
-      )}
 
       {/* Clean Filters and Actions Bar */}
       <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200/50 p-3 mb-4 shadow-sm relative z-50">

@@ -19,6 +19,7 @@ interface LinkState {
   searchTerm?: string;
   isClearing: boolean; // Flag to prevent auto-refresh during clearing
   isMirroring: boolean; // Flag to prevent DB hooks from refetching during mirror
+  bulkDeleteModalOpen: boolean; // Moved from component state to prevent loss on re-renders
   loadLinks: () => Promise<void>;
   addLink: (link: Link) => Promise<void>;
   updateLink: (id: string, changes: Partial<Link>) => Promise<void>;
@@ -31,6 +32,7 @@ interface LinkState {
   setSearchTerm: (term: string) => void;
   applyFilters: () => void;
   fetchLinks: () => Promise<void>;
+  setBulkDeleteModalOpen: (open: boolean) => void;
   // Extension bridge helpers
   getLinksFromExtension: () => Promise<Link[]>;
   injectContentScriptAndRetry: (messageId: string) => Promise<Link[]>;
@@ -104,6 +106,7 @@ const linkStore = create<LinkState>()((set, get) => ({
   searchTerm: undefined,
   isClearing: false,
   isMirroring: false,
+  bulkDeleteModalOpen: false,
   async loadLinks() {
     try {
       await get().fetchLinks();
@@ -472,6 +475,9 @@ const linkStore = create<LinkState>()((set, get) => ({
     } else {
       get().applyFilters();
     }
+  },
+  setBulkDeleteModalOpen(open) {
+    set({ bulkDeleteModalOpen: open });
   },
 }));
 
