@@ -8,6 +8,7 @@ import { ChatGPTExportModal } from '../ChatGPTExportModal';
 import { openChatGPTWithLinksAndCopy } from '../../utils/chatGptExport';
 // Using store-provided filtered links rather than raw DB query
 import { useLinkStore } from '../../stores/linkStore';
+import { useCallback } from 'react';
 import { linkService } from '../../services/linkService';
 import {
   ChevronUp,
@@ -50,6 +51,8 @@ const DEFAULT_COLUMNS = [
 ] as const;
 
 export const LinkList: React.FC = () => {
+  console.log('🔄 LinkList component rendering');
+  
   const {
     sortKey,
     sortDir: sdir,
@@ -62,13 +65,14 @@ export const LinkList: React.FC = () => {
   
   // Use local state for the modal since Zustand subscriptions aren't working properly
   const [bulkDeleteModalOpen, setBulkDeleteModalOpenLocal] = useState(false);
+  console.log('📊 Current bulkDeleteModalOpen state:', bulkDeleteModalOpen);
   
   // Wrapper to set both local state and store state
-  const setBulkDeleteModalOpen = (open: boolean) => {
+  const setBulkDeleteModalOpen = useCallback((open: boolean) => {
     console.log('🔧 Setting bulkDeleteModalOpen to:', open);
     setBulkDeleteModalOpenLocal(open);
     useLinkStore.getState().setBulkDeleteModalOpen(open);
-  };
+  }, []);
   
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -1320,13 +1324,69 @@ export const LinkList: React.FC = () => {
     }
   };
 
+  // Render modals always, even during loading, so they can be opened
+  const modalsJSX = (
+    <>
+      {/* Multi-Chat Panel */}
+      <MultiChatPanel
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        links={chatLinks}
+        anchorLabel={anchorLabel}
+      />
+
+      {/* Single Link Edit Modal */}
+      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Link">
+        {editingLink && (
+          <LinkForm
+            existing={editingLink}
+            onSuccess={() => {
+              console.debug('[Links] Edit saved – closing modal');
+              setEditOpen(false);
+              setEditingLink(null);
+            }}
+          />
+        )}
+      </Modal>
+
+      {/* ChatGPT Export Modal */}
+      <ChatGPTExportModal
+        isOpen={chatGPTExportOpen}
+        onClose={() => setChatGPTExportOpen(false)}
+        links={chatGPTExportLinks}
+      />
+
+      {/* Bulk Edit Modal */}
+      <Modal isOpen={bulkEditOpen} onClose={() => setBulkEditOpen(false)} title="Bulk Edit Selected Links">
+        <BulkEditForm 
+          selectedLinks={getSelectedLinks()} 
+          onSave={bulkEditSelected}
+          onCancel={() => setBulkEditOpen(false)}
+        />
+      </Modal>
+
+      {/* Bulk Delete Confirmation Modal */}
+      {console.log('🔍 Rendering DeleteConfirmationModal with isOpen:', bulkDeleteModalOpen)}
+      <DeleteConfirmationModal
+        isOpen={bulkDeleteModalOpen}
+        onClose={() => setBulkDeleteModalOpen(false)}
+        onConfirm={deleteSelected}
+        links={getSelectedLinks()}
+        title="Delete Selected Links"
+      />
+    </>
+  );
+
   if (loading)
     return (
-      <div className="border border-gray-200">
-        {[...Array(4)].map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full border-b border-gray-100" />
-        ))}
-      </div>
+      <>
+        {modalsJSX}
+        <div className="border border-gray-200">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full border-b border-gray-100" />
+          ))}
+        </div>
+      </>
     );
 
   // Error handling is done through the loading state and null checks
@@ -2949,57 +3009,13 @@ export const LinkList: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Add Link Modal */}
       <Modal isOpen={open} onClose={() => setOpen(false)} title="Add Link" dataId="add-link-modal" maxWidthClass="max-w-md">
         <LinkForm onSuccess={() => setOpen(false)} />
       </Modal>
-      <Modal
-        isOpen={editOpen}
-        onClose={() => {
-          console.debug('[Links] Closing edit modal');
-          setEditOpen(false);
-          setEditingLink(null);
-        }}
-        title="Edit Link"
-        dataId="edit-link-modal"
-        maxWidthClass="max-w-md"
-      >
-        {editingLink && (
-          <LinkForm
-            existing={editingLink}
-            onSuccess={() => {
-              console.debug('[Links] Edit saved – closing modal');
-              setEditOpen(false);
-              setEditingLink(null);
-            }}
-          />
-        )}
-      </Modal>
-
-      {/* ChatGPT Export Modal */}
-      <ChatGPTExportModal
-        isOpen={chatGPTExportOpen}
-        onClose={() => setChatGPTExportOpen(false)}
-        links={chatGPTExportLinks}
-      />
-
-      {/* Bulk Edit Modal */}
-      <Modal isOpen={bulkEditOpen} onClose={() => setBulkEditOpen(false)} title="Bulk Edit Selected Links">
-        <BulkEditForm 
-          selectedLinks={getSelectedLinks()} 
-          onSave={bulkEditSelected}
-          onCancel={() => setBulkEditOpen(false)}
-        />
-      </Modal>
-
-      {/* Bulk Delete Confirmation Modal */}
-      {console.log('🔍 Rendering DeleteConfirmationModal with isOpen:', bulkDeleteModalOpen)}
-      <DeleteConfirmationModal
-        isOpen={bulkDeleteModalOpen}
-        onClose={() => setBulkDeleteModalOpen(false)}
-        onConfirm={deleteSelected}
-        links={getSelectedLinks()}
-        title="Delete Selected Links"
-      />
+      
+      {/* All other modals */}
+      {modalsJSX}
 
       {/* Clean Filters and Actions Bar */}
       <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200/50 p-3 mb-4 shadow-sm relative z-50">
