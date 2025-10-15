@@ -266,6 +266,19 @@ function handleMessage(msg, sender, sendResponse) {
       break;
 
     case 'UPSERT_LINK':
+      // Forward to page if this is the dashboard
+      try {
+        window.postMessage({ 
+          type: 'SRT_UPSERT_LINK', 
+          link: msg.link,
+          summaries: msg.summaries || []
+        }, '*');
+        console.log('[SRT] Forwarded UPSERT_LINK to page via postMessage');
+      } catch (e) {
+        console.warn('[SRT] Failed to forward to page:', e);
+      }
+      
+      // Also handle locally in IndexedDB
       handleUpsertLink(msg.link, msg.summaries || [])
         .then((result) => sendResponse?.(result))
         .catch((error) => {
