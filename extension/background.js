@@ -120,14 +120,14 @@ class EnhancedLinkProcessor {
       // Build enhanced Link object
       const linkForDexie = this.buildLinkObject(payload);
       
-      // Save to chrome.storage.local (shared storage accessible from dashboard)
-      console.log('[SRT] Saving link to chrome.storage.local');
+      // Send to content script to save in IndexedDB (single source of truth)
+      console.log('[SRT] Sending link to content script for IndexedDB save');
       try {
-        await this.storeNewLinkInChromeStorage(payload, linkForDexie.id);
-        console.log('[SRT] ✅ Link saved to chrome.storage.local');
+        const saveResult = await this.sendToContentScript(payload.tabId, linkForDexie);
+        console.log('[SRT] ✅ Content script saved to IndexedDB:', saveResult);
       } catch (error) {
-        console.error('[SRT] ❌ Chrome storage save failed:', error);
-        throw new Error('Failed to save to chrome.storage: ' + error.message);
+        console.error('[SRT] ❌ IndexedDB save failed:', error);
+        throw new Error('Failed to save to IndexedDB: ' + error.message);
       }
       
       // Broadcast to dashboard to trigger immediate refresh
@@ -136,7 +136,7 @@ class EnhancedLinkProcessor {
         console.log('[SRT] 📢 Dashboard notified');
       } catch (error) {
         console.error('[SRT] Dashboard broadcast failed (not critical):', error);
-        // Don't throw - link is saved in chrome.storage
+        // Don't throw - link is saved in IndexedDB
       }
       
       // Process page content for AI enrichment (non-blocking)
@@ -168,14 +168,14 @@ class EnhancedLinkProcessor {
 
   async checkForDuplicates(url) {
     try {
-      console.log('[SRT] Checking for duplicates for URL:', url);
+      console.log('[SRT] Checking for duplicates in IndexedDB for URL:', url);
       
-      // CHANGED: No longer check chrome.storage.local - dashboard IndexedDB is the single source of truth
-      // Duplicate checking is now handled by the dashboard when it receives the SRT_UPSERT_LINK message
-      console.log('[SRT] Duplicate check delegated to dashboard (IndexedDB)');
-      console.log('[SRT] Extension no longer maintains its own link storage');
+      // Ask content script to check IndexedDB for duplicates
+      // Since background script can't access IndexedDB, we delegate to content script
+      console.log('[SRT] Duplicate check delegated to content script (IndexedDB)');
       
-      // Return no duplicates - dashboard will handle this
+      // For now, skip duplicate checking and let UPSERT_LINK handle it
+      // The content script's handleUpsertLink will check and update if duplicate exists
       return { hasDuplicates: false, count: 0, duplicates: [] };
     } catch (error) {
       console.error('[SRT] Duplicate check failed:', error);

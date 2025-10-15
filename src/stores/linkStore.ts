@@ -132,19 +132,19 @@ const linkStore = create<LinkState>()((set, get) => ({
     set({ loading: true, error: undefined, isFetching: true });
     
     try {
-      // Load from extension storage (chrome.storage.local) - the single source of truth
-      console.log('[Dashboard] Loading links from extension storage (chrome.storage.local)');
-      const extensionLinks = await get().getLinksFromExtension();
+      // Load directly from IndexedDB - the single source of truth
+      console.log('[Dashboard] Loading links from IndexedDB (single source of truth)');
+      const dbLinks = await linkService.getAll();
       
       // Deduplicate any potential duplicates
-      const deduplicatedLinks = deduplicateLinks(extensionLinks || []);
+      const deduplicatedLinks = deduplicateLinks(dbLinks || []);
       
-      console.log('[Dashboard] Loaded', deduplicatedLinks.length, 'links from extension storage');
+      console.log('[Dashboard] Loaded', deduplicatedLinks.length, 'links from IndexedDB');
       set({ rawLinks: deduplicatedLinks, loading: false, isFetching: false });
       get().applyFilters();
       
     } catch (error) {
-      console.error('[Dashboard] Error fetching links from local database:', error);
+      console.error('[Dashboard] Error fetching links from IndexedDB:', error);
       try {
         errorHandler.handleError(createDatabaseError(error as Error, { source: 'fetchLinks' }));
       } catch {}
@@ -505,63 +505,18 @@ const linkStore = create<LinkState>()((set, get) => ({
 // Also listen for extension broadcasts so dashboard updates immediately
 if (typeof window !== 'undefined') {
   window.addEventListener('message', async (event: MessageEvent) => {
-    // Handle link upsert from extension - save directly to IndexedDB
-    if (event?.data?.type === 'SRT_UPSERT_LINK' && event?.data?.link) {
-      console.log('📥 [Dashboard] Received link from extension:', event.data.link);
-      
-      try {
-        const extLink = event.data.link;
-        
-        // Check if link already exists to avoid duplicates
-        const existingLinks = await linkService.getAll();
-        const exists = existingLinks.some(l => l.url === extLink.url);
-        
-        if (exists) {
-          console.log('⏭️  [Dashboard] Link already exists, skipping:', extLink.url);
-          return;
-        }
-        
-        // Convert extension link format to dashboard format if needed
-        const dashboardLink: Link = {
-          id: extLink.id || crypto.randomUUID(),
-          url: extLink.url,
-          metadata: {
-            title: extLink.metadata?.title || extLink.title || '',
-            description: extLink.metadata?.description || extLink.description || '',
-            image: extLink.metadata?.image || extLink.image || ''
-          },
-          labels: extLink.labels || [],
-          priority: extLink.priority || 'medium',
-          status: extLink.status || 'active',
-          boardId: extLink.boardId,
-          createdAt: extLink.createdAt ? new Date(extLink.createdAt) : new Date(),
-          updatedAt: extLink.updatedAt ? new Date(extLink.updatedAt) : new Date()
-        };
-        
-        // Save to IndexedDB (single source of truth)
-        await linkService.create(dashboardLink);
-        console.log('✅ [Dashboard] Link saved to IndexedDB from extension:', dashboardLink.metadata.title);
-        
-        // Refresh to show the new link
-        if (!linkStore.getState().isClearing) {
-          await linkStore.getState().fetchLinks();
-        }
-      } catch (error) {
-        console.error('❌ [Dashboard] Failed to save extension link:', error);
-      }
-      return;
-    }
-    
-    // Handle generic DB update notifications
-    if (event?.data?.type === 'SRT_DB_UPDATED') {
-      // Don't auto-refresh if we're in the middle of clearing
+    // Handle generic DB update notifications from extension
+    if (event?.data?.type === 'SRT_DB_UPDATED' || event?.data?.type === 'SRT_UPSERT_LINK') {
+      // Extension has updated IndexedDB, refresh the dashboard
       if (!linkStore.getState().isClearing) {
+        console.log('📥 [Dashboard] Extension updated IndexedDB, refreshing...');
         linkStore.getState().fetchLinks();
       } else {
         console.log('🔄 Skipping auto-refresh during clear operation');
       }
     }
   });
+  
   document.addEventListener('srt-db-updated', () => {
     if (!linkStore.getState().isClearing) {
       linkStore.getState().fetchLinks();
@@ -569,6 +524,7 @@ if (typeof window !== 'undefined') {
       console.log('🔄 Skipping auto-refresh during clear operation');
     }
   });
+  
   document.addEventListener('srt-upsert-link', () => {
     if (!linkStore.getState().isClearing) {
       linkStore.getState().fetchLinks();
