@@ -1324,17 +1324,9 @@ export const LinkList: React.FC = () => {
     }
   };
 
-  // Render modals always, even during loading, so they can be opened
-  const modalsJSX = (
+  // Define modals function that will be called later (after all state is defined)
+  const renderModals = () => (
     <>
-      {/* Multi-Chat Panel */}
-      <MultiChatPanel
-        isOpen={chatOpen}
-        onClose={() => setChatOpen(false)}
-        links={chatLinks}
-        anchorLabel={anchorLabel}
-      />
-
       {/* Single Link Edit Modal */}
       <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Link">
         {editingLink && (
@@ -1380,7 +1372,7 @@ export const LinkList: React.FC = () => {
   if (loading)
     return (
       <>
-        {modalsJSX}
+        {renderModals()}
         <div className="border border-gray-200">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-10 w-full border-b border-gray-100" />
@@ -3015,7 +3007,7 @@ export const LinkList: React.FC = () => {
       </Modal>
       
       {/* All other modals */}
-      {modalsJSX}
+      {renderModals()}
 
       {/* Clean Filters and Actions Bar */}
       <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200/50 p-3 mb-4 shadow-sm relative z-50">
