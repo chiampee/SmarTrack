@@ -311,6 +311,15 @@ export const LinkList: React.FC = () => {
   const [chatGPTExportLinks, setChatGPTExportLinks] = useState<Link[]>([]);
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
   const [testModalOpen, setTestModalOpen] = useState(false);
+  
+  // Debug: Log when state changes
+  useEffect(() => {
+    console.log('🟢 bulkDeleteConfirmOpen changed to:', bulkDeleteConfirmOpen);
+  }, [bulkDeleteConfirmOpen]);
+  
+  useEffect(() => {
+    console.log('🟢 testModalOpen changed to:', testModalOpen);
+  }, [testModalOpen]);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [showEditFallback, setShowEditFallback] = useState(false);
 
@@ -790,7 +799,12 @@ export const LinkList: React.FC = () => {
 
   useEffect(() => {
     // Ensure links are loaded on mount
+    console.log('🔵 LinkList component MOUNTED');
     void loadLinks();
+    
+    return () => {
+      console.log('🔴 LinkList component UNMOUNTING');
+    };
   }, [loadLinks]);
 
   // Global keyboard shortcuts
