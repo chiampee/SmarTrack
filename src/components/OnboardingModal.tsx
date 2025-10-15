@@ -1134,7 +1134,7 @@ VITE_ENABLE_ANALYTICS=false`}
               </p>
               <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                 <span>💡 Tip:</span>
-                <span>You can always access settings and help from the sidebar</span>
+                <span>You can always access settings, help, and database tests from the sidebar</span>
               </div>
             </div>
           </div>

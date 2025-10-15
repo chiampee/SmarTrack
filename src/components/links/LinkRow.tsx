@@ -9,6 +9,7 @@ import { useLinkStore } from '../../stores/linkStore';
 import { LinkForm } from './LinkForm';
 import { ChatModal } from '../ai/ChatModal';
 import { aiSummaryService } from '../../services/aiSummaryService';
+import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 
 interface Props {
   link: LinkType;
@@ -711,44 +712,15 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
       />
       
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Delete Link">
-        <div className="space-y-4">
-          <div className="text-gray-700">
-            <p className="mb-2">Are you sure you want to delete this link?</p>
-            <div className="bg-gray-50 p-3 rounded-md">
-              <p className="font-medium text-gray-900">{link.metadata?.title || 'Untitled Link'}</p>
-              <p className="text-sm text-gray-600 truncate">{link.url}</p>
-            </div>
-            <p className="text-sm text-gray-500 mt-2">
-              This action cannot be undone. The link and all associated data (summaries, chat history, etc.) will be permanently removed.
-            </p>
-          </div>
-          
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={() => setDeleteConfirmOpen(false)}
-              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors duration-200"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  await deleteLink(link.id);
-                  setDeleteConfirmOpen(false);
-                } catch (error) {
-                  console.error('Failed to delete link:', error);
-                }
-              }}
-              className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors duration-200"
-            >
-              Delete Permanently
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <DeleteConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={async () => {
+          await deleteLink(link.id);
+        }}
+        links={[link]}
+        title="Delete Link"
+      />
       
       {historyOpen && (
         <ChatModal link={link} isOpen={historyOpen} onClose={() => setHistoryOpen(false)} />

@@ -35,6 +35,9 @@ import { Link } from '../../types/Link';
 import { aiSummaryService } from '../../services/aiSummaryService';
 import { LinkForm } from './LinkForm';
 import { LinkFilters } from './LinkFilters';
+import { BulkEditForm } from './BulkEditForm';
+import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { panelDiagnostics } from '../../utils/panelDiagnostics';
 
 const DEFAULT_COLUMNS = [
   'name',
@@ -307,6 +310,7 @@ export const LinkList: React.FC = () => {
   const [chatGPTExportOpen, setChatGPTExportOpen] = useState(false);
   const [chatGPTExportLinks, setChatGPTExportLinks] = useState<Link[]>([]);
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [showEditFallback, setShowEditFallback] = useState(false);
 
   // Text presentation mode state
@@ -673,7 +677,11 @@ export const LinkList: React.FC = () => {
   };
 
   const deleteSelected = async () => {
-    if (!selectedIds.length) return;
+    console.log('[Dashboard] deleteSelected function called');
+    if (!selectedIds.length) {
+      console.log('[Dashboard] No links selected for deletion');
+      return;
+    }
     console.log('[Dashboard] Deleting links:', selectedIds);
     try {
       const selectedLinks = getSelectedLinks();
@@ -712,6 +720,65 @@ export const LinkList: React.FC = () => {
     }
   };
 
+  const bulkEditSelected = async (changes: Partial<Link & { addLabels?: string }>) => {
+    if (!selectedIds.length) return;
+    console.log('[Dashboard] Bulk editing links:', selectedIds, changes);
+    try {
+      const selectedLinks = getSelectedLinks();
+      if (selectedLinks.length > 0) {
+        // Update each selected link
+        for (const link of selectedLinks) {
+          const updateData: Partial<Link> = { ...changes };
+          
+          // Handle addLabels - append to existing labels
+          if (changes.addLabels) {
+            const newLabels = changes.addLabels
+              .split(',')
+              .map(l => l.trim())
+              .filter(Boolean);
+            const existingLabels = link.labels || [];
+            const combinedLabels = [...new Set([...existingLabels, ...newLabels])];
+            updateData.labels = combinedLabels;
+            delete (updateData as any).addLabels;
+          }
+          
+          await linkService.update(link.id, updateData);
+        }
+        
+        // Refresh the links to show updated status
+        setTimeout(() => {
+          loadLinks();
+        }, 100);
+      }
+
+      console.log('[Dashboard] Links updated successfully');
+      setBulkEditOpen(false);
+    } catch (error) {
+      console.error('[Dashboard] Failed to update links:', error);
+    }
+  };
+
+  const runPanelDiagnostics = async () => {
+    console.log('🔧 Running panel diagnostics...');
+    try {
+      const results = await panelDiagnostics.runFullDiagnostics();
+      panelDiagnostics.displayResults(results);
+      
+      const recommendations = panelDiagnostics.getRecommendations(results);
+      console.log('💡 Recommendations:', recommendations);
+      
+      // Show results in an alert for quick feedback
+      const status = results.overall.status;
+      const message = results.overall.message;
+      const icon = status === 'success' ? '✅' : status === 'warning' ? '⚠️' : '❌';
+      
+      alert(`${icon} Panel Diagnostics Complete\n\n${message}\n\nCheck console for detailed results and recommendations.`);
+    } catch (error) {
+      console.error('❌ Panel diagnostics failed:', error);
+      alert('❌ Panel diagnostics failed. Check console for details.');
+    }
+  };
+
   useEffect(() => {
     // Ensure links are loaded on mount
     void loadLinks();
@@ -720,10 +787,35 @@ export const LinkList: React.FC = () => {
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + A for select all
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && !e.shiftKey) {
+        e.preventDefault();
+        if (storeLinks && storeLinks.length > 0) {
+          const allIds = storeLinks.map(link => link.id);
+          setSelectedIds(allIds);
+        }
+        return;
+      }
+      
       // Ctrl/Cmd + Delete for bulk delete
       if ((e.ctrlKey || e.metaKey) && e.key === 'Delete' && selectedIds.length > 0) {
         e.preventDefault();
         setBulkDeleteConfirmOpen(true);
+        return;
+      }
+      
+      // Escape to clear selection
+      if (e.key === 'Escape' && selectedIds.length > 0) {
+        e.preventDefault();
+        setSelectedIds([]);
+        return;
+      }
+      
+      // Ctrl/Cmd + E for bulk edit
+      if ((e.ctrlKey || e.metaKey) && e.key === 'e' && selectedIds.length > 0) {
+        e.preventDefault();
+        setBulkEditOpen(true);
+        return;
       }
     };
 
@@ -731,7 +823,7 @@ export const LinkList: React.FC = () => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedIds.length]);
+  }, [selectedIds.length, storeLinks]);
 
   useEffect(() => {
     // Only run this check if we have links and it's not already running
@@ -802,6 +894,7 @@ export const LinkList: React.FC = () => {
   };
 
   const startChat = () => {
+    console.log('[Dashboard] startChat function called');
     const selected = getSelectedLinks();
     console.log('[Dashboard] Starting chat with links:', selected);
     if (selected.length) {
@@ -819,6 +912,8 @@ export const LinkList: React.FC = () => {
 
       setChatLinks(selected);
       setSelectedIds([]);
+    } else {
+      console.log('[Dashboard] No links selected for chat');
     }
   };
 
@@ -1940,7 +2035,7 @@ export const LinkList: React.FC = () => {
                     {selectedIds.length === 1 ? '' : 's'} selected
                   </div>
                   <div className="text-xs text-blue-600 font-medium">
-                    ✨ Ready for AI analysis • Right-click for individual actions • <kbd className="px-1 py-0.5 bg-blue-100 rounded text-xs">Ctrl+Delete</kbd> to delete
+                    ✨ Ready for AI analysis • Right-click for individual actions • <kbd className="px-1 py-0.5 bg-blue-100 rounded text-xs">Ctrl+E</kbd> to edit • <kbd className="px-1 py-0.5 bg-blue-100 rounded text-xs">Ctrl+Delete</kbd> to delete • <kbd className="px-1 py-0.5 bg-blue-100 rounded text-xs">Esc</kbd> to clear
                   </div>
                 </div>
               </div>
@@ -1976,6 +2071,16 @@ export const LinkList: React.FC = () => {
               >
                 <ExternalLink className="w-4 h-4" />
                 Export to ChatGPT
+              </Button>
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => setBulkEditOpen(true)}
+                className="inline-flex items-center gap-2"
+                title="Edit selected links"
+              >
+                <Edit2 className="w-4 h-4" />
+                Edit
               </Button>
               <Button
                 variant="secondary"
@@ -2862,45 +2967,23 @@ export const LinkList: React.FC = () => {
         links={chatGPTExportLinks}
       />
 
-      {/* Bulk Delete Confirmation Modal */}
-      <Modal isOpen={bulkDeleteConfirmOpen} onClose={() => setBulkDeleteConfirmOpen(false)} title="Delete Selected Links">
-        <div className="space-y-4">
-          <div className="text-gray-700">
-            <p className="mb-2">Are you sure you want to delete {selectedIds.length} selected link{selectedIds.length === 1 ? '' : 's'}?</p>
-            <div className="bg-gray-50 p-3 rounded-md max-h-40 overflow-y-auto">
-              {getSelectedLinks().map((link, index) => (
-                <div key={link.id} className="mb-2 last:mb-0">
-                  <p className="font-medium text-gray-900 text-sm">{link.metadata?.title || 'Untitled Link'}</p>
-                  <p className="text-xs text-gray-600 truncate">{link.url}</p>
-                </div>
-              ))}
-            </div>
-            <p className="text-sm text-gray-500 mt-2">
-              This action cannot be undone. All selected links and their associated data (summaries, chat history, etc.) will be permanently removed.
-            </p>
-          </div>
-          
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={() => setBulkDeleteConfirmOpen(false)}
-              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors duration-200"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                await deleteSelected();
-                setBulkDeleteConfirmOpen(false);
-              }}
-              className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors duration-200"
-            >
-              Delete {selectedIds.length} Link{selectedIds.length === 1 ? '' : 's'}
-            </button>
-          </div>
-        </div>
+      {/* Bulk Edit Modal */}
+      <Modal isOpen={bulkEditOpen} onClose={() => setBulkEditOpen(false)} title="Bulk Edit Selected Links">
+        <BulkEditForm 
+          selectedLinks={getSelectedLinks()} 
+          onSave={bulkEditSelected}
+          onCancel={() => setBulkEditOpen(false)}
+        />
       </Modal>
+
+      {/* Bulk Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={bulkDeleteConfirmOpen}
+        onClose={() => setBulkDeleteConfirmOpen(false)}
+        onConfirm={deleteSelected}
+        links={getSelectedLinks()}
+        title="Delete Selected Links"
+      />
 
       {/* Clean Filters and Actions Bar */}
       <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200/50 p-3 mb-4 shadow-sm relative z-50">
@@ -2929,6 +3012,12 @@ export const LinkList: React.FC = () => {
               className="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
             >
               🐛 Debug
+            </button>
+            <button
+              onClick={runPanelDiagnostics}
+              className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+            >
+              🔧 Panel Test
             </button>
 
 

@@ -25,57 +25,12 @@ export const linkService = {
     link.createdAt = new Date();
     link.updatedAt = new Date();
     
-    // If running in the dashboard with the extension available, add to extension storage via postMessage
-    if (typeof window !== 'undefined') {
-      try {
-        // Use window.postMessage communication since chrome.storage is not available from web page context
-        console.log('[Dashboard] Adding link via window.postMessage communication...');
-        try {
-          const messageId = `add-link-${Date.now()}`;
-          const result = await new Promise<{ ok: boolean }>((resolve) => {
-            const handler = (event: MessageEvent) => {
-              const data = (event?.data || {}) as any;
-              if (
-                data?.type === 'SRT_ADD_LINK_OK' &&
-                data?.messageId === messageId
-              ) {
-                window.removeEventListener('message', handler);
-                resolve({ ok: true });
-              }
-            };
-            window.addEventListener('message', handler);
-            
-            window.postMessage(
-              {
-                type: 'SRT_ADD_LINK',
-                messageId,
-                link,
-              },
-              '*'
-            );
-            
-            // Safety timeout to avoid hanging if extension not present (give the extension enough time)
-            setTimeout(() => {
-              window.removeEventListener('message', handler);
-              resolve({ ok: false });
-            }, 3000);
-          });
-          
-          if (result.ok) return Promise.resolve(link.id);
-        } catch (err) {
-          try { errorHandler.handleError(createExtensionError(err as Error, { source: 'linkService.create' })); } catch {}
-          // ignore and fall back to Dexie
-        }
-      } catch (err) {
-        try { errorHandler.handleError(createExtensionError(err as Error, { source: 'linkService.create' })); } catch {}
-        // ignore and fall back to Dexie
-      }
-    }
-    
-    // Fallback to local database
+    // Use only the local database as the single source of truth
     try {
+      console.log('[LinkService] Creating link in local database:', link.id);
       return await db.addLink(link);
     } catch (err) {
+      console.error('[LinkService] Failed to create link:', err);
       try { errorHandler.handleError(createDatabaseError(err as Error, { source: 'linkService.create' })); } catch {}
       throw err;
     }
@@ -83,144 +38,63 @@ export const linkService = {
   async update(id: string, changes: Partial<Link>) {
     changes.updatedAt = new Date();
     
-    // If running in the dashboard with the extension available, route updates
-    // to the extension storage so the list reflects edits immediately.
-    if (typeof window !== 'undefined') {
-      try {
-        // Use window.postMessage communication since chrome.storage is not available from web page context
-        console.log('[Dashboard] Updating link via window.postMessage communication...');
-        const messageId = `update-link-${id}-${Date.now()}`;
-        const result = await new Promise<{ ok: boolean }>((resolve) => {
-          const handler = (event: MessageEvent) => {
-            const data = (event?.data || {}) as any;
-            if (
-              data?.type === 'SRT_UPDATE_LINK_OK' &&
-              data?.messageId === messageId
-            ) {
-              window.removeEventListener('message', handler);
-              resolve({ ok: true });
-            }
-          };
-          window.addEventListener('message', handler);
-          try {
-            window.postMessage(
-              {
-                type: 'SRT_UPDATE_LINK',
-                messageId,
-                id,
-                changes,
-              },
-              '*'
-            );
-          } catch (_) {
-            // fall through to Dexie
-            window.removeEventListener('message', handler);
-            resolve({ ok: false });
-          }
-          // Safety timeout to avoid hanging if extension not present
-          setTimeout(() => {
-            window.removeEventListener('message', handler);
-            resolve({ ok: false });
-          }, 1200);
-        });
-        if (result.ok) return Promise.resolve();
-      } catch (err) {
-        try { errorHandler.handleError(createExtensionError(err as Error, { source: 'linkService.update' })); } catch {}
-        // ignore and fall back to Dexie
-      }
-    }
+    // Use only the local database as the single source of truth
     try {
+      console.log('[LinkService] Updating link in local database:', id);
       return await db.updateLink(id, changes);
     } catch (err) {
+      console.error('[LinkService] Failed to update link:', err);
       try { errorHandler.handleError(createDatabaseError(err as Error, { source: 'linkService.update' })); } catch {}
       throw err;
     }
   },
   async remove(id: string) {
-    // If running in the dashboard with the extension available, remove from extension storage via postMessage
-    if (typeof window !== 'undefined') {
-      try {
-        // Use window.postMessage communication since chrome.storage is not available from web page context
-        console.log('[Dashboard] Removing link via window.postMessage communication...');
+    // Use only the local database as the single source of truth
+    try {
+      console.log('[LinkService] Removing link from local database:', id);
+      
+      // Fetch the link first so we can archive minimal metadata before hard-deleting
+      const link = await db.getLink(id);
+
+      // Delete the link and any summaries inside a single transaction to keep Dexie happy
+      await db.transaction('rw', db.links, db.summaries, async () => {
+        // Wipe summaries for this link to free large raw-text entries
+        await db.summaries.where('linkId').equals(id).delete();
+        await db.deleteLink(id);
+      });
+
+      // Persist trimmed metadata (≤ 5 KB once stringified) for potential future use
+      if (link && typeof window !== 'undefined') {
+        const metaOnly = {
+          id: link.id,
+          url: link.url,
+          metadata: {
+            title: link.metadata?.title || '',
+            description: (link.metadata?.description || '').slice(0, 5000),
+          },
+          labels: link.labels,
+          deletedAt: new Date().toISOString(),
+        };
+
         try {
-          const messageId = `remove-link-${id}-${Date.now()}`;
-          const result = await new Promise<{ ok: boolean }>((resolve) => {
-            const handler = (event: MessageEvent) => {
-              const data = (event?.data || {}) as any;
-              if (
-                data?.type === 'SRT_REMOVE_LINK_OK' &&
-                data?.messageId === messageId
-              ) {
-                window.removeEventListener('message', handler);
-                resolve({ ok: true });
-              }
-            };
-            window.addEventListener('message', handler);
-            
-            window.postMessage(
-              {
-                type: 'SRT_REMOVE_LINK',
-                messageId,
-                id,
-              },
-              '*'
-            );
-            
-            // Safety timeout to avoid hanging if extension not present
-            setTimeout(() => {
-              window.removeEventListener('message', handler);
-              resolve({ ok: false });
-            }, 1200);
-          });
-          
-          if (result.ok) return Promise.resolve();
-        } catch (err) {
-          try { errorHandler.handleError(createExtensionError(err as Error, { source: 'linkService.remove' })); } catch {}
-          // ignore and fall back to Dexie
+          const key = 'deletedLinkMeta_v1';
+          const existing: (typeof metaOnly)[] = JSON.parse(
+            localStorage.getItem(key) || '[]'
+          );
+          existing.push(metaOnly);
+          // Guard total per-item size and keep JSON under control
+          localStorage.setItem(key, JSON.stringify(existing));
+        } catch {
+          /* ignore quota / JSON errors */
         }
-      } catch (err) {
-        try { errorHandler.handleError(createExtensionError(err as Error, { source: 'linkService.remove' })); } catch {}
-        // ignore and fall back to Dexie
       }
+      
+      return Promise.resolve();
+    } catch (err) {
+      console.error('[LinkService] Failed to remove link:', err);
+      try { errorHandler.handleError(createDatabaseError(err as Error, { source: 'linkService.remove' })); } catch {}
+      throw err;
     }
-
-    // Fallback to local database
-    // Fetch the link first so we can archive minimal metadata before hard-deleting
-    const link = await db.getLink(id);
-
-    // Delete the link and any summaries inside a single transaction to keep Dexie happy
-    await db.transaction('rw', db.links, db.summaries, async () => {
-      // Wipe summaries for this link to free large raw-text entries
-      await db.summaries.where('linkId').equals(id).delete();
-      await db.deleteLink(id);
-    });
-
-    // Persist trimmed metadata (≤ 5 KB once stringified) for potential future use
-    if (link && typeof window !== 'undefined') {
-      const metaOnly = {
-        id: link.id,
-        url: link.url,
-        metadata: {
-          title: link.metadata?.title || '',
-          description: (link.metadata?.description || '').slice(0, 5000),
-        },
-        labels: link.labels,
-        deletedAt: new Date().toISOString(),
-      };
-
-      try {
-        const key = 'deletedLinkMeta_v1';
-        const existing: (typeof metaOnly)[] = JSON.parse(
-          localStorage.getItem(key) || '[]'
-        );
-        existing.push(metaOnly);
-        // Guard total per-item size and keep JSON under control
-        localStorage.setItem(key, JSON.stringify(existing));
-      } catch {
-        /* ignore quota / JSON errors */
-      }
-    }
-    return Promise.resolve();
   },
 
   async clearAll() {

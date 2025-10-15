@@ -120,150 +120,25 @@ const linkStore = create<LinkState>()((set, get) => ({
     
     set({ loading: true, error: undefined });
     
+    try {
+      // Use only the local database as the single source of truth
+      console.log('[Dashboard] Loading links from local database (single source)');
+      const localLinks = await linkService.getAll();
+      
+      // Deduplicate any potential duplicates within the local database
+      const deduplicatedLinks = deduplicateLinks(localLinks || []);
+      
+      console.log('[Dashboard] Loaded', deduplicatedLinks.length, 'links from local database');
+      set({ rawLinks: deduplicatedLinks, loading: false });
+      get().applyFilters();
+      
+    } catch (error) {
+      console.error('[Dashboard] Error fetching links from local database:', error);
       try {
-        // Check if we should skip extension storage (after clearing)
-        let skipLegacy = localStorage.getItem('skipExtensionStorage') === 'true';
-        const skipUntilRaw = localStorage.getItem('skipExtensionStorageUntil');
-        const skipUntil = skipUntilRaw ? parseInt(skipUntilRaw, 10) : 0;
-        const now = Date.now();
-        // Auto-cleanup expired flags
-        if (skipUntil && now >= skipUntil) {
-          try { localStorage.removeItem('skipExtensionStorageUntil'); } catch {}
-          // If legacy is set but TTL expired, clear legacy too
-          if (skipLegacy) {
-            try { localStorage.removeItem('skipExtensionStorage'); } catch {}
-            skipLegacy = false;
-          }
-        }
-        const skipExtension = skipLegacy || (skipUntil && now < skipUntil);
-
-        // Even if skipping extension (e.g., right after clear), prefer background links if available
-        if (skipExtension) {
-          try {
-            const w: any = window as any;
-            if (w?.chrome?.runtime?.sendMessage) {
-              const bgLinks: Link[] = await new Promise((resolve) => {
-                try {
-                  w.chrome.runtime.sendMessage({ type: 'GET_LINKS' }, (resp: any) => {
-                    const arr = Array.isArray(resp?.links) ? resp.links : [];
-                    resolve(arr.map(normalizeLinkStructure));
-                  });
-                } catch {
-                  resolve([]);
-                }
-              });
-              if (bgLinks.length > 0) {
-                console.log('[Dashboard] Using background links despite skipExtensionStorage flag');
-                const deduplicatedLinks = deduplicateLinks(bgLinks);
-                set({ rawLinks: deduplicatedLinks, loading: false });
-                get().applyFilters();
-
-                // Opportunistically mirror to Dexie during skip window as well
-                try {
-                  const existing: Link[] = await db.links.toArray();
-                  const existingIds = new Set(existing.map((l: Link) => l.id));
-                  const toInsert = bgLinks.filter((l: Link) => !existingIds.has(l.id));
-                  if (toInsert.length > 0) {
-                    set({ isMirroring: true });
-                    try {
-                      await db.links.bulkPut(toInsert as Link[]);
-                      console.log('[Dashboard] Mirrored', toInsert.length, 'background links into local DB');
-                    } finally {
-                      set({ isMirroring: false });
-                    }
-                  }
-                } catch (mirrorErr) {
-                  console.warn('[Dashboard] Failed to mirror background links:', mirrorErr);
-                }
-
-                return;
-              }
-            }
-          } catch {}
-        }
-
-        if (!skipExtension) {
-          // First try to get links from the extension's storage
-          const extensionLinks = await this.getLinksFromExtension();
-          if (extensionLinks.length > 0) {
-          console.log('[Dashboard] Found', extensionLinks.length, 'links from extension storage');
-          console.log('[Dashboard] First link structure:', extensionLinks[0]);
-
-          // De-dupe against existing local DB entries to avoid missing/overridden items
-          try {
-            const localExisting: Link[] = await db.links.toArray();
-            const seen = new Set(localExisting.map((l) => normalizeUrlForCompare(l.url)));
-            const merged = [
-              ...extensionLinks,
-              ...localExisting.filter((l) => !seen.has(normalizeUrlForCompare(l.url)))
-            ];
-            const deduplicatedMerged = deduplicateLinks(merged);
-            set({ rawLinks: deduplicatedMerged, loading: false });
-          } catch {
-            const deduplicatedLinks = deduplicateLinks(extensionLinks);
-            set({ rawLinks: deduplicatedLinks, loading: false });
-          }
-          get().applyFilters();
-
-          // Opportunistically mirror to Dexie so fallback always has data
-          try {
-            const existing: Link[] = await db.links.toArray();
-            const existingIds = new Set(existing.map((l: Link) => l.id));
-            const toInsert = extensionLinks.filter((l: Link) => !existingIds.has(l.id));
-            if (toInsert.length > 0) {
-              // Prevent hooks from triggering recursive fetch during mirror
-              set({ isMirroring: true });
-              try {
-                await db.links.bulkPut(toInsert as Link[]);
-                console.log('[Dashboard] Mirrored', toInsert.length, 'extension links into local DB for fallback');
-              } finally {
-                set({ isMirroring: false });
-              }
-            }
-          } catch (mirrorErr) {
-            console.warn('[Dashboard] Failed to mirror links into local DB:', mirrorErr);
-          }
-
-          return;
-          }
-        }
-
-        // Fallback: load from local IndexedDB via service
-        console.log('[Dashboard] No links from extension or skipping extension storage – loading from local database');
-        const localLinks = await linkService.getAll();
-        set({ rawLinks: localLinks || [], loading: false });
-        get().applyFilters();
-
-        // Retry extension fetch shortly after page load in case the content script loads late
-        setTimeout(async () => {
-          try {
-            const retryLinks = await get().getLinksFromExtension();
-            if (retryLinks.length > 0) {
-              console.log('[Dashboard] Late extension response – switching to extension storage');
-              const deduplicatedRetryLinks = deduplicateLinks(retryLinks);
-              set({ rawLinks: deduplicatedRetryLinks });
-              get().applyFilters();
-            }
-          } catch {}
-        }, 1500);
-      } catch (error) {
-        console.error('[Dashboard] Error fetching links:', error);
-        // Notify user that the extension may not be available
-        try {
-          errorHandler.handleError(createExtensionError(error as Error, { source: 'fetchLinks' }));
-        } catch {}
-        try {
-          // As a last resort, attempt local DB even on error
-          const localLinks = await linkService.getAll();
-          set({ rawLinks: localLinks || [], loading: false });
-          get().applyFilters();
-        } catch (dbErr) {
-          try {
-            errorHandler.handleError(createDatabaseError(dbErr as Error, { source: 'fetchLinks' }));
-          } catch {}
-          set({ rawLinks: [], loading: false, error: 'Failed to load links' });
-        }
-      }
+        errorHandler.handleError(createDatabaseError(error as Error, { source: 'fetchLinks' }));
+      } catch {}
+      set({ rawLinks: [], loading: false, error: 'Failed to load links from database' });
+    }
   },
 
   getLinksFromExtension: async function () {

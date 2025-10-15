@@ -5,12 +5,16 @@ import { LinksPage } from './pages/LinksPage';
 import { TasksPage } from './pages/TasksPage';
 import { Layout } from './components/layout/Layout';
 import { ChatHistoryPage } from './pages/ChatHistoryPage';
+import { DataSourceDebugPage } from './pages/DataSourceDebugPage';
+import { DatabaseValidationPage } from './pages/DatabaseValidationPage';
+import { DatabaseTestPage } from './pages/DatabaseTestPage';
 import { OnboardingModal } from './components/OnboardingModal';
 import { DiagnosticModal } from './components/DiagnosticModal';
 import { migrationService } from './services/migrationService';
 import { useSettingsStore } from './stores/settingsStore';
 import { useLinkStore } from './stores/linkStore';
 import { SettingsProvider } from './contexts/SettingsContext';
+import './utils/consoleTestRunner'; // Initialize console test functions
 import './index.css';
 
 function App() {
@@ -85,6 +89,9 @@ function App() {
             <Route path="/boards" element={<BoardsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/chat-history" element={<ChatHistoryPage />} />
+            <Route path="/debug-data-sources" element={<DataSourceDebugPage />} />
+            <Route path="/database-validation" element={<DatabaseValidationPage />} />
+            <Route path="/database-tests" element={<DatabaseTestPage />} />
           </Routes>
         </Layout>
         

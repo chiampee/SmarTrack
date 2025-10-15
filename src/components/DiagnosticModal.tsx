@@ -859,6 +859,18 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <span className="text-lg">🧪</span>
               Test Extension
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                onClose();
+                window.location.href = '/database-tests';
+              }}
+              className="flex items-center gap-2 px-4 py-3 rounded-xl hover:shadow-md transition-all duration-200 border-blue-300 text-blue-700 hover:bg-blue-50"
+              title="Test database integrity and performance"
+            >
+              <span className="text-lg">🗄️</span>
+              Database Tests
+            </Button>
           </div>
           <Button 
             onClick={onClose}
