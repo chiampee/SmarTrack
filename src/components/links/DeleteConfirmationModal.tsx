@@ -18,6 +18,7 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
   links,
   title = "Delete Links"
 }) => {
+  console.log('🗑️ DeleteConfirmationModal rendered with props:', { isOpen, links: links?.length, title });
   const [loading, setLoading] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [undoTimeout, setUndoTimeout] = useState<NodeJS.Timeout | null>(null);

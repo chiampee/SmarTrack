@@ -2,8 +2,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
+import { linkService } from './services/linkService';
 
 console.log('🚀 Smart Research Tracker starting...');
+
+// Expose linkService to window for testing
+(window as any).linkService = linkService;
+console.log('🔧 linkService exposed to window for testing');
 
 // Simple error handling
 window.addEventListener('error', (event) => {

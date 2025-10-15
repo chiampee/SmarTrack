@@ -2106,7 +2106,9 @@ export const LinkList: React.FC = () => {
                 onClick={() => {
                   console.log('🗑️ Delete button clicked, selectedIds:', selectedIds);
                   console.log('🗑️ Selected links:', getSelectedLinks());
+                  console.log('🗑️ Setting bulkDeleteConfirmOpen to true');
                   setBulkDeleteConfirmOpen(true);
+                  console.log('🗑️ bulkDeleteConfirmOpen state should now be true');
                 }}
                 className="inline-flex items-center gap-2"
                 title="Delete selected links permanently"
