@@ -63,6 +63,26 @@ export const linkService = {
         await db.deleteLink(id);
       });
 
+      // Also delete from chrome.storage.local if extension is available
+      if (typeof window !== 'undefined' && (window as any).chrome?.storage) {
+        try {
+          const storage: any = (window as any).chrome.storage.local;
+          const result = await new Promise<any>((resolve) => {
+            storage.get(['links'], (data: any) => {
+              const existingLinks = data.links || [];
+              const filteredLinks = existingLinks.filter((l: any) => l.id !== id);
+              storage.set({ links: filteredLinks }, () => {
+                console.log('[LinkService] ✅ Deleted link from chrome.storage.local');
+                resolve({ success: true });
+              });
+            });
+          });
+        } catch (error) {
+          console.warn('[LinkService] Failed to delete from chrome.storage.local:', error);
+          // Don't throw - IndexedDB deletion succeeded
+        }
+      }
+
       // Persist trimmed metadata (≤ 5 KB once stringified) for potential future use
       if (link && typeof window !== 'undefined') {
         const metaOnly = {

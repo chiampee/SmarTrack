@@ -58,11 +58,12 @@ export const LinkList: React.FC = () => {
     loading,
     loadLinks,
     deleteLink,
-    setBulkDeleteModalOpen,
   } = useLinkStore();
   
-  // Subscribe to bulkDeleteModalOpen separately to ensure re-render
+  // Subscribe to modal states directly from the store
   const bulkDeleteModalOpen = useLinkStore((state) => state.bulkDeleteModalOpen);
+  const setBulkDeleteModalOpen = useLinkStore((state) => state.setBulkDeleteModalOpen);
+  
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<Link | null>(null);
@@ -2985,6 +2986,7 @@ export const LinkList: React.FC = () => {
       </Modal>
 
       {/* Bulk Delete Confirmation Modal */}
+      {console.log('🔍 Rendering DeleteConfirmationModal with isOpen:', bulkDeleteModalOpen)}
       <DeleteConfirmationModal
         isOpen={bulkDeleteModalOpen}
         onClose={() => setBulkDeleteModalOpen(false)}
