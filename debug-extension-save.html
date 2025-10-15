@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Extension Save</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .output {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Extension Save Issues</h1>
+    
+    <div style="background: #e3f2fd; padding: 15px; border-left: 4px solid #2196F3; margin-bottom: 20px;">
+        <h3>📋 Use this tool to:</h3>
+        <ul>
+            <li>Check if links are being saved to IndexedDB</li>
+            <li>Verify dashboard can see the links</li>
+            <li>Test manual link save to IndexedDB</li>
+            <li>Force dashboard refresh</li>
+        </ul>
+    </div>
+
+    <div>
+        <button onclick="checkIndexedDB()">1. Check IndexedDB</button>
+        <button onclick="checkDashboardLinks()">2. Check Dashboard Links</button>
+        <button onclick="testManualSave()">3. Test Manual Save</button>
+        <button onclick="forceDashboardRefresh()">4. Force Dashboard Refresh</button>
+        <button onclick="clearOutput()">Clear Output</button>
+    </div>
+
+    <div id="output" class="output">Click a button to start debugging...</div>
+
+    <script type="module">
+        import { db } from './src/db/smartResearchDB.ts';
+        import { linkStore } from './src/stores/linkStore.ts';
+        import { linkService } from './src/services/linkService.ts';
+
+        const output = document.getElementById('output');
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            output.textContent += `[${timestamp}] ${message}\n`;
+        }
+
+        function clearOutput() {
+            output.textContent = '';
+        }
+
+        window.clearOutput = clearOutput;
+
+        window.checkIndexedDB = async function() {
+            output.textContent = '';
+            log('🔍 Checking IndexedDB...\n');
+            
+            try {
+                // Get all links directly from IndexedDB
+                const links = await db.links.toArray();
+                log(`📊 Total links in IndexedDB: ${links.length}\n`);
+                
+                if (links.length === 0) {
+                    log('❌ No links found in IndexedDB!');
+                    log('This means either:');
+                    log('  1. No links have been saved yet');
+                    log('  2. Extension is saving to wrong database');
+                    log('  3. Database was cleared\n');
+                    output.className = 'output error';
+                    return;
+                }
+                
+                // Show recent links (last 10)
+                log('📝 Recent links (newest first):\n');
+                const sortedLinks = [...links].sort((a, b) => 
+                    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                );
+                
+                sortedLinks.slice(0, 10).forEach((link, index) => {
+                    log(`${index + 1}. ${link.metadata?.title || 'Untitled'}`);
+                    log(`   URL: ${link.url}`);
+                    log(`   Created: ${new Date(link.createdAt).toLocaleString()}`);
+                    log(`   Source: ${link.source || 'unknown'}`);
+                    log('');
+                });
+                
+                output.className = 'output success';
+                
+            } catch (error) {
+                log(`\n❌ Error: ${error.message}`);
+                log(`Stack: ${error.stack}`);
+                output.className = 'output error';
+            }
+        };
+
+        window.checkDashboardLinks = async function() {
+            output.textContent = '';
+            log('🔍 Checking Dashboard Links Store...\n');
+            
+            try {
+                // Get links from linkStore (what dashboard sees)
+                const storeState = linkStore.getState();
+                const storeLinks = storeState.links || [];
+                const rawLinks = storeState.rawLinks || [];
+                
+                log(`📊 Links in store (filtered): ${storeLinks.length}`);
+                log(`📊 Raw links in store: ${rawLinks.length}\n`);
+                
+                // Get links from linkService
+                const serviceLinks = await linkService.getAll();
+                log(`📊 Links from service: ${serviceLinks.length}\n`);
+                
+                // Get links directly from DB
+                const dbLinks = await db.links.toArray();
+                log(`📊 Links in IndexedDB: ${dbLinks.length}\n`);
+                
+                // Compare
+                if (dbLinks.length > serviceLinks.length) {
+                    log('⚠️  WARNING: IndexedDB has more links than service!');
+                    log(`Missing: ${dbLinks.length - serviceLinks.length} links\n`);
+                }
+                
+                if (serviceLinks.length > storeLinks.length) {
+                    log('⚠️  WARNING: Service has more links than store!');
+                    log(`Filtered out: ${serviceLinks.length - storeLinks.length} links`);
+                    log('Check if filters are active in dashboard\n');
+                }
+                
+                if (dbLinks.length === serviceLinks.length && serviceLinks.length === storeLinks.length) {
+                    log('✅ All counts match! Data is consistent.\n');
+                    output.className = 'output success';
+                } else {
+                    output.className = 'output error';
+                }
+                
+                // Show filters if any
+                log('🔍 Active Filters:');
+                log(`   Status: ${storeState.statusFilter || 'none'}`);
+                log(`   Priority: ${storeState.priorityFilter || 'none'}`);
+                log(`   Search: "${storeState.searchTerm || ''}"`);
+                log(`   Sort: ${storeState.sortKey} (${storeState.sortDir})\n`);
+                
+            } catch (error) {
+                log(`\n❌ Error: ${error.message}`);
+                output.className = 'output error';
+            }
+        };
+
+        window.testManualSave = async function() {
+            output.textContent = '';
+            log('🧪 Testing manual link save...\n');
+            
+            try {
+                const testLink = {
+                    id: crypto.randomUUID(),
+                    url: 'https://example.com/debug-test-' + Date.now(),
+                    metadata: {
+                        title: 'Debug Test Link ' + new Date().toLocaleTimeString(),
+                        description: 'Testing if manual save works',
+                        image: ''
+                    },
+                    labels: ['debug', 'test'],
+                    priority: 'high',
+                    status: 'active',
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    source: 'manual-test'
+                };
+                
+                log('📝 Creating test link...');
+                log(`URL: ${testLink.url}`);
+                log(`Title: ${testLink.metadata.title}\n`);
+                
+                // Save directly to IndexedDB
+                log('💾 Saving to IndexedDB...');
+                await db.addLink(testLink);
+                log('✅ Saved to IndexedDB\n');
+                
+                // Verify
+                log('🔍 Verifying save...');
+                const retrieved = await db.getLink(testLink.id);
+                
+                if (retrieved) {
+                    log('✅ Link successfully retrieved from IndexedDB');
+                    log(`   ID: ${retrieved.id}`);
+                    log(`   Title: ${retrieved.metadata.title}\n`);
+                } else {
+                    log('❌ Link not found after saving!\n');
+                    output.className = 'output error';
+                    return;
+                }
+                
+                // Check if dashboard sees it
+                log('🔍 Checking if dashboard sees the link...');
+                const serviceLinks = await linkService.getAll();
+                const found = serviceLinks.find(l => l.id === testLink.id);
+                
+                if (found) {
+                    log('✅ Dashboard can see the link!');
+                    log('The save/retrieve mechanism is working correctly.\n');
+                    output.className = 'output success';
+                } else {
+                    log('❌ Dashboard cannot see the link!');
+                    log('There may be an issue with linkService.getAll()\n');
+                    output.className = 'output error';
+                }
+                
+                log('Total links now: ' + serviceLinks.length);
+                
+            } catch (error) {
+                log(`\n❌ Error: ${error.message}`);
+                log(`Stack: ${error.stack}`);
+                output.className = 'output error';
+            }
+        };
+
+        window.forceDashboardRefresh = async function() {
+            output.textContent = '';
+            log('🔄 Forcing dashboard refresh...\n');
+            
+            try {
+                log('📊 Before refresh:');
+                const beforeLinks = linkStore.getState().links || [];
+                log(`   Links in store: ${beforeLinks.length}\n`);
+                
+                log('🔄 Calling loadLinks()...');
+                await linkStore.getState().loadLinks();
+                
+                log('✅ Refresh complete!\n');
+                
+                log('📊 After refresh:');
+                const afterLinks = linkStore.getState().links || [];
+                log(`   Links in store: ${afterLinks.length}\n`);
+                
+                if (afterLinks.length > beforeLinks.length) {
+                    log(`✅ Found ${afterLinks.length - beforeLinks.length} new links!`);
+                    output.className = 'output success';
+                } else if (afterLinks.length === beforeLinks.length) {
+                    log('ℹ️  No new links found (count unchanged)');
+                } else {
+                    log(`⚠️  Lost ${beforeLinks.length - afterLinks.length} links!`);
+                    output.className = 'output error';
+                }
+                
+                // Trigger UI refresh
+                log('\n🔄 Triggering UI refresh...');
+                window.dispatchEvent(new Event('storage'));
+                document.dispatchEvent(new CustomEvent('srt-db-updated'));
+                log('✅ UI refresh triggered');
+                
+            } catch (error) {
+                log(`\n❌ Error: ${error.message}`);
+                output.className = 'output error';
+            }
+        };
+
+        // Auto-run initial check
+        log('👋 Debug tool ready!\n');
+        log('Click "1. Check IndexedDB" to see if your links are saved.\n');
+    </script>
+</body>
+</html>
+
