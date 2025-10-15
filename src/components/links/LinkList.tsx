@@ -58,9 +58,11 @@ export const LinkList: React.FC = () => {
     loading,
     loadLinks,
     deleteLink,
-    bulkDeleteModalOpen,
     setBulkDeleteModalOpen,
   } = useLinkStore();
+  
+  // Subscribe to bulkDeleteModalOpen separately to ensure re-render
+  const bulkDeleteModalOpen = useLinkStore((state) => state.bulkDeleteModalOpen);
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<Link | null>(null);
@@ -2093,7 +2095,14 @@ export const LinkList: React.FC = () => {
                 variant="danger"
                 size="md"
                 onClick={() => {
+                  console.log('🗑️ Delete button clicked, selectedIds:', selectedIds);
+                  console.log('🗑️ Current modal state from component:', bulkDeleteModalOpen);
+                  console.log('🗑️ Current modal state from store:', useLinkStore.getState().bulkDeleteModalOpen);
                   setBulkDeleteModalOpen(true);
+                  console.log('🗑️ Modal state from store after set:', useLinkStore.getState().bulkDeleteModalOpen);
+                  setTimeout(() => {
+                    console.log('🗑️ Modal state from store after 100ms:', useLinkStore.getState().bulkDeleteModalOpen);
+                  }, 100);
                 }}
                 className="inline-flex items-center gap-2"
                 title="Delete selected links permanently"
