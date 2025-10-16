@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from '../../types/Link';
 import { Button } from '../Button';
 import { Trash, Undo, AlertTriangle } from 'lucide-react';
@@ -79,9 +80,45 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
   }
 
   console.log('🗑️ DeleteConfirmationModal: isOpen is true, rendering modal');
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+  
+  // Create or get the modal container
+  let modalContainer = document.getElementById('srt-modal-root');
+  if (!modalContainer) {
+    modalContainer = document.createElement('div');
+    modalContainer.id = 'srt-modal-root';
+    document.body.appendChild(modalContainer);
+  }
+  
+  const modalContent = (
+    <div 
+      className="fixed inset-0 flex items-center justify-center" 
+      style={{ 
+        zIndex: 2147483647,
+        backgroundColor: 'rgba(255, 0, 0, 0.9)', // BRIGHT RED for testing
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+      }}
+      onClick={(e) => {
+        // Only close if clicking the backdrop, not the modal content
+        if (e.target === e.currentTarget) {
+          console.log('🗑️ Backdrop clicked, closing modal');
+          onClose();
+        }
+      }}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4"
+        style={{
+          backgroundColor: 'white',
+          padding: '20px',
+          border: '5px solid blue', // THICK BLUE BORDER for testing
+          zIndex: 2147483647,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="flex-shrink-0">
@@ -181,4 +218,8 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
       </div>
     </div>
   );
+  
+  // Use portal to render in dedicated modal container
+  console.log('🗑️ Rendering portal to container:', modalContainer);
+  return createPortal(modalContent, modalContainer);
 };

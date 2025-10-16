@@ -94,70 +94,49 @@ class EnhancedLinkProcessor {
 
   async processLink(payload) {
     try {
-      console.log('[SRT] Processing link:', payload.url);
+      console.log('[SRT] 🔄 Processing link:', payload.url);
       
       if (!payload.url) {
         throw new Error('No URL provided');
       }
       
-      // Check for duplicates first
-      console.log('[SRT] Starting duplicate check...');
-      const duplicateCheck = await this.checkForDuplicates(payload.url);
-      console.log('[SRT] Duplicate check completed:', duplicateCheck);
-      
-      if (duplicateCheck.hasDuplicates) {
-        console.log('[SRT] Duplicates detected, returning duplicate response');
-        return {
-          success: false,
-          isDuplicate: true,
-          duplicateInfo: duplicateCheck,
-          message: 'Duplicate link detected'
-        };
-      }
-      
-      console.log('[SRT] No duplicates, proceeding with save...');
-      
-      // Build enhanced Link object
+      // Build enhanced Link object first
       const linkForDexie = this.buildLinkObject(payload);
+      console.log('[SRT] 📦 Built link object with ID:', linkForDexie.id);
       
-      // Save to chrome.storage.local (shared storage accessible by background script)
-      console.log('[SRT] Saving link to chrome.storage.local');
+      // Save to chrome.storage.local IMMEDIATELY (primary storage)
+      console.log('[SRT] 💾 Saving to chrome.storage.local...');
       try {
         await this.storeNewLinkInChromeStorage(payload, linkForDexie.id);
-        console.log('[SRT] ✅ Link saved to chrome.storage.local');
+        console.log('[SRT] ✅ Saved to chrome.storage.local successfully');
       } catch (error) {
         console.error('[SRT] ❌ Chrome storage save failed:', error);
         throw new Error('Failed to save to chrome.storage: ' + error.message);
       }
       
-      // Broadcast to dashboard with the link data (dashboard will save to its IndexedDB)
-      try {
-        await this.broadcastToDashboard(linkForDexie);
-        console.log('[SRT] 📢 Dashboard notified with link data');
-      } catch (error) {
-        console.error('[SRT] Dashboard broadcast failed (not critical):', error);
-        // Don't throw - link is saved in chrome.storage
-      }
+      // Broadcast to dashboard (non-blocking, fire-and-forget)
+      console.log('[SRT] 📢 Broadcasting to dashboard...');
+      this.broadcastToDashboard(linkForDexie).then(() => {
+        console.log('[SRT] ✅ Dashboard notified');
+      }).catch((error) => {
+        console.warn('[SRT] ⚠️ Dashboard broadcast failed (non-critical):', error.message);
+        // Queue for later if dashboard is not open
+      });
       
-      // Process page content for AI enrichment (non-blocking)
-      try {
-        await this.processPageContent(payload, linkForDexie);
-      } catch (error) {
-        console.error('[SRT] Page content processing failed:', error);
-        // Don't throw here, just log - the link is still saved
-      }
+      // Process page content for AI enrichment (non-blocking, fire-and-forget)
+      this.processPageContent(payload, linkForDexie).catch((error) => {
+        console.warn('[SRT] ⚠️ Page content processing failed:', error.message);
+      });
       
-      // Update badge
-      try {
+      // Update badge to clear "stuck" status
+      setTimeout(() => {
         this.updateBadge();
-      } catch (error) {
-        console.error('[SRT] Badge update failed:', error);
-        // Don't throw here, just log
-      }
+      }, 100);
       
+      console.log('[SRT] 🎉 Link saved successfully!');
       return { success: true, linkId: linkForDexie.id };
     } catch (error) {
-      console.error('[SRT] Link processing failed:', error);
+      console.error('[SRT] ❌ Link processing failed:', error);
       return { 
         success: false, 
         error: error.message || 'Unknown error occurred',
@@ -312,26 +291,24 @@ class EnhancedLinkProcessor {
         const links = res.links || [];
         const normUrl = normalizeUrlForCompare(payload.url);
         
-        // Always add as a new link, even if URL exists
+        // Add as a new link
         const newLink = {
           ...payload,
           normalizedUrl: normUrl,
           savedAt: Date.now(),
           id: linkId,
           processed: true,
-          updatedAt: new Date().toISOString(),
-          // Mark as duplicate for tracking
-          isDuplicate: true,
-          duplicateOf: payload.url
+          updatedAt: new Date().toISOString()
         };
         
         links.push(newLink);
 
         chrome.storage.local.set({ links }, () => {
           if (chrome.runtime.lastError) {
+            console.error('[SRT] Chrome storage error:', chrome.runtime.lastError);
             reject(chrome.runtime.lastError);
           } else {
-            console.log('[SRT] Duplicate link saved as new entry:', payload.url);
+            console.log('[SRT] ✅ Link saved to chrome.storage.local:', payload.url);
             try { chrome.runtime.sendMessage({ type: 'DATA_UPDATED', timestamp: Date.now() }); } catch (_) {}
             resolve();
           }
@@ -898,12 +875,25 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     case 'SAVE_LINK':
       console.log('[SRT] Processing SAVE_LINK message...');
+      
+      // Add a timeout to prevent hanging
+      const saveTimeout = setTimeout(() => {
+        console.error('[SRT] SAVE_LINK timed out after 10 seconds');
+        sendResponse?.({ 
+          success: false, 
+          error: 'Save operation timed out',
+          timedOut: true
+        });
+      }, 10000);
+      
       linkProcessor.processLink(msg.payload)
         .then(result => {
+          clearTimeout(saveTimeout);
           console.log('[SRT] SAVE_LINK result:', result);
           sendResponse?.(result);
         })
         .catch(error => {
+          clearTimeout(saveTimeout);
           console.error('[SRT] SAVE_LINK failed:', error);
           sendResponse?.({ 
             success: false, 

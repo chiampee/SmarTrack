@@ -34,6 +34,7 @@ interface LinkState {
   applyFilters: () => void;
   fetchLinks: () => Promise<void>;
   setBulkDeleteModalOpen: (open: boolean) => void;
+  setBulkEditModalOpen: (open: boolean) => void;
   // Extension bridge helpers
   getLinksFromExtension: () => Promise<Link[]>;
   injectContentScriptAndRetry: (messageId: string) => Promise<Link[]>;
@@ -109,6 +110,7 @@ const linkStore = create<LinkState>()((set, get) => ({
   isMirroring: false,
   isFetching: false,
   bulkDeleteModalOpen: false,
+  bulkEditModalOpen: false,
   async loadLinks() {
     try {
       await get().fetchLinks();
@@ -487,6 +489,9 @@ const linkStore = create<LinkState>()((set, get) => ({
   setBulkDeleteModalOpen(open) {
     set({ bulkDeleteModalOpen: open });
   },
+  setBulkEditModalOpen(open) {
+    set({ bulkEditModalOpen: open });
+  },
 }));
 
 // Refresh link list whenever Dexie links table changes (insert/update/delete)
@@ -552,8 +557,13 @@ if (typeof window !== 'undefined') {
           console.log('✅ [Dashboard] Added new link to IndexedDB');
         }
         
-        // Refresh to show the new/updated link
-        await linkStore.getState().fetchLinks();
+        // Refresh to show the new/updated link (but not if a modal is open)
+        const state = linkStore.getState();
+        if (!state.bulkEditModalOpen && !state.bulkDeleteModalOpen) {
+          await state.fetchLinks();
+        } else {
+          console.log('🔒 [Dashboard] Skipping fetchLinks because a modal is open');
+        }
       } catch (error) {
         console.error('❌ [Dashboard] Failed to save extension link:', error);
       }

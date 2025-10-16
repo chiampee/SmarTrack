@@ -37,7 +37,6 @@ import { aiSummaryService } from '../../services/aiSummaryService';
 import { LinkForm } from './LinkForm';
 import { LinkFilters } from './LinkFilters';
 import { BulkEditForm } from './BulkEditForm';
-import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { panelDiagnostics } from '../../utils/panelDiagnostics';
 
 const DEFAULT_COLUMNS = [
@@ -51,8 +50,6 @@ const DEFAULT_COLUMNS = [
 ] as const;
 
 export const LinkList: React.FC = () => {
-  console.log('🔄 LinkList component rendering');
-  
   const {
     sortKey,
     sortDir: sdir,
@@ -63,16 +60,6 @@ export const LinkList: React.FC = () => {
     deleteLink,
   } = useLinkStore();
   
-  // Use local state for the modal since Zustand subscriptions aren't working properly
-  const [bulkDeleteModalOpen, setBulkDeleteModalOpenLocal] = useState(false);
-  console.log('📊 Current bulkDeleteModalOpen state:', bulkDeleteModalOpen);
-  
-  // Wrapper to set both local state and store state
-  const setBulkDeleteModalOpen = useCallback((open: boolean) => {
-    console.log('🔧 Setting bulkDeleteModalOpen to:', open);
-    setBulkDeleteModalOpenLocal(open);
-    useLinkStore.getState().setBulkDeleteModalOpen(open);
-  }, []);
   
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -151,15 +138,16 @@ export const LinkList: React.FC = () => {
 
   // Helper to open the edit modal reliably
   const openEditor = (link: Link) => {
-    console.log('[Links] openEditor called', {
+    console.log('🟢 [openEditor] CALLED with link:', {
       id: link.id,
       url: link.url,
       title: link.metadata?.title,
     });
     setEditingLink(link);
+    console.log('🟢 [openEditor] editingLink set to:', link.id);
     // Defer opening by a tick to ensure editingLink is set before rendering form
     setTimeout(() => {
-      console.log('[Links] Setting editOpen=true');
+      console.log('🟢 [openEditor] Setting editOpen=true NOW');
       setEditOpen(true);
       // Ensure an editor is visible even if the Headless UI modal fails to mount
       setShowEditFallback(true);
@@ -325,7 +313,8 @@ export const LinkList: React.FC = () => {
   const [chatGPTExportOpen, setChatGPTExportOpen] = useState(false);
   const [chatGPTExportLinks, setChatGPTExportLinks] = useState<Link[]>([]);
   
-  const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const bulkEditOpen = useLinkStore((state) => state.bulkEditModalOpen);
+  const setBulkEditOpen = useLinkStore((state) => state.setBulkEditModalOpen);
   const [showEditFallback, setShowEditFallback] = useState(false);
 
   // Text presentation mode state
@@ -695,36 +684,57 @@ export const LinkList: React.FC = () => {
     }
   };
 
+  // Store deleted links for undo functionality
+  const [deletedLinksBuffer, setDeletedLinksBuffer] = useState<{links: Link[], timeout: NodeJS.Timeout | null}>({links: [], timeout: null});
+
   const deleteSelected = async () => {
     if (!selectedIds.length) return;
     
     try {
       const selectedLinks = getSelectedLinks();
-      if (selectedLinks.length > 0) {
-        // Delete from the database
-        for (const link of selectedLinks) {
-          await deleteLink(link.id);
-        }
-        
-        // Also notify the extension to remove these links
-        try {
-          window.postMessage(
-            {
-              type: 'SRT_DELETE_LINKS',
-              linkIds: selectedLinks.map(link => link.id),
-            },
-            '*'
-          );
-        } catch (error) {
-          console.warn('[Dashboard] Failed to notify extension:', error);
-        }
+      if (selectedLinks.length === 0) return;
+
+      // Clear any existing undo timeout
+      if (deletedLinksBuffer.timeout) {
+        clearTimeout(deletedLinksBuffer.timeout);
+      }
+
+      // Store the links for potential undo
+      setDeletedLinksBuffer({links: selectedLinks, timeout: null});
+      
+      // Delete from the database immediately
+      for (const link of selectedLinks) {
+        await deleteLink(link.id);
+      }
+      
+      // Also notify the extension to remove these links
+      try {
+        window.postMessage(
+          {
+            type: 'SRT_DELETE_LINKS',
+            linkIds: selectedLinks.map(link => link.id),
+          },
+          '*'
+        );
+      } catch (error) {
+        console.warn('[Dashboard] Failed to notify extension:', error);
       }
 
       setSelectedIds([]);
+      
+      // Show success message with count
+      const count = selectedLinks.length;
+      showCopyFeedback(`🗑️ ${count} link${count > 1 ? 's' : ''} deleted`, 'success');
+      
       // Refresh the links to show updated status
-      setTimeout(() => {
-        loadLinks();
-      }, 500);
+      loadLinks();
+
+      // Set timeout to clear the buffer after 5 seconds (no undo available after that)
+      const timeout = setTimeout(() => {
+        setDeletedLinksBuffer({links: [], timeout: null});
+      }, 5000);
+      
+      setDeletedLinksBuffer(prev => ({...prev, timeout}));
     } catch (error) {
       console.error('[Dashboard] Failed to delete links:', error);
     }
@@ -1326,7 +1336,6 @@ export const LinkList: React.FC = () => {
 
   // Define modals function that will be called later (after all state is defined)
   const renderModals = () => {
-    console.log('🎬 renderModals() called, bulkDeleteModalOpen:', bulkDeleteModalOpen);
     return (
       <>
         {/* Single Link Edit Modal */}
@@ -1351,23 +1360,20 @@ export const LinkList: React.FC = () => {
       />
 
       {/* Bulk Edit Modal */}
-      <Modal isOpen={bulkEditOpen} onClose={() => setBulkEditOpen(false)} title="Bulk Edit Selected Links">
+      <Modal isOpen={bulkEditOpen} onClose={() => {
+        console.log('🟣 [BULK EDIT MODAL] Closing modal');
+        setBulkEditOpen(false);
+      }} title="Bulk Edit Selected Links">
+        {console.log('🟣 [BULK EDIT MODAL] Rendering, isOpen:', bulkEditOpen, 'selectedLinks:', getSelectedLinks().length)}
         <BulkEditForm 
           selectedLinks={getSelectedLinks()} 
           onSave={bulkEditSelected}
-          onCancel={() => setBulkEditOpen(false)}
+          onCancel={() => {
+            console.log('🟣 [BULK EDIT MODAL] Cancel clicked');
+            setBulkEditOpen(false);
+          }}
         />
       </Modal>
-
-      {/* Bulk Delete Confirmation Modal */}
-      {console.log('🔍 Rendering DeleteConfirmationModal with isOpen:', bulkDeleteModalOpen)}
-      <DeleteConfirmationModal
-        isOpen={bulkDeleteModalOpen}
-        onClose={() => setBulkDeleteModalOpen(false)}
-        onConfirm={deleteSelected}
-        links={getSelectedLinks()}
-        title="Delete Selected Links"
-      />
     </>
     );
   };
@@ -1592,10 +1598,12 @@ export const LinkList: React.FC = () => {
               type="button"
               aria-label="Edit link"
               onClick={(e) => {
+                console.log('🔵 [EDIT BUTTON CLICKED!]', link.id, link.metadata?.title);
                 e.preventDefault();
                 e.stopPropagation();
-                console.debug('[Links] Inline edit button clicked for id', link.id);
+                console.log('🔵 [EDIT] Calling openEditor...');
                 openEditor(link);
+                console.log('🔵 [EDIT] openEditor called');
               }}
               className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-blue-600"
               title="Edit link"
@@ -1920,9 +1928,9 @@ export const LinkList: React.FC = () => {
     };
 
     return (
-      <div className="space-y-6">
-        {/* Clean Table Settings Bar */}
-        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600">
+        <div className="space-y-6">
+          {/* Clean Table Settings Bar */}
+          <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
@@ -2136,7 +2144,12 @@ export const LinkList: React.FC = () => {
               <Button
                 variant="secondary"
                 size="md"
-                onClick={() => setBulkEditOpen(true)}
+                onClick={() => {
+                  console.log('🟣 [BULK EDIT] Button clicked! Selected IDs:', selectedIds);
+                  console.log('🟣 [BULK EDIT] Setting bulkEditOpen to true');
+                  setBulkEditOpen(true);
+                  console.log('🟣 [BULK EDIT] bulkEditOpen should now be true');
+                }}
                 className="inline-flex items-center gap-2"
                 title="Edit selected links"
               >
@@ -2157,20 +2170,14 @@ export const LinkList: React.FC = () => {
                 variant="danger"
                 size="md"
                 onClick={() => {
-                  console.log('🗑️ Delete button clicked, selectedIds:', selectedIds);
-                  console.log('🗑️ Current modal state from component:', bulkDeleteModalOpen);
-                  console.log('🗑️ Current modal state from store:', useLinkStore.getState().bulkDeleteModalOpen);
-                  setBulkDeleteModalOpen(true);
-                  console.log('🗑️ Modal state from store after set:', useLinkStore.getState().bulkDeleteModalOpen);
-                  setTimeout(() => {
-                    console.log('🗑️ Modal state from store after 100ms:', useLinkStore.getState().bulkDeleteModalOpen);
-                  }, 100);
+                  deleteSelected();
                 }}
+                disabled={selectedIds.length === 0}
+                title={selectedIds.length === 0 ? "Select links to delete" : `Delete ${selectedIds.length} selected link${selectedIds.length > 1 ? 's' : ''}`}
                 className="inline-flex items-center gap-2"
-                title="Delete selected links permanently"
               >
                 <Trash className="w-4 h-4" />
-                Delete
+                Delete ({selectedIds.length})
               </Button>
             </div>
           </div>
@@ -2528,10 +2535,12 @@ export const LinkList: React.FC = () => {
   };
 
   return (
-    <div
-      ref={rootRef}
-      className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden"
-    >
+      <>
+      {renderModals()}
+      <div
+        ref={rootRef}
+        className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden"
+      >
       {/* Table Settings Bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200 text-xs text-gray-600">
         <div className="flex items-center gap-4">
@@ -3008,9 +3017,6 @@ export const LinkList: React.FC = () => {
       <Modal isOpen={open} onClose={() => setOpen(false)} title="Add Link" dataId="add-link-modal" maxWidthClass="max-w-md">
         <LinkForm onSuccess={() => setOpen(false)} />
       </Modal>
-      
-      {/* All other modals */}
-      {renderModals()}
 
       {/* Clean Filters and Actions Bar */}
       <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200/50 p-3 mb-4 shadow-sm relative z-50">
@@ -3108,6 +3114,7 @@ export const LinkList: React.FC = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

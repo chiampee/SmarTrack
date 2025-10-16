@@ -543,7 +543,7 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
       </table>
       
       {/* Actions overlay - positioned absolutely to not affect table layout */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 px-2 py-1">
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-lg shadow-xl border-2 border-blue-200 px-2 py-1 z-10">
         {/* Quick delete hint */}
         <div className="text-xs text-gray-400 mr-2 hidden group-hover:block">
           Press <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Delete</kbd> to delete
@@ -583,7 +583,10 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
         </button>
         <button
           type="button"
-          onClick={() => setEditOpen(true)}
+          onClick={() => {
+            console.log('[LinkRow] Edit button clicked, opening modal');
+            setEditOpen(true);
+          }}
           className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all duration-200"
           title="Edit link"
         >
@@ -700,8 +703,15 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
         </div>
       )}
       
-      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Link">
-        <LinkForm existing={link} onSuccess={() => setEditOpen(false)} />
+      <Modal isOpen={editOpen} onClose={() => {
+        console.log('[LinkRow] Edit modal closing');
+        setEditOpen(false);
+      }} title="Edit Link">
+        {console.log('[LinkRow] Edit modal rendering, editOpen:', editOpen, 'link:', link.metadata?.title)}
+        <LinkForm existing={link} onSuccess={() => {
+          console.log('[LinkRow] Form success, closing modal');
+          setEditOpen(false);
+        }} />
       </Modal>
       <AISummaryModal link={link} isOpen={summaryOpen} onClose={() => setSummaryOpen(false)} />
       <ChatModal link={link} isOpen={chatOpen} onClose={() => setChatOpen(false)} />

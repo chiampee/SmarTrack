@@ -4,8 +4,19 @@
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel)](https://vercel.com)
 
 A research management system with a web dashboard and Chrome extension for saving, organizing, and analyzing research links using AI.
+
+## 🌐 Live Demo
+
+**Try it now:** [https://your-app.vercel.app](https://your-app.vercel.app) *(Update with your Vercel URL after deployment)*
+
+1. Visit the dashboard
+2. Install the Chrome extension
+3. Start organizing your research!
+
+**No signup required** - Everything runs locally in your browser.
 
 ## Features
 
