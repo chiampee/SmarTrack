@@ -7,7 +7,7 @@ Get Smart Research Tracker running in 3 simple steps!
 ## 🎯 For Users (Just Want to Use It)
 
 ### Step 1: Visit the App
-Go to: **[https://smart-research-tracker.vercel.app](https://smart-research-tracker.vercel.app)**
+Go to: **[https://smartracker.vercel.app](https://smartracker.vercel.app)**
 
 ### Step 2: Install Extension
 Download from [Chrome Web Store](#) *(coming soon)*

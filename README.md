@@ -10,10 +10,10 @@ A research management system with a web dashboard and Chrome extension for savin
 
 ## 🌐 Live Demo
 
-**Try it now:** [https://your-app.vercel.app](https://your-app.vercel.app) *(Update with your Vercel URL after deployment)*
+**Try it now:** [https://smartracker.vercel.app](https://smartracker.vercel.app)
 
 1. Visit the dashboard
-2. Install the Chrome extension
+2. Install the Chrome extension (see below)
 3. Start organizing your research!
 
 **No signup required** - Everything runs locally in your browser.

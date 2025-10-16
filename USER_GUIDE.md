@@ -7,7 +7,7 @@ Welcome to Smart Research Tracker! This guide will help you get started in under
 ## 🚀 Quick Start (3 Steps)
 
 ### Step 1: Visit the Dashboard
-Go to: **[https://your-app.vercel.app](https://your-app.vercel.app)**
+Go to: **[https://smartracker.vercel.app](https://smartracker.vercel.app)**
 
 No signup required! The app runs entirely in your browser.
 
@@ -77,7 +77,7 @@ No signup required! The app runs entirely in your browser.
 
 ### Viewing Your Links
 
-**Dashboard URL:** `https://your-app.vercel.app`
+**Dashboard URL:** `https://smartracker.vercel.app`
 
 **What you'll see:**
 - All your saved links in a table view
@@ -199,7 +199,7 @@ No signup required! The app runs entirely in your browser.
 ## 📊 Database Management
 
 ### Accessing Database Tools
-1. **Open dashboard** at `https://your-app.vercel.app`
+1. **Open dashboard** at `https://smartracker.vercel.app`
 2. **Click Settings & Help** in sidebar (or press `?`)
 3. **Click "Database Tests"**
 
@@ -317,7 +317,7 @@ A: Each browser has its own data. No sync between devices (yet!)
 ## 🎉 You're All Set!
 
 Start saving and organizing your research now:
-1. Visit [https://your-app.vercel.app](https://your-app.vercel.app)
+1. Visit [https://smartracker.vercel.app](https://smartracker.vercel.app)
 2. Install the Chrome extension
 3. Save your first link!
 
