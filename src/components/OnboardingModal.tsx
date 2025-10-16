@@ -454,13 +454,13 @@ export const OnboardingModal: React.FC<Props> = ({ isOpen, onClose, onDontShowAg
             <div className="space-y-3">
               {[
                 {
-                  step: 1,
-                  title: "Download Extension",
-                  description: "SmartResearchTracker-extension-v1.0.0.zip (29KB)",
-                  icon: "⬇️",
-                  color: "blue",
-                  downloadUrl: "https://github.com/chiampee/SmarTrack/releases/latest/download/SmartResearchTracker-extension-v1.0.0.zip"
-                },
+      step: 1,
+      title: "Download Extension",
+      description: "SmartResearchTracker-extension-v1.0.1.zip (29KB)",
+      icon: "⬇️",
+      color: "blue",
+      downloadUrl: "https://github.com/chiampee/SmarTrack/releases/latest/download/SmartResearchTracker-extension-v1.0.1.zip"
+    },
                 {
                   step: 2,
                   title: "Unzip the File",

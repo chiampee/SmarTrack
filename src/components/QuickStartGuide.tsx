@@ -19,7 +19,7 @@ export const QuickStartGuide: React.FC = () => {
       title: "Install Extension",
       description: "Download and install the Chrome extension to save pages with one click",
       action: "Download Extension",
-      onClick: () => window.open('https://github.com/chiampee/SmarTrack/releases/latest/download/SmartResearchTracker-extension-v1.0.0.zip', '_blank')
+      onClick: () => window.open('https://github.com/chiampee/SmarTrack/releases/latest/download/SmartResearchTracker-extension-v1.0.1.zip', '_blank')
     },
     {
       icon: <Link className="w-5 h-5 text-green-600" />,
