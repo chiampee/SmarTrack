@@ -455,29 +455,37 @@ export const OnboardingModal: React.FC<Props> = ({ isOpen, onClose, onDontShowAg
               {[
                 {
                   step: 1,
-                  title: "Build the Extension",
-                  description: "pnpm run build:extension",
-                  icon: "🔨",
-                  color: "blue"
+                  title: "Download Extension",
+                  description: "SmartResearchTracker-extension-v1.0.0.zip (29KB)",
+                  icon: "⬇️",
+                  color: "blue",
+                  downloadUrl: "https://github.com/chiampee/SmarTrack/releases/latest/download/SmartResearchTracker-extension-v1.0.0.zip"
                 },
                 {
                   step: 2,
+                  title: "Unzip the File",
+                  description: "Double-click the downloaded ZIP file",
+                  icon: "📦",
+                  color: "teal"
+                },
+                {
+                  step: 3,
                   title: "Open Extensions Page",
                   description: "chrome://extensions/",
                   icon: "🌐",
                   color: "green"
                 },
                 {
-                  step: 3,
+                  step: 4,
                   title: "Enable Developer Mode",
                   description: "Toggle in top right corner",
                   icon: "⚙️",
                   color: "purple"
                 },
                 {
-                  step: 4,
-                  title: "Load Extension",
-                  description: "Select dist-extension/ folder",
+                  step: 5,
+                  title: "Load Unpacked",
+                  description: "Select the unzipped folder",
                   icon: "📁",
                   color: "orange"
                 }
@@ -486,11 +494,13 @@ export const OnboardingModal: React.FC<Props> = ({ isOpen, onClose, onDontShowAg
                      style={{ 
                        animationDelay: `${(index + 1) * 200}ms`,
                        borderColor: item.color === 'blue' ? '#dbeafe' : 
+                                   item.color === 'teal' ? '#ccfbf1' :
                                    item.color === 'green' ? '#dcfce7' : 
                                    item.color === 'purple' ? '#f3e8ff' : '#fed7aa'
                      }}>
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs ${
                     item.color === 'blue' ? 'bg-blue-500' : 
+                    item.color === 'teal' ? 'bg-teal-500' :
                     item.color === 'green' ? 'bg-green-500' : 
                     item.color === 'purple' ? 'bg-purple-500' : 'bg-orange-500'
                   }`}>
@@ -503,20 +513,18 @@ export const OnboardingModal: React.FC<Props> = ({ isOpen, onClose, onDontShowAg
                     </div>
                     <p className="text-gray-600 text-xs">{item.description}</p>
                   </div>
-                  {index === 0 && (
+                  {index === 0 && item.downloadUrl && (
                     <Button
-                      onClick={() => {
-                        navigator.clipboard.writeText('pnpm run build:extension');
-                      }}
+                      onClick={() => window.open(item.downloadUrl, '_blank')}
                       variant="outline"
                       size="sm"
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                      className="border-blue-300 text-blue-700 hover:bg-blue-50"
                     >
-                      <Copy className="w-4 h-4 mr-1" />
-                      Copy
+                      <DownloadIcon className="w-4 h-4 mr-1" />
+                      Download
                     </Button>
                   )}
-                  {index === 1 && (
+                  {index === 2 && (
                     <Button
                       onClick={() => window.open('chrome://extensions/', '_blank')}
                       variant="outline"

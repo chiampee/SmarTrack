@@ -19,7 +19,8 @@ import {
   Activity,
   ChevronDown,
   ChevronRight,
-  RefreshCcw
+  RefreshCcw,
+  Download
 } from 'lucide-react';
 
 export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
@@ -209,6 +210,16 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
                         <HelpCircle className="w-3 h-3 text-gray-400" />
                         <span>Help & Setup</span>
                       </button>
+                      <a 
+                        href="https://github.com/chiampee/SmarTrack/releases/latest/download/SmartResearchTracker-extension-v1.0.0.zip"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={onClose}
+                        className="group flex items-center gap-2 px-3 py-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200 w-full"
+                      >
+                        <Download className="w-3 h-3 text-blue-500" />
+                        <span className="font-medium">Download Extension</span>
+                      </a>
                       <button 
                         onClick={() => {
                           showDiagnostics();
