@@ -21,6 +21,7 @@ interface LinkState {
   isMirroring: boolean; // Flag to prevent DB hooks from refetching during mirror
   isFetching: boolean; // Flag to prevent concurrent fetches
   bulkDeleteModalOpen: boolean; // Moved from component state to prevent loss on re-renders
+  bulkEditModalOpen: boolean; // Moved from component state to prevent loss on re-renders
   loadLinks: () => Promise<void>;
   addLink: (link: Link) => Promise<void>;
   updateLink: (id: string, changes: Partial<Link>) => Promise<void>;

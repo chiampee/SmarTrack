@@ -3,6 +3,9 @@
  * Helps diagnose issues with the MultiChatPanel functionality
  */
 
+// Type declaration for Chrome extension API (only available in extension context)
+declare const chrome: any;
+
 export interface PanelDiagnosticResult {
   status: 'success' | 'warning' | 'error';
   message: string;

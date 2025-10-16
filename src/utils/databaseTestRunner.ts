@@ -90,7 +90,7 @@ export const databaseTestRunner = {
       return {
         testName,
         passed: false,
-        message: `Failed to connect to database: ${error.message}`,
+        message: `Failed to connect to database: ${(error instanceof Error ? error.message : String(error))}`,
         duration
       };
     }
@@ -155,7 +155,7 @@ export const databaseTestRunner = {
       return {
         testName,
         passed: false,
-        message: `CRUD operations failed: ${error.message}`,
+        message: `CRUD operations failed: ${(error instanceof Error ? error.message : String(error))}`,
         duration
       };
     }
@@ -186,7 +186,7 @@ export const databaseTestRunner = {
       return {
         testName,
         passed: false,
-        message: `Data consistency test failed: ${error.message}`,
+        message: `Data consistency test failed: ${(error instanceof Error ? error.message : String(error))}`,
         duration
       };
     }
@@ -250,7 +250,7 @@ export const databaseTestRunner = {
       return {
         testName,
         passed: false,
-        message: `Duplicate handling test failed: ${error.message}`,
+        message: `Duplicate handling test failed: ${(error instanceof Error ? error.message : String(error))}`,
         duration
       };
     }
@@ -309,7 +309,7 @@ export const databaseTestRunner = {
       return {
         testName,
         passed: false,
-        message: `Service layer consistency test failed: ${error.message}`,
+        message: `Service layer consistency test failed: ${(error instanceof Error ? error.message : String(error))}`,
         duration
       };
     }
@@ -338,7 +338,7 @@ export const databaseTestRunner = {
       return {
         testName,
         passed: false,
-        message: `Database validation test failed: ${error.message}`,
+        message: `Database validation test failed: ${(error instanceof Error ? error.message : String(error))}`,
         duration
       };
     }
@@ -358,7 +358,7 @@ export const databaseTestRunner = {
     } catch (error) {
       return {
         healthy: false,
-        message: `Health check failed: ${error.message}`
+        message: `Health check failed: ${(error instanceof Error ? error.message : String(error))}`
       };
     }
   }

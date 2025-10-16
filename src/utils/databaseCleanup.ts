@@ -51,7 +51,7 @@ export const databaseCleanup = {
               await linkService.remove(link.id);
               removed++;
             } catch (error) {
-              errors.push(`Failed to remove duplicate link ${link.id}: ${error.message}`);
+              errors.push(`Failed to remove duplicate link ${link.id}: ${(error instanceof Error ? error.message : String(error))}`);
             }
           }
         }
@@ -59,7 +59,7 @@ export const databaseCleanup = {
 
       console.log(`[Cleanup] Removed ${removed} duplicate links`);
     } catch (error) {
-      errors.push(`Duplicate cleanup failed: ${error.message}`);
+      errors.push(`Duplicate cleanup failed: ${(error instanceof Error ? error.message : String(error))}`);
     }
 
     return { removed, errors };
@@ -86,14 +86,14 @@ export const databaseCleanup = {
             removed++;
             console.log(`[Cleanup] Removed orphaned summary: ${summary.id} for link: ${summary.linkId}`);
           } catch (error) {
-            errors.push(`Failed to remove orphaned summary ${summary.id}: ${error.message}`);
+            errors.push(`Failed to remove orphaned summary ${summary.id}: ${(error instanceof Error ? error.message : String(error))}`);
           }
         }
       }
 
       console.log(`[Cleanup] Removed ${removed} orphaned summaries`);
     } catch (error) {
-      errors.push(`Orphaned summaries cleanup failed: ${error.message}`);
+      errors.push(`Orphaned summaries cleanup failed: ${(error instanceof Error ? error.message : String(error))}`);
     }
 
     return { removed, errors };
@@ -120,14 +120,14 @@ export const databaseCleanup = {
             removed++;
             console.log(`[Cleanup] Removed orphaned chat message: ${message.id} for link: ${message.linkId}`);
           } catch (error) {
-            errors.push(`Failed to remove orphaned chat message ${message.id}: ${error.message}`);
+            errors.push(`Failed to remove orphaned chat message ${message.id}: ${(error instanceof Error ? error.message : String(error))}`);
           }
         }
       }
 
       console.log(`[Cleanup] Removed ${removed} orphaned chat messages`);
     } catch (error) {
-      errors.push(`Orphaned chat messages cleanup failed: ${error.message}`);
+      errors.push(`Orphaned chat messages cleanup failed: ${(error instanceof Error ? error.message : String(error))}`);
     }
 
     return { removed, errors };
@@ -164,7 +164,7 @@ export const databaseCleanup = {
 
       console.log('[Cleanup] Complete cleanup finished:', result);
     } catch (error) {
-      result.errors.push(`Complete cleanup failed: ${error.message}`);
+      result.errors.push(`Complete cleanup failed: ${(error instanceof Error ? error.message : String(error))}`);
     }
 
     return result;
