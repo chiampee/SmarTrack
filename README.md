@@ -233,4 +233,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **Frontend**: React, TypeScript, Vite
 - **Database**: Dexie (IndexedDB)
 - **AI**: OpenAI GPT models
-- **Extension**: Chrome Extension API
+- **Extension**: Chrome Extension API# Force deployment
