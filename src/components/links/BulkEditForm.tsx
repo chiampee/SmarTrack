@@ -13,7 +13,7 @@ export const BulkEditForm: React.FC<BulkEditFormProps> = ({
   onSave,
   onCancel,
 }) => {
-  const [changes, setChanges] = useState<Partial<Link>>({});
+  const [changes, setChanges] = useState<Partial<Link> & { addLabels?: string }>({});
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {

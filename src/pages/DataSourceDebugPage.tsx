@@ -26,7 +26,7 @@ export const DataSourceDebugPage: React.FC = () => {
       setDebugInfo(info);
     } catch (error) {
       console.error('Failed to gather debug info:', error);
-      setDebugInfo({ error: error.message });
+      setDebugInfo({ error: (error instanceof Error ? error.message : String(error)) });
     }
   };
 

@@ -157,11 +157,11 @@ export const databaseValidationService = {
 
         console.log('[Validation] Database operations test passed');
       } catch (opError) {
-        errors.push(`Database operations test failed: ${opError.message}`);
+        errors.push(`Database operations test failed: ${(opError instanceof Error ? opError.message : String(opError))}`);
       }
 
     } catch (error) {
-      errors.push(`Database validation failed: ${error.message}`);
+      errors.push(`Database validation failed: ${(error instanceof Error ? error.message : String(error))}`);
     }
 
     return {
@@ -228,7 +228,7 @@ export const databaseValidationService = {
     } catch (error) {
       return { 
         cleaned: 0, 
-        errors: [`Cleanup failed: ${error.message}`] 
+        errors: [`Cleanup failed: ${(error instanceof Error ? error.message : String(error))}`] 
       };
     }
   },
@@ -305,7 +305,7 @@ export const databaseValidationService = {
 
       console.log('[Consistency] Data consistency test completed');
     } catch (error) {
-      issues.push(`Consistency test failed: ${error.message}`);
+      issues.push(`Consistency test failed: ${(error instanceof Error ? error.message : String(error))}`);
     }
 
     return {

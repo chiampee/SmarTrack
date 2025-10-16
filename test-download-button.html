@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Download Button</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">Test: Extension Download Button</h1>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Sidebar Style Download Button:</h2>
+            <a 
+                href="https://github.com/chiampee/SmarTrack/releases/latest/download/SmartResearchTracker-extension-v1.0.0.zip"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="group flex items-center gap-2 px-3 py-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200 w-full border border-blue-200"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span class="font-medium">Download Extension</span>
+            </a>
+            <p class="text-xs text-gray-500 mt-2">This is exactly how it looks in the Settings & Help menu</p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Onboarding Style Download Button:</h2>
+            <button
+                onclick="window.open('https://github.com/chiampee/SmarTrack/releases/latest/download/SmartResearchTracker-extension-v1.0.0.zip', '_blank')"
+                class="flex items-center gap-2 px-4 py-2 text-sm border-2 border-blue-300 text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download
+            </button>
+            <p class="text-xs text-gray-500 mt-2">This is how it looks in the Onboarding modal installation steps</p>
+        </div>
+
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h3 class="font-semibold text-green-900 mb-2">✅ Test Results:</h3>
+            <ul class="text-sm text-green-800 space-y-1">
+                <li>• If these buttons download the ZIP file, your dashboard will too!</li>
+                <li>• The file is 29KB and named: SmartResearchTracker-extension-v1.0.0.zip</li>
+                <li>• Once Vercel deploys (2-5 min), refresh with Cmd+Shift+R</li>
+            </ul>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+            <h3 class="font-semibold text-blue-900 mb-2">📍 Where to Find in Dashboard:</h3>
+            <ol class="text-sm text-blue-800 space-y-2 list-decimal list-inside">
+                <li><strong>Sidebar:</strong> Settings & Help → Download Extension</li>
+                <li><strong>Help Modal:</strong> Help & Setup → Quick Start Guide</li>
+                <li><strong>Onboarding:</strong> First-time visit → Step 1 Download button</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -820,7 +820,7 @@ export const LinkList: React.FC = () => {
       // Ctrl/Cmd + Delete for bulk delete
       if ((e.ctrlKey || e.metaKey) && e.key === 'Delete' && selectedIds.length > 0) {
         e.preventDefault();
-        setBulkDeleteConfirmOpen(true);
+        deleteSelected();
         return;
       }
       
@@ -1364,7 +1364,7 @@ export const LinkList: React.FC = () => {
         console.log('🟣 [BULK EDIT MODAL] Closing modal');
         setBulkEditOpen(false);
       }} title="Bulk Edit Selected Links">
-        {console.log('🟣 [BULK EDIT MODAL] Rendering, isOpen:', bulkEditOpen, 'selectedLinks:', getSelectedLinks().length)}
+        {(() => { console.log('🟣 [BULK EDIT MODAL] Rendering, isOpen:', bulkEditOpen, 'selectedLinks:', getSelectedLinks().length); return null; })()}
         <BulkEditForm 
           selectedLinks={getSelectedLinks()} 
           onSave={bulkEditSelected}

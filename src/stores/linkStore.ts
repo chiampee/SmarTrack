@@ -550,7 +550,7 @@ if (typeof window !== 'undefined') {
         const existing = await db.links.get(dashboardLink.id);
         if (existing) {
           // Update existing
-          await db.links.update(dashboardLink.id, dashboardLink);
+          await db.links.put(dashboardLink);
           console.log('✅ [Dashboard] Updated existing link in IndexedDB');
         } else {
           // Add new

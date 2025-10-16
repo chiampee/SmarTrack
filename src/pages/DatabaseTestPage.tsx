@@ -63,7 +63,7 @@ export const DatabaseTestPage: React.FC = () => {
       console.log('✅ Complete cleanup finished:', result);
     } catch (error) {
       console.error('❌ Complete cleanup failed:', error);
-      setCleanupResult({ error: error.message });
+      setCleanupResult({ error: (error instanceof Error ? error.message : String(error)) });
     } finally {
       setIsCleaning(false);
     }
@@ -84,7 +84,7 @@ export const DatabaseTestPage: React.FC = () => {
       console.log('✅ Duplicate cleanup finished:', result);
     } catch (error) {
       console.error('❌ Duplicate cleanup failed:', error);
-      setCleanupResult({ error: error.message });
+      setCleanupResult({ error: (error instanceof Error ? error.message : String(error)) });
     } finally {
       setIsCleaning(false);
     }

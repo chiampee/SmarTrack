@@ -707,7 +707,7 @@ export const LinkRow: React.FC<Props> = ({ link, columns, columnWidths = {}, sel
         console.log('[LinkRow] Edit modal closing');
         setEditOpen(false);
       }} title="Edit Link">
-        {console.log('[LinkRow] Edit modal rendering, editOpen:', editOpen, 'link:', link.metadata?.title)}
+        {(() => { console.log('[LinkRow] Edit modal rendering, editOpen:', editOpen, 'link:', link.metadata?.title); return null; })()}
         <LinkForm existing={link} onSuccess={() => {
           console.log('[LinkRow] Form success, closing modal');
           setEditOpen(false);
