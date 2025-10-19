@@ -12,6 +12,7 @@ import { LoginPage } from './pages/LoginPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { OnboardingModal } from './components/OnboardingModal';
 import { DiagnosticModal } from './components/DiagnosticModal';
+import { DevModeBanner } from './components/DevModeBanner';
 import { migrationService } from './services/migrationService';
 import { useSettingsStore } from './stores/settingsStore';
 import { useLinkStore } from './stores/linkStore';
@@ -180,6 +181,9 @@ function App() {
             />
           </>
         )}
+        
+        {/* Development mode indicator */}
+        <DevModeBanner />
       </Router>
     </SettingsProvider>
   );
