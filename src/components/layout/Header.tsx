@@ -2,10 +2,14 @@ import React from 'react';
 import { Menu, BookOpen, Link as LinkIcon, CheckSquare, MessageSquare, RefreshCw } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { linkStore } from '../../stores/linkStore';
+import { useAuth } from '../../contexts/AuthContext';
+import { UserProfile } from '../auth/UserProfile';
+import { LoginButton } from '../auth/LoginButton';
 
 export const Header: React.FC<{ onMenu: () => void }> = ({ onMenu }) => {
   const location = useLocation();
   const fetchLinks = linkStore((state) => state.fetchLinks);
+  const { isAuthenticated } = useAuth();
 
   const navItems = [
     { 
@@ -79,16 +83,27 @@ export const Header: React.FC<{ onMenu: () => void }> = ({ onMenu }) => {
         })}
       </nav>
 
-      {/* Right Section - Refresh Button */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => fetchLinks()}
-          className="group flex items-center gap-1.5 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 hover:shadow-md backdrop-blur-sm transition-all duration-300"
-          title="Refresh links from extension"
-        >
-          <RefreshCw size={14} className="text-gray-400 group-hover:scale-110 transition-transform duration-300" />
-          <span className="font-semibold text-sm hidden sm:inline">Refresh</span>
-        </button>
+      {/* Right Section - Refresh Button and Auth */}
+      <div className="flex items-center gap-3">
+        {isAuthenticated && (
+          <button
+            onClick={() => fetchLinks()}
+            className="group flex items-center gap-1.5 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 hover:shadow-md backdrop-blur-sm transition-all duration-300"
+            title="Refresh links from extension"
+          >
+            <RefreshCw size={14} className="text-gray-400 group-hover:scale-110 transition-transform duration-300" />
+            <span className="font-semibold text-sm hidden sm:inline">Refresh</span>
+          </button>
+        )}
+        
+        {/* Auth Section */}
+        {isAuthenticated ? (
+          <UserProfile />
+        ) : (
+          <div className="hidden md:block">
+            <LoginButton />
+          </div>
+        )}
       </div>
 
 

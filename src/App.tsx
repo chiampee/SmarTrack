@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { BoardsPage } from './pages/BoardsPage';
 import { LinksPage } from './pages/LinksPage';
 import { TasksPage } from './pages/TasksPage';
@@ -8,19 +8,45 @@ import { ChatHistoryPage } from './pages/ChatHistoryPage';
 import { DataSourceDebugPage } from './pages/DataSourceDebugPage';
 import { DatabaseValidationPage } from './pages/DatabaseValidationPage';
 import { DatabaseTestPage } from './pages/DatabaseTestPage';
+import { LoginPage } from './pages/LoginPage';
+import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { OnboardingModal } from './components/OnboardingModal';
 import { DiagnosticModal } from './components/DiagnosticModal';
 import { migrationService } from './services/migrationService';
 import { useSettingsStore } from './stores/settingsStore';
 import { useLinkStore } from './stores/linkStore';
+import { useAuth } from './contexts/AuthContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import './utils/consoleTestRunner'; // Initialize console test functions
 import './index.css';
+
+// Protected Route wrapper
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+};
 
 function App() {
   const { showOnboarding, setShowOnboarding, setHasSeenOnboarding, hasSeenOnboarding, setDontShowOnboarding } = useSettingsStore();
   const { rawLinks } = useLinkStore();
   const [diagnosticOpen, setDiagnosticOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     console.log('🚀 App starting up...');
@@ -83,28 +109,77 @@ function App() {
   return (
     <SettingsProvider showOnboarding={handleShowOnboarding} showDiagnostics={handleShowDiagnostics}>
       <Router>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<LinksPage />} />
-            <Route path="/boards" element={<BoardsPage />} />
-            <Route path="/tasks" element={<TasksPage />} />
-            <Route path="/chat-history" element={<ChatHistoryPage />} />
-            <Route path="/debug-data-sources" element={<DataSourceDebugPage />} />
-            <Route path="/database-validation" element={<DatabaseValidationPage />} />
-            <Route path="/database-tests" element={<DatabaseTestPage />} />
-          </Routes>
-        </Layout>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/callback" element={<AuthCallbackPage />} />
+          
+          {/* Protected routes */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Layout>
+                <LinksPage />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/boards" element={
+            <ProtectedRoute>
+              <Layout>
+                <BoardsPage />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/tasks" element={
+            <ProtectedRoute>
+              <Layout>
+                <TasksPage />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/chat-history" element={
+            <ProtectedRoute>
+              <Layout>
+                <ChatHistoryPage />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/debug-data-sources" element={
+            <ProtectedRoute>
+              <Layout>
+                <DataSourceDebugPage />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/database-validation" element={
+            <ProtectedRoute>
+              <Layout>
+                <DatabaseValidationPage />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/database-tests" element={
+            <ProtectedRoute>
+              <Layout>
+                <DatabaseTestPage />
+              </Layout>
+            </ProtectedRoute>
+          } />
+        </Routes>
         
-        <OnboardingModal 
-          isOpen={showOnboarding} 
-          onClose={handleOnboardingClose}
-          onDontShowAgain={setDontShowOnboarding}
-        />
-        
-        <DiagnosticModal 
-          isOpen={diagnosticOpen} 
-          onClose={() => setDiagnosticOpen(false)}
-        />
+        {isAuthenticated && (
+          <>
+            <OnboardingModal 
+              isOpen={showOnboarding} 
+              onClose={handleOnboardingClose}
+              onDontShowAgain={setDontShowOnboarding}
+            />
+            
+            <DiagnosticModal 
+              isOpen={diagnosticOpen} 
+              onClose={() => setDiagnosticOpen(false)}
+            />
+          </>
+        )}
       </Router>
     </SettingsProvider>
   );

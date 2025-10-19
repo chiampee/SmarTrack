@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
 import { linkService } from './services/linkService';
+import { AuthProvider } from './contexts/AuthContext';
 
 console.log('🚀 Smart Research Tracker starting...');
 
@@ -25,7 +26,9 @@ if (rootElement) {
   const root = createRoot(rootElement);
   root.render(
     <StrictMode>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </StrictMode>
   );
   console.log('✅ App rendered successfully');
