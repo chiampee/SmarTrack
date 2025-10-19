@@ -534,7 +534,7 @@ document.getElementById('openDashboardBtn')?.addEventListener('click', async () 
       
       // Fallback to direct URL opening
       const settings = await getStorageSync({
-        dashboardUrl: 'https://smart-research-tracker.vercel.app/',
+        dashboardUrl: 'https://smartracker.vercel.app/',
         fallbackUrl: 'http://localhost:5174/'
       });
 
@@ -591,7 +591,7 @@ document.getElementById('closeMinimalSettings')?.addEventListener('click', () =>
 async function loadMinimalSettings() {
   try {
     const settings = await getStorageSync({
-      dashboardUrl: 'http://localhost:5174/',
+      dashboardUrl: 'https://smartracker.vercel.app/',
       autoFillTitle: true,
       autoClose: true
     });
@@ -613,7 +613,7 @@ async function loadMinimalSettings() {
 document.getElementById('saveMinimalSettings')?.addEventListener('click', async () => {
   try {
     const settings = {
-      dashboardUrl: document.getElementById('minimalDashboardUrl')?.value?.trim() || 'http://localhost:5174/',
+      dashboardUrl: document.getElementById('minimalDashboardUrl')?.value?.trim() || 'https://smartracker.vercel.app/',
       autoFillTitle: document.getElementById('minimalAutoFill')?.checked || false,
       autoClose: document.getElementById('minimalAutoClose')?.checked || false
     };
@@ -689,7 +689,7 @@ function getStorageSync(keys) {
   const result = {};
   keys && Object.keys(keys).forEach?.(() => {}); // noop to satisfy shapes
   return Promise.resolve({
-    dashboardUrl: localStorage.getItem('srt_dashboardUrl') || 'http://localhost:5174/',
+    dashboardUrl: localStorage.getItem('srt_dashboardUrl') || 'https://smartracker.vercel.app/',
     autoFillTitle: localStorage.getItem('srt_autoFillTitle') === 'true',
     autoClose: localStorage.getItem('srt_autoClose') !== 'false',
   });

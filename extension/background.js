@@ -353,8 +353,9 @@ class EnhancedLinkProcessor {
 
   async broadcastToDashboard(linkObj, summaries = []) {
   const APP_URL_PATTERNS = [
+    'https://smartracker.vercel.app/*',
     'https://smart-research-tracker.vercel.app/*',
-    'https://smart-research-tracker-git-*.vercel.app/*',
+    'https://smart-tracker-chiampees-projects.vercel.app/*',
     'http://localhost:5174/*',
     'http://localhost:5173/*', 
     'https://localhost:5174/*',
@@ -546,6 +547,9 @@ class EnhancedLinkProcessor {
   async broadcastSummary(summaryObj) {
     try {
       const APP_URL_PATTERNS = [
+        'https://smartracker.vercel.app/*',
+        'https://smart-research-tracker.vercel.app/*',
+        'https://smart-tracker-chiampees-projects.vercel.app/*',
         'http://localhost:5174/*',
         'http://localhost:5173/*',
         'http://127.0.0.1:5174/*',
@@ -593,6 +597,9 @@ class EnhancedLinkProcessor {
     if (this.pendingQueue.length === 0) return;
 
           const APP_URL_PATTERNS = [
+        'https://smartracker.vercel.app/*',
+        'https://smart-research-tracker.vercel.app/*',
+        'https://smart-tracker-chiampees-projects.vercel.app/*',
         'http://localhost:5174/*',
         'http://localhost:5173/*',
         'http://127.0.0.1:5174/*',
@@ -715,11 +722,13 @@ class EnhancedLinkProcessor {
 
       // Find dashboard tabs that are ready to receive messages
       const dashboardTabs = await this.getReadyDashboardTabs([
+        "https://smartracker.vercel.app/*",
+        "https://smart-research-tracker.vercel.app/*",
+        "https://smart-tracker-chiampees-projects.vercel.app/*",
         "http://localhost:5173/*",
         "https://localhost:5173/*",
         "http://localhost:5174/*",
-        "https://localhost:5174/*", 
-        "https://smartresearchtracker.vercel.app/*"
+        "https://localhost:5174/*"
       ]);
 
       if (dashboardTabs.length === 0) {
@@ -1153,7 +1162,12 @@ chrome.runtime.onStartup.addListener(() => {
 // Handle tab updates to flush queue when dashboard opens
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && 
-      (tab.url?.startsWith('file:///') || tab.url?.includes('localhost:5173') || tab.url?.includes('localhost:5174'))) {
+      (tab.url?.startsWith('file:///') || 
+       tab.url?.includes('localhost:5173') || 
+       tab.url?.includes('localhost:5174') ||
+       tab.url?.includes('smartracker.vercel.app') ||
+       tab.url?.includes('smart-research-tracker.vercel.app') ||
+       tab.url?.includes('smart-tracker-chiampees-projects.vercel.app'))) {
     // Dashboard tab loaded, flush pending queue
     setTimeout(() => linkProcessor.flushPendingQueue(), 1000);
   }
