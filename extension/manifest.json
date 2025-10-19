@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Smart Research Tracker",
   "description": "Save and organize research links with AI-powered insights.",
-  "version": "0.1.0",
+  "version": "1.0.2",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -47,8 +47,9 @@
   },
   "externally_connectable": {
     "matches": [
+      "https://smartracker.vercel.app/*",
       "https://smart-research-tracker.vercel.app/*",
-      "https://smart-research-tracker-git-*.vercel.app/*",
+      "https://smart-tracker-chiampees-projects.vercel.app/*",
       "http://localhost:5173/*",
       "http://localhost:5174/*",
       "http://127.0.0.1:5173/*",
