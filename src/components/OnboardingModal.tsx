@@ -456,10 +456,10 @@ export const OnboardingModal: React.FC<Props> = ({ isOpen, onClose, onDontShowAg
                 {
       step: 1,
       title: "Download Extension",
-      description: "SmartResearchTracker-extension-v1.0.1.zip (29KB)",
+      description: "SmartResearchTracker-extension-v1.0.2.zip (29KB)",
       icon: "⬇️",
       color: "blue",
-      downloadUrl: "https://github.com/chiampee/SmarTrack/releases/download/V1.0.1/SmartResearchTracker-extension-v1.0.1.zip"
+      downloadUrl: "https://github.com/chiampee/SmarTrack/releases/download/v1.0.2/SmartResearchTracker-extension-v1.0.2.zip"
     },
                 {
                   step: 2,
