@@ -352,17 +352,19 @@ class EnhancedLinkProcessor {
   }
 
   async broadcastToDashboard(linkObj, summaries = []) {
-    const APP_URL_PATTERNS = [
-      'http://localhost:5174/*',
-      'http://localhost:5173/*', 
-      'https://localhost:5174/*',
-      'https://localhost:5173/*',
-      'http://127.0.0.1:5174/*',
-      'http://127.0.0.1:5173/*',
-      'https://127.0.0.1:5174/*',
-      'https://127.0.0.1:5173/*',
-      'file://*/*'
-    ];
+  const APP_URL_PATTERNS = [
+    'https://smart-research-tracker.vercel.app/*',
+    'https://smart-research-tracker-git-*.vercel.app/*',
+    'http://localhost:5174/*',
+    'http://localhost:5173/*', 
+    'https://localhost:5174/*',
+    'https://localhost:5173/*',
+    'http://127.0.0.1:5174/*',
+    'http://127.0.0.1:5173/*',
+    'https://127.0.0.1:5174/*',
+    'https://127.0.0.1:5173/*',
+    'file://*/*'
+  ];
 
     try {
       // Only target tabs that have announced readiness
@@ -947,6 +949,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         });
       return true;
 
+    case 'openDashboard':
+      console.log('[SRT] Processing openDashboard message...');
+      openDashboard().then(() => {
+        sendResponse?.({ success: true });
+      }).catch((error) => {
+        console.error('[SRT] openDashboard failed:', error);
+        sendResponse?.({ success: false, error: error.message });
+      });
+      return true;
+
     default:
       console.warn('[SRT] Unknown message type:', msg.type);
       return false;
@@ -1009,53 +1021,65 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
-// Dashboard opening with fallback
+// Dashboard opening with intelligent URL detection
 async function openDashboard() {
   try {
-    // Try user-configured dashboard URL first (supports file:/// and http(s))
-    const syncSettings = await new Promise((resolve) => chrome.storage.sync.get({ dashboardUrl: '' }, resolve));
-    const localSettings = await new Promise((resolve) => chrome.storage.local.get({ apiBase: '', dashboardUrl: '' }, resolve));
-    const candidates = [syncSettings.dashboardUrl, localSettings.dashboardUrl, localSettings.apiBase].filter(Boolean);
-    for (const u of candidates) {
-      try {
-        if (u) {
-          await new Promise((resolve, reject) => {
-            chrome.tabs.create({ url: u }, (tab) => {
-              if (chrome.runtime.lastError) reject(chrome.runtime.lastError); else resolve(tab);
-            });
-          });
-          return;
-        }
-      } catch (_) {}
-    }
-  } catch (e) {
-    // fall through to defaults
-  }
-
-  const defaults = [
-    'http://localhost:5174/',
-    'http://localhost:5173/',
-    'http://127.0.0.1:5174/',
-    'http://127.0.0.1:5173/'
-  ];
-  for (const url of defaults) {
+    // Import URL detection utility
+    const { detectBestDashboardUrl, testUrlAccessibility, getAllPossibleUrls } = await import('./utils/urlDetection.js');
+    
+    // Get the best URL to use
+    const bestUrl = await detectBestDashboardUrl();
+    console.log('[Dashboard] Using URL:', bestUrl);
+    
+    // Try the best URL first
     try {
       await new Promise((resolve, reject) => {
-        chrome.tabs.create({ url }, (tab) => {
+        chrome.tabs.create({ url: bestUrl }, (tab) => {
           if (chrome.runtime.lastError) reject(chrome.runtime.lastError); else resolve(tab);
         });
       });
+      console.log('[Dashboard] Successfully opened:', bestUrl);
       return;
-    } catch (_) {}
-  }
+    } catch (error) {
+      console.warn('[Dashboard] Failed to open best URL:', bestUrl, error);
+    }
 
-  // All URLs failed
-  chrome.notifications.create({
-    type: 'basic',
-    iconUrl: 'icons/icon.svg',
-    title: 'Smart Research Tracker',
-    message: 'Could not open dashboard. Make sure the app is running.'
-  });
+    // If best URL failed, try all other URLs
+    const allUrls = getAllPossibleUrls();
+    for (const url of allUrls) {
+      if (url === bestUrl) continue; // Skip the one we already tried
+      
+      try {
+        console.log('[Dashboard] Trying fallback URL:', url);
+        await new Promise((resolve, reject) => {
+          chrome.tabs.create({ url }, (tab) => {
+            if (chrome.runtime.lastError) reject(chrome.runtime.lastError); else resolve(tab);
+          });
+        });
+        console.log('[Dashboard] Successfully opened fallback:', url);
+        return;
+      } catch (error) {
+        console.warn('[Dashboard] Failed to open fallback URL:', url, error);
+      }
+    }
+
+    // All URLs failed
+    console.error('[Dashboard] All URLs failed to open');
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon.svg',
+      title: 'Smart Research Tracker',
+      message: 'Could not open dashboard. Please check your internet connection or try the extension settings.'
+    });
+  } catch (error) {
+    console.error('[Dashboard] Error in openDashboard:', error);
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon.svg',
+      title: 'Smart Research Tracker',
+      message: 'Error opening dashboard. Please try again.'
+    });
+  }
 }
 
 // Quick save functionality

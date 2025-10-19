@@ -44,5 +44,15 @@
       },
       "description": "Open Smart Research Tracker"
     }
+  },
+  "externally_connectable": {
+    "matches": [
+      "https://smart-research-tracker.vercel.app/*",
+      "https://smart-research-tracker-git-*.vercel.app/*",
+      "http://localhost:5173/*",
+      "http://localhost:5174/*",
+      "http://127.0.0.1:5173/*",
+      "http://127.0.0.1:5174/*"
+    ]
   }
 } 

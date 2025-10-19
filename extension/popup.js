@@ -515,34 +515,52 @@ document.getElementById('openDashboardBtn')?.addEventListener('click', async () 
     const btn = document.getElementById('openDashboardBtn');
     updateButton(btn, '🔄 Opening...', true);
     
-    const settings = await getStorageSync({
-      dashboardUrl: 'http://localhost:5174/',
-      fallbackUrl: 'http://localhost:5173/'
-    });
-
-    // Try to open dashboard
-    const urls = [settings.dashboardUrl, settings.fallbackUrl];
-    
-    for (const url of urls) {
-      try {
-        await new Promise((resolve, reject) => {
-          chrome.tabs.create({ url }, (tab) => {
-            if (chrome.runtime.lastError) {
-              reject(chrome.runtime.lastError);
-            } else {
-              resolve(tab);
-            }
-          });
+    // Use the intelligent URL detection from background script
+    try {
+      // Send message to background script to open dashboard
+      await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ action: 'openDashboard' }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(response);
+          }
         });
-        
-        showStatus('✅ Dashboard opened successfully!', 'success');
-        return;
-      } catch (error) {
-        console.debug('[SRT] Failed to open dashboard at:', url);
+      });
+      
+      showStatus('✅ Dashboard opened successfully!', 'success');
+    } catch (error) {
+      console.error('[SRT] Failed to open dashboard via background script:', error);
+      
+      // Fallback to direct URL opening
+      const settings = await getStorageSync({
+        dashboardUrl: 'https://smart-research-tracker.vercel.app/',
+        fallbackUrl: 'http://localhost:5174/'
+      });
+
+      const urls = [settings.dashboardUrl, settings.fallbackUrl];
+      
+      for (const url of urls) {
+        try {
+          await new Promise((resolve, reject) => {
+            chrome.tabs.create({ url }, (tab) => {
+              if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+              } else {
+                resolve(tab);
+              }
+            });
+          });
+          
+          showStatus('✅ Dashboard opened successfully!', 'success');
+          return;
+        } catch (error) {
+          console.debug('[SRT] Failed to open dashboard at:', url);
+        }
       }
+      
+      showStatus('❌ Could not open dashboard. Check your settings.', 'error');
     }
-    
-    showStatus('❌ Could not open dashboard. Check your settings.', 'error');
     
   } catch (error) {
     console.error('[SRT] Dashboard opening failed:', error);
