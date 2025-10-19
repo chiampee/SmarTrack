@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "deploy": "bash scripts/deploy.sh",
     "deploy:check": "pnpm build && pnpm build:extension && echo '✅ Ready for deployment!'",
-    "build:extension": "vite build --config vite.extension.config.ts && cp extension/manifest.json dist-extension/ && cp extension/options.html dist-extension/ && cp extension/options.js dist-extension/ && cp -r extension/icons dist-extension/ && cp -r extension/utils dist-extension/ && cp dist-extension/extension/popup.html dist-extension/popup.html && (sed -i '' 's|src=\"../popup.js\"|src=\"./popup.js\"|g' dist-extension/popup.html 2>/dev/null || sed -i 's|src=\"../popup.js\"|src=\"./popup.js\"|g' dist-extension/popup.html)",
+    "build:extension": "vite build --config vite.extension.config.ts && cp extension/manifest.json dist-extension/ && cp extension/options.html dist-extension/ && cp extension/options.js dist-extension/ && cp extension/welcome.html dist-extension/ && cp -r extension/icons dist-extension/ && cp -r extension/utils dist-extension/ && cp dist-extension/extension/popup.html dist-extension/popup.html && (sed -i '' 's|src=\"../popup.js\"|src=\"./popup.js\"|g' dist-extension/popup.html 2>/dev/null || sed -i 's|src=\"../popup.js\"|src=\"./popup.js\"|g' dist-extension/popup.html)",
     "test:extension": "echo 'Extension testing - use test-extension.html'",
     "db:reset": "echo 'Database reset - clear browser IndexedDB manually'",
     "setup": "./scripts/install.sh",

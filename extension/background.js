@@ -974,8 +974,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-// Context menu setup
-chrome.runtime.onInstalled.addListener(() => {
+// Context menu setup and onboarding
+chrome.runtime.onInstalled.addListener((details) => {
+  // Set up context menus
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'openDashboard',
@@ -1011,6 +1012,43 @@ chrome.runtime.onInstalled.addListener(() => {
       linkProcessor.pendingQueue = res.pendingUpserts;
     }
   });
+
+  // Show welcome page on first install
+  if (details.reason === 'install') {
+    console.log('[SRT] First install detected - showing welcome page');
+    
+    // Open welcome page
+    chrome.tabs.create({
+      url: chrome.runtime.getURL('welcome.html')
+    });
+    
+    // Also open the dashboard in a separate tab after a short delay
+    setTimeout(() => {
+      openDashboard();
+    }, 2000);
+    
+    // Show a welcome notification
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon.svg',
+      title: '🎉 Welcome to Smart Research Tracker!',
+      message: 'Pin the extension to your toolbar for easy access. Click the puzzle piece icon 🧩 and pin us!'
+    });
+  } else if (details.reason === 'update') {
+    const previousVersion = details.previousVersion;
+    const currentVersion = chrome.runtime.getManifest().version;
+    console.log(`[SRT] Extension updated from ${previousVersion} to ${currentVersion}`);
+    
+    // Show update notification for major updates
+    if (previousVersion && previousVersion.startsWith('0.') && currentVersion.startsWith('1.')) {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icons/icon.svg',
+        title: '✨ Smart Research Tracker Updated!',
+        message: `Version ${currentVersion} is now ready with bug fixes and improvements!`
+      });
+    }
+  }
 });
 
 // Context menu handling

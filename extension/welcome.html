@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Smart Research Tracker!</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 800px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      border-left: 4px solid #667eea;
+    }
+
+    .step-number {
+      background: #667eea;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin-right: 20px;
+      flex-shrink: 0;
+    }
+
+    .step-content h3 {
+      color: #333;
+      margin-bottom: 8px;
+      font-size: 1.3rem;
+    }
+
+    .step-content p {
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .highlight {
+      background: #fff3cd;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #856404;
+      font-weight: 500;
+    }
+
+    .pin-instructions {
+      background: #e3f2fd;
+      border: 2px solid #2196f3;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 30px 0;
+    }
+
+    .pin-instructions h3 {
+      color: #1976d2;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pin-instructions ol {
+      margin-left: 20px;
+      color: #555;
+    }
+
+    .pin-instructions li {
+      margin-bottom: 10px;
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 15px 30px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .feature {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .feature-icon {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+
+    .feature h4 {
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .feature p {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .footer {
+      background: #f8f9fa;
+      padding: 20px;
+      text-align: center;
+      color: #666;
+    }
+
+    @media (max-width: 600px) {
+      .header h1 {
+        font-size: 1.8rem;
+      }
+
+      .content {
+        padding: 20px;
+      }
+
+      .step {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
+      .step-number {
+        margin-right: 0;
+        margin-bottom: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎉 Welcome to Smart Research Tracker!</h1>
+      <p>Your research is about to get organized!</p>
+    </div>
+
+    <div class="content">
+      <h2 style="text-align: center; color: #333; margin-bottom: 30px;">Quick Start Guide</h2>
+
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h3>📌 Pin the Extension</h3>
+          <p>Make the extension easy to access by pinning it to your toolbar:</p>
+          <div class="pin-instructions">
+            <h3>📍 How to Pin:</h3>
+            <ol>
+              <li>Look for the <span class="highlight">puzzle piece icon 🧩</span> in the top-right corner of Chrome</li>
+              <li>Click it to open the extensions menu</li>
+              <li>Find <strong>"Smart Research Tracker"</strong> in the list</li>
+              <li>Click the <span class="highlight">📌 pin icon</span> next to it</li>
+              <li>Done! The extension icon will now be visible in your toolbar</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h3>💾 Save Your First Link</h3>
+          <p>Visit any webpage you want to save, then click the extension icon in your toolbar. Add a title, label, and priority, then click <span class="highlight">"Save to Research"</span>.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h3>📊 View Your Dashboard</h3>
+          <p>Click <span class="highlight">"Open Dashboard"</span> in the extension popup to see all your saved links organized beautifully.</p>
+        </div>
+      </div>
+
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">🔖</div>
+          <h4>One-Click Save</h4>
+          <p>Save any page instantly</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🏷️</div>
+          <h4>Organize</h4>
+          <p>Labels, priorities, status</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🤖</div>
+          <h4>AI Powered</h4>
+          <p>Auto-summaries & chat</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔒</div>
+          <h4>Private</h4>
+          <p>All data stays local</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="openDashboard">
+          🚀 Open Dashboard
+        </button>
+        <button class="btn btn-secondary" id="closeWelcome">
+          Got It!
+        </button>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Need help? Visit our <a href="https://github.com/chiampee/SmarTrack" target="_blank" style="color: #667eea; text-decoration: none; font-weight: 600;">GitHub page</a> for documentation.</p>
+    </div>
+  </div>
+
+  <script>
+    // Open dashboard button
+    document.getElementById('openDashboard').addEventListener('click', async () => {
+      try {
+        // Send message to background script to open dashboard
+        chrome.runtime.sendMessage({ type: 'openDashboard' }, () => {
+          // Close this tab after opening dashboard
+          setTimeout(() => {
+            window.close();
+          }, 500);
+        });
+      } catch (error) {
+        // Fallback: open directly
+        window.open('https://smartracker.vercel.app', '_blank');
+        setTimeout(() => {
+          window.close();
+        }, 500);
+      }
+    });
+
+    // Close welcome button
+    document.getElementById('closeWelcome').addEventListener('click', () => {
+      window.close();
+    });
+
+    // Auto-focus on pin instructions
+    window.addEventListener('load', () => {
+      const pinSection = document.querySelector('.pin-instructions');
+      if (pinSection) {
+        pinSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  </script>
+</body>
+</html>
+
