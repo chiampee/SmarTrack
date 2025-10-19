@@ -459,7 +459,7 @@ export const OnboardingModal: React.FC<Props> = ({ isOpen, onClose, onDontShowAg
       description: "SmartResearchTracker-extension-v1.0.1.zip (29KB)",
       icon: "⬇️",
       color: "blue",
-      downloadUrl: "https://github.com/chiampee/SmarTrack/releases/latest/download/SmartResearchTracker-extension-v1.0.1.zip"
+      downloadUrl: "https://github.com/chiampee/SmarTrack/releases/download/V1.0.1/SmartResearchTracker-extension-v1.0.1.zip"
     },
                 {
                   step: 2,
@@ -471,7 +471,7 @@ export const OnboardingModal: React.FC<Props> = ({ isOpen, onClose, onDontShowAg
                 {
                   step: 3,
                   title: "Open Extensions Page",
-                  description: "chrome://extensions/",
+                  description: "Paste chrome://extensions/ in address bar",
                   icon: "🌐",
                   color: "green"
                 },
@@ -526,13 +526,38 @@ export const OnboardingModal: React.FC<Props> = ({ isOpen, onClose, onDontShowAg
                   )}
                   {index === 2 && (
                     <Button
-                      onClick={() => window.open('chrome://extensions/', '_blank')}
+                      onClick={() => {
+                        // Copy to clipboard
+                        navigator.clipboard.writeText('chrome://extensions/').then(() => {
+                          // Show toast notification
+                          const toast = document.createElement('div');
+                          toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-[9999] flex items-center gap-2 animate-fade-in-up';
+                          toast.innerHTML = `
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <div>
+                              <div class="font-semibold">Copied to clipboard!</div>
+                              <div class="text-xs opacity-90">Paste in browser address bar: chrome://extensions/</div>
+                            </div>
+                          `;
+                          document.body.appendChild(toast);
+                          setTimeout(() => {
+                            toast.style.opacity = '0';
+                            toast.style.transition = 'opacity 300ms';
+                            setTimeout(() => toast.remove(), 300);
+                          }, 4000);
+                        }).catch(() => {
+                          // Fallback: show alert
+                          alert('Please open a new tab and paste this URL:\n\nchrome://extensions/');
+                        });
+                      }}
                       variant="outline"
                       size="sm"
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                      className="border-green-300 text-green-700 hover:bg-green-50"
                     >
                       <ExternalLink className="w-4 h-4 mr-1" />
-                      Open
+                      Copy URL
                     </Button>
                   )}
                 </div>

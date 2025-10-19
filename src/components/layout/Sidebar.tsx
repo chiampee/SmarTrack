@@ -211,7 +211,7 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
                         <span>Help & Setup</span>
                       </button>
                 <a 
-                  href="https://github.com/chiampee/SmarTrack/releases/latest/download/SmartResearchTracker-extension-v1.0.1.zip"
+                  href="https://github.com/chiampee/SmarTrack/releases/download/V1.0.1/SmartResearchTracker-extension-v1.0.1.zip"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={onClose}
