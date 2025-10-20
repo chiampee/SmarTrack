@@ -14,6 +14,21 @@ export const AdminStatsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [userBreakdown, setUserBreakdown] = useState<Array<{ userId: string; email?: string; name?: string; picture?: string; links: number; chats: number; summaries: number; boards: number; tasks: number; lastActivity: string; sessions?: number; firstSeen?: string }>>([]);
   const [auth0Users, setAuth0Users] = useState<Array<{ user_id: string; name?: string; email?: string; picture?: string; email_verified?: boolean; created_at?: string; last_login?: string; logins_count?: number }>>([]);
+  const [usageChartData, setUsageChartData] = useState<{
+    dates: string[];
+    logins: number[];
+    downloads: number[];
+    installations: number[];
+  } | null>(null);
+  const [chartControls, setChartControls] = useState({
+    showLogins: true,
+    showDownloads: true,
+    showInstallations: true,
+    granularity: 'daily' as 'daily' | 'weekly' | 'monthly',
+    dateRange: '30' as '7' | '30' | '90' | '365',
+    showTrendLines: true,
+    showDataPoints: true,
+  });
   const [recent, setRecent] = useState<{ links7d: number; chats7d: number; users7d: number }>({ links7d: 0, chats7d: 0, users7d: 0 });
   const [traction, setTraction] = useState<{ dau: number; wau: number; mau: number; users: number; activated: number; aiUsers: number } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -53,6 +68,119 @@ export const AdminStatsPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to fetch Auth0 users:', error);
+    }
+  };
+
+  const generateUsageChartData = async () => {
+    try {
+      const userAudits = await db.userAudits.toArray();
+      const downloadStats = {
+        downloadsByDay: {} as Record<string, number>
+      };
+      const installationStats = {
+        installationsByDay: {} as Record<string, number>
+      };
+
+      const { granularity, dateRange } = chartControls;
+      const daysBack = parseInt(dateRange);
+      
+      const dates: string[] = [];
+      const logins: number[] = [];
+      const downloads: number[] = [];
+      const installations: number[] = [];
+
+      if (granularity === 'daily') {
+        for (let i = daysBack - 1; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const dateStr = date.toISOString().split('T')[0];
+          dates.push(dateStr);
+
+          const dayLogins = userAudits.filter(audit => {
+            const lastSeen = new Date(audit.lastSeen);
+            return lastSeen.toISOString().split('T')[0] === dateStr;
+          }).length;
+          logins.push(dayLogins);
+
+          const dayDownloads = downloadStats.downloadsByDay[dateStr] || 0;
+          downloads.push(dayDownloads);
+
+          const dayInstallations = installationStats.installationsByDay[dateStr] || 0;
+          installations.push(dayInstallations);
+        }
+      } else if (granularity === 'weekly') {
+        const weeksBack = Math.ceil(daysBack / 7);
+        for (let i = weeksBack - 1; i >= 0; i--) {
+          const startDate = new Date();
+          startDate.setDate(startDate.getDate() - (i + 1) * 7);
+          const endDate = new Date();
+          endDate.setDate(endDate.getDate() - i * 7);
+          
+          const weekLabel = `${startDate.toISOString().split('T')[0]} - ${endDate.toISOString().split('T')[0]}`;
+          dates.push(weekLabel);
+
+          const weekLogins = userAudits.filter(audit => {
+            const lastSeen = new Date(audit.lastSeen);
+            return lastSeen >= startDate && lastSeen < endDate;
+          }).length;
+          logins.push(weekLogins);
+
+          let weekDownloads = 0;
+          for (let d = 0; d < 7; d++) {
+            const checkDate = new Date(startDate);
+            checkDate.setDate(checkDate.getDate() + d);
+            const dateStr = checkDate.toISOString().split('T')[0];
+            weekDownloads += downloadStats.downloadsByDay[dateStr] || 0;
+          }
+          downloads.push(weekDownloads);
+
+          let weekInstallations = 0;
+          for (let d = 0; d < 7; d++) {
+            const checkDate = new Date(startDate);
+            checkDate.setDate(checkDate.getDate() + d);
+            const dateStr = checkDate.toISOString().split('T')[0];
+            weekInstallations += installationStats.installationsByDay[dateStr] || 0;
+          }
+          installations.push(weekInstallations);
+        }
+      } else if (granularity === 'monthly') {
+        const monthsBack = Math.ceil(daysBack / 30);
+        for (let i = monthsBack - 1; i >= 0; i--) {
+          const date = new Date();
+          date.setMonth(date.getMonth() - i);
+          const monthLabel = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          dates.push(monthLabel);
+
+          const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+          const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+          
+          const monthLogins = userAudits.filter(audit => {
+            const lastSeen = new Date(audit.lastSeen);
+            return lastSeen >= monthStart && lastSeen <= monthEnd;
+          }).length;
+          logins.push(monthLogins);
+
+          let monthDownloads = 0;
+          for (let d = 1; d <= monthEnd.getDate(); d++) {
+            const checkDate = new Date(date.getFullYear(), date.getMonth(), d);
+            const dateStr = checkDate.toISOString().split('T')[0];
+            monthDownloads += downloadStats.downloadsByDay[dateStr] || 0;
+          }
+          downloads.push(monthDownloads);
+
+          let monthInstallations = 0;
+          for (let d = 1; d <= monthEnd.getDate(); d++) {
+            const checkDate = new Date(date.getFullYear(), date.getMonth(), d);
+            const dateStr = checkDate.toISOString().split('T')[0];
+            monthInstallations += installationStats.installationsByDay[dateStr] || 0;
+          }
+          installations.push(monthInstallations);
+        }
+      }
+
+      setUsageChartData({ dates, logins, downloads, installations });
+    } catch (error) {
+      console.error('Failed to generate usage chart data:', error);
     }
   };
 
@@ -164,11 +292,16 @@ export const AdminStatsPage: React.FC = () => {
     });
     
     fetchAuth0Users();
+    generateUsageChartData();
     
     return () => {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    generateUsageChartData();
+  }, [chartControls]);
 
   if (loading) {
     return (
@@ -280,6 +413,292 @@ export const AdminStatsPage: React.FC = () => {
             );
           })}
         </div>
+
+        {/* Usage Chart */}
+        {usageChartData && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-8">
+            {/* Chart Header */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Usage Trends</h3>
+                  <p className="text-sm text-gray-500">Advanced analytics for product management</p>
+                </div>
+                
+                {/* Chart Controls */}
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Date Range & Granularity */}
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={chartControls.dateRange}
+                      onChange={(e) => setChartControls(prev => ({ ...prev, dateRange: e.target.value as any }))}
+                      className="px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="7">7d</option>
+                      <option value="30">30d</option>
+                      <option value="90">90d</option>
+                      <option value="365">1y</option>
+                    </select>
+                    <select
+                      value={chartControls.granularity}
+                      onChange={(e) => setChartControls(prev => ({ ...prev, granularity: e.target.value as any }))}
+                      className="px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                    </select>
+                  </div>
+
+                  {/* Line Toggles */}
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={chartControls.showLogins}
+                        onChange={(e) => setChartControls(prev => ({ ...prev, showLogins: e.target.checked }))}
+                        className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-blue-600">Logins</span>
+                    </label>
+                    <label className="flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={chartControls.showDownloads}
+                        onChange={(e) => setChartControls(prev => ({ ...prev, showDownloads: e.target.checked }))}
+                        className="w-3 h-3 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      />
+                      <span className="text-green-600">Downloads</span>
+                    </label>
+                    <label className="flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={chartControls.showInstallations}
+                        onChange={(e) => setChartControls(prev => ({ ...prev, showInstallations: e.target.checked }))}
+                        className="w-3 h-3 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                      />
+                      <span className="text-purple-600">Installations</span>
+                    </label>
+                  </div>
+
+                  {/* Display Options */}
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={chartControls.showTrendLines}
+                        onChange={(e) => setChartControls(prev => ({ ...prev, showTrendLines: e.target.checked }))}
+                        className="w-3 h-3 text-gray-600 border-gray-300 rounded focus:ring-gray-500"
+                      />
+                      <span className="text-gray-600">Lines</span>
+                    </label>
+                    <label className="flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={chartControls.showDataPoints}
+                        onChange={(e) => setChartControls(prev => ({ ...prev, showDataPoints: e.target.checked }))}
+                        className="w-3 h-3 text-gray-600 border-gray-300 rounded focus:ring-gray-500"
+                      />
+                      <span className="text-gray-600">Points</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Summary Stats */}
+            <div className="px-6 py-4">
+              <div className="grid grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="text-xl font-bold text-blue-600">{usageChartData.logins.reduce((a, b) => a + b, 0)}</div>
+                  <div className="text-xs text-gray-500">Logins</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-green-600">{usageChartData.downloads.reduce((a, b) => a + b, 0)}</div>
+                  <div className="text-xs text-gray-500">Downloads</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-purple-600">{usageChartData.installations.reduce((a, b) => a + b, 0)}</div>
+                  <div className="text-xs text-gray-500">Installations</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Chart Area */}
+            <div className="px-6 pb-6">
+              <div className="h-64 bg-gray-50 rounded-lg p-4">
+                <svg width="100%" height="100%" viewBox="0 0 800 300" className="overflow-visible">
+                  <rect width="100%" height="100%" fill="transparent" />
+                  
+                  {/* Grid lines */}
+                  {[0, 1, 2, 3, 4, 5].map((value, index) => {
+                    const y = 280 - (index * 50);
+                    return (
+                      <g key={value}>
+                        <line x1="60" y1={y} x2="760" y2={y} stroke="#f3f4f6" strokeWidth="1" />
+                      </g>
+                    );
+                  })}
+                  
+                  {/* Y-axis */}
+                  <line x1="60" y1="20" x2="60" y2="280" stroke="#d1d5db" strokeWidth="2" />
+                  
+                  {/* X-axis */}
+                  <line x1="60" y1="280" x2="760" y2="280" stroke="#d1d5db" strokeWidth="2" />
+                  
+                  {/* Y-axis labels */}
+                  {[0, 1, 2, 3, 4, 5].map((value, index) => {
+                    const y = 280 - (index * 50);
+                    return (
+                      <g key={value}>
+                        <line x1="55" y1={y} x2="60" y2={y} stroke="#9ca3af" strokeWidth="1" />
+                        <text x="50" y={y + 5} textAnchor="end" className="text-xs fill-gray-600 font-medium">
+                          {value}
+                        </text>
+                      </g>
+                    );
+                  })}
+                  
+                  {/* X-axis labels */}
+                  {usageChartData.dates.map((date, index) => {
+                    if (index % 5 !== 0) return null;
+                    const x = 60 + (index * (700 / (usageChartData.dates.length - 1)));
+                    return (
+                      <text key={date} x={x} y="295" textAnchor="middle" className="text-xs fill-gray-500">
+                        {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </text>
+                    );
+                  })}
+                  
+                  {/* Data lines */}
+                  {usageChartData.dates.length > 1 && chartControls.showTrendLines && (
+                    <>
+                      {chartControls.showLogins && (
+                        <polyline
+                          points={usageChartData.dates.map((date, index) => {
+                            const x = 60 + (index * (700 / (usageChartData.dates.length - 1)));
+                            const maxValue = Math.max(...usageChartData.logins, ...usageChartData.downloads, ...usageChartData.installations, 1);
+                            const y = 280 - (usageChartData.logins[index] / maxValue) * 260;
+                            return `${x},${y}`;
+                          }).join(' ')}
+                          fill="none"
+                          stroke="#3b82f6"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="drop-shadow-sm"
+                        />
+                      )}
+                      
+                      {chartControls.showDownloads && (
+                        <polyline
+                          points={usageChartData.dates.map((date, index) => {
+                            const x = 60 + (index * (700 / (usageChartData.dates.length - 1)));
+                            const maxValue = Math.max(...usageChartData.logins, ...usageChartData.downloads, ...usageChartData.installations, 1);
+                            const y = 280 - (usageChartData.downloads[index] / maxValue) * 260;
+                            return `${x},${y}`;
+                          }).join(' ')}
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="drop-shadow-sm"
+                        />
+                      )}
+                      
+                      {chartControls.showInstallations && (
+                        <polyline
+                          points={usageChartData.dates.map((date, index) => {
+                            const x = 60 + (index * (700 / (usageChartData.dates.length - 1)));
+                            const maxValue = Math.max(...usageChartData.logins, ...usageChartData.downloads, ...usageChartData.installations, 1);
+                            const y = 280 - (usageChartData.installations[index] / maxValue) * 260;
+                            return `${x},${y}`;
+                          }).join(' ')}
+                          fill="none"
+                          stroke="#8b5cf6"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="drop-shadow-sm"
+                        />
+                      )}
+                    </>
+                  )}
+                  
+                  {/* Data points */}
+                  {chartControls.showDataPoints && usageChartData.dates.map((date, index) => {
+                    const x = 60 + (index * (700 / (usageChartData.dates.length - 1)));
+                    const maxValue = Math.max(...usageChartData.logins, ...usageChartData.downloads, ...usageChartData.installations, 1);
+                    
+                    return (
+                      <g key={date}>
+                        {chartControls.showLogins && (
+                          <circle
+                            cx={x}
+                            cy={280 - (usageChartData.logins[index] / maxValue) * 260}
+                            r="4"
+                            fill="#3b82f6"
+                            stroke="white"
+                            strokeWidth="2"
+                            className="hover:r-6 transition-all duration-200"
+                          />
+                        )}
+                        {chartControls.showDownloads && (
+                          <circle
+                            cx={x}
+                            cy={280 - (usageChartData.downloads[index] / maxValue) * 260}
+                            r="4"
+                            fill="#10b981"
+                            stroke="white"
+                            strokeWidth="2"
+                            className="hover:r-6 transition-all duration-200"
+                          />
+                        )}
+                        {chartControls.showInstallations && (
+                          <circle
+                            cx={x}
+                            cy={280 - (usageChartData.installations[index] / maxValue) * 260}
+                            r="4"
+                            fill="#8b5cf6"
+                            stroke="white"
+                            strokeWidth="2"
+                            className="hover:r-6 transition-all duration-200"
+                          />
+                        )}
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+            </div>
+            
+            {/* Legend */}
+            <div className="flex flex-wrap justify-center gap-4 mt-6 px-6 pb-6">
+              {chartControls.showLogins && (
+                <div className="flex items-center space-x-2 px-4 py-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-blue-700">Logins</span>
+                  <span className="text-xs text-blue-600 font-semibold">({usageChartData.logins.reduce((a, b) => a + b, 0)})</span>
+                </div>
+              )}
+              {chartControls.showDownloads && (
+                <div className="flex items-center space-x-2 px-4 py-2 bg-green-50 rounded-lg border border-green-200">
+                  <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-green-700">Downloads</span>
+                  <span className="text-xs text-green-600 font-semibold">({usageChartData.downloads.reduce((a, b) => a + b, 0)})</span>
+                </div>
+              )}
+              {chartControls.showInstallations && (
+                <div className="flex items-center space-x-2 px-4 py-2 bg-purple-50 rounded-lg border border-purple-200">
+                  <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-purple-700">Installations</span>
+                  <span className="text-xs text-purple-600 font-semibold">({usageChartData.installations.reduce((a, b) => a + b, 0)})</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Key Metrics */}
         {traction && (
