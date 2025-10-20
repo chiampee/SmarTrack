@@ -43,7 +43,7 @@ export const Modal: React.FC<ModalProps> = ({
 
   const content = (
   <Transition show={isOpen} as={Fragment}>
-    <Dialog open={isOpen} onClose={onClose} className="fixed inset-0 z-[9999] overflow-y-auto" data-modal-id={dataId} data-modal-title={title || ''}>
+    <Dialog open={isOpen} onClose={onClose} className="fixed inset-0 z-[9999]" data-modal-id={dataId} data-modal-title={title || ''}>
       <div className="flex min-h-screen items-center justify-center p-4 text-center">
         <Transition.Child
           as={Fragment}

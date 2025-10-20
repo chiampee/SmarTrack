@@ -25,6 +25,8 @@ import {
   Lightbulb
 } from 'lucide-react';
 import { apiKeySetupService } from '../services/apiKeySetupService';
+import { downloadTrackingService } from '../services/downloadTrackingService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface OnboardingStep {
   title: string;
@@ -40,6 +42,7 @@ interface Props {
 }
 
 export const OnboardingModal: React.FC<Props> = ({ isOpen, onClose, onDontShowAgain }) => {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [apiKey, setApiKey] = useState('');
   const [apiKeyStatus, setApiKeyStatus] = useState<{
@@ -76,15 +79,6 @@ export const OnboardingModal: React.FC<Props> = ({ isOpen, onClose, onDontShowAg
     setTimeout(() => setAnimateStep(true), 100);
   }, [currentStep]);
 
-  // Auto-detect extension when reaching extension step
-  useEffect(() => {
-    if (currentStep === 1 && isOpen) {
-      // Auto-check for extension after a short delay
-      setTimeout(() => {
-        autoDetectExtension();
-      }, 1000);
-    }
-  }, [currentStep, isOpen]);
 
   const errorInfoList = [
     {
@@ -272,37 +266,6 @@ export const OnboardingModal: React.FC<Props> = ({ isOpen, onClose, onDontShowAg
     }
   };
 
-  const checkExtensionStatus = async () => {
-    try {
-      // Check if extension is installed
-      if (typeof window.chrome !== 'undefined' && window.chrome.runtime) {
-        const response = await new Promise<boolean>((resolve) => {
-          const timeout = setTimeout(() => resolve(false), 1000);
-          window.chrome!.runtime!.sendMessage('smart-research-tracker', { action: 'ping' }, (response: any) => {
-            clearTimeout(timeout);
-            resolve(!!response);
-          });
-        });
-        return response;
-      }
-    } catch (error) {
-      console.log('Extension check failed:', error);
-    }
-    return false;
-  };
-
-  const autoDetectExtension = async () => {
-    const isInstalled = await checkExtensionStatus();
-    if (isInstalled) {
-      // Auto-advance if extension is detected
-      setTimeout(() => {
-        if (currentStep < steps.length - 1) {
-          nextStep();
-        }
-      }, 1000);
-    }
-  };
-
   const getSpecificErrorInfo = (errorType: string) => {
     return errorInfoList.find(error => error.title === errorType);
   };
@@ -456,10 +419,10 @@ export const OnboardingModal: React.FC<Props> = ({ isOpen, onClose, onDontShowAg
                 {
       step: 1,
       title: "Download Extension",
-      description: "SmartResearchTracker-extension-v1.0.2.zip (29KB)",
+      description: "SmartResearchTracker-extension-v1.0.3.zip (33KB)",
       icon: "⬇️",
       color: "blue",
-      downloadUrl: "https://github.com/chiampee/SmarTrack/releases/download/v1.0.2/SmartResearchTracker-extension-v1.0.2.zip"
+      downloadUrl: "https://smartracker.vercel.app/downloads/SmartResearchTracker-extension-v1.0.3.zip"
     },
                 {
                   step: 2,
@@ -515,7 +478,12 @@ export const OnboardingModal: React.FC<Props> = ({ isOpen, onClose, onDontShowAg
                   </div>
                   {index === 0 && item.downloadUrl && (
                     <Button
-                      onClick={() => window.open(item.downloadUrl, '_blank')}
+                      onClick={async () => {
+                        // Track the download
+                        await downloadTrackingService.trackOnboardingDownload(user?.sub);
+                        // Open download
+                        window.open(item.downloadUrl, '_blank');
+                      }}
                       variant="outline"
                       size="sm"
                       className="border-blue-300 text-blue-700 hover:bg-blue-50"
@@ -563,33 +531,6 @@ export const OnboardingModal: React.FC<Props> = ({ isOpen, onClose, onDontShowAg
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Extension Detection */}
-          <div className={`bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200 ${animateStep ? 'animate-fade-in-up' : ''}`} style={{ animationDelay: '1000ms' }}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">🔍</span>
-                </div>
-                <div>
-                  <h5 className="font-semibold text-purple-900">Auto-Detect Extension</h5>
-                  <p className="text-purple-700 text-xs">Check if the extension is already installed</p>
-                </div>
-              </div>
-              <Button
-                onClick={autoDetectExtension}
-                variant="outline"
-                size="sm"
-                className="border-purple-300 text-purple-700 hover:bg-purple-50"
-              >
-                <span className="text-sm mr-1">🔍</span>
-                Check
-              </Button>
-            </div>
-            <p className="text-purple-800 text-xs">
-              If you've already installed the extension, click "Check" to automatically detect it and proceed to the next step.
-            </p>
           </div>
 
           {/* Tips and Features */}
@@ -1211,7 +1152,7 @@ VITE_ENABLE_ANALYTICS=false`}
       title=""
       maxWidthClass="max-w-4xl w-full mx-2 sm:mx-4"
     >
-      <div className="space-y-6 max-h-[80vh] overflow-y-auto">
+      <div className="space-y-6 max-h-[80vh] overflow-y-auto px-2 sm:px-0">
         {/* Enhanced Progress Indicator */}
         {showProgress && (
           <div className={`space-y-3 transition-all duration-700 ${showProgress ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
@@ -1247,27 +1188,27 @@ VITE_ENABLE_ANALYTICS=false`}
         )}
 
         {/* Enhanced Header */}
-        <div className={`text-center space-y-4 transition-all duration-700 ${animateStep ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <div className="flex items-center justify-center gap-4">
+        <div className={`text-center space-y-4 transition-all duration-700 ${animateStep ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}> 
+          <div className="flex items-center justify-center gap-3 sm:gap-4">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-600 rounded-2xl blur-lg opacity-30 animate-pulse"></div>
-              <div className="relative w-16 h-16 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="relative w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
                 <div className="text-white">
                   {React.cloneElement(currentStepData.icon as React.ReactElement<any>, { 
-                    className: 'w-8 h-8' 
+                    className: 'w-6 h-6 sm:w-8 sm:h-8' 
                   })}
                 </div>
               </div>
             </div>
             <div className="text-left">
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">{currentStepData.title}</h2>
-              <p className="text-gray-600">{currentStepData.description}</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">{currentStepData.title}</h2>
+              <p className="text-gray-600 text-sm sm:text-base">{currentStepData.description}</p>
             </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="min-h-[400px] max-h-[50vh] overflow-y-auto">
+        <div className="min-h-[400px]">
           <div className="max-w-3xl mx-auto">
             {currentStepData.content}
           </div>

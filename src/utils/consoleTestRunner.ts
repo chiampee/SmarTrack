@@ -123,6 +123,7 @@ export const consoleTestRunner = {
     try {
       const testLink = {
         id: 'console-test-' + Date.now(),
+      userId: 'test-user',
         url: 'https://console-test.example.com',
         metadata: {
           title: 'Console Test',

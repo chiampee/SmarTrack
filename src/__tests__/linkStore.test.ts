@@ -9,6 +9,7 @@ import { Link } from '../types/Link';
 const sampleLinks: Link[] = [
   {
     id: '1',
+      userId: 'test-user',
     url: 'https://a.com',
     metadata: { title: 'Alpha', description: '', image: '' },
     labels: ['news'],
@@ -19,6 +20,7 @@ const sampleLinks: Link[] = [
   },
   {
     id: '2',
+      userId: 'test-user',
     url: 'https://b.com',
     metadata: { title: 'Beta', description: '', image: '' },
     labels: ['work'],

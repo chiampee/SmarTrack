@@ -15,7 +15,7 @@ export const UserProfile: React.FC = () => {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+        className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
       >
         {user.picture ? (
           <img
@@ -29,14 +29,14 @@ export const UserProfile: React.FC = () => {
           </div>
         )}
         <div className="hidden md:block text-left">
-          <div className="text-sm font-semibold text-gray-900">
+          <div className="text-sm font-semibold text-white">
             {user.name || user.email}
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-300">
             {user.email}
           </div>
         </div>
-        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-gray-300 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (

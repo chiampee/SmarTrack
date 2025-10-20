@@ -55,7 +55,8 @@ export const Header: React.FC<{ onMenu: () => void }> = ({ onMenu }) => {
           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300">
             <BookOpen size={14} className="text-white" />
           </div>
-          <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">Smart Research Tracker</span>
+          <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent hidden sm:inline">Smart Research Tracker</span>
+          <span className="bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent sm:hidden text-base leading-none">SRT</span>
         </Link>
       </div>
       

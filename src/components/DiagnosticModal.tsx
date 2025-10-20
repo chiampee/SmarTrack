@@ -112,7 +112,7 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
       if (handshake.valid) {
         positiveDetections++;
-        return { installed: true, accessible: true, details: `Extension responded via handshake: ${handshake.details}` };
+        return { installed: true, accessible: true, details: `Extension responded via handshake: ${handshake.details}. Confidence: 100%` };
       } else {
         detectionMethods.push(`Window handshake (${handshake.details})`);
       }
@@ -162,7 +162,7 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
         
         if (response.valid) {
           positiveDetections++;
-          return { installed: true, accessible: true, details: `Extension responded via Chrome API: ${response.details}` };
+          return { installed: true, accessible: true, details: `Extension responded via Chrome API: ${response.details}. Confidence: 100%` };
         } else {
           detectionMethods.push(`Chrome API (${response.details})`);
         }
@@ -191,7 +191,7 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
       
       if (validElements.length > 0) {
         positiveDetections++;
-        return { installed: true, accessible: true, details: `Extension elements found in DOM: ${validElements.length} valid elements` };
+        return { installed: true, accessible: true, details: `Extension elements found in DOM: ${validElements.length} valid elements. Confidence: 90%` };
       }
     } catch (error) {
       console.log('Extension DOM check failed:', error);
@@ -230,7 +230,7 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
         
         if (loadedScripts.length > 0) {
           positiveDetections++;
-          return { installed: true, accessible: true, details: `Extension scripts detected: ${loadedScripts.length} loaded scripts` };
+          return { installed: true, accessible: true, details: `Extension scripts detected: ${loadedScripts.length} loaded scripts. Confidence: 85%` };
         }
       }
     } catch (error) {
@@ -263,7 +263,7 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
             
             if (isValidData) {
               positiveDetections++;
-              return { installed: true, accessible: true, details: `Extension data found in localStorage: ${key}` };
+              return { installed: true, accessible: true, details: `Extension data found in localStorage: ${key}. Confidence: 80%` };
             }
           } catch {
             // Invalid JSON, continue checking other keys
@@ -299,7 +299,7 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
           
           if (isValidProperty) {
             positiveDetections++;
-            return { installed: true, accessible: true, details: `Extension window properties detected: ${prop}` };
+            return { installed: true, accessible: true, details: `Extension window properties detected: ${prop}. Confidence: 85%` };
           }
         }
       }
@@ -316,7 +316,7 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
       // On normal web pages this won't be present, but keep as a best-effort signal
       if (typeof window.chrome !== 'undefined' && window.chrome.runtime && window.chrome.runtime.id) {
         positiveDetections++;
-        return { installed: true, accessible: true, details: 'Chrome runtime present (likely extension context)' };
+        return { installed: true, accessible: true, details: 'Chrome runtime present (likely extension context). Confidence: 75%' };
       }
     } catch (error) {
       console.log('Extension context check failed:', error);
@@ -539,9 +539,9 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
     const isApiKeyConfigured = apiKeySetupService.isApiKeyConfigured();
     diagnosticResults.push({
       name: 'API Key Configuration',
-      status: isApiKeyConfigured ? 'success' : 'error',
-      message: isApiKeyConfigured ? 'API key is configured' : 'API key not found',
-      recommendation: isApiKeyConfigured ? undefined : 'Configure your OpenAI API key to enable AI features.',
+      status: isApiKeyConfigured ? 'success' : 'warning',
+      message: isApiKeyConfigured ? 'API key is configured' : 'API key not configured (AI features disabled)',
+      recommendation: isApiKeyConfigured ? undefined : 'AI features like chat and summaries require an OpenAI API key. The app works without it.',
       action: isApiKeyConfigured ? undefined : {
         label: 'Configure API Key',
         onClick: () => {
@@ -858,18 +858,6 @@ export const DiagnosticModal: React.FC<Props> = ({ isOpen, onClose }) => {
             >
               <span className="text-lg">🧪</span>
               Test Extension
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                onClose();
-                window.location.href = '/database-tests';
-              }}
-              className="flex items-center gap-2 px-4 py-3 rounded-xl hover:shadow-md transition-all duration-200 border-blue-300 text-blue-700 hover:bg-blue-50"
-              title="Test database integrity and performance"
-            >
-              <span className="text-lg">🗄️</span>
-              Database Tests
             </Button>
           </div>
           <Button 

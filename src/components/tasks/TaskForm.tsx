@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { Input, Select, Button } from '..';
 import { Task } from '../../types/Task';
 import { useTaskStore } from '../../stores/taskStore';
+import { useUserId } from '../../hooks/useCurrentUser';
 
 interface TaskFormProps {
   onSuccess?: () => void;
 }
 
 export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess }) => {
+  const userId = useUserId();
   const { addTask } = useTaskStore();
 
   const [name, setName] = useState('');
@@ -19,6 +21,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSuccess }) => {
     e.preventDefault();
     const task: Task = {
       id: crypto.randomUUID(),
+      userId: userId || 'local-dev-user',
       name,
       priority,
       status,

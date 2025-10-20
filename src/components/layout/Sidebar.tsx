@@ -4,8 +4,11 @@ import { useLinkStore } from '../../stores/linkStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useSettings } from '../../contexts/SettingsContext';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { isProduction } from '../../config/auth0';
 import { Modal, Button, QuickStartGuide } from '..';
 import { LinkForm } from '../links/LinkForm';
+import { downloadTrackingService } from '../../services/downloadTrackingService';
 import { 
   Plus, 
   Trash2, 
@@ -27,6 +30,7 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
   open,
   onClose,
 }) => {
+  const { user } = useAuth();
   const { boards, loadBoards } = useBoardStore();
   const { clearAll, rawLinks } = useLinkStore();
   const { hasSeenOnboarding } = useSettingsStore();
@@ -42,17 +46,23 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
 
   const isNewUser = rawLinks.length === 0 && !hasSeenOnboarding;
   const isLinksPage = location.pathname === '/';
+  const ADMIN_EMAILS = new Set<string>([
+    'roee.ro@next-insurance.com',
+    'chaimpeer11@gmail.com',
+    ...(((import.meta as any).env?.VITE_ADMIN_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean)),
+  ]);
+  const isAdmin = user?.email && (isProduction ? ADMIN_EMAILS.has(user.email) : true);
 
   return (
     <>
       {open && (
         <div
-          className="fixed inset-0 z-10 bg-black/30 md:hidden"
+          className="fixed inset-0 z-10 bg-black/50 backdrop-blur-sm md:hidden"
           onClick={onClose}
         />
       )}
               <aside
-          className={`fixed top-12 inset-y-0 left-0 z-20 w-64 transform bg-white/90 backdrop-blur-sm border-r border-gray-200/60 shadow-xl transition-transform md:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+          className={`fixed top-12 inset-y-0 left-0 z-20 w-64 sm:w-72 transform bg-white/95 backdrop-blur-sm border-r border-gray-200/60 shadow-xl transition-transform md:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
         >
           <div className="flex flex-col h-full">
             {/* Header */}
@@ -61,7 +71,7 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
             </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-6">
             {/* Quick Start Guide for new users */}
             {isNewUser && <QuickStartGuide />}
 
@@ -211,10 +221,17 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
                         <span>Help & Setup</span>
                       </button>
                 <a 
-                  href="https://github.com/chiampee/SmarTrack/releases/download/v1.0.2/SmartResearchTracker-extension-v1.0.2.zip"
+                  href="https://smartracker.vercel.app/downloads/SmartResearchTracker-extension-v1.0.3.zip"
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={onClose}
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    // Track the download
+                    await downloadTrackingService.trackSidebarDownload(user?.sub);
+                    // Open download
+                    window.open('https://smartracker.vercel.app/downloads/SmartResearchTracker-extension-v1.0.3.zip', '_blank');
+                    onClose();
+                  }}
                   className="group flex items-center gap-2 px-3 py-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200 w-full"
                 >
                   <Download className="w-3 h-3 text-blue-500" />
@@ -230,14 +247,16 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
                         <Activity className="w-3 h-3 text-gray-400" />
                         <span>Diagnostics</span>
                       </button>
-                      <Link 
-                        to="/database-tests"
-                        onClick={onClose}
-                        className="group flex items-center gap-2 px-3 py-2 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors duration-200 w-full"
-                      >
-                        <BarChart3 className="w-3 h-3 text-gray-400" />
-                        <span>Database Tests</span>
-                      </Link>
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          onClick={onClose}
+                          className="group flex items-center gap-2 px-3 py-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors duration-200 w-full"
+                        >
+                          <BarChart3 className="w-3 h-3 text-indigo-500" />
+                          <span className="font-medium">Admin Dashboard</span>
+                        </Link>
+                      )}
                       <button 
                         onClick={() => {
                           setConfirmOpen(true);

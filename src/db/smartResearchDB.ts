@@ -24,6 +24,11 @@ import { logError } from '../utils/logger';
  *  v7: links.summary index
  *  v8: backfill/normalize Date fields
  *  v9: conversations.linkIdsKey derived index
+ *  v10: add userId indexes for multi-user support (Auth0 integration)
+ *  v11: add extensionInstallations table for tracking extension installations
+ *  v12: add downloadEvents table for persistent download tracking
+ * 
+ * SECURITY: All queries MUST filter by userId to ensure data isolation between users
  */
 import { Board } from '../types/Board';
 import { Link } from '../types/Link';
@@ -41,6 +46,9 @@ export class SmartResearchDB extends Dexie {
   conversations!: Table<Conversation, string>;
   settings!: Table<Settings, string>;
   tasks!: Table<Task, string>;
+  userAudits!: Table<{ userId: string; email?: string; name?: string; picture?: string; emailVerified?: boolean; locale?: string; firstSeen: number; lastSeen: number; sessions: number }, string>;
+  extensionInstallations!: Table<{ userId: string; extensionVersion: string; browserInfo: string; installTimestamp: string; firstHandshake: string; userAgent: string; ip?: string }, string>;
+  downloadEvents!: Table<{ userId: string; source: string; timestamp: string; userAgent: string; ip: string; referer: string }, string>;
 
   // (helper methods defined later in class)
   private async withErrorLog<T>(scope: string, action: () => Promise<T>): Promise<T> {
@@ -307,8 +315,92 @@ export class SmartResearchDB extends Dexie {
       }
     });
 
+    // Version 10 – Add userId indexes for multi-user support (Auth0 integration)
+    // SECURITY: All queries MUST filter by userId to ensure data isolation
+    this.version(10).stores({
+      boards: 'id, userId, title, color, createdAt',
+      links: 'id, userId, url, summary, labels, priority, status, boardId, createdAt',
+      summaries: 'id, userId, linkId, kind, createdAt',
+      chatMessages: 'id, userId, linkId, conversationId, timestamp',
+      conversations: 'id, userId, linkIdsKey, startedAt, endedAt',
+      settings: 'id, userId',
+      tasks: 'id, userId, status, priority, dueDate, createdAt, boardId, parentId',
+    });
+
+    this.version(10).upgrade(async (tx) => {
+      try {
+        // Default userId for existing data (migration from single-user to multi-user)
+        const DEFAULT_USER_ID = 'local-dev-user'; // Will be replaced with actual Auth0 user ID on first login
+
+        // Add userId to all existing boards
+        await tx.table('boards').toCollection().modify((b: Board & { userId?: string }) => {
+          if (!b.userId) b.userId = DEFAULT_USER_ID;
+        });
+
+        // Add userId to all existing links
+        await tx.table('links').toCollection().modify((l: Link & { userId?: string }) => {
+          if (!l.userId) l.userId = DEFAULT_USER_ID;
+        });
+
+        // Add userId to all existing summaries
+        await tx.table('summaries').toCollection().modify((s: AISummary & { userId?: string }) => {
+          if (!s.userId) s.userId = DEFAULT_USER_ID;
+        });
+
+        // Add userId to all existing chat messages
+        await tx.table('chatMessages').toCollection().modify((m: ChatMessage & { userId?: string }) => {
+          if (!m.userId) m.userId = DEFAULT_USER_ID;
+        });
+
+        // Add userId to all existing conversations
+        await tx.table('conversations').toCollection().modify((c: Conversation & { userId?: string }) => {
+          if (!c.userId) c.userId = DEFAULT_USER_ID;
+        });
+
+        // Add userId to all existing tasks
+        await tx.table('tasks').toCollection().modify((t: Task & { userId?: string }) => {
+          if (!t.userId) t.userId = DEFAULT_USER_ID;
+        });
+
+        // Add userId to settings
+        await tx.table('settings').toCollection().modify((s: Settings & { userId?: string }) => {
+          if (!s.userId) s.userId = DEFAULT_USER_ID;
+        });
+
+        console.log('✅ [DB Migration v10] Added userId to all existing records');
+      } catch (err) {
+        logError('db.migration.v10', err);
+        throw err as Error;
+      }
+    });
+
     // Future migrations can be added like this:
-    // this.version(2).upgrade(tx => { /* migration code */ });
+    // Version 11 – userAudits for basic Auth0 login tracking + extensionInstallations
+    this.version(11).stores({
+      boards: 'id, userId, title, color, createdAt',
+      links: 'id, userId, url, summary, labels, priority, status, boardId, createdAt',
+      summaries: 'id, userId, linkId, kind, createdAt',
+      chatMessages: 'id, userId, linkId, conversationId, timestamp',
+      conversations: 'id, userId, linkIdsKey, startedAt, endedAt',
+      settings: 'id, userId',
+      tasks: 'id, userId, status, priority, dueDate, createdAt, boardId, parentId',
+      userAudits: 'userId, email, name, firstSeen, lastSeen, sessions',
+      extensionInstallations: 'userId, extensionVersion, installTimestamp, firstHandshake',
+    });
+
+    // Version 12 – add downloadEvents table for persistent download tracking
+    this.version(12).stores({
+      boards: 'id, userId, title, color, createdAt',
+      links: 'id, userId, url, summary, labels, priority, status, boardId, createdAt',
+      summaries: 'id, userId, linkId, kind, createdAt',
+      chatMessages: 'id, userId, linkId, conversationId, timestamp',
+      conversations: 'id, userId, linkIdsKey, startedAt, endedAt',
+      settings: 'id, userId',
+      tasks: 'id, userId, status, priority, dueDate, createdAt, boardId, parentId',
+      userAudits: 'userId, email, name, firstSeen, lastSeen, sessions',
+      extensionInstallations: 'userId, extensionVersion, installTimestamp, firstHandshake',
+      downloadEvents: 'userId, source, timestamp',
+    });
     // Global Dexie event hooks for better visibility when something goes wrong
     // Note: Dexie does not expose a typed 'error' event on the instance/static emitter in this version.
     // We rely on try/catch wrappers and the 'blocked'/'versionchange' events below for visibility.
@@ -480,6 +572,39 @@ export class SmartResearchDB extends Dexie {
   upsertSettings(settings: Settings) {
     return this.withErrorLog('db.upsertSettings', () => this.settings.put(settings));
   }
+
+  // User audits
+  async upsertUserAudit(userId: string, email?: string, name?: string, options?: { picture?: string; emailVerified?: boolean; locale?: string }) {
+    return this.withErrorLog('db.upsertUserAudit', async () => {
+      const existing = await this.userAudits.get(userId);
+      const now = Date.now();
+      if (existing) {
+        await this.userAudits.put({
+          userId,
+          email: email || existing.email,
+          name: name || existing.name,
+          picture: options?.picture ?? existing.picture,
+          emailVerified: options?.emailVerified ?? existing.emailVerified,
+          locale: options?.locale ?? existing.locale,
+          firstSeen: existing.firstSeen,
+          lastSeen: now,
+          sessions: existing.sessions + 1,
+        });
+      } else {
+        await this.userAudits.put({
+          userId,
+          email,
+          name,
+          picture: options?.picture,
+          emailVerified: options?.emailVerified,
+          locale: options?.locale,
+          firstSeen: now,
+          lastSeen: now,
+          sessions: 1,
+        });
+      }
+    });
+  }
   /** Fetch settings (defaults to id 'user') */
   getSettings(id = 'user') {
     return this.settings.get(id);
@@ -558,6 +683,7 @@ export function getDB(): SmartResearchDB {
             if (!settings) {
               dbInstance!.settings.put({
                 id: 'user',
+                userId: 'local-dev-user', // Will be set properly by auth context
                 theme: 'system',
                 sortOrder: 'desc',
                 language: 'en',

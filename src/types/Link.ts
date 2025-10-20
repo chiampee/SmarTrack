@@ -1,5 +1,6 @@
 export interface Link {
   id: string;
+  userId: string; // Auth0 user ID
   url: string;
   metadata: {
     title?: string;

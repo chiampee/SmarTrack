@@ -93,6 +93,7 @@ export const aiSummaryService = {
 
     const summary: AISummary = {
       id: crypto.randomUUID(),
+      userId: link.userId, // Inherit from parent link
       linkId: link.id,
       kind,
       prompt: kind === 'custom' ? customPrompt : undefined,

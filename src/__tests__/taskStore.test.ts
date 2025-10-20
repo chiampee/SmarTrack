@@ -9,6 +9,7 @@ import { Task } from '../types/Task';
 const sampleTasks: Task[] = [
   {
     id: 't1',
+      userId: 'test-user',
     name: 'Task A',
     priority: 'low',
     status: 'open',
@@ -17,6 +18,7 @@ const sampleTasks: Task[] = [
   },
   {
     id: 't2',
+      userId: 'test-user',
     name: 'Task B',
     priority: 'urgent',
     status: 'done',

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { Auth0Provider, useAuth0 as useAuth0Hook, User } from '@auth0/auth0-react';
 import { AUTH0_CONFIG, AUTH_ENABLED } from '../config/auth0';
+import { db } from '../db/smartResearchDB';
 
 interface AuthContextType {
   user: User | undefined;
@@ -91,6 +92,22 @@ const AuthContextProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     logout,
     getAccessToken,
   };
+
+  // On mount/update: record authenticated session in local audit
+  try {
+    if (isAuthenticated && user?.sub) {
+      db.upsertUserAudit(
+        user.sub,
+        user.email,
+        user.name,
+        {
+          picture: user.picture as string | undefined,
+          emailVerified: (user as any).email_verified as boolean | undefined,
+          locale: (user as any).locale as string | undefined,
+        }
+      ).catch(() => {/* ignore in environments without IndexedDB */});
+    }
+  } catch {}
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

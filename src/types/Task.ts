@@ -1,5 +1,6 @@
 export interface Task {
   id: string;
+  userId: string; // Auth0 user ID
   boardId?: string;
   parentId?: string; // for subtasks
   name: string;

@@ -1013,26 +1013,16 @@ chrome.runtime.onInstalled.addListener((details) => {
     }
   });
 
-  // Show welcome page on first install
+  // Handle first install
   if (details.reason === 'install') {
-    console.log('[SRT] First install detected - showing welcome page');
+    console.log('[SRT] First install detected - extension ready');
     
-    // Open welcome page
-    chrome.tabs.create({
-      url: chrome.runtime.getURL('welcome.html')
-    });
-    
-    // Also open the dashboard in a separate tab after a short delay
-    setTimeout(() => {
-      openDashboard();
-    }, 2000);
-    
-    // Show a welcome notification
+    // Show a welcome notification with instructions
     chrome.notifications.create({
       type: 'basic',
       iconUrl: 'icons/icon.svg',
-      title: '🎉 Welcome to Smart Research Tracker!',
-      message: 'Pin the extension to your toolbar for easy access. Click the puzzle piece icon 🧩 and pin us!'
+      title: '🎉 Smart Research Tracker Installed!',
+      message: 'Pin the extension to your toolbar for easy access. Click to start saving links!'
     });
   } else if (details.reason === 'update') {
     const previousVersion = details.previousVersion;

@@ -8,7 +8,8 @@ import { Board } from '../types/Board';
 
 const sampleBoards: Board[] = [
   { 
-    id: 'b1', 
+    id: 'b1',
+    userId: 'test-user',
     title: 'One', 
     description: '', 
     color: '#fff', 
@@ -16,7 +17,8 @@ const sampleBoards: Board[] = [
     updatedAt: new Date() 
   },
   { 
-    id: 'b2', 
+    id: 'b2',
+    userId: 'test-user',
     title: 'Two', 
     description: '', 
     color: '#000', 

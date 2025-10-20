@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link, MessageSquare, Settings, Download, BookOpen } from 'lucide-react';
 import { useSettingsStore } from '../stores/settingsStore';
+import { downloadTrackingService } from '../services/downloadTrackingService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface QuickStartStep {
   icon: React.ReactNode;
@@ -11,6 +13,7 @@ interface QuickStartStep {
 }
 
 export const QuickStartGuide: React.FC = () => {
+  const { user } = useAuth();
   const { setShowOnboarding } = useSettingsStore();
 
   const steps: QuickStartStep[] = [
@@ -19,7 +22,10 @@ export const QuickStartGuide: React.FC = () => {
       title: "Install Extension",
       description: "Download and install the Chrome extension to save pages with one click",
       action: "Download Extension",
-      onClick: () => window.open('https://github.com/chiampee/SmarTrack/releases/download/v1.0.2/SmartResearchTracker-extension-v1.0.2.zip', '_blank')
+      onClick: async () => {
+        await downloadTrackingService.trackQuickstartDownload(user?.sub);
+        window.open('https://smartracker.vercel.app/downloads/SmartResearchTracker-extension-v1.0.3.zip', '_blank');
+      }
     },
     {
       icon: <Link className="w-5 h-5 text-green-600" />,

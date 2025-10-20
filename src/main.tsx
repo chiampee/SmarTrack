@@ -4,6 +4,7 @@ import './index.css';
 import App from './App';
 import { linkService } from './services/linkService';
 import { AuthProvider } from './contexts/AuthContext';
+import { UserDataProvider } from './contexts/UserDataContext';
 
 console.log('🚀 Smart Research Tracker starting...');
 
@@ -27,7 +28,9 @@ if (rootElement) {
   root.render(
     <StrictMode>
       <AuthProvider>
-        <App />
+        <UserDataProvider>
+          <App />
+        </UserDataProvider>
       </AuthProvider>
     </StrictMode>
   );

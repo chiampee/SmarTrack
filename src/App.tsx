@@ -12,6 +12,22 @@ import { LoginPage } from './pages/LoginPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { OnboardingModal } from './components/OnboardingModal';
 import { DiagnosticModal } from './components/DiagnosticModal';
+import AdminStatsPage from './pages/AdminStatsPage';
+import { isProduction } from './config/auth0';
+
+// Simple admin gate: allow only specified emails in production (configurable via env)
+const DEFAULT_ADMINS = ['roee.ro@next-insurance.com', 'chaimpeer11@gmail.com'];
+const ENV_ADMINS = (import.meta.env.VITE_ADMIN_EMAILS as string | undefined)?.split(',').map(e => e.trim()).filter(Boolean) || [];
+const ADMIN_EMAILS = new Set<string>([...DEFAULT_ADMINS, ...ENV_ADMINS]);
+
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (isProduction && user?.email && ADMIN_EMAILS.has(user.email)) return <>{children}</>;
+  // In dev, allow access for convenience
+  if (!isProduction) return <>{children}</>;
+  return <Navigate to="/" replace />;
+};
 import { DevModeBanner } from './components/DevModeBanner';
 import { migrationService } from './services/migrationService';
 import { useSettingsStore } from './stores/settingsStore';
@@ -164,6 +180,13 @@ function App() {
                 <DatabaseTestPage />
               </Layout>
             </ProtectedRoute>
+          } />
+          <Route path="/admin" element={
+            <AdminRoute>
+              <Layout>
+                <AdminStatsPage />
+              </Layout>
+            </AdminRoute>
           } />
         </Routes>
         

@@ -102,8 +102,11 @@ export const chatService = {
     }
     
     console.log('No existing conversation found, creating new one');
+    // Get userId from first link
+    const firstLink = await db.getLink(linkIds[0]);
     const conv: Conversation = {
       id: crypto.randomUUID(),
+      userId: firstLink?.userId || 'local-dev-user', // Inherit from link
       linkIds: [...linkIds], // Create a copy to ensure proper array handling
       startedAt: new Date(),
       endedAt: null,
@@ -174,6 +177,7 @@ export const chatService = {
 
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
+      userId: primaryLink.userId, // Inherit from link
       linkId: primaryLinkId,
       conversationId: conv.id,
       role: 'user',
@@ -390,6 +394,7 @@ Use the following information from the user's saved research pages to answer as 
 
     const assistantMsg: ChatMessage = {
       id: crypto.randomUUID(),
+      userId: primaryLink.userId, // Inherit from link
       linkId: primaryLinkId,
       conversationId: conv.id,
       role: 'assistant',

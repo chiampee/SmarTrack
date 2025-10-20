@@ -3,6 +3,7 @@ import { Link } from '../types/Link';
 import { linkService } from '../services/linkService';
 import { db } from '../db/smartResearchDB';
 import { errorHandler, createDatabaseError, createExtensionError } from '../utils/errorHandler';
+import { extensionInstallationService } from '../services/extensionInstallationService';
 
 type SortKey = 'createdAt' | 'labels';
 type SortDir = 'asc' | 'desc';
@@ -45,6 +46,7 @@ interface LinkState {
 function normalizeLinkStructure(link: any): Link {
   return {
     id: link.id || crypto.randomUUID(),
+    userId: link.userId || 'local-dev-user', // Will be set properly by auth context
     url: link.url || '',
     metadata: {
       title: link.metadata?.title || link.title || 'Untitled',
@@ -516,6 +518,35 @@ if (typeof window !== 'undefined') {
     // Only log SRT messages to avoid clutter
     if (event?.data?.type?.startsWith?.('SRT_')) {
       console.log('📨 [Dashboard] Received message:', event?.data?.type);
+      
+      // Track extension installation on first communication
+      if (event?.data?.type === 'SRT_UPSERT_LINK' || event?.data?.type === 'SRT_GET_LINKS') {
+        try {
+          const userId = event?.data?.userId || 'anonymous';
+          const extensionVersion = event?.data?.extensionVersion || 'unknown';
+          const browserInfo = navigator.userAgent;
+          
+          console.log('🔍 [Extension] Checking installation for user:', userId, 'version:', extensionVersion);
+          
+          // Check if this is the first time this user is communicating with the extension
+          const existingInstallations = await extensionInstallationService.getInstallationsByUser(userId);
+          console.log('🔍 [Extension] Existing installations for user:', userId, 'count:', existingInstallations.length);
+          
+          if (existingInstallations.length === 0) {
+            await extensionInstallationService.trackInstallation(
+              userId,
+              extensionVersion,
+              browserInfo,
+              navigator.userAgent
+            );
+            console.log('📱 [Extension] Installation tracked for user:', userId);
+          } else {
+            console.log('📱 [Extension] Installation already tracked for user:', userId);
+          }
+        } catch (error) {
+          console.error('Failed to track extension installation:', error);
+        }
+      }
     }
     
     // Handle link upsert from extension - save to local IndexedDB
@@ -532,6 +563,7 @@ if (typeof window !== 'undefined') {
         // Convert to dashboard format
         const dashboardLink: Link = {
           id: extLink.id || crypto.randomUUID(),
+          userId: extLink.userId || 'local-dev-user', // Will be set properly by auth context
           url: extLink.url,
           metadata: {
             title: extLink.metadata?.title || extLink.title || '',

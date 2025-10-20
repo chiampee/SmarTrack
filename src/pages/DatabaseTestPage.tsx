@@ -126,6 +126,7 @@ export const DatabaseTestPage: React.FC = () => {
       // Create a test link
       const testLink: Link = {
         id: crypto.randomUUID(),
+      userId: 'test-user',
         url: 'https://example.com/test-' + Date.now(),
         metadata: {
           title: 'Test Link ' + new Date().toLocaleTimeString(),

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Input, Button } from '..';
 import { Board } from '../../types/Board';
 import { boardService } from '../../services/boardService';
+import { useUserId } from '../../hooks/useCurrentUser';
 
 interface Props {
   initial?: Partial<Board>;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export const BoardForm: React.FC<Props> = ({ initial = {}, onSuccess }) => {
+  const userId = useUserId();
   const [title, setTitle] = useState(initial.title || '');
   const [description, setDescription] = useState(initial.description || '');
   const [color, setColor] = useState(initial.color || '#3b82f6');
@@ -20,6 +22,7 @@ export const BoardForm: React.FC<Props> = ({ initial = {}, onSuccess }) => {
         e.preventDefault();
         const board: Board = {
           id: crypto.randomUUID(),
+          userId: userId || 'local-dev-user',
           title,
           description,
           color,

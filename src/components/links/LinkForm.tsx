@@ -7,6 +7,10 @@ import { fetchMetadata } from '../../utils/metadata';
 import { aiService } from '../../services/aiService';
 import { suggestLabelsForDraft, suggestPriorityForDraft, suggestBoardForDraft } from '../../services';
 import { useBoardStore } from '../../stores/boardStore';
+import { useUserId } from '../../hooks/useCurrentUser';
+import { useRateLimit } from '../../hooks/useRateLimit';
+import { RateLimitError } from '../../services/rateLimitService';
+import { RateLimitBanner } from '../RateLimitBanner';
 
 interface Props {
   onSuccess: () => void;
@@ -14,6 +18,8 @@ interface Props {
 }
 
 export const LinkForm: React.FC<Props> = ({ onSuccess, existing }) => {
+  const userId = useUserId();
+  const { checkLimit } = useRateLimit();
   const [name, setName] = useState(existing?.metadata.title || '');
   const [url, setUrl] = useState(existing?.url || '');
   const [description, setDescription] = useState(
@@ -116,27 +122,43 @@ export const LinkForm: React.FC<Props> = ({ onSuccess, existing }) => {
         setLoading(true);
         setFormError('');
 
-        // 1. Editing existing link – update inline and finish.
-        if (existing) {
-          await updateLink(existing.id, {
-            url,
-            metadata: {
-              ...existing.metadata,
-              description,
-              title: name || existing.metadata.title || url,
-            },
-            labels: labels
-              .split(',')
-              .map((l) => l.trim())
-              .filter(Boolean),
-            priority,
-            status,
-            boardId: boardId || undefined,
-          });
-          console.log('[Suggest] Updated existing link with boardId:', boardId || undefined);
-          setLoading(false);
-          onSuccess();
-          return;
+        try {
+          // Check rate limits before proceeding
+          if (existing) {
+            checkLimit('link:update');
+          } else {
+            checkLimit('link:create');
+          }
+
+          // 1. Editing existing link – update inline and finish.
+          if (existing) {
+            await updateLink(existing.id, {
+              url,
+              metadata: {
+                ...existing.metadata,
+                description,
+                title: name || existing.metadata.title || url,
+              },
+              labels: labels
+                .split(',')
+                .map((l) => l.trim())
+                .filter(Boolean),
+              priority,
+              status,
+              boardId: boardId || undefined,
+            });
+            console.log('[Suggest] Updated existing link with boardId:', boardId || undefined);
+            setLoading(false);
+            onSuccess();
+            return;
+          }
+        } catch (error) {
+          if (error instanceof RateLimitError) {
+            setFormError(error.message);
+            setLoading(false);
+            return;
+          }
+          throw error;
         }
 
         // Validate and normalize URL
@@ -187,6 +209,7 @@ export const LinkForm: React.FC<Props> = ({ onSuccess, existing }) => {
 
         const link: Link = {
           id,
+          userId: userId || 'local-dev-user', // Auth0 user ID
           url: finalUrl,
           metadata: placeholderMeta,
           labels: labels
@@ -225,6 +248,9 @@ export const LinkForm: React.FC<Props> = ({ onSuccess, existing }) => {
         }
         }}
     >
+      {/* Rate Limit Banner - Only shows on Vercel when approaching limits */}
+      <RateLimitBanner operation={existing ? "link:update" : "link:create"} />
+      
       {formError && (
         <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-md p-2">
           {formError}

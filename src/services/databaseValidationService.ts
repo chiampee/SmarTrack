@@ -118,6 +118,7 @@ export const databaseValidationService = {
       try {
         const testLink: Link = {
           id: 'validation-test-' + Date.now(),
+      userId: 'test-user',
           url: 'https://validation-test.example.com',
           metadata: {
             title: 'Validation Test',
@@ -245,6 +246,7 @@ export const databaseValidationService = {
       // Test 1: Add a link and verify it appears in all queries
       const testLink: Link = {
         id: 'consistency-test-' + Date.now(),
+      userId: 'test-user',
         url: 'https://consistency-test.example.com',
         metadata: {
           title: 'Consistency Test',

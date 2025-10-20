@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Smart Research Tracker",
   "description": "Save and organize research links with AI-powered insights.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -58,7 +58,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["welcome.html", "icons/*"],
+      "resources": ["icons/*"],
       "matches": ["<all_urls>"]
     }
   ]

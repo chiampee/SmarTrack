@@ -106,6 +106,7 @@ export const databaseTestRunner = {
     try {
       const testLink: Link = {
         id: 'test-crud-' + Date.now(),
+      userId: 'test-user',
         url: 'https://test-crud.example.com',
         metadata: {
           title: 'CRUD Test',
@@ -203,6 +204,7 @@ export const databaseTestRunner = {
       const testUrl = 'https://test-duplicate.example.com';
       const link1: Link = {
         id: 'test-dup-1-' + Date.now(),
+      userId: 'test-user',
         url: testUrl,
         metadata: { title: 'Duplicate Test 1', description: '', image: '' },
         labels: ['test'],
@@ -215,6 +217,7 @@ export const databaseTestRunner = {
 
       const link2: Link = {
         id: 'test-dup-2-' + Date.now(),
+      userId: 'test-user',
         url: testUrl,
         metadata: { title: 'Duplicate Test 2', description: '', image: '' },
         labels: ['test'],
@@ -269,6 +272,7 @@ export const databaseTestRunner = {
 
       const testLink: Link = {
         id: 'test-service-' + Date.now(),
+      userId: 'test-user',
         url: 'https://test-service.example.com',
         metadata: { title: 'Service Test', description: '', image: '' },
         labels: ['test'],

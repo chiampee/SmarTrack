@@ -10,6 +10,9 @@ import { Conversation } from '../../types/Conversation';
 import { useNavigate } from 'react-router-dom';
 import { PastChatsSidebar } from './PastChatsSidebar';
 import { ChatMessage } from '../../types/ChatMessage';
+import { useRateLimit } from '../../hooks/useRateLimit';
+import { RateLimitError } from '../../services/rateLimitService';
+import { RateLimitBanner } from '../RateLimitBanner';
 
 interface Props {
   link: Link;
@@ -18,11 +21,13 @@ interface Props {
 }
 
 export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
+  const { checkLimit } = useRateLimit();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [contextReady, setContextReady] = useState(false);
   const [conversation, setConversation] = useState<Conversation | null>(null);
+  const [rateLimitError, setRateLimitError] = useState<string>('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -87,6 +92,19 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
   const send = async (contentOverride?: string) => {
     const userContent = (contentOverride ?? input).trim();
     if (!userContent || !contextReady) return;
+    
+    // Check rate limit before sending
+    try {
+      checkLimit('ai:chat');
+      setRateLimitError('');
+    } catch (error) {
+      if (error instanceof RateLimitError) {
+        setRateLimitError(error.message);
+        return;
+      }
+      throw error;
+    }
+
     setLoading(true);
     if (!contentOverride) setInput('');
 
@@ -94,6 +112,7 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
 
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
+      userId: link.userId, // Inherit from link
       linkId: link.id,
       conversationId: conversation.id,
       role: 'user',
@@ -102,6 +121,7 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
     };
     const assistantPlaceholder: ChatMessage = {
       id: crypto.randomUUID(),
+      userId: link.userId, // Inherit from link
       linkId: link.id,
       conversationId: conversation.id,
       role: 'assistant',
@@ -233,6 +253,16 @@ export const ChatModal: React.FC<Props> = ({ link, isOpen, onClose }) => {
     >
       <div className="flex gap-6">
         <div className="flex-1">
+          {/* Rate Limit Banner - Only shows on Vercel when approaching limits */}
+          <RateLimitBanner operation="ai:chat" />
+          
+          {/* Rate limit error message */}
+          {rateLimitError && (
+            <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-md p-3 mb-3">
+              {rateLimitError}
+            </div>
+          )}
+          
           {/* Quick prompt chips */}
           <div className="flex flex-wrap gap-2 mb-3">
             {quickPrompts.map((p) => (

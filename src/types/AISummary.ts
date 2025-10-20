@@ -2,6 +2,7 @@ export type SummaryKind = 'raw' | 'tldr' | 'bullets' | 'quotes' | 'insights' | '
 
 export interface AISummary {
   id: string;
+  userId: string; // Auth0 user ID
   linkId: string;
   kind: SummaryKind;
   prompt?: string; // for custom prompts
