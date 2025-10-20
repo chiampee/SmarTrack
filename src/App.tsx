@@ -12,7 +12,7 @@ import { LoginPage } from './pages/LoginPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { OnboardingModal } from './components/OnboardingModal';
 import { DiagnosticModal } from './components/DiagnosticModal';
-import { AdminStatsPage } from './pages/AdminStatsPage';
+// import { AdminStatsPage } from './pages/AdminStatsPage';
 import { isProduction } from './config/auth0';
 
 // Simple admin gate: allow only specified emails in production (configurable via env)
@@ -184,7 +184,10 @@ function App() {
           <Route path="/admin" element={
             <AdminRoute>
               <Layout>
-                <AdminStatsPage />
+                <div className="p-8">
+                  <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+                  <p>Admin functionality temporarily disabled for deployment testing.</p>
+                </div>
               </Layout>
             </AdminRoute>
           } />
