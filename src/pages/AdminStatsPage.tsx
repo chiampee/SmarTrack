@@ -89,6 +89,12 @@ export const AdminStatsPage: React.FC = () => {
       const downloads: number[] = [];
       const installations: number[] = [];
 
+      // Ensure we have valid data
+      if (!userAudits || !Array.isArray(userAudits)) {
+        console.warn('No user audit data available');
+        return;
+      }
+
       if (granularity === 'daily') {
         for (let i = daysBack - 1; i >= 0; i--) {
           const date = new Date();
@@ -415,7 +421,7 @@ export const AdminStatsPage: React.FC = () => {
         </div>
 
         {/* Usage Chart */}
-        {usageChartData && (
+        {usageChartData && usageChartData.dates.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-8">
             {/* Chart Header */}
             <div className="px-6 py-4 border-b border-gray-200">
@@ -510,15 +516,21 @@ export const AdminStatsPage: React.FC = () => {
             <div className="px-6 py-4">
               <div className="grid grid-cols-3 gap-6">
                 <div className="text-center">
-                  <div className="text-xl font-bold text-blue-600">{usageChartData.logins.reduce((a, b) => a + b, 0)}</div>
+                  <div className="text-xl font-bold text-blue-600">
+                    {usageChartData.logins ? usageChartData.logins.reduce((a, b) => a + b, 0) : 0}
+                  </div>
                   <div className="text-xs text-gray-500">Logins</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl font-bold text-green-600">{usageChartData.downloads.reduce((a, b) => a + b, 0)}</div>
+                  <div className="text-xl font-bold text-green-600">
+                    {usageChartData.downloads ? usageChartData.downloads.reduce((a, b) => a + b, 0) : 0}
+                  </div>
                   <div className="text-xs text-gray-500">Downloads</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl font-bold text-purple-600">{usageChartData.installations.reduce((a, b) => a + b, 0)}</div>
+                  <div className="text-xl font-bold text-purple-600">
+                    {usageChartData.installations ? usageChartData.installations.reduce((a, b) => a + b, 0) : 0}
+                  </div>
                   <div className="text-xs text-gray-500">Installations</div>
                 </div>
               </div>
@@ -573,12 +585,12 @@ export const AdminStatsPage: React.FC = () => {
                   {/* Data lines */}
                   {usageChartData.dates.length > 1 && chartControls.showTrendLines && (
                     <>
-                      {chartControls.showLogins && (
+                      {chartControls.showLogins && usageChartData.logins && usageChartData.logins.length > 0 && (
                         <polyline
                           points={usageChartData.dates.map((date, index) => {
-                            const x = 60 + (index * (700 / (usageChartData.dates.length - 1)));
+                            const x = 60 + (index * (700 / Math.max(usageChartData.dates.length - 1, 1)));
                             const maxValue = Math.max(...usageChartData.logins, ...usageChartData.downloads, ...usageChartData.installations, 1);
-                            const y = 280 - (usageChartData.logins[index] / maxValue) * 260;
+                            const y = 280 - ((usageChartData.logins[index] || 0) / maxValue) * 260;
                             return `${x},${y}`;
                           }).join(' ')}
                           fill="none"
@@ -590,12 +602,12 @@ export const AdminStatsPage: React.FC = () => {
                         />
                       )}
                       
-                      {chartControls.showDownloads && (
+                      {chartControls.showDownloads && usageChartData.downloads && usageChartData.downloads.length > 0 && (
                         <polyline
                           points={usageChartData.dates.map((date, index) => {
-                            const x = 60 + (index * (700 / (usageChartData.dates.length - 1)));
+                            const x = 60 + (index * (700 / Math.max(usageChartData.dates.length - 1, 1)));
                             const maxValue = Math.max(...usageChartData.logins, ...usageChartData.downloads, ...usageChartData.installations, 1);
-                            const y = 280 - (usageChartData.downloads[index] / maxValue) * 260;
+                            const y = 280 - ((usageChartData.downloads[index] || 0) / maxValue) * 260;
                             return `${x},${y}`;
                           }).join(' ')}
                           fill="none"
@@ -607,12 +619,12 @@ export const AdminStatsPage: React.FC = () => {
                         />
                       )}
                       
-                      {chartControls.showInstallations && (
+                      {chartControls.showInstallations && usageChartData.installations && usageChartData.installations.length > 0 && (
                         <polyline
                           points={usageChartData.dates.map((date, index) => {
-                            const x = 60 + (index * (700 / (usageChartData.dates.length - 1)));
+                            const x = 60 + (index * (700 / Math.max(usageChartData.dates.length - 1, 1)));
                             const maxValue = Math.max(...usageChartData.logins, ...usageChartData.downloads, ...usageChartData.installations, 1);
-                            const y = 280 - (usageChartData.installations[index] / maxValue) * 260;
+                            const y = 280 - ((usageChartData.installations[index] || 0) / maxValue) * 260;
                             return `${x},${y}`;
                           }).join(' ')}
                           fill="none"
@@ -628,15 +640,15 @@ export const AdminStatsPage: React.FC = () => {
                   
                   {/* Data points */}
                   {chartControls.showDataPoints && usageChartData.dates.map((date, index) => {
-                    const x = 60 + (index * (700 / (usageChartData.dates.length - 1)));
+                    const x = 60 + (index * (700 / Math.max(usageChartData.dates.length - 1, 1)));
                     const maxValue = Math.max(...usageChartData.logins, ...usageChartData.downloads, ...usageChartData.installations, 1);
                     
                     return (
                       <g key={date}>
-                        {chartControls.showLogins && (
+                        {chartControls.showLogins && usageChartData.logins && usageChartData.logins.length > index && (
                           <circle
                             cx={x}
-                            cy={280 - (usageChartData.logins[index] / maxValue) * 260}
+                            cy={280 - ((usageChartData.logins[index] || 0) / maxValue) * 260}
                             r="4"
                             fill="#3b82f6"
                             stroke="white"
@@ -644,10 +656,10 @@ export const AdminStatsPage: React.FC = () => {
                             className="hover:r-6 transition-all duration-200"
                           />
                         )}
-                        {chartControls.showDownloads && (
+                        {chartControls.showDownloads && usageChartData.downloads && usageChartData.downloads.length > index && (
                           <circle
                             cx={x}
-                            cy={280 - (usageChartData.downloads[index] / maxValue) * 260}
+                            cy={280 - ((usageChartData.downloads[index] || 0) / maxValue) * 260}
                             r="4"
                             fill="#10b981"
                             stroke="white"
@@ -655,10 +667,10 @@ export const AdminStatsPage: React.FC = () => {
                             className="hover:r-6 transition-all duration-200"
                           />
                         )}
-                        {chartControls.showInstallations && (
+                        {chartControls.showInstallations && usageChartData.installations && usageChartData.installations.length > index && (
                           <circle
                             cx={x}
-                            cy={280 - (usageChartData.installations[index] / maxValue) * 260}
+                            cy={280 - ((usageChartData.installations[index] || 0) / maxValue) * 260}
                             r="4"
                             fill="#8b5cf6"
                             stroke="white"
@@ -679,21 +691,27 @@ export const AdminStatsPage: React.FC = () => {
                 <div className="flex items-center space-x-2 px-4 py-2 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
                   <span className="text-sm font-medium text-blue-700">Logins</span>
-                  <span className="text-xs text-blue-600 font-semibold">({usageChartData.logins.reduce((a, b) => a + b, 0)})</span>
+                  <span className="text-xs text-blue-600 font-semibold">
+                    ({usageChartData.logins ? usageChartData.logins.reduce((a, b) => a + b, 0) : 0})
+                  </span>
                 </div>
               )}
               {chartControls.showDownloads && (
                 <div className="flex items-center space-x-2 px-4 py-2 bg-green-50 rounded-lg border border-green-200">
                   <div className="w-4 h-4 bg-green-500 rounded-full"></div>
                   <span className="text-sm font-medium text-green-700">Downloads</span>
-                  <span className="text-xs text-green-600 font-semibold">({usageChartData.downloads.reduce((a, b) => a + b, 0)})</span>
+                  <span className="text-xs text-green-600 font-semibold">
+                    ({usageChartData.downloads ? usageChartData.downloads.reduce((a, b) => a + b, 0) : 0})
+                  </span>
                 </div>
               )}
               {chartControls.showInstallations && (
                 <div className="flex items-center space-x-2 px-4 py-2 bg-purple-50 rounded-lg border border-purple-200">
                   <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
                   <span className="text-sm font-medium text-purple-700">Installations</span>
-                  <span className="text-xs text-purple-600 font-semibold">({usageChartData.installations.reduce((a, b) => a + b, 0)})</span>
+                  <span className="text-xs text-purple-600 font-semibold">
+                    ({usageChartData.installations ? usageChartData.installations.reduce((a, b) => a + b, 0) : 0})
+                  </span>
                 </div>
               )}
             </div>
