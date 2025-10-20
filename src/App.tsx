@@ -12,7 +12,7 @@ import { LoginPage } from './pages/LoginPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { OnboardingModal } from './components/OnboardingModal';
 import { DiagnosticModal } from './components/DiagnosticModal';
-import AdminStatsPage from './pages/AdminStatsPage';
+import { AdminStatsPage } from './pages/AdminStatsPage';
 import { isProduction } from './config/auth0';
 
 // Simple admin gate: allow only specified emails in production (configurable via env)
