@@ -47,8 +47,6 @@ export const Sidebar: React.FC<{ open: boolean; onClose: () => void }> = ({
   const isNewUser = rawLinks.length === 0 && !hasSeenOnboarding;
   const isLinksPage = location.pathname === '/';
   const ADMIN_EMAILS = new Set<string>([
-    'roee.ro@next-insurance.com',
-    'chaimpeer11@gmail.com',
     ...(((import.meta as any).env?.VITE_ADMIN_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean)),
   ]);
   const isAdmin = user?.email && (isProduction ? ADMIN_EMAILS.has(user.email) : true);

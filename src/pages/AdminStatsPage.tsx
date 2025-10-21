@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 export const AdminStatsPage: React.FC = () => {
   const { user } = useAuth();
 
-  if (!user || user.email !== 'chaimpeer11@gmail.com') {
+  if (!user || !user.email) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center p-8 bg-white rounded-xl shadow-lg border border-red-200">

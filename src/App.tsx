@@ -16,9 +16,8 @@ import { DiagnosticModal } from './components/DiagnosticModal';
 import { isProduction } from './config/auth0';
 
 // Simple admin gate: allow only specified emails in production (configurable via env)
-const DEFAULT_ADMINS = ['roee.ro@next-insurance.com', 'chaimpeer11@gmail.com'];
 const ENV_ADMINS = (import.meta.env.VITE_ADMIN_EMAILS as string | undefined)?.split(',').map(e => e.trim()).filter(Boolean) || [];
-const ADMIN_EMAILS = new Set<string>([...DEFAULT_ADMINS, ...ENV_ADMINS]);
+const ADMIN_EMAILS = new Set<string>([...ENV_ADMINS]);
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
