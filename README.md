@@ -18,6 +18,18 @@ A research management system with a web dashboard and Chrome extension for savin
 
 **No signup required** - Everything runs locally in your browser.
 
+## 🔒 Security & Environment Variables
+
+### Admin Access Configuration
+To configure admin access, set the following environment variable:
+
+```bash
+# Comma-separated list of admin email addresses
+VITE_ADMIN_EMAILS=admin1@example.com,admin2@example.com
+```
+
+**Important:** Never commit email addresses directly in the code. Always use environment variables for sensitive information.
+
 ## Features
 
 - **Chrome Extension** - Save web pages with one click
