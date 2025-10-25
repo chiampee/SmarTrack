@@ -1,0 +1,35 @@
+{
+  "name": "smartrack",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-Powered Research Management System",
+  "workspaces": [
+    "packages/frontend",
+    "packages/backend",
+    "packages/extension",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=packages/frontend",
+    "dev:backend": "npm run dev --workspace=packages/backend",
+    "dev:frontend": "npm run dev --workspace=packages/frontend",
+    "build": "npm run build --workspaces",
+    "build:frontend": "npm run build --workspace=packages/frontend",
+    "build:backend": "npm run build --workspace=packages/backend",
+    "build:extension": "npm run build --workspace=packages/extension",
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces",
+    "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist"
+  },
+  "keywords": [
+    "research",
+    "ai",
+    "knowledge-management"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}
