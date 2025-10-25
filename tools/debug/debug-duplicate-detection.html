@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Duplicate Detection - Smart Research Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .debug-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button.success {
+            background: #28a745;
+        }
+        .button.danger {
+            background: #dc3545;
+        }
+        .button.warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+        .error { background: #f8d7da; color: #721c24; }
+        .debug-log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .test-url {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🐛 Debug Duplicate Detection - Smart Research Tracker</h1>
+    
+    <div class="debug-section">
+        <h2>🔍 Extension Status</h2>
+        <div id="extensionStatus" class="status info">Checking extension status...</div>
+        <button class="button" onclick="checkExtensionStatus()">🔄 Refresh Status</button>
+    </div>
+
+    <div class="debug-section">
+        <h2>🧪 Test Duplicate Detection</h2>
+        <p>Test the duplicate detection system step by step:</p>
+        
+        <h3>Step 1: Add Initial Link</h3>
+        <input type="url" id="testUrl1" class="test-url" value="https://example.com/test-duplicate" placeholder="Enter URL to test" />
+        <input type="text" id="testTitle1" class="test-url" value="Test Link 1" placeholder="Enter title" />
+        <button class="button success" onclick="addTestLink(1)">➕ Add First Link</button>
+        
+        <h3>Step 2: Try to Add Same URL (Should Trigger Duplicate Detection)</h3>
+        <input type="url" id="testUrl2" class="test-url" value="https://example.com/test-duplicate" placeholder="Enter URL to test" />
+        <input type="text" id="testTitle2" class="test-url" value="Test Link 2 (Duplicate)" placeholder="Enter title" />
+        <button class="button warning" onclick="addTestLink(2)">🔄 Try to Add Duplicate</button>
+        
+        <h3>Step 3: Test URL Variations</h3>
+        <button class="button" onclick="testUrlVariations()">🔗 Test URL Variations</button>
+        
+        <h3>Step 4: Check Current Links</h3>
+        <button class="button" onclick="showCurrentLinks()">📋 Show All Links</button>
+    </div>
+
+    <div class="debug-section">
+        <h2>🧹 Clean Up</h2>
+        <p>Clear test data to start fresh:</p>
+        <button class="button danger" onclick="clearAllLinks()">🗑️ Clear All Links</button>
+        <button class="button" onclick="clearTestLinks()">🧹 Clear Test Links Only</button>
+    </div>
+
+    <div class="debug-section">
+        <h2>📊 Debug Console</h2>
+        <p>Check the browser console (F12) for detailed logs from the extension:</p>
+        <div class="debug-log" id="debugLog">
+            Debug logs will appear here...
+            To see detailed logs, open browser console (F12) and look for [SRT] messages
+        </div>
+        <button class="button" onclick="clearDebugLog()">🗑️ Clear Log</button>
+    </div>
+
+    <div class="debug-section">
+        <h2>🔧 Manual Testing</h2>
+        <p>Test specific scenarios:</p>
+        
+        <h3>Test 1: Exact URL Match</h3>
+        <button class="button" onclick="testExactMatch()">🎯 Test Exact Match</button>
+        
+        <h3>Test 2: URL with Trailing Slash</h3>
+        <button class="button" onclick="testTrailingSlash()">🔗 Test Trailing Slash</button>
+        
+        <h3>Test 3: Different Case</h3>
+        <button class="button" onclick="testDifferentCase()">📝 Test Different Case</button>
+        
+        <h3>Test 4: Force Duplicate Check</h3>
+        <button class="button" onclick="forceDuplicateCheck()">🔍 Force Duplicate Check</button>
+    </div>
+
+    <script>
+        // Check if extension is available
+        function isExtensionAvailable() {
+            return typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage;
+        }
+
+        // Check extension status
+        async function checkExtensionStatus() {
+            const statusDiv = document.getElementById('extensionStatus');
+            
+            if (!isExtensionAvailable()) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ Extension not detected. Make sure Smart Research Tracker is installed.';
+                return;
+            }
+
+            try {
+                statusDiv.className = 'status info';
+                statusDiv.innerHTML = '🔍 Checking extension status...';
+                
+                // Get current links from extension
+                const response = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ type: 'GET_LINKS' }, resolve);
+                });
+                
+                const links = response?.links || [];
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = `
+                    ✅ Extension detected and working!<br>
+                    📊 Total links in storage: ${links.length}<br>
+                    🔗 Ready to test duplicate detection
+                `;
+                
+                addToDebugLog(`Extension status: ${links.length} links found`);
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `❌ Error checking status: ${error.message}`;
+                addToDebugLog(`Error: ${error.message}`);
+            }
+        }
+
+        // Add test link
+        async function addTestLink(step) {
+            if (!isExtensionAvailable()) {
+                alert('Extension not detected. Please install Smart Research Tracker first.');
+                return;
+            }
+
+            const url = document.getElementById(`testUrl${step}`).value.trim();
+            const title = document.getElementById(`testTitle${step}`).value.trim();
+            
+            if (!url) {
+                alert('Please enter a URL to test.');
+                return;
+            }
+
+            try {
+                addToDebugLog(`Step ${step}: Attempting to save URL: ${url}`);
+                
+                const payload = {
+                    url: url,
+                    title: title,
+                    description: `Test link ${step} for duplicate detection`,
+                    priority: 'medium',
+                    label: 'test'
+                };
+
+                const response = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ 
+                        type: 'SAVE_LINK', 
+                        payload: payload 
+                    }, resolve);
+                });
+
+                addToDebugLog(`Step ${step} response:`, response);
+
+                if (response?.isDuplicate) {
+                    addToDebugLog(`✅ DUPLICATE DETECTED! Count: ${response.duplicateInfo.count}`);
+                    alert(`✅ Duplicate detection working! Found ${response.duplicateInfo.count} existing link(s). Check the extension popup for confirmation dialog.`);
+                } else if (response?.success) {
+                    addToDebugLog(`✅ Link saved successfully! ID: ${response.linkId}`);
+                    alert('✅ Link saved successfully! Try saving the same URL again to test duplicate detection.');
+                } else {
+                    addToDebugLog(`❌ Save failed: ${response?.error || 'Unknown error'}`);
+                    alert(`❌ Save failed: ${response?.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error(`[Debug] Error in step ${step}:`, error);
+                addToDebugLog(`Error in step ${step}: ${error.message}`);
+                alert(`❌ Error: ${error.message}`);
+            }
+        }
+
+        // Test URL variations
+        async function testUrlVariations() {
+            const baseUrl = 'https://example.com/test-variations';
+            const variations = [
+                baseUrl,
+                baseUrl + '/',
+                baseUrl.toUpperCase(),
+                baseUrl.replace('https://', 'http://'),
+                baseUrl + '?param=1',
+                baseUrl + '#section'
+            ];
+
+            addToDebugLog('Testing URL variations:');
+            for (const url of variations) {
+                addToDebugLog(`  - ${url}`);
+            }
+
+            // Test saving the first variation
+            document.getElementById('testUrl1').value = variations[0];
+            document.getElementById('testTitle1').value = 'URL Variation Test 1';
+            await addTestLink(1);
+
+            // Test saving the second variation (should be detected as duplicate)
+            document.getElementById('testUrl2').value = variations[1];
+            document.getElementById('testTitle2').value = 'URL Variation Test 2';
+            await addTestLink(2);
+        }
+
+        // Show current links
+        async function showCurrentLinks() {
+            if (!isExtensionAvailable()) {
+                alert('Extension not detected.');
+                return;
+            }
+
+            try {
+                const response = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ type: 'GET_LINKS' }, resolve);
+                });
+
+                const links = response?.links || [];
+                addToDebugLog(`Current links (${links.length}):`);
+                
+                links.forEach((link, index) => {
+                    addToDebugLog(`  ${index + 1}. ${link.metadata?.title || link.title || 'Untitled'}`);
+                    addToDebugLog(`     URL: ${link.url}`);
+                    addToDebugLog(`     ID: ${link.id}`);
+                    addToDebugLog(`     Created: ${link.createdAt || link.savedAt}`);
+                    addToDebugLog('');
+                });
+            } catch (error) {
+                addToDebugLog(`Error getting links: ${error.message}`);
+            }
+        }
+
+        // Clear all links
+        async function clearAllLinks() {
+            if (!isExtensionAvailable()) {
+                alert('Extension not detected.');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to clear ALL saved links? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ type: 'CLEAR_ALL_LINKS' }, resolve);
+                });
+
+                if (response?.success) {
+                    addToDebugLog('✅ All links cleared successfully!');
+                    alert('✅ All links cleared! You can now test duplicate detection from scratch.');
+                } else {
+                    throw new Error(response?.error || 'Clear failed');
+                }
+            } catch (error) {
+                addToDebugLog(`❌ Failed to clear links: ${error.message}`);
+                alert(`❌ Failed to clear links: ${error.message}`);
+            }
+        }
+
+        // Clear test links only
+        async function clearTestLinks() {
+            if (!isExtensionAvailable()) {
+                alert('Extension not detected.');
+                return;
+            }
+
+            try {
+                const response = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ type: 'GET_LINKS' }, resolve);
+                });
+
+                const links = response?.links || [];
+                const testLinks = links.filter(link => 
+                    link.url.includes('example.com') || 
+                    link.label === 'test' || 
+                    link.metadata?.title?.includes('Test')
+                );
+
+                if (testLinks.length === 0) {
+                    addToDebugLog('No test links found to clear.');
+                    return;
+                }
+
+                addToDebugLog(`Found ${testLinks.length} test links to clear.`);
+                
+                // For now, just clear all since we don't have individual delete
+                await clearAllLinks();
+            } catch (error) {
+                addToDebugLog(`Error clearing test links: ${error.message}`);
+            }
+        }
+
+        // Test exact match
+        async function testExactMatch() {
+            const url = 'https://example.com/exact-match-test';
+            document.getElementById('testUrl1').value = url;
+            document.getElementById('testTitle1').value = 'Exact Match Test 1';
+            await addTestLink(1);
+            
+            // Try exact same URL
+            document.getElementById('testUrl2').value = url;
+            document.getElementById('testTitle2').value = 'Exact Match Test 2';
+            await addTestLink(2);
+        }
+
+        // Test trailing slash
+        async function testTrailingSlash() {
+            const url1 = 'https://example.com/trailing-slash';
+            const url2 = 'https://example.com/trailing-slash/';
+            
+            document.getElementById('testUrl1').value = url1;
+            document.getElementById('testTitle1').value = 'Trailing Slash Test 1';
+            await addTestLink(1);
+            
+            document.getElementById('testUrl2').value = url2;
+            document.getElementById('testTitle2').value = 'Trailing Slash Test 2';
+            await addTestLink(2);
+        }
+
+        // Test different case
+        async function testDifferentCase() {
+            const url1 = 'https://example.com/case-test';
+            const url2 = 'https://EXAMPLE.COM/case-test';
+            
+            document.getElementById('testUrl1').value = url1;
+            document.getElementById('testTitle1').value = 'Case Test 1';
+            await addTestLink(1);
+            
+            document.getElementById('testUrl2').value = url2;
+            document.getElementById('testTitle2').value = 'Case Test 2';
+            await addTestLink(2);
+        }
+
+        // Force duplicate check
+        async function forceDuplicateCheck() {
+            if (!isExtensionAvailable()) {
+                alert('Extension not detected.');
+                return;
+            }
+
+            try {
+                addToDebugLog('Forcing duplicate check...');
+                
+                // Get current links first
+                const response = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ type: 'GET_LINKS' }, resolve);
+                });
+
+                const links = response?.links || [];
+                addToDebugLog(`Current links: ${links.length}`);
+                
+                if (links.length > 0) {
+                    const testUrl = links[0].url;
+                    addToDebugLog(`Testing duplicate check for: ${testUrl}`);
+                    
+                    // Try to save the same URL again
+                    const payload = {
+                        url: testUrl,
+                        title: 'Force Duplicate Check Test',
+                        description: 'Testing duplicate detection',
+                        priority: 'medium',
+                        label: 'test'
+                    };
+
+                    const saveResponse = await new Promise((resolve) => {
+                        chrome.runtime.sendMessage({ 
+                            type: 'SAVE_LINK', 
+                            payload: payload 
+                        }, resolve);
+                    });
+
+                    addToDebugLog('Force duplicate check response:', saveResponse);
+                } else {
+                    addToDebugLog('No links to test duplicate detection with.');
+                }
+            } catch (error) {
+                addToDebugLog(`Error in force duplicate check: ${error.message}`);
+            }
+        }
+
+        // Debug log functions
+        function addToDebugLog(message, data = null) {
+            const logDiv = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString();
+            let logMessage = `[${timestamp}] ${message}`;
+            
+            if (data) {
+                logMessage += '\n' + JSON.stringify(data, null, 2);
+            }
+            
+            logDiv.textContent += '\n' + logMessage;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            // Also log to console
+            console.log(`[Debug] ${message}`, data);
+        }
+
+        function clearDebugLog() {
+            document.getElementById('debugLog').textContent = 'Debug log cleared...';
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            checkExtensionStatus();
+            addToDebugLog('Debug page loaded. Check browser console (F12) for [SRT] messages from extension.');
+        });
+    </script>
+</body>
+</html>

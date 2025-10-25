@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Duplicate Detection - Smart Research Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button.danger {
+            background: #dc3545;
+        }
+        .button.danger:hover {
+            background: #c82333;
+        }
+        .button.success {
+            background: #28a745;
+        }
+        .button.success:hover {
+            background: #218838;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+        .error { background: #f8d7da; color: #721c24; }
+        .duplicate-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .url-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .test-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .test-link {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-link h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .test-link p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Duplicate Detection - Smart Research Tracker</h1>
+    
+    <div class="test-section">
+        <h2>📊 Current Extension Status</h2>
+        <p>This page tests the new duplicate detection system that prevents duplicate links and shows a confirmation popup.</p>
+        <div id="extensionStatus" class="status info">Checking extension status...</div>
+        <button class="button" onclick="checkExtensionStatus()">🔄 Refresh Status</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🔗 Test Duplicate Detection</h2>
+        <p>Test the duplicate detection system with these scenarios:</p>
+        
+        <div class="duplicate-info">
+            <strong>How it works:</strong>
+            <ol>
+                <li>Try to save a link that already exists in your extension</li>
+                <li>The extension will detect the duplicate and show a popup</li>
+                <li>You can choose to save anyway or cancel</li>
+                <li>This helps maintain a clean, organized dashboard</li>
+            </ol>
+        </div>
+
+        <h3>Quick Test Links</h3>
+        <div class="test-links">
+            <div class="test-link">
+                <h4>🔴 Test Duplicate (Same URL)</h4>
+                <p>URL: <code>https://example.com/test-duplicate</code></p>
+                <p>This will trigger duplicate detection if saved multiple times.</p>
+                <button class="button" onclick="testDuplicateLink('https://example.com/test-duplicate', 'Test Duplicate Link')">
+                    💾 Test Save
+                </button>
+            </div>
+            
+            <div class="test-link">
+                <h4>🟡 Test Similar URL</h4>
+                <p>URL: <code>https://example.com/test-duplicate/</code></p>
+                <p>Note the trailing slash - should still be detected as duplicate.</p>
+                <button class="button" onclick="testDuplicateLink('https://example.com/test-duplicate/', 'Test Similar URL')">
+                    💾 Test Save
+                </button>
+            </div>
+            
+            <div class="test-link">
+                <h4>🟢 Test New Link</h4>
+                <p>URL: <code>https://example.com/test-new-${Date.now()}</code></p>
+                <p>This should always save successfully (unique timestamp).</p>
+                <button class="button success" onclick="testNewLink()">
+                    💾 Test Save
+                </button>
+            </div>
+        </div>
+
+        <h3>Custom URL Test</h3>
+        <input type="url" id="customUrl" class="url-input" placeholder="Enter a URL to test (e.g., https://example.com/test)" />
+        <input type="text" id="customTitle" class="url-input" placeholder="Enter a title for the link" />
+        <button class="button" onclick="testCustomLink()">💾 Test Custom Link</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🧹 Clean Up Test Data</h2>
+        <p>Remove test links to start fresh:</p>
+        <button class="button danger" onclick="clearAllLinks()">🗑️ Clear All Links</button>
+        <button class="button" onclick="showCurrentLinks()">📋 Show Current Links</button>
+        <div id="cleanupStatus" class="status info">Ready to clean up...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>📚 How Duplicate Detection Works</h2>
+        
+        <h3>🔍 Detection Logic</h3>
+        <ul>
+            <li><strong>URL Normalization:</strong> Removes trailing slashes and converts to lowercase</li>
+            <li><strong>Exact Matching:</strong> Compares normalized URLs for exact matches</li>
+            <li><strong>Real-time Check:</strong> Checks before saving, not after</li>
+            <li><strong>User Control:</strong> Shows popup with duplicate details and options</li>
+        </ul>
+
+        <h3>🎯 Benefits</h3>
+        <ul>
+            <li><strong>Clean Dashboard:</strong> Prevents duplicate entries cluttering your research</li>
+            <li><strong>Better Organization:</strong> Maintains unique research items</li>
+            <li><strong>User Awareness:</strong> Shows what's already saved and when</li>
+            <li><strong>Flexible Control:</strong> Users can still save duplicates if needed</li>
+        </ul>
+
+        <h3>⚙️ Technical Details</h3>
+        <ul>
+            <li><strong>Background Check:</strong> Extension checks storage before saving</li>
+            <li><strong>Popup Interface:</strong> Shows duplicate details in user-friendly format</li>
+            <li><strong>Confirmation Flow:</strong> User can save anyway or cancel</li>
+            <li><strong>Error Prevention:</strong> Stops accidental duplicate saves</li>
+        </ul>
+    </div>
+
+    <script>
+        // Check if extension is available
+        function isExtensionAvailable() {
+            return typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage;
+        }
+
+        // Check extension status
+        async function checkExtensionStatus() {
+            const statusDiv = document.getElementById('extensionStatus');
+            
+            if (!isExtensionAvailable()) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ Extension not detected. Make sure Smart Research Tracker is installed.';
+                return;
+            }
+
+            try {
+                statusDiv.className = 'status info';
+                statusDiv.innerHTML = '🔍 Checking extension status...';
+                
+                // Get current links from extension
+                const response = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ type: 'GET_LINKS' }, resolve);
+                });
+                
+                const links = response?.links || [];
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = `
+                    ✅ Extension detected and working!<br>
+                    📊 Total links in storage: ${links.length}<br>
+                    🔗 Ready to test duplicate detection
+                `;
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `❌ Error checking status: ${error.message}`;
+            }
+        }
+
+        // Test duplicate link
+        async function testDuplicateLink(url, title) {
+            if (!isExtensionAvailable()) {
+                alert('Extension not detected. Please install Smart Research Tracker first.');
+                return;
+            }
+
+            try {
+                const payload = {
+                    url: url,
+                    title: title,
+                    description: 'This is a test link for duplicate detection',
+                    priority: 'medium',
+                    label: 'test'
+                };
+
+                console.log('[Test] Attempting to save duplicate link:', payload);
+                
+                const response = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ 
+                        type: 'SAVE_LINK', 
+                        payload: payload 
+                    }, resolve);
+                });
+
+                console.log('[Test] Response:', response);
+
+                if (response?.isDuplicate) {
+                    alert(`✅ Duplicate detection working! The extension detected ${response.duplicateInfo.count} existing link(s) with the same URL. Check the extension popup for the confirmation dialog.`);
+                } else if (response?.success) {
+                    alert('✅ Link saved successfully! Try saving the same URL again to test duplicate detection.');
+                } else {
+                    alert(`❌ Save failed: ${response?.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('[Test] Error testing duplicate link:', error);
+                alert(`❌ Error: ${error.message}`);
+            }
+        }
+
+        // Test new link
+        async function testNewLink() {
+            const url = `https://example.com/test-new-${Date.now()}`;
+            const title = `New Test Link ${new Date().toLocaleTimeString()}`;
+            await testDuplicateLink(url, title);
+        }
+
+        // Test custom link
+        async function testCustomLink() {
+            const url = document.getElementById('customUrl').value.trim();
+            const title = document.getElementById('customTitle').value.trim() || 'Custom Test Link';
+            
+            if (!url) {
+                alert('Please enter a URL to test.');
+                return;
+            }
+
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                alert('Please enter a valid URL starting with http:// or https://');
+                return;
+            }
+
+            await testDuplicateLink(url, title);
+        }
+
+        // Clear all links
+        async function clearAllLinks() {
+            if (!isExtensionAvailable()) {
+                alert('Extension not detected.');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to clear ALL saved links? This cannot be undone.')) {
+                return;
+            }
+
+            const statusDiv = document.getElementById('cleanupStatus');
+            statusDiv.className = 'status info';
+            statusDiv.innerHTML = '🗑️ Clearing all links...';
+
+            try {
+                const response = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ type: 'CLEAR_ALL_LINKS' }, resolve);
+                });
+
+                if (response?.success) {
+                    statusDiv.className = 'status success';
+                    statusDiv.innerHTML = '✅ All links cleared successfully! You can now test duplicate detection from scratch.';
+                } else {
+                    throw new Error(response?.error || 'Clear failed');
+                }
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `❌ Failed to clear links: ${error.message}`;
+            }
+        }
+
+        // Show current links
+        async function showCurrentLinks() {
+            if (!isExtensionAvailable()) {
+                alert('Extension not detected.');
+                return;
+            }
+
+            const statusDiv = document.getElementById('cleanupStatus');
+            statusDiv.className = 'status info';
+            statusDiv.innerHTML = '📋 Loading current links...';
+
+            try {
+                const response = await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({ type: 'GET_LINKS' }, resolve);
+                });
+
+                const links = response?.links || [];
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = `
+                    📊 Current Links (${links.length}):<br>
+                    ${links.length === 0 ? 'No links found' : 
+                      links.slice(0, 5).map(link => 
+                        `• ${link.metadata?.title || link.title || 'Untitled'} (${link.url})`
+                      ).join('<br>')}
+                    ${links.length > 5 ? `<br>... and ${links.length - 5} more` : ''}
+                `;
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `❌ Failed to load links: ${error.message}`;
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            checkExtensionStatus();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Communication Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { margin: 5px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Dashboard Communication Test</h1>
+    <p>This page tests exactly what the dashboard is trying to do to load links.</p>
+    
+    <div class="test-section info">
+        <h3>Test 1: Direct Chrome Storage Access</h3>
+        <p>This is what the dashboard tries first.</p>
+        <button onclick="testDirectStorage()">Test Direct Storage</button>
+        <div id="direct-storage-result"></div>
+    </div>
+
+    <div class="test-section info">
+        <h3>Test 2: Window PostMessage Communication</h3>
+        <p>This is the fallback method the dashboard uses.</p>
+        <button onclick="testPostMessage()">Test PostMessage</button>
+        <div id="postmessage-result"></div>
+    </div>
+
+    <div class="test-section info">
+        <h3>Test 3: Simulate Dashboard Link Loading</h3>
+        <p>This simulates the exact flow the dashboard uses.</p>
+        <button onclick="simulateDashboardLoading()">Simulate Dashboard</button>
+        <div id="dashboard-simulation-result"></div>
+    </div>
+
+    <div class="test-section info">
+        <h3>Console Log</h3>
+        <div id="console-log" style="background: #f8f9fa; padding: 10px; border-radius: 4px; max-height: 300px; overflow-y: auto;"></div>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('console-log');
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logEntry.className = type;
+            logDiv.appendChild(logEntry);
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function clearLog() {
+            document.getElementById('console-log').innerHTML = '';
+        }
+
+        // Test 1: Direct Chrome Storage Access (Dashboard's first method)
+        async function testDirectStorage() {
+            const resultDiv = document.getElementById('direct-storage-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            log('🔍 Testing direct chrome.storage access...');
+            
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                try {
+                    log('✅ Chrome storage available, testing access...');
+                    const result = await new Promise((resolve) => {
+                        chrome.storage.local.get(['links'], resolve);
+                    });
+                    
+                    const links = result.links || [];
+                    log(`📊 Direct storage test: Found ${links.length} links`);
+                    
+                    if (links.length > 0) {
+                        resultDiv.innerHTML = `
+                            <div class="success">
+                                <h4>✅ Direct Storage Access Working!</h4>
+                                <p>Found ${links.length} links in chrome.storage</p>
+                                <pre>${JSON.stringify(links[0], null, 2)}</pre>
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `
+                            <div class="info">
+                                <h4>📭 No Links Found</h4>
+                                <p>Storage is accessible but contains no links</p>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    log(`❌ Direct storage access failed: ${error.message}`);
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Direct Storage Access Failed</h4>
+                            <p>Error: ${error.message}</p>
+                        </div>
+                    `;
+                }
+            } else {
+                log('❌ Chrome storage not available');
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Chrome Storage Not Available</h4>
+                        <p>This means the extension is not loaded or not accessible</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Test 2: Window PostMessage Communication (Dashboard's fallback method)
+        function testPostMessage() {
+            const resultDiv = document.getElementById('postmessage-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            log('📡 Testing window.postMessage communication...');
+            
+            const messageId = 'test-' + Date.now();
+            let responseReceived = false;
+            
+            const handleResponse = (event) => {
+                if (event.data && event.data.type === 'SRT_LINKS_RESPONSE' && event.data.messageId === messageId) {
+                    responseReceived = true;
+                    const links = event.data.links || [];
+                    log(`✅ PostMessage test: Received ${links.length} links`);
+                    
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ PostMessage Communication Working!</h4>
+                            <p>Received ${links.length} links from extension</p>
+                            <pre>${JSON.stringify(links, null, 2)}</pre>
+                        </div>
+                    `;
+                    
+                    window.removeEventListener('message', handleResponse);
+                }
+            };
+            
+            window.addEventListener('message', handleResponse);
+            
+            // Send request
+            log('📤 Sending SRT_GET_LINKS message...');
+            window.postMessage({
+                type: 'SRT_GET_LINKS',
+                messageId: messageId
+            }, '*');
+            
+            // Timeout after 3 seconds
+            setTimeout(() => {
+                if (!responseReceived) {
+                    log('❌ PostMessage test: No response received');
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ PostMessage Communication Failed</h4>
+                            <p>No response received from extension</p>
+                            <p>This suggests the content script is not loaded or not responding</p>
+                        </div>
+                    `;
+                }
+            }, 3000);
+        }
+
+        // Test 3: Simulate Dashboard Link Loading (Exact dashboard flow)
+        async function simulateDashboardLoading() {
+            const resultDiv = document.getElementById('dashboard-simulation-result');
+            resultDiv.innerHTML = 'Simulating...';
+            
+            log('🎭 Simulating dashboard link loading flow...');
+            
+            // This is exactly what the dashboard does
+            try {
+                // Check if we should skip extension storage
+                const skipExtension = localStorage.getItem('skipExtensionStorage') === 'true';
+                if (skipExtension) {
+                    log('🔄 Skipping extension storage due to clear operation');
+                    resultDiv.innerHTML = '<div class="info">Skipping extension storage</div>';
+                    return;
+                }
+                
+                // First try to get links directly from chrome.storage if available
+                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                    try {
+                        log('💾 Trying direct chrome.storage access...');
+                        const result = await new Promise((resolve) => {
+                            chrome.storage.local.get(['links'], resolve);
+                        });
+                        
+                        if (result.links && result.links.length > 0) {
+                            log(`✅ Found ${result.links.length} links in chrome.storage`);
+                            resultDiv.innerHTML = `
+                                <div class="success">
+                                    <h4>✅ Dashboard Simulation Success!</h4>
+                                    <p>Found ${result.links.length} links using direct storage access</p>
+                                    <pre>${JSON.stringify(result.links[0], null, 2)}</pre>
+                                </div>
+                            `;
+                            return;
+                        }
+                    } catch (error) {
+                        log(`⚠️ Direct chrome.storage access failed: ${error.message}`);
+                    }
+                }
+                
+                // Fallback to window.postMessage communication
+                log('📡 Trying window.postMessage communication...');
+                
+                const messageId = 'dashboard-sim-' + Date.now();
+                let responseReceived = false;
+                
+                const handleResponse = (event) => {
+                    if (event.data && event.data.type === 'SRT_LINKS_RESPONSE' && event.data.messageId === messageId) {
+                        responseReceived = true;
+                        const links = event.data.links || [];
+                        log(`✅ Dashboard simulation: Received ${links.length} links via postMessage`);
+                        
+                        resultDiv.innerHTML = `
+                            <div class="success">
+                                <h4>✅ Dashboard Simulation Success!</h4>
+                                <p>Received ${links.length} links using postMessage fallback</p>
+                                <pre>${JSON.stringify(links, null, 2)}</pre>
+                            </div>
+                        `;
+                        
+                        window.removeEventListener('message', handleResponse);
+                    }
+                };
+                
+                window.addEventListener('message', handleResponse);
+                
+                // Request links from extension
+                window.postMessage({
+                    type: 'SRT_GET_LINKS',
+                    messageId: messageId
+                }, '*');
+                
+                // Timeout after 3 seconds
+                setTimeout(() => {
+                    if (!responseReceived) {
+                        log('❌ Dashboard simulation: No response received');
+                        resultDiv.innerHTML = `
+                            <div class="error">
+                                <h4>❌ Dashboard Simulation Failed</h4>
+                                <p>No links found using any method</p>
+                                <p>This explains why your dashboard shows no links</p>
+                            </div>
+                        `;
+                    }
+                }, 3000);
+                
+            } catch (error) {
+                log(`❌ Dashboard simulation error: ${error.message}`);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Dashboard Simulation Error</h4>
+                        <p>Error: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Listen for any messages from the extension
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type) {
+                log(`📨 Received message: ${event.data.type}`, 'info');
+            }
+        });
+
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            log('🚀 Page loaded, ready for testing...');
+        });
+    </script>
+</body>
+</html>

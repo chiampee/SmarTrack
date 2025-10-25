@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# Smart Research Tracker Mac App Launcher
+# This script runs when you double-click the app
+
+set -e  # Exit on any error
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$(dirname "$(dirname "$SCRIPT_DIR")")")"
+
+# Change to project directory
+cd "$PROJECT_DIR"
+
+# Function to show dialog
+show_dialog() {
+    local message="$1"
+    local icon="${2:-note}"
+    osascript -e "display dialog \"$message\" buttons {\"OK\"} default button \"OK\" with icon $icon"
+}
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Function to wait for server to start
+wait_for_server() {
+    local max_attempts=30
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s http://localhost:5174 >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 1
+        attempt=$((attempt + 1))
+    done
+    return 1
+}
+
+# Check if Node.js is installed
+if ! command_exists node; then
+    show_dialog "Node.js is not installed! Please install Node.js 18+ from: https://nodejs.org/" "caution"
+    exit 1
+fi
+
+# Check Node.js version
+NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+if [ "$NODE_VERSION" -lt 18 ]; then
+    show_dialog "Node.js version is $NODE_VERSION. Recommended: 18+" "caution"
+fi
+
+# Check if pnpm is installed
+if ! command_exists pnpm; then
+    show_dialog "pnpm is not installed. Installing pnpm..." "note"
+    if ! npm install -g pnpm; then
+        show_dialog "Failed to install pnpm. Please install manually: npm install -g pnpm" "caution"
+        exit 1
+    fi
+fi
+
+# Check if package.json exists
+if [ ! -f "package.json" ]; then
+    show_dialog "package.json not found. Please make sure the app is in the correct directory." "caution"
+    exit 1
+fi
+
+# Check if dependencies are installed
+if [ ! -d "node_modules" ]; then
+    show_dialog "Installing dependencies... This may take a moment." "note"
+    if ! pnpm install; then
+        show_dialog "Failed to install dependencies. Please check your internet connection and try again." "caution"
+        exit 1
+    fi
+fi
+
+# Check if .env.local exists
+if [ ! -f ".env.local" ]; then
+    show_dialog "AI features may not work without .env.local file. To enable AI features, create .env.local with your OpenAI API key: VITE_OPENAI_API_KEY=sk-your-key-here" "note"
+fi
+
+# Start the development server
+show_dialog "Starting Smart Research Tracker..." "note"
+
+# Open browser after server starts
+{
+    if wait_for_server; then
+        open http://localhost:5174
+    else
+        show_dialog "Server may not be ready yet. Please open http://localhost:5174 manually." "caution"
+    fi
+} &
+
+# Start the server
+pnpm dev

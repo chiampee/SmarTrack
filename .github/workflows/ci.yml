@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-type-test:
+    name: Lint, Typecheck and Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Typecheck
+        run: pnpm exec tsc -b
+
+      - name: Unit tests
+        run: pnpm run test -- --run
+
+  build-app:
+    name: Build Web App
+    runs-on: ubuntu-latest
+    needs: [lint-type-test]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build app
+        run: pnpm run build
+
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+          retention-days: 7
+
+  build-extension:
+    name: Build Extension
+    runs-on: ubuntu-latest
+    needs: [lint-type-test]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build extension
+        run: pnpm run build:extension
+
+      - name: Zip extension
+        run: |
+          cd dist-extension
+          zip -r ../smart-research-tracker-extension.zip .
+
+      - name: Upload extension dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-dist
+          path: dist-extension
+          retention-days: 7
+
+      - name: Upload extension zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-zip
+          path: smart-research-tracker-extension.zip
+          retention-days: 7
+
+

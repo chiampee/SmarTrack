@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .log-output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Smart Research Tracker - Panel Debug Test</h1>
+    
+    <div class="test-section">
+        <h2>📊 Current Status</h2>
+        <div id="status" class="status warning">Checking system status...</div>
+        <div id="linkCount">Links loaded: <span id="linkCountValue">-</span></div>
+        <div id="extensionStatus">Extension status: <span id="extensionStatusValue">-</span></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 Panel Tests</h2>
+        <button class="test-button" onclick="testPanelInitialization()">Test Panel Initialization</button>
+        <button class="test-button" onclick="testChatService()">Test Chat Service</button>
+        <button class="test-button" onclick="testDatabaseConnection()">Test Database</button>
+        <button class="test-button" onclick="testExtensionCommunication()">Test Extension</button>
+        <button class="test-button" onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📝 Debug Logs</h2>
+        <div id="logs" class="log-output">Ready to run tests...\n</div>
+    </div>
+
+    <script>
+        let logOutput = document.getElementById('logs');
+        let statusDiv = document.getElementById('status');
+        let linkCountValue = document.getElementById('linkCountValue');
+        let extensionStatusValue = document.getElementById('extensionStatusValue');
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logOutput.textContent += `[${timestamp}] ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+            console.log(`[Panel Debug] ${message}`);
+        }
+
+        function updateStatus(message, type = 'warning') {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        function clearLogs() {
+            logOutput.textContent = 'Logs cleared...\n';
+        }
+
+        async function testPanelInitialization() {
+            log('🧪 Testing Panel Initialization...');
+            
+            try {
+                // Check if we can access the main app
+                if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+                    log('✅ Running on localhost - main app should be available');
+                    
+                    // Try to access the main app's link store
+                    if (window.parent && window.parent !== window) {
+                        log('✅ Running in iframe - parent window available');
+                    } else {
+                        log('⚠️ Not running in iframe - may need to test in main app');
+                    }
+                } else {
+                    log('⚠️ Not running on localhost - may need to test in main app');
+                }
+                
+                updateStatus('Panel initialization test completed', 'success');
+            } catch (error) {
+                log(`❌ Panel initialization test failed: ${error.message}`);
+                updateStatus('Panel initialization test failed', 'error');
+            }
+        }
+
+        async function testChatService() {
+            log('🧪 Testing Chat Service...');
+            
+            try {
+                // Check if chat service is available
+                if (typeof window !== 'undefined') {
+                    // Try to access the chat service through the main app
+                    log('✅ Window object available');
+                    
+                    // Check for API keys
+                    const hasOpenAIKey = localStorage.getItem('openai_api_key') || 
+                                       sessionStorage.getItem('openai_api_key');
+                    if (hasOpenAIKey) {
+                        log('✅ OpenAI API key found in storage');
+                    } else {
+                        log('⚠️ No OpenAI API key found in storage');
+                    }
+                    
+                    // Check for environment variables (if accessible)
+                    if (typeof import !== 'undefined') {
+                        log('✅ ES modules available');
+                    }
+                }
+                
+                updateStatus('Chat service test completed', 'success');
+            } catch (error) {
+                log(`❌ Chat service test failed: ${error.message}`);
+                updateStatus('Chat service test failed', 'error');
+            }
+        }
+
+        async function testDatabaseConnection() {
+            log('🧪 Testing Database Connection...');
+            
+            try {
+                // Check if IndexedDB is available
+                if ('indexedDB' in window) {
+                    log('✅ IndexedDB is available');
+                    
+                    // Try to open the database
+                    const request = indexedDB.open('SmartResearchDB', 1);
+                    
+                    request.onsuccess = function(event) {
+                        log('✅ Database connection successful');
+                        const db = event.target.result;
+                        log(`✅ Database name: ${db.name}, version: ${db.version}`);
+                        db.close();
+                        updateStatus('Database connection successful', 'success');
+                    };
+                    
+                    request.onerror = function(event) {
+                        log(`❌ Database connection failed: ${event.target.error}`);
+                        updateStatus('Database connection failed', 'error');
+                    };
+                    
+                    request.onupgradeneeded = function(event) {
+                        log('⚠️ Database upgrade needed');
+                    };
+                } else {
+                    log('❌ IndexedDB not available');
+                    updateStatus('IndexedDB not available', 'error');
+                }
+            } catch (error) {
+                log(`❌ Database test failed: ${error.message}`);
+                updateStatus('Database test failed', 'error');
+            }
+        }
+
+        async function testExtensionCommunication() {
+            log('🧪 Testing Extension Communication...');
+            
+            try {
+                // Check if we're in an extension context
+                if (typeof chrome !== 'undefined' && chrome.runtime) {
+                    log('✅ Chrome extension API available');
+                    
+                    // Try to get extension info
+                    try {
+                        const manifest = chrome.runtime.getManifest();
+                        log(`✅ Extension manifest loaded: ${manifest.name}`);
+                    } catch (e) {
+                        log('⚠️ Could not access extension manifest');
+                    }
+                } else {
+                    log('⚠️ Chrome extension API not available');
+                }
+                
+                // Check for postMessage communication
+                if (typeof window.postMessage === 'function') {
+                    log('✅ postMessage available');
+                } else {
+                    log('❌ postMessage not available');
+                }
+                
+                updateStatus('Extension communication test completed', 'success');
+            } catch (error) {
+                log(`❌ Extension communication test failed: ${error.message}`);
+                updateStatus('Extension communication test failed', 'error');
+            }
+        }
+
+        // Initialize status check
+        async function initializeStatus() {
+            log('🚀 Initializing debug test...');
+            
+            // Check basic environment
+            log(`✅ User Agent: ${navigator.userAgent}`);
+            log(`✅ Current URL: ${window.location.href}`);
+            log(`✅ Timestamp: ${new Date().toISOString()}`);
+            
+            // Check if we can access the main app
+            if (window.location.hostname === 'localhost' && window.location.port === '5173') {
+                log('✅ Running on Vite dev server');
+                updateStatus('Running on Vite dev server - ready for testing', 'success');
+            } else {
+                log('⚠️ Not running on expected dev server');
+                updateStatus('Not on dev server - some tests may not work', 'warning');
+            }
+            
+            // Try to get link count from localStorage or other sources
+            try {
+                const linkData = localStorage.getItem('links') || 
+                               localStorage.getItem('rawLinks') ||
+                               sessionStorage.getItem('links');
+                if (linkData) {
+                    const links = JSON.parse(linkData);
+                    linkCountValue.textContent = Array.isArray(links) ? links.length : 'Unknown';
+                    log(`✅ Found ${linkCountValue.textContent} links in storage`);
+                } else {
+                    linkCountValue.textContent = '0';
+                    log('⚠️ No links found in storage');
+                }
+            } catch (error) {
+                linkCountValue.textContent = 'Error';
+                log(`❌ Error reading link count: ${error.message}`);
+            }
+            
+            // Check extension status
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+                extensionStatusValue.textContent = 'Available';
+                log('✅ Chrome extension API available');
+            } else {
+                extensionStatusValue.textContent = 'Not available';
+                log('⚠️ Chrome extension API not available');
+            }
+        }
+
+        // Run initialization when page loads
+        document.addEventListener('DOMContentLoaded', initializeStatus);
+    </script>
+</body>
+</html>

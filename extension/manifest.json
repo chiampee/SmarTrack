@@ -1,0 +1,65 @@
+{
+  "manifest_version": 3,
+  "name": "Smart Research Tracker",
+  "description": "Save and organize research links with AI-powered insights.",
+  "version": "1.0.3",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon.svg",
+      "32": "icons/icon.svg",
+      "48": "icons/icon.svg",
+      "128": "icons/icon.svg"
+    }
+  },
+  "options_page": "options.html",
+  "permissions": ["storage", "activeTab", "scripting", "tabs", "contextMenus", "notifications"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "file://*/*"
+      ],
+      "js": ["contentScript.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon.svg",
+    "32": "icons/icon.svg",
+    "48": "icons/icon.svg",
+    "128": "icons/icon.svg"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+R",
+        "mac": "Command+Shift+R"
+      },
+      "description": "Open Smart Research Tracker"
+    }
+  },
+  "externally_connectable": {
+    "matches": [
+      "https://smartracker.vercel.app/*",
+      "https://smart-research-tracker.vercel.app/*",
+      "https://smart-tracker-chiampees-projects.vercel.app/*",
+      "http://localhost:5173/*",
+      "http://localhost:5174/*",
+      "http://127.0.0.1:5173/*",
+      "http://127.0.0.1:5174/*"
+    ]
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+} 

@@ -1,0 +1,271 @@
+/* Error Notification Styles */
+
+.error-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 400px;
+  max-width: 90vw;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-left: 4px solid;
+  z-index: 10000;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  animation: slideInRight 0.3s ease-out;
+  overflow: hidden;
+}
+
+.error-notification.error-info {
+  border-left-color: #3b82f6;
+}
+
+.error-notification.error-warning {
+  border-left-color: #f59e0b;
+}
+
+.error-notification.error-error {
+  border-left-color: #ef4444;
+}
+
+.error-notification.error-critical {
+  border-left-color: #dc2626;
+  background: #fef2f2;
+}
+
+.error-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.error-notification.error-critical .error-header {
+  background: #fee2e2;
+  border-bottom-color: #fecaca;
+}
+
+.error-icon {
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+.error-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+  flex: 1;
+}
+
+.error-notification.error-critical .error-title {
+  color: #991b1b;
+}
+
+.error-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.error-close:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.error-message {
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.error-notification.error-critical .error-message {
+  color: #7f1d1d;
+}
+
+.error-suggestions {
+  padding: 0 16px 12px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.error-notification.error-critical .error-suggestions {
+  color: #b91c1c;
+}
+
+.error-suggestions strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+.error-notification.error-critical .error-suggestions strong {
+  color: #991b1b;
+}
+
+.error-suggestions ul {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+}
+
+.error-suggestions li {
+  margin-bottom: 4px;
+}
+
+.error-actions {
+  padding: 12px 16px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.error-notification.error-critical .error-actions {
+  background: #fee2e2;
+  border-top-color: #fecaca;
+}
+
+.error-retry {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.error-retry:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.error-notification.error-critical .error-retry {
+  background: #dc2626;
+}
+
+.error-notification.error-critical .error-retry:hover {
+  background: #b91c1c;
+}
+
+/* Animation */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.error-notification.removing {
+  animation: slideOutRight 0.3s ease-in forwards;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .error-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .error-notification {
+    background: #1f2937;
+    color: #f9fafb;
+  }
+
+  .error-header {
+    background: #111827;
+    border-bottom-color: #374151;
+  }
+
+  .error-title {
+    color: #f9fafb;
+  }
+
+  .error-message {
+    color: #d1d5db;
+  }
+
+  .error-suggestions {
+    color: #9ca3af;
+  }
+
+  .error-suggestions strong {
+    color: #f9fafb;
+  }
+
+  .error-actions {
+    background: #111827;
+    border-top-color: #374151;
+  }
+
+  .error-close:hover {
+    background: #374151;
+    color: #f9fafb;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .error-notification {
+    border: 2px solid;
+  }
+
+  .error-notification.error-info {
+    border-color: #0000ff;
+  }
+
+  .error-notification.error-warning {
+    border-color: #ff8c00;
+  }
+
+  .error-notification.error-error {
+    border-color: #ff0000;
+  }
+
+  .error-notification.error-critical {
+    border-color: #8b0000;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .error-notification {
+    animation: none;
+  }
+
+  .error-notification.removing {
+    animation: none;
+  }
+} 
