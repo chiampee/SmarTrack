@@ -20,9 +20,6 @@ requests==2.31.0
 pydantic==2.9.2
 pydantic-settings==2.5.2
 
-# CORS
-python-cors==1.0.0
-
 # Testing
 pytest==7.4.3
 httpx==0.26.0
