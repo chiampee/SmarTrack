@@ -19,6 +19,7 @@
     "build:extension": "npm run build --workspace=packages/extension",
     "lint": "npm run lint --workspaces",
     "test": "npm run test --workspaces",
+    "test:auth0": "node scripts/test-auth0-integration.js",
     "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist"
   },
   "keywords": [

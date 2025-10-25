@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     
     # Auth0
     AUTH0_DOMAIN: str
-    AUTH0_AUDIENCE: str
+    AUTH0_AUDIENCE: str = ""  # Optional - set if using Auth0 API
     AUTH0_ALGORITHMS: List[str] = ["RS256"]
     
     # Application

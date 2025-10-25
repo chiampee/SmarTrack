@@ -24,7 +24,22 @@ pip install -r requirements.txt
 ```
 
 ### 3. Configure Environment
-Copy `.env` file and update with your credentials.
+Create a `.env` file in this directory with the following variables:
+
+```env
+# MongoDB Connection
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/?appName=Cluster0
+
+# Auth0 Configuration
+AUTH0_DOMAIN=your-tenant.auth0.com
+AUTH0_AUDIENCE=your-api-identifier
+
+# Application Settings (optional)
+DEBUG=True
+MAX_LINKS_PER_USER=1000
+MAX_PAGE_SIZE_BYTES=524288
+RATE_LIMIT_REQUESTS_PER_MINUTE=60
+```
 
 ### 4. Run Development Server
 ```bash
