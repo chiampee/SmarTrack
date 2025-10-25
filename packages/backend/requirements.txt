@@ -18,9 +18,9 @@ lxml==5.1.0
 readability-lxml==0.8.1
 requests==2.31.0
 
-# Data validation
-pydantic==2.5.3
-pydantic-settings==2.1.0
+# Data validation (using versions with pre-built wheels)
+pydantic==2.9.0
+pydantic-settings==2.5.0
 
 # CORS
 fastapi-cors==0.0.6
