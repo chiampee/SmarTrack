@@ -6,7 +6,7 @@ gunicorn==21.2.0
 
 # MongoDB (motor is async, pymongo for sync)
 motor==3.6.0
-pymongo==4.8.0
+pymongo==4.9.1
 
 # Auth0
 python-jose[cryptography]==3.3.0
