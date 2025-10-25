@@ -36,22 +36,39 @@ async def close_mongo_connection():
 
 async def create_indexes():
     """Create database indexes"""
-    # Users collection
-    users_collection = mongodb.db.users
-    await users_collection.create_index("auth0Id", unique=True)
-    await users_collection.create_index("email")
+    from pymongo.errors import OperationFailure
     
-    # Links collection
-    links_collection = mongodb.db.links
-    await links_collection.create_index([("userId", 1), ("createdAt", -1)])
-    await links_collection.create_index([("userId", 1), ("url", 1)], unique=True)
-    await links_collection.create_index([("userId", 1), ("tags", 1)])
-    await links_collection.create_index([
-        ("title", "text"),
-        ("content", "text")
-    ])
-    
-    print("✅ Database indexes created")
+    try:
+        # Users collection
+        users_collection = mongodb.db.users
+        await users_collection.create_index("auth0Id", unique=True)
+        await users_collection.create_index("email")
+        
+        # Links collection
+        links_collection = mongodb.db.links
+        await links_collection.create_index([("userId", 1), ("createdAt", -1)])
+        await links_collection.create_index([("userId", 1), ("url", 1)], unique=True)
+        await links_collection.create_index([("userId", 1), ("tags", 1)])
+        
+        # Text index - only create if it doesn't exist
+        try:
+            await links_collection.create_index([
+                ("title", "text"),
+                ("content", "text")
+            ])
+        except OperationFailure as e:
+            if "text index" in str(e).lower():
+                print("ℹ️  Text index already exists, skipping")
+            else:
+                raise
+        
+        print("✅ Database indexes created")
+    except OperationFailure as e:
+        # Ignore "already exists" errors for unique indexes
+        if "already exists" in str(e).lower() or "duplicate" in str(e).lower():
+            print("ℹ️  Some indexes already exist, skipping")
+        else:
+            raise
 
 def get_database():
     """Get database instance"""
