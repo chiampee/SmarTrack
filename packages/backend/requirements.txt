@@ -4,29 +4,24 @@ uvicorn[standard]==0.27.0
 python-multipart==0.0.6
 gunicorn==21.2.0
 
-# MongoDB
-pymongo==4.6.1
+# MongoDB (motor is async, pymongo for sync)
 motor==3.3.2
 
 # Auth0
 python-jose[cryptography]==3.3.0
 python-dotenv==1.0.0
 
-# Content extraction
+# Content extraction (simplified - no lxml)
 beautifulsoup4==4.12.2
-lxml==5.1.0
-readability-lxml==0.8.1
+html5lib==1.1
 requests==2.31.0
 
-# Data validation (using versions with pre-built wheels)
-pydantic==2.9.0
-pydantic-settings==2.5.0
+# Data validation (latest stable with wheels)
+pydantic==2.9.2
+pydantic-settings==2.5.2
 
 # CORS
-fastapi-cors==0.0.6
-
-# Rate limiting
-slowapi==0.1.9
+python-cors==1.0.0
 
 # Testing
 pytest==7.4.3

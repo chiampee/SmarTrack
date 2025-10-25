@@ -1,8 +1,7 @@
 """
-Web content extraction using readability
+Web content extraction using BeautifulSoup
 """
 import requests
-from readability import Document
 from bs4 import BeautifulSoup
 from typing import Dict
 from core.config import settings
@@ -21,18 +20,29 @@ class ContentExtractor:
             response = requests.get(url, headers=headers, timeout=10)
             response.raise_for_status()
             
-            # Extract content
-            doc = Document(response.text)
+            # Parse with BeautifulSoup
+            soup = BeautifulSoup(response.text, 'html5lib')
             
-            # Get clean HTML
-            content = doc.summary()
+            # Extract title
+            title_tag = soup.find('title')
+            title = title_tag.get_text() if title_tag else "Untitled"
             
-            # Parse with BeautifulSoup for text extraction
-            soup = BeautifulSoup(content, 'lxml')
+            # Remove script and style elements
+            for script in soup(["script", "style"]):
+                script.decompose()
+            
+            # Get text content
             text_content = soup.get_text(separator=' ', strip=True)
             
+            # Get main content (simplified extraction)
+            main_content = soup.find('main') or soup.find('article') or soup.find('body')
+            if main_content:
+                content_html = str(main_content)
+            else:
+                content_html = response.text
+            
             # Calculate size
-            content_size = len(content.encode('utf-8'))
+            content_size = len(content_html.encode('utf-8'))
             
             # Check size limit
             if content_size > settings.MAX_PAGE_SIZE_BYTES:
@@ -42,13 +52,13 @@ class ContentExtractor:
                 )
             
             return {
-                "title": doc.title() or "Untitled",
-                "content": content,
+                "title": title.strip(),
+                "content": content_html,
                 "textContent": text_content[:500],  # First 500 chars for excerpt
                 "excerpt": text_content[:200],
                 "contentSize": content_size,
                 "metadata": {
-                    "author": None,  # Can be extracted with metadata parsers
+                    "author": None,
                     "siteName": None,
                     "publishedDate": None
                 }
