@@ -22,6 +22,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             # In production, you should use Auth0's introspection endpoint or validate the signature
             unverified_payload = jwt.decode(
                 token,
+                key="",  # Empty key since we're not verifying
                 options={"verify_signature": False}  # Skip signature verification
             )
             
