@@ -27,12 +27,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenu }) => {
             <Menu className="w-6 h-6" />
           </button>
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
-              <BookOpen className="w-4 h-4 text-white" />
-            </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              SmarTrack
-            </h1>
+            <img 
+              src="/logo.svg" 
+              alt="SmarTrack" 
+              className="h-8 w-auto"
+            />
           </Link>
         </div>
 

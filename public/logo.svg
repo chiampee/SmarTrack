@@ -1,0 +1,21 @@
+<svg width="120" height="32" viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Magnifying glass with document icon -->
+  <g>
+    <!-- Document background (inside magnifying glass) -->
+    <path d="M6 8C6 7.44772 6.44772 7 7 7H11C11.5523 7 12 7.44772 12 8V20C12 20.5523 11.5523 21 11 21H7C6.44772 21 6 20.5523 6 20V8Z" fill="white"/>
+    <path d="M12 10H13V12H12V10Z" fill="#1E40AF"/>
+    <path d="M12 15H14V17H12V15Z" fill="#1E40AF"/>
+    <path d="M12 13H15V14H12V13Z" fill="#1E40AF"/>
+    <path d="M12 11H16V12H12V11Z" fill="#1E40AF"/>
+    
+    <!-- Magnifying glass frame -->
+    <circle cx="9" cy="13" r="9" stroke="white" stroke-width="2" fill="none"/>
+    <line x1="17.0711" y1="19.0711" x2="21.8284" y2="23.8284" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- SmarTrack text -->
+  <text x="28" y="22" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white" letter-spacing="0.5px">
+    SmarTrack
+  </text>
+</svg>
+

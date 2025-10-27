@@ -1,6 +1,6 @@
 import React from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
-import { BookOpen, Shield, Cloud, Zap } from 'lucide-react'
+import { Shield, Cloud, Zap } from 'lucide-react'
 
 const Feature: React.FC<{ icon: React.ReactNode; title: string; description: string }> = ({
   icon,
@@ -24,12 +24,11 @@ export const LoginPage: React.FC = () => {
       <div className="max-w-6xl w-full grid md:grid-cols-2 gap-8 items-center">
         {/* Left side - Branding */}
         <div className="text-center md:text-left">
-          <div className="inline-block p-3 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-6">
-            <BookOpen className="w-12 h-12 text-white" />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Smart Research Tracker
-          </h1>
+          <img 
+            src="/logo.svg" 
+            alt="SmarTrack" 
+            className="h-16 w-auto mx-auto md:mx-0 mb-6"
+          />
           <p className="text-xl text-gray-600 mb-8">
             Organize your research with AI-powered insights. Sign in to access your personal research library from anywhere.
           </p>
