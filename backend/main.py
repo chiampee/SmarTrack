@@ -16,9 +16,11 @@ from core.config import settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
+    # Startup
     await connect_to_mongo()
     print("✅ Connected to MongoDB")
     yield
+    # Shutdown
     await close_mongo_connection()
     print("👋 Closed MongoDB connection")
 
