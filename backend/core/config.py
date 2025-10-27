@@ -14,7 +14,15 @@ class Settings(BaseSettings):
     AUTH0_AUDIENCE: str = "https://api.smartrack.com"
     
     # CORS - Allow all origins for production
-    CORS_ORIGINS: List[str] = ["*"]
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3001",
+        "http://localhost:3000",
+        "http://localhost:5554",
+        "http://localhost:8000",
+        "https://smar-track.vercel.app",
+        "https://smartracker.vercel.app",
+        "https://smartrack.vercel.app",
+    ]
     
     # Usage Limits
     MAX_LINKS_PER_USER: int = 1000

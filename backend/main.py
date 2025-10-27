@@ -37,10 +37,10 @@ app.add_middleware(SecurityHeadersMiddleware)
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if settings.CORS_ORIGINS == ["*"] else settings.CORS_ORIGINS,
-    allow_credentials=False if settings.CORS_ORIGINS == ["*"] else True,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],  # Allow all headers for now
+    allow_headers=["*"],
 )
 
 # Add rate limiting middleware
