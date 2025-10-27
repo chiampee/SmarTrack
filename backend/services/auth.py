@@ -23,7 +23,11 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             unverified_payload = jwt.decode(
                 token,
                 key="",  # Empty key since we're not verifying
-                options={"verify_signature": False}  # Skip signature verification
+                options={
+                    "verify_signature": False,  # Skip signature verification
+                    "verify_aud": False,  # Skip audience verification
+                    "verify_exp": False,  # Skip expiration check for now
+                }
             )
             
             print(f"✅ Decoded payload: {unverified_payload}")
