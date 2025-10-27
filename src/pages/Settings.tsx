@@ -59,6 +59,11 @@ export const Settings: React.FC = () => {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">
+          <img 
+            src="/logo.svg" 
+            alt="SmarTrack" 
+            className="h-12 w-auto mb-4"
+          />
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
           <p className="text-gray-600">Manage your account settings and preferences</p>
         </div>
