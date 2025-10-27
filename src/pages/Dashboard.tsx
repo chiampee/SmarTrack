@@ -150,12 +150,13 @@ export const Dashboard: React.FC = () => {
   // Handle link actions
   const handleLinkAction = async (linkId: string, action: string) => {
     switch (action) {
-      case 'update':
+      case 'update': {
         const linkToEdit = links.find(l => l.id === linkId)
         if (linkToEdit) {
           setEditingLink(linkToEdit)
         }
         break
+      }
       case 'delete':
         try {
           await makeRequest(`/api/links/${linkId}`, {
