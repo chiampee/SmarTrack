@@ -13,6 +13,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     """Get current authenticated user"""
     try:
         token = credentials.credentials
+        print(f"🔑 Received token: {token[:20]}...")  # Log first 20 chars
         
         # Decode JWT without verification (Auth0 management API or introspection endpoint)
         # For production, use Auth0's introspection endpoint or validate signature
@@ -24,12 +25,17 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
                 options={"verify_signature": False}  # Skip signature verification
             )
             
+            print(f"✅ Decoded payload: {unverified_payload}")
+            
             user_id = unverified_payload.get("sub")
             if user_id is None:
+                print("❌ Missing user ID in token")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Could not validate credentials - missing user ID"
                 )
+            
+            print(f"👤 User ID: {user_id}")
             
             # Return user info from token
             return {
@@ -39,17 +45,19 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             }
             
         except JWTError as e:
-            print(f"JWT decode error: {e}")
+            print(f"❌ JWT decode error: {e}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials"
+                detail=f"Could not validate credentials: {str(e)}"
             )
         
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Auth error: {e}")
+        print(f"❌ Auth error: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials"
+            detail=f"Could not validate credentials: {str(e)}"
         )
