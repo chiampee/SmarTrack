@@ -140,7 +140,7 @@ export const Settings: React.FC = () => {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Actions</h3>
                   <div className="space-y-3">
                     <button
-                      onClick={() => logout({ returnTo: window.location.origin })}
+                      onClick={() => logout()}
                       className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                     >
                       Sign Out
