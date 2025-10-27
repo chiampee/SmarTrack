@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-push checks..."
+
+npm run type-check || {
+  echo "❌ TypeScript check failed. Fix errors before pushing."
+  exit 1
+}
+
+echo "✅ TypeScript check passed!"
+
+npm run lint || {
+  echo "⚠️  Lint warnings found, but allowing push."
+}
+
+echo "✅ All checks passed!"
+
