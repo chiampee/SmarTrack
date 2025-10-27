@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark } from 'lucide-react'
+import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut } from 'lucide-react'
+import { useAuth0 } from '@auth0/auth0-react'
 
 interface Category {
   id: string
@@ -16,6 +17,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = [] }) => {
   const location = useLocation()
+  const { isAuthenticated, logout } = useAuth0()
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: BarChart3 },
@@ -117,7 +119,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
           </nav>
 
           {/* Footer */}
-          <div className="p-6 border-t border-gray-200/60 bg-gradient-to-r from-gray-50 to-blue-50/30">
+          <div className="p-6 border-t border-gray-200/60 bg-gradient-to-r from-gray-50 to-blue-50/30 space-y-3">
+            {isAuthenticated && (
+              <button
+                onClick={() => {
+                  logout({ logoutParams: { returnTo: window.location.origin } })
+                  onClose()
+                }}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all duration-300 w-full"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium">Logout</span>
+              </button>
+            )}
             <div className="text-xs text-gray-600 text-center font-medium">
               SmarTrack v1.0
             </div>
