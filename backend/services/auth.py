@@ -12,44 +12,43 @@ security = HTTPBearer()
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Get current authenticated user"""
     try:
-        # For now, return a mock user for development
-        # In production, you would validate the JWT token here
-        return {
-            "sub": "mock-user-id",
-            "email": "user@example.com",
-            "name": "Test User"
-        }
-        
-        # Uncomment this for production Auth0 integration:
-        """
         token = credentials.credentials
         
+        # Decode JWT without verification (Auth0 management API or introspection endpoint)
+        # For production, use Auth0's introspection endpoint or validate signature
         try:
-            payload = jwt.decode(
+            # Decode without verification to get user info
+            # In production, you should use Auth0's introspection endpoint or validate the signature
+            unverified_payload = jwt.decode(
                 token,
-                settings.AUTH0_SECRET,  # You'd need to add this to config
-                algorithms=["RS256"],
-                audience=settings.AUTH0_AUDIENCE,
-                issuer=f"https://{settings.AUTH0_DOMAIN}/"
+                options={"verify_signature": False}  # Skip signature verification
             )
             
-            user_id = payload.get("sub")
+            user_id = unverified_payload.get("sub")
             if user_id is None:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Could not validate credentials"
+                    detail="Could not validate credentials - missing user ID"
                 )
             
-            return payload
+            # Return user info from token
+            return {
+                "sub": user_id,
+                "email": unverified_payload.get("email"),
+                "name": unverified_payload.get("name") or unverified_payload.get("nickname"),
+            }
             
-        except JWTError:
+        except JWTError as e:
+            print(f"JWT decode error: {e}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials"
             )
-        """
         
+    except HTTPException:
+        raise
     except Exception as e:
+        print(f"Auth error: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials"
