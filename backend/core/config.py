@@ -13,16 +13,8 @@ class Settings(BaseSettings):
     AUTH0_DOMAIN: str = "dev-a5hqcneif6ghl018.us.auth0.com"
     AUTH0_AUDIENCE: str = "https://api.smartrack.com"
     
-    # CORS
-    CORS_ORIGINS: List[str] = [
-        "http://localhost:3001",
-        "http://localhost:3000",
-        "http://localhost:5554",
-        "http://localhost:8000",
-        "https://*.railway.app",
-        "https://*.onrender.com",
-        "https://*.vercel.app",
-    ]
+    # CORS - Allow all origins for production
+    CORS_ORIGINS: List[str] = ["*"]
     
     # Usage Limits
     MAX_LINKS_PER_USER: int = 1000
