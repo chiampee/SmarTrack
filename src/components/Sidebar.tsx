@@ -17,7 +17,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = [] }) => {
   const location = useLocation()
-  const { isAuthenticated, logout } = useAuth0()
+  const { user, isAuthenticated, logout } = useAuth0()
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: BarChart3 },
@@ -41,15 +41,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
         }`}
       >
         <div className="flex flex-col h-full">
+          {/* User Profile Section */}
+          {isAuthenticated && user && (
+            <div className="p-4 border-b border-gray-200/60 bg-gradient-to-r from-blue-50 to-purple-50 flex items-center gap-3">
+              <img
+                src={user.picture}
+                alt={user.name}
+                className="w-12 h-12 rounded-full border-2 border-blue-200 shadow-sm"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {user.name || user.email}
+                </p>
+                <p className="text-xs text-gray-600 truncate">
+                  {user.email}
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="lg:hidden p-2 text-gray-600 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
           {/* Header */}
           <div className="p-4 border-b border-gray-200/60 bg-gradient-to-r from-gray-50 to-blue-50/30 flex items-center justify-between">
             <h1 className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Navigation</h1>
-            <button
-              onClick={onClose}
-              className="lg:hidden p-2 text-gray-600 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
 
           {/* Navigation */}

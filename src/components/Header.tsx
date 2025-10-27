@@ -34,45 +34,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenu }) => {
             />
           </Link>
         </div>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center gap-6">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'text-blue-600 border-b-2 border-blue-600 pb-1'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
-
-        <div className="flex items-center gap-4">
-          {isAuthenticated && user ? (
-            <div className="flex items-center gap-3">
-              <img
-                src={user.picture}
-                alt={user.name}
-                className="w-8 h-8 rounded-full border border-gray-200"
-              />
-              <span className="text-sm font-medium text-gray-700 hidden md:block">
-                {user.name || user.email}
-              </span>
-            </div>
-          ) : (
-            <span className="text-sm text-gray-500">Not logged in</span>
-          )}
-        </div>
       </div>
     </header>
   )
 }
+
