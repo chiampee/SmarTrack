@@ -1,21 +1,12 @@
 import React from 'react'
-import { Menu, BookOpen, BarChart3, Settings } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
-import { useAuth0 } from '@auth0/auth0-react'
+import { Menu } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 interface HeaderProps {
   onMenu: () => void
 }
 
 export const Header: React.FC<HeaderProps> = ({ onMenu }) => {
-  const { user, isAuthenticated, logout } = useAuth0()
-  const location = useLocation()
-
-  const navItems = [
-    { path: '/', label: 'Dashboard', icon: BarChart3 },
-    { path: '/settings', label: 'Settings', icon: Settings },
-  ]
-
   return (
     <header className="fixed top-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-sm border-b border-gray-200/60 px-4 py-3 lg:pl-4 lg:pr-6">
       <div className="flex items-center justify-between">
@@ -38,4 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenu }) => {
     </header>
   )
 }
+
+
+
 
