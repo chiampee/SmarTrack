@@ -1,36 +1,35 @@
 {
-  "name": "smartrack",
+  "name": "smartrack-clean",
   "version": "1.0.0",
   "private": true,
-  "description": "AI-Powered Research Management System",
-  "workspaces": [
-    "packages/frontend",
-    "packages/backend",
-    "packages/extension",
-    "packages/shared"
-  ],
+  "description": "AI-Powered Research Management System - Clean Implementation",
+  "type": "module",
   "scripts": {
-    "dev": "npm run dev --workspace=packages/frontend",
-    "dev:backend": "npm run dev --workspace=packages/backend",
-    "dev:frontend": "npm run dev --workspace=packages/frontend",
-    "build": "npm run build --workspaces",
-    "build:frontend": "npm run build --workspace=packages/frontend",
-    "build:backend": "npm run build --workspace=packages/backend",
-    "build:extension": "npm run build --workspace=packages/extension",
-    "lint": "npm run lint --workspaces",
-    "test": "npm run test --workspaces",
-    "test:auth0": "node scripts/test-auth0-integration.js",
-    "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist"
+    "dev": "vite --port 5554",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
-  "keywords": [
-    "research",
-    "ai",
-    "knowledge-management"
-  ],
-  "author": "",
-  "license": "MIT",
+  "dependencies": {
+    "@auth0/auth0-react": "^2.2.4",
+    "lucide-react": "^0.400.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.1"
+  },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "typescript": "^5.3.3"
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.18",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.8"
   }
 }

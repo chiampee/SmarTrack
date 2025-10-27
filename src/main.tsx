@@ -1,58 +1,50 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import './index.css';
-import App from './App';
-import { linkService } from './services/linkService';
-import { AuthProvider } from './contexts/AuthContext';
-import { UserDataProvider } from './contexts/UserDataContext';
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
+import { Auth0Provider } from '@auth0/auth0-react'
+import { BrowserRouter } from 'react-router-dom'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { ToastProvider } from './components/Toast'
 
-console.log('🚀 Smart Research Tracker starting...');
+const auth0Domain = import.meta.env.VITE_AUTH0_DOMAIN
+const auth0ClientId = import.meta.env.VITE_AUTH0_CLIENT_ID
+const auth0Audience = import.meta.env.VITE_AUTH0_AUDIENCE
 
-// Expose linkService to window for testing
-(window as any).linkService = linkService;
-console.log('🔧 linkService exposed to window for testing');
-
-// Simple error handling
-window.addEventListener('error', (event) => {
-  console.error('❌ Global error caught:', event.error);
-});
-
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('❌ Unhandled promise rejection:', event.reason);
-});
-
-// Simple app initialization
-const rootElement = document.getElementById('root');
-if (rootElement) {
-  const root = createRoot(rootElement);
-  root.render(
-    <StrictMode>
-      <AuthProvider>
-        <UserDataProvider>
-          <App />
-        </UserDataProvider>
-      </AuthProvider>
-    </StrictMode>
-  );
-  console.log('✅ App rendered successfully');
+if (!auth0Domain || !auth0ClientId || !auth0Audience) {
+  console.error('Auth0 environment variables are not set.')
+  // Fallback or error handling for missing Auth0 configs
+  // For now, we'll just render a simple error message
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <div>Error: Auth0 configuration missing. Please check your .env file.</div>
+    </React.StrictMode>
+  )
 } else {
-  console.error('❌ Root element not found');
-}
-
-// Listen for extension broadcasts and refresh link list immediately
-try {
-  window.addEventListener('message', (event: MessageEvent) => {
-    if (event?.data?.type === 'SRT_DB_UPDATED') {
-      import('./stores/linkStore').then(({ useLinkStore }) => {
-        useLinkStore.getState().fetchLinks();
-      });
-    }
-  });
-  document.addEventListener('srt-db-updated', () => {
-    import('./stores/linkStore').then(({ useLinkStore }) => {
-      useLinkStore.getState().fetchLinks();
-    });
-  });
-} catch (_) {
-  // ignore
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <ToastProvider>
+          <Auth0Provider
+            domain={auth0Domain}
+            clientId={auth0ClientId}
+            authorizationParams={{
+              redirect_uri: window.location.origin + '/dashboard', // Redirect to dashboard after login
+              audience: auth0Audience,
+              scope: 'openid profile email',
+            }}
+          >
+            <BrowserRouter
+              future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true
+              }}
+            >
+              <App />
+            </BrowserRouter>
+          </Auth0Provider>
+        </ToastProvider>
+      </ErrorBoundary>
+    </React.StrictMode>
+  )
 }
