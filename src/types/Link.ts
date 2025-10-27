@@ -39,7 +39,7 @@ export interface Category {
   isDefault: boolean;
 }
 
-export type ContentType = 'webpage' | 'pdf' | 'article' | 'video' | 'image' | 'document';
+export type ContentType = 'webpage' | 'pdf' | 'article' | 'video' | 'image' | 'document' | 'other';
 
 export interface SearchFilters {
   query?: string;

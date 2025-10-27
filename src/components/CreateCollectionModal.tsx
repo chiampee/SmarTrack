@@ -65,6 +65,7 @@ export const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
       description: description.trim() || undefined,
       color,
       icon,
+      isDefault: false,
     })
 
     // Reset form
