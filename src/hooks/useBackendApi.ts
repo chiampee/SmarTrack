@@ -63,9 +63,6 @@ export const useBackendApi = () => {
           'Content-Type': 'application/json',
           ...options.headers,
         },
-        // Note: AbortSignal.timeout() not available in all browsers yet
-        // Using no timeout in development
-        ...(import.meta.env.PROD ? { signal: AbortSignal.timeout(30000) } : {}),
       })
 
       // Handle different HTTP status codes
