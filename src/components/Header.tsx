@@ -1,5 +1,5 @@
 import React from 'react'
-import { Menu, BookOpen, BarChart3, Settings } from 'lucide-react'
+import { Menu, BookOpen, BarChart3, Settings, LogOut } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 
@@ -55,11 +55,20 @@ export const Header: React.FC<HeaderProps> = ({ onMenu }) => {
               </Link>
             )
           })}
+          {isAuthenticated && (
+            <button
+              onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+              className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          )}
         </nav>
 
         <div className="flex items-center gap-4">
           {isAuthenticated && user ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <img
                 src={user.picture}
                 alt={user.name}
@@ -68,12 +77,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenu }) => {
               <span className="text-sm font-medium text-gray-700 hidden md:block">
                 {user.name || user.email}
               </span>
-              <button
-                onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
-                className="btn btn-secondary text-xs px-3 py-1"
-              >
-                Logout
-              </button>
             </div>
           ) : (
             <span className="text-sm text-gray-500">Not logged in</span>
