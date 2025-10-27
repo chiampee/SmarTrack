@@ -7,8 +7,8 @@ on:
     branches: [main, develop]
 
 jobs:
-  test:
-    name: Test
+  lint-and-test:
+    name: Lint & Test Frontend
     runs-on: ubuntu-latest
     
     steps:
@@ -28,10 +28,22 @@ jobs:
         run: npm run lint
         continue-on-error: true
 
+      - name: Check for TypeScript errors
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+      - name: Verify build
+        run: npm run build
+        env:
+          VITE_AUTH0_DOMAIN: "test-domain"
+          VITE_AUTH0_CLIENT_ID: "test-client"
+          VITE_AUTH0_AUDIENCE: "test-audience"
+          VITE_API_URL: "https://test-api.com"
+
   build-frontend:
     name: Build Frontend
     runs-on: ubuntu-latest
-    needs: test
+    needs: lint-and-test
     
     steps:
       - name: Checkout code
@@ -82,3 +94,12 @@ jobs:
           VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
           VITE_AUTH0_AUDIENCE: ${{ secrets.VITE_AUTH0_AUDIENCE }}
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Deployment Status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed"
+          fi
