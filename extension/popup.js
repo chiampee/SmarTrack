@@ -1,6 +1,6 @@
 /**
  * SmarTrack Chrome Extension Popup
- * Handles link saving with content extraction
+ * Enhanced with selected text capture and metadata extraction
  */
 
 class SmarTrackPopup {
@@ -8,6 +8,8 @@ class SmarTrackPopup {
     this.tags = [];
     this.isProcessing = false;
     this.currentTab = null;
+    this.pageData = {};
+    this.selectedText = '';
     
     this.init();
   }
@@ -18,40 +20,112 @@ class SmarTrackPopup {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       this.currentTab = tab;
       
-      // Populate page info
-      this.populatePageInfo();
+      // Extract page metadata
+      await this.extractPageMetadata();
+      
+      // Check for selected text
+      await this.captureSelectedText();
+      
+      // Populate UI
+      this.populateUI();
       
       // Setup event listeners
       this.setupEventListeners();
       
-      // Auto-fill title if available
-      this.autoFillTitle();
-      
     } catch (error) {
       console.error('Failed to initialize popup:', error);
-      this.showStatus('Failed to load page information', 'error');
+      this.showStatus('Failed to load page', 'error');
     }
   }
 
-  populatePageInfo() {
+  async extractPageMetadata() {
+    try {
+      // Execute content script to extract metadata
+      const [result] = await chrome.scripting.executeScript({
+        target: { tabId: this.currentTab.id },
+        func: () => {
+          const getMetaContent = (name) => {
+            const meta = document.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
+            return meta ? meta.getAttribute('content') : null;
+          };
+
+          return {
+            title: document.title,
+            url: window.location.href,
+            description: getMetaContent('description') || getMetaContent('og:description'),
+            image: getMetaContent('og:image'),
+            favicon: document.querySelector('link[rel="icon"]')?.getAttribute('href') || 
+                     document.querySelector('link[rel="shortcut icon"]')?.getAttribute('href'),
+            selectedText: window.getSelection().toString().trim()
+          };
+        }
+      });
+      
+      this.pageData = result.result || {};
+      
+    } catch (error) {
+      console.error('Failed to extract metadata:', error);
+      this.pageData = {
+        title: this.currentTab.title || 'Untitled',
+        url: this.currentTab.url || '',
+        description: '',
+        favicon: null,
+        selectedText: ''
+      };
+    }
+  }
+
+  async captureSelectedText() {
+    try {
+      // Check if there's selected text
+      const [result] = await chrome.scripting.executeScript({
+        target: { tabId: this.currentTab.id },
+        func: () => window.getSelection().toString().trim()
+      });
+      
+      this.selectedText = result.result || '';
+      
+      if (this.selectedText) {
+        this.showSelectedTextInfo(this.selectedText);
+      }
+    } catch (error) {
+      console.error('Failed to capture selected text:', error);
+      this.selectedText = '';
+    }
+  }
+
+  populateUI() {
+    // Set page preview
     const titleEl = document.getElementById('pageTitle');
     const urlEl = document.getElementById('pageUrl');
+    const faviconEl = document.getElementById('favicon');
     
-    if (this.currentTab) {
-      titleEl.textContent = this.currentTab.title || 'Untitled';
-      urlEl.textContent = this.currentTab.url || 'Unknown URL';
-      
-      // Auto-fill title in form
-      const titleInput = document.getElementById('title');
-      titleInput.value = this.currentTab.title || '';
+    titleEl.textContent = this.pageData.title || this.currentTab.title || 'Untitled';
+    urlEl.textContent = this.pageData.url || this.currentTab.url || '';
+    
+    // Set favicon
+    if (this.pageData.favicon) {
+      const faviconUrl = this.pageData.favicon.startsWith('http') 
+        ? this.pageData.favicon 
+        : new URL(this.pageData.favicon, this.pageData.url).href;
+      faviconEl.style.backgroundImage = `url(${faviconUrl})`;
+      faviconEl.style.backgroundSize = 'cover';
+      faviconEl.style.backgroundPosition = 'center';
+    }
+    
+    // Auto-fill title in form
+    document.getElementById('title').value = this.pageData.title || this.currentTab.title || '';
+    
+    // Auto-fill description
+    if (this.pageData.description) {
+      document.getElementById('description').value = this.pageData.description;
     }
   }
 
-  autoFillTitle() {
-    const titleInput = document.getElementById('title');
-    if (this.currentTab && this.currentTab.title) {
-      titleInput.value = this.currentTab.title;
-    }
+  showSelectedTextInfo(text) {
+    const infoEl = document.getElementById('selectedTextInfo');
+    infoEl.textContent = `📝 Using selected text (${text.length} chars)`;
+    infoEl.classList.remove('hidden');
   }
 
   setupEventListeners() {
@@ -66,8 +140,11 @@ class SmarTrackPopup {
     tagInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        this.addTag(tagInput.value.trim());
-        tagInput.value = '';
+        const tag = tagInput.value.trim();
+        if (tag) {
+          this.addTag(tag);
+          tagInput.value = '';
+        }
       }
     });
 
@@ -117,119 +194,129 @@ class SmarTrackPopup {
       this.showLoading(true);
       this.hideStatus();
       
+      // Get auth token first
+      const token = await this.getAuthToken();
+      
+      if (!token) {
+        throw new Error('Please log in at https://smar-track.vercel.app first');
+      }
+      
       // Get form data
-      const formData = this.getFormData();
+      const linkData = this.getLinkData();
       
-      // Extract page content
-      const pageData = await this.extractPageData();
-      
-      // Combine data
-      const linkData = {
-        ...pageData,
-        ...formData,
-        url: this.currentTab.url,
-        tabId: this.currentTab.id
-      };
-
       // Save to backend
-      await this.saveToBackend(linkData);
+      await this.saveLink(linkData, token);
       
-      this.showStatus('Link saved successfully!', 'success');
+      this.showStatus('✅ Link saved successfully!', 'success');
       
       // Auto-close after delay
       setTimeout(() => {
         window.close();
-      }, 1500);
+      }, 800);
       
     } catch (error) {
       console.error('Save failed:', error);
-      this.showStatus(`Failed to save: ${error.message}`, 'error');
+      this.showStatus(`❌ ${error.message}`, 'error');
     } finally {
       this.isProcessing = false;
       this.showLoading(false);
     }
   }
 
-  getFormData() {
+  getLinkData() {
+    const url = this.pageData.url || this.currentTab.url;
+    
+    // Get content text - prefer selected text, fallback to page metadata description
+    const content = this.selectedText || this.pageData.description || '';
+    
     return {
+      url: url,
       title: document.getElementById('title').value.trim(),
       description: document.getElementById('description').value.trim(),
+      content: content, // Full text content (selected text or description)
       category: document.getElementById('category').value,
-      priority: document.getElementById('priority').value,
-      tags: this.tags
+      tags: this.tags,
+      contentType: this.detectContentType(url),
+      thumbnail: this.pageData.image || null,
+      favicon: this.pageData.favicon || null,
+      isFavorite: false,
+      isArchived: false
     };
   }
 
-  async extractPageData() {
+  detectContentType(url) {
+    if (!url) return 'webpage';
+    const urlLower = url.toLowerCase();
+    
+    if (urlLower.includes('.pdf')) return 'pdf';
+    if (urlLower.includes('youtube.com') || urlLower.includes('vimeo.com')) return 'video';
+    if (urlLower.match(/\.(jpg|jpeg|png|gif|webp)$/)) return 'image';
+    if (urlLower.includes('arxiv.org') || urlLower.includes('scholar.google')) return 'article';
+    if (urlLower.includes('.doc') || urlLower.includes('.docx')) return 'document';
+    
+    return 'webpage';
+  }
+
+  async saveLink(linkData) {
     try {
-      // Inject content script to extract page data
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: this.currentTab.id },
-        function: this.extractPageContent
-      });
+      // Get auth token
+      const token = await this.getAuthToken();
       
-      return results[0]?.result || {};
-    } catch (error) {
-      console.error('Failed to extract page data:', error);
-      return {};
-    }
-  }
-
-  // This function runs in the page context
-  extractPageContent() {
-    const getMetaContent = (name) => {
-      const meta = document.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
-      return meta ? meta.getAttribute('content') : null;
-    };
-
-    return {
-      title: document.title,
-      description: getMetaContent('description') || getMetaContent('og:description'),
-      image: getMetaContent('og:image'),
-      siteName: getMetaContent('og:site_name'),
-      author: getMetaContent('author'),
-      publishedDate: getMetaContent('article:published_time'),
-      pageText: document.body.innerText.substring(0, 1000) // First 1000 chars
-    };
-  }
-
-  async saveToBackend(linkData) {
-    try {
-      // Try to save to backend API
+      if (!token) {
+        throw new Error('Please log in to SmarTrack first at https://smar-track.vercel.app');
+      }
+      
+      // Save to backend
       const backendApi = new BackendApiService();
-      await backendApi.saveLink(linkData);
-    } catch (error) {
-      console.error('Backend save failed, falling back to local storage:', error);
+      await backendApi.saveLink(linkData, token);
       
-      // Fallback to local storage
-      await this.saveToLocalStorage(linkData);
+    } catch (error) {
+      console.error('Backend save failed:', error);
+      throw error;
     }
   }
 
-  async saveToLocalStorage(linkData) {
-    // Store in Chrome extension storage
-    const link = {
-      id: Date.now().toString(),
-      ...linkData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    // Get existing links
-    const result = await chrome.storage.local.get(['links']);
-    const links = result.links || [];
-    
-    // Add new link
-    links.push(link);
-    
-    // Save back to storage
-    await chrome.storage.local.set({ links });
-    
-    // Notify background script
-    chrome.runtime.sendMessage({
-      type: 'LINK_SAVED',
-      link: link
-    });
+  async getAuthToken() {
+    try {
+      // First, try to get from Chrome storage (sync'd from web app)
+      const result = await chrome.storage.local.get(['authToken']);
+      
+      if (result.authToken) {
+        console.log('✅ Got token from Chrome storage');
+        return result.authToken;
+      }
+      
+      // Try to get from localStorage (if web app is open)
+      // We need to request it from the content script
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const injectionResults = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            return localStorage.getItem('authToken');
+          }
+        });
+        
+        const token = injectionResults[0]?.result;
+        
+        if (token) {
+          console.log('✅ Got token from page localStorage');
+          // Store it in Chrome storage for next time
+          await chrome.storage.local.set({ authToken: token });
+          return token;
+        }
+      } catch (e) {
+        console.log('Could not get token from page:', e);
+      }
+      
+      // No token found
+      console.log('❌ No auth token found');
+      return null;
+      
+    } catch (error) {
+      console.error('Failed to get auth token:', error);
+      return null;
+    }
   }
 
   showLoading(show) {

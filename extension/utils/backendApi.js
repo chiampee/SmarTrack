@@ -5,10 +5,8 @@
 
 class BackendApiService {
   constructor() {
-    // Use localhost for development, production URL for deployed
-    this.baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:8000'
-      : 'https://smartrack-back.onrender.com';
+    // Always use production backend
+    this.baseUrl = 'https://smartrack-back.onrender.com';
     this.authToken = null;
   }
 
@@ -109,22 +107,41 @@ class BackendApiService {
   }
 
   // Save link to backend
-  async saveLink(linkData) {
-    return this.makeRequest('/api/links', {
-      method: 'POST',
-      body: JSON.stringify({
-        url: linkData.url,
-        title: linkData.title || '',
-        description: linkData.description || '',
-        category: linkData.category || 'Research',
-        tags: linkData.tags || [],
-        contentType: this.detectContentType(linkData.url),
-        thumbnail: linkData.image || null,
-        favicon: linkData.favicon || null,
-        isFavorite: false,
-        isArchived: false
-      }),
-    });
+  async saveLink(linkData, token) {
+    const url = `${this.baseUrl}/api/links`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: linkData.url,
+          title: linkData.title || '',
+          description: linkData.description || '',
+          content: linkData.content || '',
+          category: linkData.category || 'research',
+          tags: linkData.tags || [],
+          contentType: linkData.contentType || 'webpage',
+          thumbnail: linkData.thumbnail || null,
+          favicon: linkData.favicon || null,
+          isFavorite: linkData.isFavorite || false,
+          isArchived: linkData.isArchived || false
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to save link:', error);
+      throw error;
+    }
   }
 
   // Detect content type from URL
