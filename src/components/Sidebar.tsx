@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, Star, Clock, Archive, Library } from 'lucide-react'
+import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, Star, Clock, Archive, Library, Edit2, Trash2 } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useBackendApi } from '../hooks/useBackendApi'
 
@@ -34,6 +34,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
     }
     load()
   }, [isAuthenticated, makeRequest])
+
+  const renameCollection = async (id: string, currentName: string) => {
+    const newName = prompt('Rename collection', currentName)
+    if (!newName || newName.trim() === '' || newName === currentName) return
+    try {
+      await makeRequest(`/api/collections/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ name: newName.trim() }),
+      })
+      setCollections(prev => prev.map(c => (c.id === id ? { ...c, name: newName.trim() } : c)))
+    } catch (e) {
+      alert('Failed to rename collection')
+    }
+  }
+
+  const deleteCollection = async (id: string, name: string) => {
+    if (!confirm(`Delete collection "${name}"? This won't delete the links; they will appear under All Links.`)) return
+    try {
+      await makeRequest(`/api/collections/${id}`, { method: 'DELETE' })
+      setCollections(prev => prev.filter(c => c.id !== id))
+      onClose()
+    } catch (e) {
+      alert('Failed to delete collection')
+    }
+  }
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: BarChart3 },
@@ -177,24 +202,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       const to = `/?collection=${encodeURIComponent(c.id)}`
                       const active = isActivePath(to)
                       return (
-                        <Link
-                          key={c.id}
-                          to={to}
-                          onClick={onClose}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
-                            active ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          <Library className="w-4 h-4" />
-                          <span className="flex-1 text-left truncate">{c.name}</span>
-                          {typeof c.linkCount === 'number' && (
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
-                            }`}>
-                              {c.linkCount}
-                            </span>
-                          )}
-                        </Link>
+                        <div key={c.id} className={`group flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                          active ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-gray-700 hover:bg-gray-100'
+                        }`}>
+                          <Link to={to} onClick={onClose} className="flex items-center gap-3 flex-1 min-w-0">
+                            <Library className="w-4 h-4" />
+                            <span className="flex-1 text-left truncate">{c.name}</span>
+                            {typeof c.linkCount === 'number' && (
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
+                              }`}>
+                                {c.linkCount}
+                              </span>
+                            )}
+                          </Link>
+                          <button
+                            aria-label="Rename"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 text-gray-600"
+                            onClick={() => renameCollection(c.id, c.name)}
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            aria-label="Delete"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 text-red-600"
+                            onClick={() => deleteCollection(c.id, c.name)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       )
                     })}
                   </div>
