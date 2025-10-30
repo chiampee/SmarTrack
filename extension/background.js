@@ -13,6 +13,19 @@ class SmarTrackBackground {
     
     // Setup event listeners
     this.setupEventListeners();
+
+    // Setup periodic retry for offline save queue
+    if (chrome.alarms) {
+      chrome.alarms.create('srt-retry-saves', { periodInMinutes: 1 });
+      chrome.alarms.onAlarm.addListener((alarm) => {
+        if (alarm.name === 'srt-retry-saves') {
+          this.retryPendingSaves();
+        }
+      });
+    }
+
+    // Immediate retry on startup
+    this.retryPendingSaves();
   }
 
   setupEventListeners() {
@@ -41,6 +54,55 @@ class SmarTrackBackground {
       chrome.action.onClicked.addListener(() => {
         chrome.tabs.create({ url: 'https://smar-track.vercel.app/dashboard' });
       });
+    }
+  }
+
+  async retryPendingSaves() {
+    try {
+      const { pendingSaves = [] } = await chrome.storage.local.get(['pendingSaves']);
+      if (!pendingSaves.length) return;
+      console.log(`[SRT] Retrying ${pendingSaves.length} pending saves`);
+
+      const tokenData = await chrome.storage.local.get(['authToken']);
+      const token = tokenData?.authToken;
+      if (!token) return; // wait until authenticated
+
+      const baseUrl = 'https://smartrack-back.onrender.com';
+
+      const remaining = [];
+      for (const item of pendingSaves) {
+        try {
+          const res = await fetch(`${baseUrl}/api/links`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(item),
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        } catch (e) {
+          remaining.push(item); // keep for next retry
+        }
+      }
+
+      await chrome.storage.local.set({ pendingSaves: remaining });
+      if (remaining.length === 0) {
+        console.log('[SRT] All pending saves synced');
+      }
+    } catch (e) {
+      console.error('[SRT] Retry queue failed', e);
+    }
+  }
+
+  async enqueueSave(linkData) {
+    try {
+      const { pendingSaves = [] } = await chrome.storage.local.get(['pendingSaves']);
+      pendingSaves.push(linkData);
+      await chrome.storage.local.set({ pendingSaves });
+      console.log('[SRT] Enqueued save (offline queue). Size:', pendingSaves.length);
+    } catch (e) {
+      console.error('[SRT] Failed to enqueue save', e);
     }
   }
 
@@ -157,6 +219,12 @@ class SmarTrackBackground {
         case 'GET_LINKS':
           const links = await this.getLinks();
           sendResponse({ success: true, links: links });
+          break;
+
+        case 'ENQUEUE_SAVE':
+          await this.enqueueSave(request.linkData);
+          this.retryPendingSaves();
+          sendResponse({ success: true });
           break;
           
         default:

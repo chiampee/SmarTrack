@@ -526,6 +526,15 @@ class SmarTrackPopup {
           errorMsg = 'Please log in to SmarTrack';
         } else if (error.message.includes('Network') || error.message.includes('Failed to fetch')) {
           errorMsg = 'Connection error. Check your internet';
+          // enqueue offline save
+          try {
+            const payload = this.getLinkData();
+            chrome.runtime.sendMessage({ type: 'ENQUEUE_SAVE', linkData: payload });
+            document.body.classList.add('toast-only');
+            this.showToast('Saved offline. Will retry.', 'error');
+            setTimeout(() => window.close(), 1500);
+            return;
+          } catch(_) {}
         } else if (error.message.includes('500')) {
           errorMsg = 'Server error. Please try again';
         } else if (error.message.includes('already exists') || error.message.includes('duplicate')) {
