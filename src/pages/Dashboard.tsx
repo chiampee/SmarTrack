@@ -81,6 +81,11 @@ export const Dashboard: React.FC = () => {
     const categoryParam = params.get('category')
     const createCollection = params.get('createCollection')
 
+    // Persist current view for future visits
+    try {
+      localStorage.setItem('dashboard:lastView', location.search || '?')
+    } catch (_) { void 0 }
+
     if (!filter && !collection && !categoryParam) {
       setSelectedCollectionId(null)
       setActiveFilterId(null)
@@ -137,6 +142,42 @@ export const Dashboard: React.FC = () => {
       setShowCreateCollectionModal(true)
     }
   }, [location.search, links])
+
+  // Restore last view if user opens dashboard without params
+  useEffect(() => {
+    if (!location.search) {
+      try {
+        const last = localStorage.getItem('dashboard:lastView')
+        if (last) {
+          navigate({ pathname: '/', search: last }, { replace: true })
+        }
+      } catch (_) { void 0 }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Keyboard shortcuts for power users
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target && (e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') {
+        return
+      }
+      // Focus search
+      if (e.key === '/') {
+        e.preventDefault()
+        const input = document.querySelector('input[placeholder="Search your research library..."]') as HTMLInputElement | null
+        input?.focus()
+        return
+      }
+      // Quick filters
+      if (e.key.toLowerCase() === 'g') navigate('/?')
+      if (e.key.toLowerCase() === 'f') navigate('/?filter=favorites')
+      if (e.key.toLowerCase() === 'r') navigate('/?filter=recent')
+      if (e.key.toLowerCase() === 'a') navigate('/?filter=archived')
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [navigate])
 
   // Load collections and categories from backend
   useEffect(() => {
@@ -644,21 +685,23 @@ export const Dashboard: React.FC = () => {
             {/* Links Section */}
             {loading ? (
               <div className="card p-6">
-                <div className="flex items-center justify-center h-64">
-                  <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                    {slowLoading && (
-                      <>
-                        <p className="text-sm text-gray-500">This is taking longer than usual…</p>
-                        <button
-                          onClick={() => window.location.reload()}
-                          className="btn btn-secondary text-sm"
-                        >
-                          Refresh
-                        </button>
-                      </>
-                    )}
-                  </div>
+                <div className="space-y-4">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="animate-pulse flex items-center gap-4">
+                      <div className="h-10 w-10 rounded bg-slate-200" />
+                      <div className="flex-1">
+                        <div className="h-3 bg-slate-200 rounded w-2/3 mb-2" />
+                        <div className="h-3 bg-slate-100 rounded w-1/3" />
+                      </div>
+                      <div className="h-6 w-16 rounded bg-slate-100" />
+                    </div>
+                  ))}
+                  {slowLoading && (
+                    <div className="pt-2 text-center">
+                      <p className="text-sm text-gray-500 mb-2">This is taking longer than usual…</p>
+                      <button onClick={() => window.location.reload()} className="btn btn-secondary text-sm">Refresh</button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : filteredLinks.length === 0 ? (
