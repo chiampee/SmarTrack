@@ -49,6 +49,12 @@ class SmarTrackPopup {
         // Show main view
         this.showMainView();
       }
+
+      // Focus title for quick editing
+      setTimeout(() => {
+        const titleInput = document.getElementById('title');
+        if (titleInput) titleInput.focus();
+      }, 0);
       
     } catch (error) {
       // Silently handle error
@@ -58,12 +64,14 @@ class SmarTrackPopup {
 
   async loadCategories() {
     try {
-      const result = await chrome.storage.sync.get(['settings']);
+      const result = await chrome.storage.sync.get(['settings', 'lastCategory']);
       const defaults = ['research', 'articles', 'tools', 'references', 'other'];
       const stored = result?.settings?.categories;
       this.categories = Array.isArray(stored) && stored.length ? stored : defaults;
+      this.lastCategory = result?.lastCategory || null;
     } catch (_) {
       this.categories = ['research', 'articles', 'tools', 'references', 'other'];
+      this.lastCategory = null;
     }
   }
 
@@ -93,19 +101,16 @@ class SmarTrackPopup {
       select.appendChild(opt);
     });
 
-    // Divider-like option is not supported, so just append Custom…
+    // Custom… option
     const customOpt = document.createElement('option');
     customOpt.value = '__custom__';
     customOpt.textContent = 'Custom…';
     select.appendChild(customOpt);
 
-    // Select value if provided
-    if (selectedValue && this.categories.includes(selectedValue)) {
-      select.value = selectedValue;
-    } else {
-      // default to first category
-      select.value = this.categories[0] || 'research';
-    }
+    // Determine selection priority: explicit > lastCategory > default
+    const fallback = this.categories[0] || 'research';
+    const toSelect = selectedValue || this.lastCategory || fallback;
+    select.value = this.categories.includes(toSelect) ? toSelect : fallback;
   }
 
   showCustomCategoryRow(show) {
@@ -366,6 +371,8 @@ class SmarTrackPopup {
         } else {
           this.renderCategories(value);
         }
+        // remember last category
+        try { await chrome.storage.sync.set({ lastCategory: value }); } catch(_) {}
         this.showCustomCategoryRow(false);
       });
       // Enter key to save
@@ -388,6 +395,17 @@ class SmarTrackPopup {
 
     // Start background token checker
     this.startBackgroundTokenCheck();
+
+    // Keyboard shortcut: Cmd/Ctrl + Enter to save
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        const form = document.getElementById('linkForm');
+        if (form) {
+          e.preventDefault();
+          this.handleSave();
+        }
+      }
+    });
   }
 
   startBackgroundTokenCheck() {
@@ -456,6 +474,9 @@ class SmarTrackPopup {
       // Hide form immediately, show loading
       this.showLoading(true);
       this.hideStatus();
+      // Disable save button and show progress text
+      const saveBtn = document.getElementById('saveBtn');
+      if (saveBtn) { saveBtn.setAttribute('disabled', 'true'); saveBtn.textContent = 'Saving…'; }
       
       // Get auth token first
       const token = await this.getAuthToken();
@@ -466,6 +487,8 @@ class SmarTrackPopup {
       
       // Get form data
       const linkData = this.getLinkData();
+      // Remember last category
+      try { await chrome.storage.sync.set({ lastCategory: linkData.category }); } catch(_) {}
       
       // Save to backend
       const result = await this.saveLink(linkData, token);
@@ -520,6 +543,8 @@ class SmarTrackPopup {
     } finally {
       this.isProcessing = false;
       this.showLoading(false);
+      const saveBtn = document.getElementById('saveBtn');
+      if (saveBtn) { saveBtn.removeAttribute('disabled'); saveBtn.textContent = 'Save Link'; }
     }
   }
 
