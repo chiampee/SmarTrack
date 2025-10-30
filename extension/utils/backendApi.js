@@ -134,12 +134,17 @@ class BackendApiService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP ${response.status}`);
+        const errorMsg = errorData.detail || `HTTP ${response.status}`;
+        
+        // Create a user-friendly error without stack trace
+        const userError = new Error(errorMsg);
+        // Don't log the full stack trace
+        throw userError;
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Failed to save link:', error);
+      // Silently rethrow without logging technical details
       throw error;
     }
   }

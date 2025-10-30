@@ -13,9 +13,6 @@ class SmarTrackBackground {
     
     // Setup event listeners
     this.setupEventListeners();
-    
-    // Initialize storage
-    this.initStorage();
   }
 
   setupEventListeners() {
@@ -38,6 +35,13 @@ class SmarTrackBackground {
     chrome.storage.onChanged.addListener((changes, namespace) => {
       this.handleStorageChange(changes, namespace);
     });
+
+    // Browser action click: open dashboard quickly
+    if (chrome.action && chrome.action.onClicked) {
+      chrome.action.onClicked.addListener(() => {
+        chrome.tabs.create({ url: 'https://smar-track.vercel.app/dashboard' });
+      });
+    }
   }
 
   handleInstall(details) {
@@ -46,6 +50,23 @@ class SmarTrackBackground {
     if (details.reason === 'install') {
       // First time installation
       this.setupDefaultSettings();
+      // Create context menu for quick dashboard access
+      if (chrome.contextMenus && chrome.contextMenus.create) {
+        try {
+          chrome.contextMenus.create({
+            id: 'smartrack-open-dashboard',
+            title: 'Open SmarTrack Dashboard',
+            contexts: ['action']
+          });
+          chrome.contextMenus.onClicked.addListener((info) => {
+            if (info.menuItemId === 'smartrack-open-dashboard') {
+              chrome.tabs.create({ url: 'https://smar-track.vercel.app/dashboard' });
+            }
+          });
+        } catch (e) {
+          // Ignore if already exists
+        }
+      }
     } else if (details.reason === 'update') {
       // Extension updated
       this.handleUpdate();
@@ -79,6 +100,19 @@ class SmarTrackBackground {
 
   async injectContentScript(tabId) {
     try {
+      // Get tab info to check URL
+      const tab = await chrome.tabs.get(tabId);
+      
+      // Skip Chrome system pages (chrome://, chrome-extension://, edge://, etc.)
+      const url = tab.url || '';
+      if (url.startsWith('chrome://') || 
+          url.startsWith('chrome-extension://') || 
+          url.startsWith('edge://') ||
+          url.startsWith('about:') ||
+          url.startsWith('moz-extension://')) {
+        return;
+      }
+      
       // Check if content script is already injected
       const results = await chrome.scripting.executeScript({
         target: { tabId: tabId },
@@ -93,7 +127,12 @@ class SmarTrackBackground {
         });
       }
     } catch (error) {
-      console.error('[SRT] Failed to inject content script:', error);
+      // Silently ignore errors for system pages
+      if (error.message && error.message.includes('Cannot access')) {
+        console.log('[SRT] Skipping system page:', error.message);
+      } else {
+        console.error('[SRT] Failed to inject content script:', error);
+      }
     }
   }
 

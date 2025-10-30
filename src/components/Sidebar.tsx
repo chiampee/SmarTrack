@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut } from 'lucide-react'
+import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, Star, Clock, Archive, Library } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 
 interface Category {
@@ -23,6 +23,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
     { path: '/', label: 'Dashboard', icon: BarChart3 },
     { path: '/settings', label: 'Settings', icon: Settings },
   ]
+
+  const isActivePath = (to: string) => {
+    return location.pathname + location.search === to
+  }
 
   return (
     <>
@@ -91,6 +95,61 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 </Link>
               )
             })}
+
+            {/* Collections Quick Filters */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Collections</h3>
+              <div className="space-y-1">
+                <Link
+                  to="/?"
+                  onClick={onClose}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                    isActivePath('/?')
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <Library className="w-4 h-4" />
+                  <span>Show All Links</span>
+                </Link>
+                <Link
+                  to="/?filter=favorites"
+                  onClick={onClose}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                    isActivePath('/?filter=favorites')
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <Star className="w-4 h-4" />
+                  <span>Favorites</span>
+                </Link>
+                <Link
+                  to="/?filter=recent"
+                  onClick={onClose}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                    isActivePath('/?filter=recent')
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <Clock className="w-4 h-4" />
+                  <span>Recent (Last 7 days)</span>
+                </Link>
+                <Link
+                  to="/?filter=archived"
+                  onClick={onClose}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                    isActivePath('/?filter=archived')
+                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <Archive className="w-4 h-4" />
+                  <span>Archived</span>
+                </Link>
+              </div>
+            </div>
 
             {/* Categories Section */}
             {categories.length > 0 && (

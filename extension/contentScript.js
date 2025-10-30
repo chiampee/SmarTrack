@@ -3,24 +3,28 @@
  * Handles page content extraction and communication with popup
  */
 
-class SmarTrackContentScript {
-  constructor() {
-    this.isInitialized = false;
-    this.init();
-  }
+// Prevent multiple initializations
+if (typeof window.smartrackContentScript === 'undefined') {
+  window.smartrackContentScript = true;
 
-  init() {
-    if (this.isInitialized) return;
-    this.isInitialized = true;
+  class SmarTrackContentScript {
+    constructor() {
+      this.isInitialized = false;
+      this.init();
+    }
 
-    console.log('[SRT] Content script loaded on:', window.location.href);
-    
-    // Setup message listeners
-    this.setupMessageListeners();
-    
-    // Initialize IndexedDB for local storage
-    this.initIndexedDB();
-  }
+    init() {
+      if (this.isInitialized) return;
+      this.isInitialized = true;
+
+      console.log('[SRT] Content script loaded on:', window.location.href);
+      
+      // Setup message listeners
+      this.setupMessageListeners();
+      
+      // Initialize IndexedDB for local storage
+      this.initIndexedDB();
+    }
 
   setupMessageListeners() {
     // Listen for messages from popup
@@ -213,3 +217,4 @@ class SmarTrackContentScript {
 
 // Initialize content script
 new SmarTrackContentScript();
+}

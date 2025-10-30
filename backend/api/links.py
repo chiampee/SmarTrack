@@ -268,6 +268,56 @@ async def create_link(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Temporary debug-only endpoint to verify deletion flow works end-to-end
+@router.post("/links/test-delete")
+async def test_delete_link(
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    if not getattr(settings, "DEBUG", False):
+        raise HTTPException(status_code=404, detail="Not found")
+
+    try:
+        user_id = current_user["sub"]
+        # Create a temporary link
+        temp_doc = {
+            "userId": user_id,
+            "url": "https://example.com/temp-delete-test",
+            "title": "TEMP_DELETE_TEST",
+            "description": None,
+            "thumbnail": None,
+            "favicon": None,
+            "category": "test",
+            "tags": [],
+            "contentType": "webpage",
+            "isFavorite": False,
+            "isArchived": False,
+            "collectionId": None,
+            "content": None,
+            "createdAt": datetime.utcnow(),
+            "updatedAt": datetime.utcnow(),
+            "clickCount": 0,
+        }
+
+        insert_result = await db.links.insert_one(temp_doc)
+
+        # Now delete it using the real delete criteria
+        from bson import ObjectId
+        delete_result = await db.links.delete_one({
+            "_id": ObjectId(str(insert_result.inserted_id)),
+            "userId": user_id,
+        })
+
+        return {
+            "createdId": str(insert_result.inserted_id),
+            "deletedCount": delete_result.deleted_count,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.put("/links/{link_id}", response_model=LinkResponse)
 async def update_link(
     link_id: str,
@@ -325,13 +375,32 @@ async def delete_link(
     """Delete a link"""
     try:
         from bson import ObjectId
-        result = await db.links.delete_one({"_id": ObjectId(link_id), "userId": current_user["sub"]})
-        
+        user_id = current_user["sub"]
+        try:
+            object_id = ObjectId(link_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid link id")
+
+        result = await db.links.delete_one({"_id": object_id, "userId": user_id})
+
         if result.deleted_count == 0:
+            # Helpful logging for troubleshooting mismatched userId vs stored doc
+            try:
+                doc = await db.links.find_one({"_id": object_id})
+                if doc:
+                    # Found by id but not user; indicate ownership issue
+                    raise HTTPException(status_code=403, detail="Not allowed to delete this link")
+            except HTTPException:
+                raise
+            except Exception:
+                # If lookup fails for any reason, fall through to 404
+                pass
             raise HTTPException(status_code=404, detail="Link not found")
-        
-        return {"message": "Link deleted successfully"}
-        
+
+        return {"message": "Link deleted successfully", "deletedCount": result.deleted_count}
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

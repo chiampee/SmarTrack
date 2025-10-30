@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Plus, Grid, List, Star, Download, Loader2 } from 'lucide-react'
 import { CollectionSidebar } from '../components/CollectionSidebar'
 import { LinkCard } from '../components/LinkCard'
@@ -18,6 +19,7 @@ export const Dashboard: React.FC = () => {
   const [links, setLinks] = useState<Link[]>([])
   const [filteredLinks, setFilteredLinks] = useState<Link[]>([])
   const [loading, setLoading] = useState(false)
+  const [slowLoading, setSlowLoading] = useState(false)
   const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set())
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingLink, setEditingLink] = useState<Link | null>(null)
@@ -35,6 +37,8 @@ export const Dashboard: React.FC = () => {
   const { computeCategories, setCategories } = useCategories()
   const [collections, setCollections] = useState<Collection[]>([])
   const [categories, setCategoriesState] = useState<Category[]>([])
+  const location = useLocation()
+  const navigate = useNavigate()
 
   // Load links from backend
   useEffect(() => {
@@ -46,7 +50,10 @@ export const Dashboard: React.FC = () => {
 
       try {
         setLoading(true)
+        setSlowLoading(false)
+        const slowTimer = setTimeout(() => setSlowLoading(true), 6000)
         const data = await getLinks()
+        clearTimeout(slowTimer)
         setLinks(data || [])
         setFilteredLinks(data || [])
         
@@ -58,12 +65,65 @@ export const Dashboard: React.FC = () => {
         // Silently fail - already handled in getLinks
       } finally {
         setLoading(false)
+        setSlowLoading(false)
       }
     }
     
     fetchLinks()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated])
+
+  // React to sidebar query params: filter or collection
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const filter = params.get('filter')
+    const collection = params.get('collection')
+
+    if (!filter && !collection) {
+      setSelectedCollectionId(null)
+      setActiveFilterId(null)
+      setFilteredLinks(links)
+      return
+    }
+
+    if (collection) {
+      setSelectedCollectionId(collection)
+      setActiveFilterId(null)
+      setFilteredLinks(links.filter(l => l.collectionId === collection))
+      return
+    }
+
+    switch (filter) {
+      case 'favorites': {
+        setSelectedCollectionId(null)
+        setActiveFilterId('favorites')
+        setFilteredLinks(links.filter(l => l.isFavorite))
+        break
+      }
+      case 'recent': {
+        setSelectedCollectionId(null)
+        setActiveFilterId('recent')
+        const sevenDaysAgo = new Date()
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+        const recentLinks = links
+          .filter(l => new Date(l.createdAt) >= sevenDaysAgo)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        setFilteredLinks(recentLinks)
+        break
+      }
+      case 'archived': {
+        setSelectedCollectionId(null)
+        setActiveFilterId('archived')
+        setFilteredLinks(links.filter(l => l.isArchived))
+        break
+      }
+      default: {
+        setSelectedCollectionId(null)
+        setActiveFilterId(null)
+        setFilteredLinks(links)
+      }
+    }
+  }, [location.search, links])
 
   // Load collections and categories from backend
   useEffect(() => {
@@ -565,30 +625,27 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-          {/* Sidebar (Collections) */}
-          <div className="hidden xl:block">
-            <CollectionSidebar
-              collections={collections.map(c => ({
-                ...c,
-                linkCount: links.filter(l => l.collectionId === c.id).length
-              }))}
-              categories={categories}
-              onCollectionSelect={handleCollectionSelect}
-              onCreateCollection={() => setShowCreateCollectionModal(true)}
-              onDropOnCollection={handleDropOnCollection}
-              activeCollectionId={selectedCollectionId}
-              activeFilterId={activeFilterId}
-            />
-          </div>
-
-          {/* Right content */}
-          <div className="xl:col-span-4">
+        <div className="grid grid-cols-1 gap-6">
+          {/* Content */}
+          <div>
             {/* Links Section */}
             {loading ? (
               <div className="card p-6">
                 <div className="flex items-center justify-center h-64">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                    {slowLoading && (
+                      <>
+                        <p className="text-sm text-gray-500">This is taking longer than usual…</p>
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="btn btn-secondary text-sm"
+                        >
+                          Refresh
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : filteredLinks.length === 0 ? (

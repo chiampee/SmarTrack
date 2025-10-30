@@ -147,3 +147,5 @@ Currently using mock authentication for development:
 For production, Auth0 integration is ready but commented out in `backend/services/auth.py`.
 
 
+
+

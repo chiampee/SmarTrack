@@ -4,7 +4,7 @@ import { parseError, logError, withErrorHandling, ErrorType } from '../utils/err
 import { validateApiResponse } from '../utils/validation'
 import { Link } from '../types/Link'
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5554'
 
 export interface UserStats {
   linksUsed: number
@@ -55,7 +55,10 @@ export const useBackendApi = () => {
     
     try {
       setIsLoading(true)
-      
+      // Apply a default timeout to avoid infinite loading UI
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000)
+
       const response = await fetch(url, {
         ...options,
         headers: {
@@ -63,7 +66,9 @@ export const useBackendApi = () => {
           'Content-Type': 'application/json',
           ...options.headers,
         },
+        signal: controller.signal,
       })
+      clearTimeout(timeoutId)
 
       // Handle different HTTP status codes
       if (!response.ok) {
