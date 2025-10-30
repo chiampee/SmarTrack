@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, Star, Clock, Archive, Library } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
+import { useBackendApi } from '../hooks/useBackendApi'
 
 interface Category {
   id: string
@@ -18,6 +19,21 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = [] }) => {
   const location = useLocation()
   const { user, isAuthenticated, logout } = useAuth0()
+  const { makeRequest } = useBackendApi()
+  const [collections, setCollections] = useState<Array<{ id: string; name: string; linkCount?: number }>>([])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        if (!isAuthenticated) return
+        const cols = await makeRequest<Array<{ id: string; name: string }>>('/api/collections')
+        setCollections(cols || [])
+      } catch (e) {
+        // ignore
+      }
+    }
+    load()
+  }, [isAuthenticated, makeRequest])
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: BarChart3 },
@@ -149,6 +165,46 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   <span>Archived</span>
                 </Link>
               </div>
+              {/* My Collections */}
+              {collections.length > 0 && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">My Collections</h4>
+                    <Link to="/?createCollection=1" onClick={onClose} className="text-xs text-blue-600 hover:underline">+ New</Link>
+                  </div>
+                  <div className="space-y-1">
+                    {collections.map((c) => {
+                      const to = `/?collection=${encodeURIComponent(c.id)}`
+                      const active = isActivePath(to)
+                      return (
+                        <Link
+                          key={c.id}
+                          to={to}
+                          onClick={onClose}
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                            active ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <Library className="w-4 h-4" />
+                          <span className="flex-1 text-left truncate">{c.name}</span>
+                          {typeof c.linkCount === 'number' && (
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
+                            }`}>
+                              {c.linkCount}
+                            </span>
+                          )}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+              {collections.length === 0 && (
+                <Link to="/?createCollection=1" onClick={onClose} className="mt-3 inline-flex items-center gap-2 px-3 py-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg">
+                  <span>+ Create New Project</span>
+                </Link>
+              )}
             </div>
 
             {/* Categories Section */}
@@ -175,20 +231,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       return 'text-gray-600 bg-gray-100'
                     }
 
+                    const to = `/?category=${encodeURIComponent(category.name)}`
+                    const active = isActivePath(to)
                     return (
-                      <button
+                      <Link
                         key={`${category.id}-${index}-${category.linkCount}`}
+                        to={to}
                         onClick={onClose}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors group"
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors group ${
+                          active ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-gray-700 hover:bg-gray-100'
+                        }`}
                       >
                         <div className={`p-1 rounded ${getColor()}`}>
                           {getIcon()}
                         </div>
                         <span className="flex-1 text-left">{category.name}</span>
-                        <span className="px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full text-xs font-medium group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                          active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700'
+                        }`}>
                           {category.linkCount}
                         </span>
-                      </button>
+                      </Link>
                     )
                   })}
                 </div>

@@ -73,13 +73,15 @@ export const Dashboard: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated])
 
-  // React to sidebar query params: filter or collection
+  // React to sidebar query params: filter, collection, category
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const filter = params.get('filter')
     const collection = params.get('collection')
+    const categoryParam = params.get('category')
+    const createCollection = params.get('createCollection')
 
-    if (!filter && !collection) {
+    if (!filter && !collection && !categoryParam) {
       setSelectedCollectionId(null)
       setActiveFilterId(null)
       setFilteredLinks(links)
@@ -118,10 +120,21 @@ export const Dashboard: React.FC = () => {
         break
       }
       default: {
-        setSelectedCollectionId(null)
-        setActiveFilterId(null)
-        setFilteredLinks(links)
+        if (categoryParam) {
+          setSelectedCollectionId(null)
+          setActiveFilterId(null)
+          const catLower = categoryParam.toLowerCase()
+          setFilteredLinks(links.filter(l => (l.category || '').toLowerCase() === catLower))
+        } else {
+          setSelectedCollectionId(null)
+          setActiveFilterId(null)
+          setFilteredLinks(links)
+        }
       }
+    }
+
+    if (createCollection === '1') {
+      setShowCreateCollectionModal(true)
     }
   }, [location.search, links])
 
