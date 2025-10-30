@@ -137,9 +137,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               )
             })}
 
-            {/* Collections Quick Filters */}
+            {/* Projects Quick Filters */}
             <div className="mt-6 pt-4 border-t border-gray-200">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Collections</h3>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Projects</h3>
               <div className="space-y-1">
                 <Link
                   to="/?"
@@ -190,11 +190,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   <span>Archived</span>
                 </Link>
               </div>
-              {/* My Collections */}
+              {/* My Projects */}
               {collections.length > 0 && (
                 <div className="mt-4">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">My Collections</h4>
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">My Projects</h4>
                     <Link to="/?createCollection=1" onClick={onClose} className="text-xs text-blue-600 hover:underline">+ New</Link>
                   </div>
                   <div className="space-y-1">
