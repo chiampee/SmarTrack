@@ -107,7 +107,7 @@
       background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
       border-radius: 12px;
       padding: 14px;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
       display: flex;
       gap: 14px;
       align-items: start;
@@ -152,6 +152,46 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .dupe {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #9a3412;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+
+    .dupe h4 {
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dupe ul {
+      list-style: none;
+      display: grid;
+      gap: 6px;
+    }
+
+    .dupe .row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dupe .open {
+      background: #fff;
+      border: 1px solid #f59e0b;
+      color: #9a3412;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
     }
 
     .form-group {
@@ -451,6 +491,11 @@
           <div class="preview-title" id="pageTitle">Loading...</div>
           <div class="preview-url" id="pageUrl">Loading...</div>
         </div>
+      </div>
+
+      <div id="duplicatesPanel" class="dupe hidden">
+        <h4>Possible duplicates found</h4>
+        <ul id="dupeList"></ul>
       </div>
 
       <div class="selected-text-info" id="selectedTextInfo"></div>

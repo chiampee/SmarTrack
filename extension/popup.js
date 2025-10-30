@@ -215,6 +215,13 @@ class SmarTrackPopup {
         };
       }
       
+      // Fetch potential duplicates (best-effort)
+      try {
+        const api = new BackendApiService();
+        const dupes = await api.searchDuplicates(this.pageData.url || this.currentTab.url || '');
+        this.renderDuplicates(dupes || []);
+      } catch (_) {}
+      
       // Page data extracted successfully
       
     } catch (error) {
@@ -228,6 +235,40 @@ class SmarTrackPopup {
         selectedText: ''
       };
     }
+  }
+
+  renderDuplicates(dupes) {
+    try {
+      const panel = document.getElementById('duplicatesPanel');
+      const list = document.getElementById('dupeList');
+      if (!panel || !list) return;
+      if (!Array.isArray(dupes) || dupes.length === 0) {
+        panel.classList.add('hidden');
+        return;
+      }
+      panel.classList.remove('hidden');
+      list.innerHTML = '';
+      dupes.slice(0, 3).forEach((d) => {
+        const li = document.createElement('li');
+        li.className = 'row';
+        const title = document.createElement('div');
+        title.style.flex = '1';
+        title.style.minWidth = '0';
+        title.style.whiteSpace = 'nowrap';
+        title.style.overflow = 'hidden';
+        title.style.textOverflow = 'ellipsis';
+        title.textContent = d.title || d.url;
+        const open = document.createElement('button');
+        open.className = 'open';
+        open.textContent = 'Open';
+        open.addEventListener('click', () => {
+          try { chrome.tabs.create({ url: d.url }); } catch(_) {}
+        });
+        li.appendChild(title);
+        li.appendChild(open);
+        list.appendChild(li);
+      });
+    } catch(_) {}
   }
 
   async captureSelectedText() {
