@@ -352,6 +352,8 @@ class SmarTrackPopup {
           this.showCustomCategoryRow(true);
         } else {
           this.showCustomCategoryRow(false);
+          // remember last category on change
+          try { chrome.storage.sync.set({ lastCategory: categorySelect.value }); } catch(_) {}
         }
       });
     }
@@ -406,6 +408,14 @@ class SmarTrackPopup {
         }
       }
     });
+
+    // Quick Save button
+    const quickSaveBtn = document.getElementById('quickSaveBtn');
+    if (quickSaveBtn) {
+      quickSaveBtn.addEventListener('click', () => {
+        this.handleSave();
+      });
+    }
   }
 
   startBackgroundTokenCheck() {
