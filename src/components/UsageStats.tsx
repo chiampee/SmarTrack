@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Database, HardDrive, BarChart3, AlertTriangle } from 'lucide-react'
 import { useBackendApi, UserStats } from '../hooks/useBackendApi'
 import { useToast } from './Toast'
@@ -12,52 +12,55 @@ export const UsageStats: React.FC = () => {
   const { getUserStats, isAuthenticated } = useBackendApi()
   const toast = useToast()
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      if (!isAuthenticated) {
-        setLoading(false)
-        setError('Please log in to view usage statistics')
-        return
-      }
-
-      try {
-        setLoading(true)
-        
-        // Set a timeout for the stats API
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Stats request timeout')), 5000)
-        )
-        
-        const userStats = await Promise.race([
-          getUserStats(),
-          timeoutPromise
-        ]) as UserStats
-        
-        setStats(userStats)
-        setError(null)
-      } catch (err) {
-        // Fail gracefully with fallback data
-        const errorMessage = isAppError(err) ? getUserFriendlyMessage(err) : 'Stats temporarily unavailable'
-        console.error('Failed to fetch usage stats:', err)
-        setError(null) // Don't show error to user
-        
-        // Fallback to zero stats
-        setStats({
-          linksUsed: 0,
-          linksLimit: 100,
-          storageUsed: 0,
-          storageLimit: 5 * 1024 * 1024,
-          linksRemaining: 100,
-          storageRemaining: 5 * 1024 * 1024,
-          averagePerLink: 0,
-        })
-      } finally {
-        setLoading(false)
-      }
+  const fetchStats = useCallback(async () => {
+    if (!isAuthenticated) {
+      setLoading(false)
+      setError('Please log in to view usage statistics')
+      return
     }
 
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Set a timeout for the stats API
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Stats request timeout')), 10000)
+      )
+      
+      const userStats = await Promise.race([
+        getUserStats(),
+        timeoutPromise
+      ]) as UserStats
+      
+      setStats(userStats)
+      setError(null)
+    } catch (err) {
+      // Log detailed error for debugging
+      const errorMessage = isAppError(err) ? getUserFriendlyMessage(err) : 'Stats temporarily unavailable'
+      console.error('Failed to fetch usage stats:', err)
+      
+      // Show error to user with option to retry
+      setError(errorMessage)
+      
+      // Fallback to zero stats but still show error
+      setStats({
+        linksUsed: 0,
+        linksLimit: 100,
+        storageUsed: 0,
+        storageLimit: 5 * 1024 * 1024,
+        linksRemaining: 100,
+        storageRemaining: 5 * 1024 * 1024,
+        averagePerLink: 0,
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [getUserStats, isAuthenticated])
+
+  useEffect(() => {
     fetchStats()
-  }, [getUserStats, isAuthenticated, toast])
+  }, [fetchStats])
 
   const formatBytes = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes'
@@ -86,11 +89,17 @@ export const UsageStats: React.FC = () => {
   if (error) {
     return (
       <div className="card p-6">
-        <div className="flex items-center gap-3 text-red-600">
+        <div className="flex items-center gap-3 text-red-600 mb-3">
           <AlertTriangle className="w-5 h-5" />
           <span className="font-medium">Failed to load usage stats</span>
         </div>
-        <p className="text-red-500 text-sm mt-2">{error}</p>
+        <p className="text-red-500 text-sm mb-4">{error}</p>
+        <button
+          onClick={fetchStats}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+        >
+          Retry
+        </button>
       </div>
     )
   }
