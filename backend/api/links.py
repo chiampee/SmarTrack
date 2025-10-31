@@ -139,6 +139,52 @@ async def get_links(
             }
         raise HTTPException(status_code=500, detail=str(e))
 
+# IMPORTANT: This route MUST be defined before /links/{link_id} to avoid
+# FastAPI matching "search" as a link_id parameter. FastAPI matches routes
+# in the order they are defined, so specific routes must come before parameterized ones.
+@router.get("/links/search")
+async def search_links(
+    q: str = Query(..., description="Search query"),
+    category: Optional[str] = Query(None),
+    tags: Optional[str] = Query(None),
+    contentType: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Search links"""
+    try:
+        # Build search query
+        search_query = {
+            "userId": current_user["sub"],
+            "$or": [
+                {"title": {"$regex": q, "$options": "i"}},
+                {"description": {"$regex": q, "$options": "i"}},
+                {"url": {"$regex": q, "$options": "i"}}
+            ]
+        }
+        
+        if category:
+            search_query["category"] = category
+        
+        if tags:
+            tag_list = [tag.strip() for tag in tags.split(",")]
+            search_query["tags"] = {"$in": tag_list}
+        
+        if contentType:
+            search_query["contentType"] = contentType
+        
+        links = await db.links.find(search_query).limit(20).to_list(20)
+        
+        # Convert ObjectId to string
+        for link in links:
+            link["id"] = str(link["_id"])
+            del link["_id"]
+        
+        return {"links": links}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/links/{link_id}", response_model=LinkResponse)
 async def get_link(
     link_id: str,
@@ -148,7 +194,15 @@ async def get_link(
     """Get a specific link"""
     try:
         from bson import ObjectId
-        link = await db.links.find_one({"_id": ObjectId(link_id), "userId": current_user["sub"]})
+        from bson.errors import InvalidId
+        
+        # Validate ObjectId format before using it
+        try:
+            object_id = ObjectId(link_id)
+        except (InvalidId, ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid link id format")
+        
+        link = await db.links.find_one({"_id": object_id, "userId": current_user["sub"]})
         
         if not link:
             raise HTTPException(status_code=404, detail="Link not found")
@@ -158,6 +212,8 @@ async def get_link(
         
         return link
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -328,9 +384,16 @@ async def update_link(
     """Update a link"""
     try:
         from bson import ObjectId
+        from bson.errors import InvalidId
         
         user_id = current_user["sub"]
         print(f"🔗 Updating link: {link_id} for user: {user_id}")
+        
+        # Validate ObjectId format before using it
+        try:
+            object_id = ObjectId(link_id)
+        except (InvalidId, ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid link id format")
         
         # Build update data
         update_data = {"updatedAt": datetime.utcnow()}
@@ -342,7 +405,7 @@ async def update_link(
                     print(f"   → Setting collectionId to: {value}")
         
         result = await db.links.update_one(
-            {"_id": ObjectId(link_id), "userId": user_id},
+            {"_id": object_id, "userId": user_id},
             {"$set": update_data}
         )
         
@@ -353,7 +416,7 @@ async def update_link(
         print(f"✅ Link updated successfully: {link_id}")
         
         # Return updated link
-        link = await db.links.find_one({"_id": ObjectId(link_id)})
+        link = await db.links.find_one({"_id": object_id})
         link["id"] = str(link["_id"])
         del link["_id"]
         
@@ -375,11 +438,14 @@ async def delete_link(
     """Delete a link"""
     try:
         from bson import ObjectId
+        from bson.errors import InvalidId
         user_id = current_user["sub"]
+        
+        # Validate ObjectId format before using it
         try:
             object_id = ObjectId(link_id)
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid link id")
+        except (InvalidId, ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid link id format")
 
         result = await db.links.delete_one({"_id": object_id, "userId": user_id})
 
@@ -418,49 +484,6 @@ async def delete_all_links(
             "message": f"Deleted {result.deleted_count} links successfully",
             "deletedCount": result.deleted_count
         }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/links/search")
-async def search_links(
-    q: str = Query(..., description="Search query"),
-    category: Optional[str] = Query(None),
-    tags: Optional[str] = Query(None),
-    contentType: Optional[str] = Query(None),
-    current_user: dict = Depends(get_current_user),
-    db = Depends(get_database)
-):
-    """Search links"""
-    try:
-        # Build search query
-        search_query = {
-            "userId": current_user["sub"],
-            "$or": [
-                {"title": {"$regex": q, "$options": "i"}},
-                {"description": {"$regex": q, "$options": "i"}},
-                {"url": {"$regex": q, "$options": "i"}}
-            ]
-        }
-        
-        if category:
-            search_query["category"] = category
-        
-        if tags:
-            tag_list = [tag.strip() for tag in tags.split(",")]
-            search_query["tags"] = {"$in": tag_list}
-        
-        if contentType:
-            search_query["contentType"] = contentType
-        
-        links = await db.links.find(search_query).limit(20).to_list(20)
-        
-        # Convert ObjectId to string
-        for link in links:
-            link["id"] = str(link["_id"])
-            del link["_id"]
-        
-        return {"links": links}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
