@@ -9,9 +9,11 @@ import { EditLinkModal } from '../components/EditLinkModal'
 import { CreateCollectionModal } from '../components/CreateCollectionModal'
 import { FiltersDropdown } from '../components/FiltersDropdown'
 import { useBackendApi } from '../hooks/useBackendApi'
+import { useBulkOperations } from '../hooks/useBulkOperations'
 import { useToast } from '../components/Toast'
 import { useCategories } from '../context/CategoriesContext'
 import { Link, Collection, Category } from '../types/Link'
+import { logger } from '../utils/logger'
 
 export const Dashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -61,7 +63,7 @@ export const Dashboard: React.FC = () => {
         const computedCategories = computeCategories(data || [])
         setCategories(computedCategories)
       } catch (error) {
-        console.error('Failed to fetch links:', error)
+        logger.error('Failed to fetch links', { component: 'Dashboard', action: 'fetchLinks' }, error as Error)
         // Silently fail - already handled in getLinks
       } finally {
         setLoading(false)
@@ -89,14 +91,16 @@ export const Dashboard: React.FC = () => {
     if (!filter && !collection && !categoryParam) {
       setSelectedCollectionId(null)
       setActiveFilterId(null)
-      setFilteredLinks(links)
+      // Exclude archived links from default view
+      setFilteredLinks(links.filter(l => !l.isArchived))
       return
     }
 
     if (collection) {
       setSelectedCollectionId(collection)
       setActiveFilterId(null)
-      setFilteredLinks(links.filter(l => l.collectionId === collection))
+      // Exclude archived links from collection view
+      setFilteredLinks(links.filter(l => l.collectionId === collection && !l.isArchived))
       return
     }
 
@@ -104,7 +108,8 @@ export const Dashboard: React.FC = () => {
       case 'favorites': {
         setSelectedCollectionId(null)
         setActiveFilterId('favorites')
-        setFilteredLinks(links.filter(l => l.isFavorite))
+        // Exclude archived links from favorites view
+        setFilteredLinks(links.filter(l => l.isFavorite && !l.isArchived))
         break
       }
       case 'recent': {
@@ -113,7 +118,7 @@ export const Dashboard: React.FC = () => {
         const sevenDaysAgo = new Date()
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
         const recentLinks = links
-          .filter(l => new Date(l.createdAt) >= sevenDaysAgo)
+          .filter(l => new Date(l.createdAt) >= sevenDaysAgo && !l.isArchived)
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         setFilteredLinks(recentLinks)
         break
@@ -129,11 +134,15 @@ export const Dashboard: React.FC = () => {
           setSelectedCollectionId(null)
           setActiveFilterId(null)
           const catLower = categoryParam.toLowerCase()
-          setFilteredLinks(links.filter(l => (l.category || '').toLowerCase() === catLower))
+          // Exclude archived links from category view (unless already archived)
+          setFilteredLinks(links.filter(l => 
+            (l.category || '').toLowerCase() === catLower && !l.isArchived
+          ))
         } else {
           setSelectedCollectionId(null)
           setActiveFilterId(null)
-          setFilteredLinks(links)
+          // Exclude archived links from default view
+          setFilteredLinks(links.filter(l => !l.isArchived))
         }
       }
     }
@@ -192,7 +201,7 @@ export const Dashboard: React.FC = () => {
         setCategoriesState(cats || [])
         setCollections(cols || [])
       } catch (e) {
-        console.error('Failed to load metadata:', e)
+        logger.error('Failed to load metadata', { component: 'Dashboard', action: 'fetchMetadata' }, e as Error)
       }
     }
     fetchMeta()
@@ -205,7 +214,15 @@ export const Dashboard: React.FC = () => {
       return
     }
 
+    // Don't apply default filtering if viewing archived (let URL param handler do it)
+    if (activeFilterId === 'archived') {
+      return
+    }
+
     let filtered = links
+
+    // Exclude archived links from default view (unless explicitly viewing archived)
+    filtered = filtered.filter(link => !link.isArchived)
 
     // Search filter
     if (searchQuery) {
@@ -258,7 +275,24 @@ export const Dashboard: React.FC = () => {
     }
 
     setFilteredLinks(filtered)
-  }, [links, searchQuery, filters, selectedCollectionId])
+  }, [links, searchQuery, filters, selectedCollectionId, activeFilterId])
+
+  // Use bulk operations hook
+  const {
+    loading: bulkLoading,
+    bulkArchive: handleBulkArchive,
+    bulkFavorite: handleBulkFavorite,
+    bulkDelete: handleBulkDelete,
+  } = useBulkOperations({
+    links,
+    setLinks,
+    selectedLinks,
+    clearSelection,
+    makeRequest,
+  })
+
+  // Use bulk loading state
+  const isLoading = loading || bulkLoading
 
   // Handle link actions
   const handleLinkAction = async (linkId: string, action: string) => {
@@ -278,7 +312,7 @@ export const Dashboard: React.FC = () => {
           setLinks(links.filter(l => l.id !== linkId))
           toast.success('Link deleted')
         } catch (error) {
-          console.error('Failed to delete link:', error)
+          logger.error('Failed to delete link', { component: 'Dashboard', action: 'deleteLink', metadata: { linkId } }, error as Error)
           toast.error('Failed to delete link. Please try again.')
         }
         break
@@ -298,7 +332,7 @@ export const Dashboard: React.FC = () => {
             toast.success('Favorite updated')
           }
         } catch (error) {
-          console.error('Failed to toggle favorite:', error)
+          logger.error('Failed to toggle favorite', { component: 'Dashboard', action: 'toggleFavorite', metadata: { linkId } }, error as Error)
           toast.error('Failed to update favorite. Please try again.')
         }
         break
@@ -318,7 +352,7 @@ export const Dashboard: React.FC = () => {
             toast.success('Archive status updated')
           }
         } catch (error) {
-          console.error('Failed to toggle archive:', error)
+          logger.error('Failed to toggle archive', { component: 'Dashboard', action: 'toggleArchive', metadata: { linkId } }, error as Error)
           toast.error('Failed to update archive status. Please try again.')
         }
         break
@@ -345,7 +379,7 @@ export const Dashboard: React.FC = () => {
       ))
       toast.success('Link updated successfully!')
     } catch (error) {
-      console.error('Failed to update link:', error)
+      logger.error('Failed to update link', { component: 'Dashboard', action: 'updateLink', metadata: { linkId } }, error as Error)
       toast.error('Failed to update link. Please try again.')
     }
   }
@@ -379,7 +413,8 @@ export const Dashboard: React.FC = () => {
     if (id === 'all') {
       setSelectedCollectionId(null)
       setActiveFilterId(null)
-      setFilteredLinks(links)
+      // Exclude archived links from default view
+      setFilteredLinks(links.filter(l => !l.isArchived))
       return
     }
     
@@ -387,19 +422,20 @@ export const Dashboard: React.FC = () => {
     if (id === 'favorites') {
       setSelectedCollectionId(null)
       setActiveFilterId('favorites')
-      const favoriteLinks = links.filter(l => l.isFavorite)
+      // Exclude archived links from favorites view
+      const favoriteLinks = links.filter(l => l.isFavorite && !l.isArchived)
       setFilteredLinks(favoriteLinks)
       return
     }
     if (id === 'recent') {
       setSelectedCollectionId(null)
       setActiveFilterId('recent')
-      // Show links from the last 7 days, sorted by most recent first
+      // Show links from the last 7 days, sorted by most recent first (excluding archived)
       const sevenDaysAgo = new Date()
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
       
       const recentLinks = links
-        .filter(l => new Date(l.createdAt) >= sevenDaysAgo)
+        .filter(l => new Date(l.createdAt) >= sevenDaysAgo && !l.isArchived)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       
       setFilteredLinks(recentLinks)
@@ -416,7 +452,8 @@ export const Dashboard: React.FC = () => {
     // Filter by collectionId
     setSelectedCollectionId(id)
     setActiveFilterId(null)
-    const collectionLinks = links.filter(l => l.collectionId === id)
+    // Exclude archived links from collection view
+    const collectionLinks = links.filter(l => l.collectionId === id && !l.isArchived)
     setFilteredLinks(collectionLinks)
   }
 
@@ -705,27 +742,92 @@ export const Dashboard: React.FC = () => {
                 </div>
               </div>
             ) : filteredLinks.length === 0 ? (
-              <div className="card p-6">
-                <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-                  <div className="text-6xl mb-4">🔍</div>
-                  <h3 className="text-lg font-medium mb-2">No links found</h3>
-                  <p className="text-sm">Start by adding your first research link</p>
-                  <button 
-                    onClick={() => setShowAddModal(true)}
-                    className="btn btn-primary mt-4"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Your First Link
-                  </button>
+              <div className="card p-12">
+                <div className="flex flex-col items-center justify-center text-center">
+                  {links.length === 0 ? (
+                    <>
+                      <div className="text-7xl mb-6 animate-bounce">📚</div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">Welcome to SmarTrack!</h3>
+                      <p className="text-gray-600 mb-6 max-w-md">
+                        Your personal research library. Start collecting, organizing, and discovering knowledge.
+                      </p>
+                      <button 
+                        onClick={() => setShowAddModal(true)}
+                        className="btn btn-primary px-6 py-3 text-base font-semibold hover:scale-105 transition-transform"
+                      >
+                        <Plus className="w-5 h-5 mr-2" />
+                        Add Your First Link
+                      </button>
+                      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 text-left max-w-2xl">
+                        <div className="p-4 bg-blue-50 rounded-lg">
+                          <div className="text-2xl mb-2">🔖</div>
+                          <div className="font-semibold text-sm mb-1">Save Links</div>
+                          <div className="text-xs text-gray-600">Capture articles, videos, and resources</div>
+                        </div>
+                        <div className="p-4 bg-purple-50 rounded-lg">
+                          <div className="text-2xl mb-2">🏷️</div>
+                          <div className="font-semibold text-sm mb-1">Organize</div>
+                          <div className="text-xs text-gray-600">Tag and categorize your research</div>
+                        </div>
+                        <div className="p-4 bg-green-50 rounded-lg">
+                          <div className="text-2xl mb-2">🔍</div>
+                          <div className="font-semibold text-sm mb-1">Discover</div>
+                          <div className="text-xs text-gray-600">Search and find what you need</div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-6xl mb-4">🔍</div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">No links match your search</h3>
+                      <p className="text-gray-600 mb-6">
+                        {searchQuery ? (
+                          <>Try adjusting your search terms or filters</>
+                        ) : activeFilterId === 'archived' ? (
+                          <>You haven't archived any links yet</>
+                        ) : (
+                          <>Clear your filters to see all links</>
+                        )}
+                      </p>
+                      <div className="flex gap-3">
+                        {searchQuery && (
+                          <button
+                            onClick={() => setSearchQuery('')}
+                            className="btn btn-secondary"
+                          >
+                            Clear Search
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => {
+                            setSearchQuery('')
+                            handleCollectionSelect('all')
+                            setFilters({
+                              category: '',
+                              dateRange: 'all_time',
+                              tags: [],
+                              contentType: ''
+                            })
+                          }}
+                          className="btn btn-primary"
+                        >
+                          Show All Links
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ) : (
               <div>
                 {selectedLinks.size > 0 && (
-                  <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl shadow-sm">
+                  <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl shadow-sm animate-in slide-in-from-top-2">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-semibold text-blue-800">
-                        {selectedLinks.size} link{selectedLinks.size > 1 ? 's' : ''} selected
+                      <span className="text-sm font-semibold text-blue-800 flex items-center gap-2">
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-bold">
+                          {selectedLinks.size}
+                        </span>
+                        link{selectedLinks.size > 1 ? 's' : ''} selected
                       </span>
                       <div className="flex gap-2">
                         <button onClick={clearSelection} className="btn btn-secondary text-sm">
@@ -738,37 +840,64 @@ export const Dashboard: React.FC = () => {
                     </div>
                     <div className="flex gap-2 flex-wrap">
                       <button 
-                        onClick={() => {
-                          // Bulk archive
-                          Array.from(selectedLinks).forEach(linkId => {
-                            handleLinkAction(linkId, 'toggleArchive')
-                          })
-                        }}
-                        className="px-3 py-1.5 bg-white text-gray-700 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-all"
+                        onClick={handleBulkArchive}
+                        disabled={isLoading}
+                        className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg text-sm font-medium hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm hover:shadow"
                       >
-                        📦 Archive
+                        {isLoading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                            <span>Archiving...</span>
+                          </>
+                        ) : (
+                          <>
+                            📦 Archive
+                          </>
+                        )}
                       </button>
                       <button 
-                        onClick={() => {
-                          // Bulk favorite
-                          Array.from(selectedLinks).forEach(linkId => {
-                            handleLinkAction(linkId, 'toggleFavorite')
-                          })
-                        }}
-                        className="px-3 py-1.5 bg-white text-gray-700 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-all"
+                        onClick={handleBulkFavorite}
+                        disabled={isLoading}
+                        className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg text-sm font-medium hover:bg-yellow-50 hover:border-yellow-300 hover:text-yellow-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm hover:shadow"
                       >
-                        ⭐ Favorite
+                        {isLoading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-gray-300 border-t-yellow-600 rounded-full animate-spin"></div>
+                            <span>Favoriting...</span>
+                          </>
+                        ) : (
+                          <>
+                            ⭐ Favorite
+                          </>
+                        )}
                       </button>
                       <button 
-                        onClick={() => {
+                        onClick={async () => {
                           // Bulk delete with confirmation
                           if (confirm(`Delete ${selectedLinks.size} selected links?`)) {
-                            Array.from(selectedLinks).forEach(linkId => {
-                              handleLinkAction(linkId, 'delete')
-                            })
+                            try {
+                              setLoading(true)
+                              const linkIds = Array.from(selectedLinks)
+                              await Promise.all(
+                                linkIds.map(linkId => 
+                                  makeRequest(`/api/links/${linkId}`, {
+                                    method: 'DELETE',
+                                  })
+                                )
+                              )
+                              setLinks(links.filter(l => !selectedLinks.has(l.id)))
+                              clearSelection()
+                              toast.success(`${linkIds.length} link(s) deleted successfully`)
+                            } catch (error) {
+                              console.error('Failed to delete links:', error)
+                              toast.error('Failed to delete some links. Please try again.')
+                            } finally {
+                              setLoading(false)
+                            }
                           }
                         }}
-                        className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-300 rounded-lg text-sm hover:bg-red-100 transition-all"
+                        disabled={loading}
+                        className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-300 rounded-lg text-sm hover:bg-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         🗑️ Delete
                       </button>
@@ -808,21 +937,27 @@ export const Dashboard: React.FC = () => {
                             ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4'
                             : 'space-y-4'
                           }>
-                            {links.map(link => (
-                              <LinkCard
+                            {links.map((link, index) => (
+                              <div
                                 key={link.id}
-                                link={link}
-                                viewMode={viewMode}
-                                isSelected={selectedLinks.has(link.id)}
-                                onSelect={() => toggleSelection(link.id)}
-                                onAction={handleLinkAction}
-                                onDragStart={(e) => {
-                                  e.dataTransfer.setData('text/plain', link.id)
-                                  e.dataTransfer.effectAllowed = 'move'
+                                style={{
+                                  animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`
                                 }}
+                              >
+                                <LinkCard
+                                  link={link}
+                                  viewMode={viewMode}
+                                  isSelected={selectedLinks.has(link.id)}
+                                  onSelect={() => toggleSelection(link.id)}
+                                  onAction={handleLinkAction}
+                                  onDragStart={(e) => {
+                                    e.dataTransfer.setData('text/plain', link.id)
+                                    e.dataTransfer.effectAllowed = 'move'
+                                  }}
                                 onDragEnd={handleDragEnd}
                                 collections={collections}
                               />
+                              </div>
                             ))}
                           </div>
                         </div>

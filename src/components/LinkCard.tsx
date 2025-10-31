@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, memo } from 'react'
+import { logger } from '../utils/logger'
 import { 
   ExternalLink, 
   Tag, 
@@ -24,7 +25,7 @@ interface LinkCardProps {
   collections?: Collection[]
 }
 
-export const LinkCard: React.FC<LinkCardProps> = ({ 
+const LinkCardComponent: React.FC<LinkCardProps> = ({ 
   link, 
   viewMode, 
   isSelected, 
@@ -41,12 +42,15 @@ export const LinkCard: React.FC<LinkCardProps> = ({
     setShowActions(false)
   }
 
+  const [copied, setCopied] = useState(false)
+  
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(link.url)
-      // You could add a toast notification here
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      console.error('Failed to copy URL:', error)
+      logger.error('Failed to copy URL', { component: 'LinkCard', metadata: { url: link.url } }, error as Error)
     }
   }
 
@@ -83,8 +87,8 @@ export const LinkCard: React.FC<LinkCardProps> = ({
       if (viewMode === 'grid') {
         return (
           <div 
-            className={`card p-5 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-move ${
-              isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-br from-blue-50 to-purple-50' : ''
+            className={`card p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-move group ${
+              isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-br from-blue-50 to-purple-50 scale-[1.02]' : ''
             }`}
             draggable
             onDragStart={onDragStart}
@@ -126,10 +130,21 @@ export const LinkCard: React.FC<LinkCardProps> = ({
                   </button>
                   <button
                     onClick={copyToClipboard}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
-                    <Copy className="w-4 h-4" />
-                    Copy URL
+                    {copied ? (
+                      <>
+                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                          <span className="text-white text-xs">✓</span>
+                        </div>
+                        <span className="text-green-600 font-medium">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        <span>Copy URL</span>
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={() => handleAction('update')}
@@ -225,8 +240,8 @@ export const LinkCard: React.FC<LinkCardProps> = ({
       // List view
       return (
         <div 
-          className={`card p-5 transition-all duration-300 hover:shadow-lg cursor-move ${
-            isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-r from-blue-50 to-purple-50' : ''
+          className={`card p-5 transition-all duration-300 hover:shadow-xl hover:border-blue-200 cursor-move group ${
+            isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300' : 'border-gray-200'
           }`}
           draggable
           onDragStart={onDragStart}
@@ -390,3 +405,15 @@ export const LinkCard: React.FC<LinkCardProps> = ({
     </div>
   )
 }
+
+// Memoize component to prevent unnecessary re-renders
+// Only re-render if key props change
+export const LinkCard = memo(LinkCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.link.id === nextProps.link.id &&
+    prevProps.link.isArchived === nextProps.link.isArchived &&
+    prevProps.link.isFavorite === nextProps.link.isFavorite &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.viewMode === nextProps.viewMode
+  )
+})
