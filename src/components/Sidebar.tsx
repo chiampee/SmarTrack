@@ -60,6 +60,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
     }
   }
 
+  const renameCategory = async (currentName: string, linkCount: number) => {
+    const newName = prompt(`Rename category "${currentName}" (will update ${linkCount} links)`, currentName)
+    if (!newName || newName.trim() === '' || newName === currentName) return
+    try {
+      await makeRequest(`/api/categories/${encodeURIComponent(currentName)}`, {
+        method: 'PUT',
+        body: JSON.stringify({ newName: newName.trim() }),
+      })
+      window.location.reload() // Refresh to show updated categories
+    } catch (e) {
+      alert('Failed to rename category')
+    }
+  }
+
+  const deleteCategory = async (name: string, linkCount: number) => {
+    if (!confirm(`Delete category "${name}"? ${linkCount} links will be moved to "other".`)) return
+    try {
+      await makeRequest(`/api/categories/${encodeURIComponent(name)}`, { method: 'DELETE' })
+      window.location.reload() // Refresh to show updated categories
+    } catch (e) {
+      alert('Failed to delete category')
+    }
+  }
+
   const navItems = [
     { path: '/', label: 'Dashboard', icon: BarChart3 },
     { path: '/settings', label: 'Settings', icon: Settings },
@@ -270,24 +294,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                     const to = `/?category=${encodeURIComponent(category.name)}`
                     const active = isActivePath(to)
                     return (
-                      <Link
-                        key={`${category.id}-${index}-${category.linkCount}`}
-                        to={to}
-                        onClick={onClose}
-                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors group ${
-                          active ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        <div className={`p-1 rounded ${getColor()}`}>
-                          {getIcon()}
-                        </div>
-                        <span className="flex-1 text-left">{category.name}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                          active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700'
-                        }`}>
-                          {category.linkCount}
-                        </span>
-                      </Link>
+                      <div key={`${category.id}-${index}-${category.linkCount}`} className={`group flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                        active ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-gray-700 hover:bg-gray-100'
+                      }`}>
+                        <Link to={to} onClick={onClose} className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className={`p-1 rounded ${getColor()}`}>
+                            {getIcon()}
+                          </div>
+                          <span className="flex-1 text-left">{category.name}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                            active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700'
+                          }`}>
+                            {category.linkCount}
+                          </span>
+                        </Link>
+                        <button
+                          aria-label="Rename category"
+                          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 text-gray-600"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            renameCategory(category.name, category.linkCount || 0)
+                          }}
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          aria-label="Delete category"
+                          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 text-red-600"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            deleteCategory(category.name, category.linkCount || 0)
+                          }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     )
                   })}
                 </div>

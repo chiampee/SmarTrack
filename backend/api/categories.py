@@ -17,6 +17,9 @@ class CategoryResponse(BaseModel):
     icon: str
     isDefault: bool
 
+class CategoryRename(BaseModel):
+    newName: str
+
 @router.get("/categories", response_model=List[CategoryResponse])
 async def get_categories(
     current_user: dict = Depends(get_current_user),
@@ -64,6 +67,63 @@ async def get_categories(
         ]
         
         return categories
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/categories/{category_name}")
+async def rename_category(
+    category_name: str,
+    rename_data: CategoryRename,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Rename a category by updating all links with that category"""
+    try:
+        user_id = current_user["sub"]
+        new_name = rename_data.newName.strip()
+        
+        if not new_name:
+            raise HTTPException(status_code=400, detail="Category name cannot be empty")
+        
+        # Bulk update all links with the old category name
+        result = await db.links.update_many(
+            {"userId": user_id, "category": category_name},
+            {"$set": {"category": new_name}}
+        )
+        
+        return {
+            "message": f"Category renamed successfully",
+            "oldName": category_name,
+            "newName": new_name,
+            "updatedLinks": result.modified_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/categories/{category_name}")
+async def delete_category(
+    category_name: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Delete a category by moving all links to 'other' category"""
+    try:
+        user_id = current_user["sub"]
+        
+        # Move all links with this category to 'other'
+        result = await db.links.update_many(
+            {"userId": user_id, "category": category_name},
+            {"$set": {"category": "other"}}
+        )
+        
+        return {
+            "message": f"Category deleted successfully. {result.modified_count} links moved to 'other'",
+            "updatedLinks": result.modified_count
+        }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
