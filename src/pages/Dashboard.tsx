@@ -277,23 +277,6 @@ export const Dashboard: React.FC = () => {
     setFilteredLinks(filtered)
   }, [links, searchQuery, filters, selectedCollectionId, activeFilterId])
 
-  // Use bulk operations hook
-  const {
-    loading: bulkLoading,
-    bulkArchive: handleBulkArchive,
-    bulkFavorite: handleBulkFavorite,
-    bulkDelete: handleBulkDelete,
-  } = useBulkOperations({
-    links,
-    setLinks,
-    selectedLinks,
-    clearSelection,
-    makeRequest,
-  })
-
-  // Use bulk loading state
-  const isLoading = loading || bulkLoading
-
   // Handle link actions
   const handleLinkAction = async (linkId: string, action: string) => {
     switch (action) {
@@ -406,6 +389,23 @@ export const Dashboard: React.FC = () => {
   const clearSelection = () => {
     setSelectedLinks(new Set())
   }
+
+  // Use bulk operations hook (must be after clearSelection is defined)
+  const {
+    loading: bulkLoading,
+    bulkArchive: handleBulkArchive,
+    bulkFavorite: handleBulkFavorite,
+    bulkDelete: handleBulkDelete,
+  } = useBulkOperations({
+    links,
+    setLinks,
+    selectedLinks,
+    clearSelection,
+    makeRequest,
+  })
+
+  // Use bulk loading state
+  const isLoading = loading || bulkLoading
 
   // Handle collection/category selection from sidebar
   const handleCollectionSelect = (id: string) => {
