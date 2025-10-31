@@ -19,6 +19,33 @@ async def lifespan(app: FastAPI):
     # Startup
     await connect_to_mongo()
     print("✅ Connected to MongoDB")
+    
+    # Initialize database indexes (idempotent - safe to run multiple times)
+    try:
+        from services.mongodb import get_database
+        db = get_database()
+        
+        # Create indexes for links collection
+        await db.links.create_index("userId")
+        await db.links.create_index([("userId", 1), ("isFavorite", 1)])
+        await db.links.create_index([("userId", 1), ("isArchived", 1)])
+        await db.links.create_index([("userId", 1), ("createdAt", -1)])
+        await db.links.create_index([("userId", 1), ("url", 1)])
+        await db.links.create_index([("userId", 1), ("category", 1)])
+        await db.links.create_index([("userId", 1), ("collectionId", 1)])
+        
+        # Create indexes for collections collection
+        await db.collections.create_index("userId")
+        await db.collections.create_index([("userId", 1), ("name", 1)])
+        
+        # Create indexes for categories collection
+        await db.categories.create_index("userId")
+        
+        print("✅ Database indexes initialized")
+    except Exception as e:
+        print(f"⚠️  Warning: Could not initialize indexes: {e}")
+        # Don't fail startup if index creation fails
+    
     yield
     # Shutdown
     await close_mongo_connection()
