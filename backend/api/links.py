@@ -254,7 +254,7 @@ async def create_link(
         
         # Check user limits before creating link
         MAX_LINKS = settings.MAX_LINKS_PER_USER  # 40 links
-        MAX_STORAGE = settings.MAX_STORAGE_PER_USER_BYTES  # 200 KB
+        MAX_STORAGE = settings.MAX_STORAGE_PER_USER_BYTES  # 40 KB
         
         # Get current link count
         current_link_count = await db.links.count_documents(build_user_filter(user_id))

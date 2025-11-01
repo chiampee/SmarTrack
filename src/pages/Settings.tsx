@@ -247,7 +247,7 @@ export const Settings: React.FC = () => {
                           <Download className="w-5 h-5 text-purple-600" />
                           <span className="text-sm font-medium text-gray-700">Storage Limit</span>
                         </div>
-                        <p className="text-2xl font-bold text-gray-900">200 KB</p>
+                        <p className="text-2xl font-bold text-gray-900">40 KB</p>
                         <p className="text-xs text-gray-500 mt-1">total storage</p>
                       </div>
                     </div>

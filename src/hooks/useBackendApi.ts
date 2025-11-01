@@ -133,10 +133,10 @@ export const useBackendApi = () => {
         linksUsed: 0,
         linksLimit: 40,
         storageUsed: 0,
-        storageLimit: 200 * 1024, // 200 KB
+        storageLimit: 40 * 1024, // 40 KB
         averagePerLink: 0,
         linksRemaining: 40,
-        storageRemaining: 200 * 1024,
+        storageRemaining: 40 * 1024,
       }
     }
 
@@ -173,10 +173,10 @@ export const useBackendApi = () => {
         linksUsed: 0,
         linksLimit: 40,
         storageUsed: 0,
-        storageLimit: 200 * 1024, // 200 KB
+        storageLimit: 40 * 1024, // 40 KB
         averagePerLink: 0,
         linksRemaining: 40,
-        storageRemaining: 200 * 1024,
+        storageRemaining: 40 * 1024,
       }
     }
   }, [makeAuthenticatedRequest, token])

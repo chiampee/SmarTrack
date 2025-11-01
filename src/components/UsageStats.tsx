@@ -49,9 +49,9 @@ export const UsageStats: React.FC = () => {
         linksUsed: 0,
         linksLimit: 40,
         storageUsed: 0,
-        storageLimit: 200 * 1024, // 200 KB
+        storageLimit: 40 * 1024, // 40 KB
         linksRemaining: 40,
-        storageRemaining: 200 * 1024,
+        storageRemaining: 40 * 1024,
         averagePerLink: 0,
       })
     } finally {

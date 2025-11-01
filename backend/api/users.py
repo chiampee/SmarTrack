@@ -10,7 +10,7 @@ from core.config import settings
 
 # User limits constants
 MAX_LINKS_PER_USER = 40
-MAX_STORAGE_PER_USER_BYTES = 200 * 1024  # 200 KB
+MAX_STORAGE_PER_USER_BYTES = 40 * 1024  # 40 KB
 
 router = APIRouter()
 
@@ -85,7 +85,7 @@ async def get_user_stats(
             storage_used = 0
             average_per_link = 0
         
-        storage_limit = MAX_STORAGE_PER_USER_BYTES  # 200 KB limit
+        storage_limit = MAX_STORAGE_PER_USER_BYTES  # 40 KB limit
         links_limit = MAX_LINKS_PER_USER  # 40 links limit
         
         result = {
@@ -119,7 +119,7 @@ async def get_user_stats(
                 "favoriteLinks": 0,
                 "archivedLinks": 0,
                 "storageUsed": 0,
-                "storageLimit": MAX_STORAGE_PER_USER_BYTES,  # 200 KB
+                "storageLimit": MAX_STORAGE_PER_USER_BYTES,  # 40 KB
                 "linksLimit": MAX_LINKS_PER_USER,  # 40 links
                 "averagePerLink": 0,
                 "linksRemaining": MAX_LINKS_PER_USER,
