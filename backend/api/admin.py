@@ -60,10 +60,40 @@ async def debug_token_public(
         # Extract email using the same function
         extracted_email = extract_email_from_payload(payload)
         
-        # Check admin status
+        # Test Auth0 userinfo endpoint
+        userinfo_email = None
+        userinfo_result = None
+        userinfo_error = None
+        try:
+            from services.auth import fetch_email_from_auth0
+            import httpx
+            user_id = payload.get("sub")
+            if user_id:
+                print(f"[DEBUG-TOKEN] Testing userinfo for user {user_id}")
+                userinfo_email = await fetch_email_from_auth0(token, user_id)
+                # Also try direct call to show full response
+                userinfo_url = f"https://{settings.AUTH0_DOMAIN}/userinfo"
+                async with httpx.AsyncClient(timeout=5.0) as client:
+                    userinfo_response = await client.get(
+                        userinfo_url,
+                        headers={"Authorization": f"Bearer {token}"}
+                    )
+                    if userinfo_response.status_code == 200:
+                        userinfo_result = userinfo_response.json()
+                    else:
+                        userinfo_error = {
+                            "status": userinfo_response.status_code,
+                            "text": userinfo_response.text[:500],
+                            "headers": dict(userinfo_response.headers)
+                        }
+        except Exception as e:
+            userinfo_error = {"error": str(e), "type": type(e).__name__}
+        
+        # Check admin status - use email from token, userinfo, or current_user
+        final_email = extracted_email or userinfo_email or current_user.get("email")
         is_admin = False
-        if extracted_email:
-            is_admin = extracted_email.lower() in [email.lower() for email in settings.ADMIN_EMAILS]
+        if final_email:
+            is_admin = final_email.lower() in [email.lower() for email in settings.ADMIN_EMAILS]
         
         return {
             "status": "success",
@@ -71,6 +101,9 @@ async def debug_token_public(
             "tokenInfo": {
                 "sub": payload.get("sub"),
                 "email": extracted_email,
+                "emailFromToken": extracted_email,
+                "emailFromUserinfo": userinfo_email,
+                "finalEmail": final_email,
                 "emailFields": {
                     "email": payload.get("email"),
                     "https://auth0.com/email": payload.get("https://auth0.com/email"),
@@ -82,12 +115,21 @@ async def debug_token_public(
                 "iss": payload.get("iss"),
                 "exp": payload.get("exp"),
                 "iat": payload.get("iat"),
+                "scope": payload.get("scope"),
+            },
+            "userinfoTest": {
+                "success": userinfo_result is not None,
+                "error": userinfo_error,
+                "fullResponse": userinfo_result,
+                "emailExtracted": userinfo_email,
             },
             "adminCheck": {
-                "extractedEmail": extracted_email,
+                "extractedEmail": final_email,
+                "emailFromToken": extracted_email,
+                "emailFromUserinfo": userinfo_email,
                 "adminEmails": settings.ADMIN_EMAILS,
                 "isAdmin": is_admin,
-                "reason": "admin" if is_admin else f"Email '{extracted_email}' not in admin list {settings.ADMIN_EMAILS}" if extracted_email else "No email found in token"
+                "reason": "admin" if is_admin else f"Email '{final_email}' not in admin list {settings.ADMIN_EMAILS}" if final_email else "No email found in token or userinfo"
             },
             "allPayloadKeys": list(payload.keys())
         }
