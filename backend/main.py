@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from api import health, links, collections, categories, users
+from api import health, links, collections, categories, users, admin
 from services.mongodb import connect_to_mongo, close_mongo_connection
 from middleware.security_headers import SecurityHeadersMiddleware
 from middleware.rate_limiter import check_rate_limit
@@ -40,6 +40,17 @@ async def lifespan(app: FastAPI):
         
         # Create indexes for categories collection
         await db.categories.create_index("userId")
+        
+        # Create indexes for system_logs collection
+        await db.system_logs.create_index("timestamp")
+        await db.system_logs.create_index("type")
+        await db.system_logs.create_index("userId")
+        await db.system_logs.create_index([("type", 1), ("timestamp", -1)])
+        
+        # Create indexes for source tracking in links
+        await db.links.create_index("source")
+        await db.links.create_index([("source", 1), ("createdAt", -1)])
+        await db.links.create_index("extensionVersion")
         
         print("✅ Database indexes initialized")
     except Exception as e:
@@ -78,11 +89,14 @@ async def rate_limit_middleware(request: Request, call_next):
         response = await call_next(request)
         return response
     
+    # Check if this is an admin endpoint (admin auth happens later, but use admin rate limits for admin paths)
+    is_admin_endpoint = request.url.path.startswith("/api/admin")
+    
     # Get client identifier (use IP or user ID)
     client_id = request.client.host if request.client else "unknown"
     
     try:
-        check_rate_limit(request, client_id)
+        check_rate_limit(request, client_id, is_admin=is_admin_endpoint)
     except Exception as e:
         from fastapi import HTTPException
         raise HTTPException(status_code=429, detail=str(e))
@@ -96,6 +110,7 @@ app.include_router(links.router, prefix="/api", tags=["Links"])
 app.include_router(collections.router, prefix="/api", tags=["Collections"])
 app.include_router(categories.router, prefix="/api", tags=["Categories"])
 app.include_router(users.router, prefix="/api", tags=["Users"])
+app.include_router(admin.router, prefix="/api", tags=["Admin"])
 
 @app.get("/")
 async def root():

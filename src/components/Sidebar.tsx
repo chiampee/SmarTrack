@@ -344,8 +344,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               </div>
             )}
 
-            {/* Settings - placed at bottom before footer */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
+            {/* Settings and Admin - placed at bottom before footer */}
+            <div className="mt-6 pt-4 border-t border-gray-200 space-y-2">
               <Link
                 to="/settings"
                 onClick={onClose}
@@ -358,6 +358,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 <Settings className={`w-5 h-5 ${isSettingsActive ? 'text-blue-600' : 'text-gray-500'}`} />
                 <span className="font-medium">Settings</span>
               </Link>
+              
+              {/* Admin Analytics - only show for admins */}
+              {user?.email?.toLowerCase() === 'chaimpeer11@gmail.com' && (
+                <Link
+                  to="/analytics"
+                  onClick={onClose}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                    location.pathname === '/analytics'
+                      ? 'bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 border border-purple-200 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50'
+                  }`}
+                >
+                  <BarChart3 className={`w-5 h-5 ${location.pathname === '/analytics' ? 'text-purple-600' : 'text-gray-500'}`} />
+                  <span className="font-medium">Analytics</span>
+                </Link>
+              )}
             </div>
           </nav>
 

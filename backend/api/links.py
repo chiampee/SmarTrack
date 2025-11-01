@@ -44,6 +44,8 @@ class LinkCreate(BaseModel):
     isArchived: bool = False
     collectionId: Optional[str] = None
     content: Optional[str] = None  # Text content extracted from the page
+    source: Optional[str] = "web"  # Source: "web" or "extension"
+    extensionVersion: Optional[str] = None  # Extension version if created via extension
 
 class LinkUpdate(BaseModel):
     title: Optional[str] = None
@@ -70,6 +72,8 @@ class LinkResponse(BaseModel):
     isArchived: bool = False
     collectionId: Optional[str] = None
     content: Optional[str] = None  # Text content extracted from the page
+    source: Optional[str] = "web"  # Source: "web" or "extension"
+    extensionVersion: Optional[str] = None  # Extension version if created via extension
     createdAt: datetime
     updatedAt: datetime
     lastAccessedAt: Optional[datetime] = None
@@ -252,9 +256,15 @@ async def create_link(
     try:
         user_id = current_user["sub"]
         
-        # Check user limits before creating link
-        MAX_LINKS = settings.MAX_LINKS_PER_USER  # 40 links
-        MAX_STORAGE = settings.MAX_STORAGE_PER_USER_BYTES  # 40 KB
+        # Check user limits before creating link (including overrides)
+        # First check for user-specific overrides
+        user_limits = await db.user_limits.find_one({"userId": user_id})
+        if user_limits:
+            MAX_LINKS = user_limits.get("linksLimit", settings.MAX_LINKS_PER_USER)
+            MAX_STORAGE = user_limits.get("storageLimitBytes", settings.MAX_STORAGE_PER_USER_BYTES)
+        else:
+            MAX_LINKS = settings.MAX_LINKS_PER_USER  # 40 links
+            MAX_STORAGE = settings.MAX_STORAGE_PER_USER_BYTES  # 40 KB
         
         # Get current link count
         current_link_count = await db.links.count_documents(build_user_filter(user_id))
@@ -337,6 +347,8 @@ async def create_link(
             "isArchived": link_data.isArchived or False,
             "collectionId": link_data.collectionId,
             "content": content_text,
+            "source": link_data.source or "web",  # Track source: web or extension
+            "extensionVersion": link_data.extensionVersion,  # Extension version if applicable
             "createdAt": datetime.utcnow(),
             "updatedAt": datetime.utcnow(),
             "clickCount": 0

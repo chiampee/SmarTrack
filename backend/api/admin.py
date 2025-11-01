@@ -1,0 +1,930 @@
+"""
+Admin API endpoints
+Provides analytics and management functionality for admin users only
+"""
+
+from fastapi import APIRouter, HTTPException, Depends, Query
+from typing import List, Optional, Dict, Any
+from datetime import datetime, timedelta
+from pydantic import BaseModel
+from services.mongodb import get_database
+from services.admin import check_admin_access, log_system_event
+from core.config import settings
+from pymongo import DESCENDING
+import time
+
+router = APIRouter()
+
+# Simple in-memory cache for analytics (in production, use Redis)
+_analytics_cache = {}
+_cache_timestamps = {}
+
+def get_cached_analytics(cache_key: str):
+    """Get cached analytics if still valid"""
+    if cache_key in _analytics_cache:
+        cache_time = _cache_timestamps.get(cache_key, 0)
+        if time.time() - cache_time < settings.ANALYTICS_CACHE_TTL_SECONDS:
+            return _analytics_cache[cache_key]
+    return None
+
+def set_cached_analytics(cache_key: str, data: Any):
+    """Cache analytics data"""
+    _analytics_cache[cache_key] = data
+    _cache_timestamps[cache_key] = time.time()
+
+@router.get("/admin/analytics")
+async def get_admin_analytics(
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    current_user: dict = Depends(check_admin_access),
+    db = Depends(get_database)
+):
+    """
+    Get comprehensive analytics across all users
+    Default: Last 7 days
+    """
+    try:
+        # Parse date range (default: last 7 days)
+        end_date_obj = datetime.utcnow()
+        if end_date:
+            try:
+                end_date_obj = datetime.strptime(end_date, "%Y-%m-%d")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid end_date format. Use YYYY-MM-DD")
+        
+        start_date_obj = end_date_obj - timedelta(days=7)
+        if start_date:
+            try:
+                start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid start_date format. Use YYYY-MM-DD")
+        
+        # Check cache
+        cache_key = f"analytics_{start_date_obj.date()}_{end_date_obj.date()}"
+        cached = get_cached_analytics(cache_key)
+        if cached:
+            return cached
+        
+        # Aggregate total users
+        total_users_pipeline = [
+            {"$group": {"_id": "$userId"}},
+            {"$count": "total"}
+        ]
+        total_users_result = await db.links.aggregate(total_users_pipeline).to_list(1)
+        total_users = total_users_result[0]["total"] if total_users_result else 0
+        
+        # Count extension users (users who created at least one link via extension)
+        extension_users_pipeline = [
+            {"$match": {"source": "extension"}},
+            {"$group": {"_id": "$userId"}},
+            {"$count": "total"}
+        ]
+        extension_users_result = await db.links.aggregate(extension_users_pipeline).to_list(1)
+        extension_users = extension_users_result[0]["total"] if extension_users_result else 0
+        
+        # Total links
+        total_links = await db.links.count_documents({})
+        
+        # Links by source
+        extension_links = await db.links.count_documents({"source": "extension"})
+        web_links = await db.links.count_documents({"source": {"$ne": "extension"}})
+        
+        # Storage calculation (approximate)
+        storage_pipeline = [
+            {"$project": {
+                "size": {
+                    "$add": [
+                        {"$strLenCP": {"$ifNull": ["$title", ""]}},
+                        {"$strLenCP": {"$ifNull": ["$url", ""]}},
+                        {"$strLenCP": {"$ifNull": ["$description", ""]}},
+                        {"$strLenCP": {"$ifNull": ["$content", ""]}},
+                        {"$multiply": [{"$size": {"$ifNull": ["$tags", []]}}, 50]},
+                        300  # MongoDB overhead
+                    ]
+                }
+            }},
+            {"$group": {"_id": None, "total": {"$sum": "$size"}}}
+        ]
+        storage_result = await db.links.aggregate(storage_pipeline).to_list(1)
+        total_storage_bytes = storage_result[0]["total"] if storage_result else 0
+        
+        # Growth trends - new users over time
+        user_growth_pipeline = [
+            {"$group": {
+                "_id": {
+                    "year": {"$year": "$createdAt"},
+                    "month": {"$month": "$createdAt"},
+                    "day": {"$dayOfMonth": "$createdAt"}},
+                "users": {"$addToSet": "$userId"}
+            }},
+            {"$project": {
+                "date": {
+                    "$dateFromParts": {
+                        "year": "$_id.year",
+                        "month": "$_id.month",
+                        "day": "$_id.day"
+                    }
+                },
+                "newUsers": {"$size": "$users"}
+            }},
+            {"$match": {
+                "date": {"$gte": start_date_obj, "$lte": end_date_obj}
+            }},
+            {"$sort": {"date": 1}}
+        ]
+        user_growth = await db.links.aggregate(user_growth_pipeline).to_list(1000)
+        
+        # Links created over time
+        links_growth_pipeline = [
+            {"$match": {
+                "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+            }},
+            {"$group": {
+                "_id": {
+                    "year": {"$year": "$createdAt"},
+                    "month": {"$month": "$createdAt"},
+                    "day": {"$dayOfMonth": "$createdAt"}
+                },
+                "count": {"$sum": 1},
+                "extensionCount": {
+                    "$sum": {"$cond": [{"$eq": ["$source", "extension"]}, 1, 0]}
+                }
+            }},
+            {"$project": {
+                "date": {
+                    "$dateFromParts": {
+                        "year": "$_id.year",
+                        "month": "$_id.month",
+                        "day": "$_id.day"
+                    }
+                },
+                "count": 1,
+                "extensionCount": 1,
+                "webCount": {"$subtract": ["$count", "$extensionCount"]}
+            }},
+            {"$sort": {"date": 1}}
+        ]
+        links_growth = await db.links.aggregate(links_growth_pipeline).to_list(1000)
+        
+        # Top categories
+        top_categories_pipeline = [
+            {"$group": {
+                "_id": "$category",
+                "count": {"$sum": 1},
+                "users": {"$addToSet": "$userId"}
+            }},
+            {"$project": {
+                "category": "$_id",
+                "linkCount": "$count",
+                "userCount": {"$size": "$users"}
+            }},
+            {"$sort": {"linkCount": -1}},
+            {"$limit": 20}
+        ]
+        top_categories = await db.links.aggregate(top_categories_pipeline).to_list(20)
+        
+        # Content type distribution
+        content_type_pipeline = [
+            {"$group": {
+                "_id": "$contentType",
+                "count": {"$sum": 1}
+            }},
+            {"$project": {
+                "contentType": "$_id",
+                "count": 1
+            }},
+            {"$sort": {"count": -1}}
+        ]
+        content_types = await db.links.aggregate(content_type_pipeline).to_list(100)
+        
+        # Average links per user
+        avg_links_pipeline = [
+            {"$group": {
+                "_id": "$userId",
+                "linkCount": {"$sum": 1}
+            }},
+            {"$group": {
+                "_id": None,
+                "avg": {"$avg": "$linkCount"},
+                "max": {"$max": "$linkCount"},
+                "min": {"$min": "$linkCount"}
+            }}
+        ]
+        avg_result = await db.links.aggregate(avg_links_pipeline).to_list(1)
+        avg_links_per_user = avg_result[0]["avg"] if avg_result and avg_result[0].get("avg") else 0
+        
+        # Users approaching limits
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        
+        # Active users (created/updated link in last 30 days)
+        active_users_pipeline = [
+            {"$match": {
+                "$or": [
+                    {"createdAt": {"$gte": thirty_days_ago}},
+                    {"updatedAt": {"$gte": thirty_days_ago}}
+                ]
+            }},
+            {"$group": {"_id": "$userId"}},
+            {"$count": "total"}
+        ]
+        active_users_result = await db.links.aggregate(active_users_pipeline).to_list(1)
+        active_users = active_users_result[0]["total"] if active_users_result else 0
+        inactive_users = total_users - active_users if total_users >= active_users else 0
+        
+        # Users approaching limits (>= 35 links or >= 35KB storage)
+        users_approaching_limits = []
+        user_stats_pipeline = [
+            {"$group": {
+                "_id": "$userId",
+                "linkCount": {"$sum": 1},
+                "storage": {
+                    "$sum": {
+                        "$add": [
+                            {"$strLenCP": {"$ifNull": ["$title", ""]}},
+                            {"$strLenCP": {"$ifNull": ["$url", ""]}},
+                            {"$strLenCP": {"$ifNull": ["$description", ""]}},
+                            {"$strLenCP": {"$ifNull": ["$content", ""]}},
+                            300
+                        ]
+                    }
+                }
+            }},
+            {"$match": {
+                "$or": [
+                    {"linkCount": {"$gte": 35}},
+                    {"storage": {"$gte": 35 * 1024}}  # 35KB
+                ]
+            }}
+        ]
+        users_approaching = await db.links.aggregate(user_stats_pipeline).to_list(100)
+        
+        # Extension version distribution
+        extension_version_pipeline = [
+            {"$match": {"source": "extension", "extensionVersion": {"$exists": True, "$ne": None}}},
+            {"$group": {
+                "_id": "$extensionVersion",
+                "count": {"$sum": 1},
+                "users": {"$addToSet": "$userId"}
+            }},
+            {"$project": {
+                "version": "$_id",
+                "linkCount": "$count",
+                "userCount": {"$size": "$users"}
+            }},
+            {"$sort": {"linkCount": -1}}
+        ]
+        extension_versions = await db.links.aggregate(extension_version_pipeline).to_list(50)
+        
+        result = {
+            "summary": {
+                "totalUsers": total_users,
+                "extensionUsers": extension_users,
+                "totalLinks": total_links,
+                "extensionLinks": extension_links,
+                "webLinks": web_links,
+                "totalStorageBytes": total_storage_bytes,
+                "totalStorageKB": round(total_storage_bytes / 1024, 2),
+                "totalStorageMB": round(total_storage_bytes / (1024 * 1024), 2),
+                "averageLinksPerUser": round(avg_links_per_user, 2),
+                "activeUsers": active_users,
+                "inactiveUsers": inactive_users
+            },
+            "growth": {
+                "userGrowth": user_growth,
+                "linksGrowth": links_growth
+            },
+            "topCategories": top_categories,
+            "contentTypes": content_types,
+            "extensionVersions": extension_versions,
+            "usersApproachingLimits": len(users_approaching),
+            "dateRange": {
+                "startDate": start_date_obj.isoformat(),
+                "endDate": end_date_obj.isoformat()
+            }
+        }
+        
+        # Cache the result
+        set_cached_analytics(cache_key, result)
+        
+        # Log analytics access
+        await log_system_event("admin_analytics_access", {
+            "dateRange": f"{start_date_obj.date()} to {end_date_obj.date()}",
+            "adminEmail": current_user.get("email")
+        }, current_user.get("sub"), "info")
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await log_system_event("admin_analytics_error", {
+            "error": str(e)
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch analytics: {str(e)}")
+
+
+@router.get("/admin/users")
+async def get_admin_users(
+    page: int = Query(1, ge=1),
+    limit: int = Query(25, ge=1, le=100),
+    search: Optional[str] = Query(None),
+    active_only: Optional[bool] = Query(None),
+    current_user: dict = Depends(check_admin_access),
+    db = Depends(get_database)
+):
+    """
+    Get paginated list of all users with their statistics
+    Default: 25 users per page
+    """
+    try:
+        # Build match filters
+        match_filters = []
+        
+        # Filter by activity (30 days threshold)
+        if active_only is not None:
+            thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+            if active_only:
+                match_filters.append({
+                    "$or": [
+                        {"createdAt": {"$gte": thirty_days_ago}},
+                        {"updatedAt": {"$gte": thirty_days_ago}}
+                    ]
+                })
+        
+        # Get all unique users with their stats
+        pipeline = [
+            {"$group": {
+                "_id": "$userId",
+                "linkCount": {"$sum": 1},
+                "firstLinkDate": {"$min": "$createdAt"},
+                "lastLinkDate": {"$max": "$updatedAt"},
+                "storage": {
+                    "$sum": {
+                        "$add": [
+                            {"$strLenCP": {"$ifNull": ["$title", ""]}},
+                            {"$strLenCP": {"$ifNull": ["$url", ""]}},
+                            {"$strLenCP": {"$ifNull": ["$description", ""]}},
+                            {"$strLenCP": {"$ifNull": ["$content", ""]}},
+                            300
+                        ]
+                    }
+                },
+                "extensionLinks": {
+                    "$sum": {"$cond": [{"$eq": ["$source", "extension"]}, 1, 0]}
+                },
+                "favoriteLinks": {
+                    "$sum": {"$cond": [{"$eq": ["$isFavorite", True]}, 1, 0]}
+                },
+                "archivedLinks": {
+                    "$sum": {"$cond": [{"$eq": ["$isArchived", True]}, 1, 0]}
+                }
+            }}
+        ]
+        
+        if match_filters:
+            pipeline.insert(0, {"$match": {"$and": match_filters}})
+        
+        # Add sorting
+        pipeline.append({"$sort": {"linkCount": -1}})
+        
+        # Get total count
+        count_pipeline = pipeline + [{"$count": "total"}]
+        count_result = await db.links.aggregate(count_pipeline).to_list(1)
+        total_count = count_result[0]["total"] if count_result else 0
+        
+        # Add pagination
+        pipeline.append({"$skip": (page - 1) * limit})
+        pipeline.append({"$limit": limit})
+        
+        # Execute aggregation
+        users = await db.links.aggregate(pipeline).to_list(limit)
+        
+        # Transform results
+        user_list = []
+        for user in users:
+            user_id = user["_id"]
+            is_active = (datetime.utcnow() - user["lastLinkDate"]).days <= 30 if user.get("lastLinkDate") else False
+            
+            user_list.append({
+                "userId": user_id,
+                "linkCount": user["linkCount"],
+                "storageBytes": user["storage"],
+                "storageKB": round(user["storage"] / 1024, 2),
+                "extensionLinks": user["extensionLinks"],
+                "webLinks": user["linkCount"] - user["extensionLinks"],
+                "favoriteLinks": user["favoriteLinks"],
+                "archivedLinks": user["archivedLinks"],
+                "firstLinkDate": user["firstLinkDate"].isoformat() if user.get("firstLinkDate") else None,
+                "lastLinkDate": user["lastLinkDate"].isoformat() if user.get("lastLinkDate") else None,
+                "isActive": is_active,
+                "approachingLimit": user["linkCount"] >= 35 or user["storage"] >= 35 * 1024
+            })
+        
+        # Filter by search if provided
+        if search:
+            search_lower = search.lower()
+            user_list = [
+                u for u in user_list
+                if search_lower in u["userId"].lower()
+            ]
+        
+        return {
+            "users": user_list,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total_count,
+                "totalPages": (total_count + limit - 1) // limit
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await log_system_event("admin_users_error", {
+            "error": str(e)
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch users: {str(e)}")
+
+
+@router.get("/admin/activity")
+async def get_admin_activity(
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    current_user: dict = Depends(check_admin_access),
+    db = Depends(get_database)
+):
+    """
+    Get activity metrics for date ranges
+    Default: Last 7 days
+    """
+    try:
+        # Parse date range (default: last 7 days)
+        end_date_obj = datetime.utcnow()
+        if end_date:
+            try:
+                end_date_obj = datetime.strptime(end_date, "%Y-%m-%d")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid end_date format. Use YYYY-MM-DD")
+        
+        start_date_obj = end_date_obj - timedelta(days=7)
+        if start_date:
+            try:
+                start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid start_date format. Use YYYY-MM-DD")
+        
+        # New users in period
+        new_users_pipeline = [
+            {"$match": {
+                "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+            }},
+            {"$group": {
+                "_id": "$userId",
+                "firstLinkDate": {"$min": "$createdAt"}
+            }},
+            {"$match": {
+                "firstLinkDate": {"$gte": start_date_obj, "$lte": end_date_obj}
+            }},
+            {"$count": "total"}
+        ]
+        new_users_result = await db.links.aggregate(new_users_pipeline).to_list(1)
+        new_users = new_users_result[0]["total"] if new_users_result else 0
+        
+        # Links created in period
+        links_created = await db.links.count_documents({
+            "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+        })
+        
+        # Extension links created
+        extension_links = await db.links.count_documents({
+            "source": "extension",
+            "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+        })
+        
+        # Daily breakdown
+        daily_activity_pipeline = [
+            {"$match": {
+                "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+            }},
+            {"$group": {
+                "_id": {
+                    "year": {"$year": "$createdAt"},
+                    "month": {"$month": "$createdAt"},
+                    "day": {"$dayOfMonth": "$createdAt"}
+                },
+                "linksCreated": {"$sum": 1},
+                "extensionLinks": {
+                    "$sum": {"$cond": [{"$eq": ["$source", "extension"]}, 1, 0]}
+                },
+                "newUsers": {"$addToSet": "$userId"}
+            }},
+            {"$project": {
+                "date": {
+                    "$dateFromParts": {
+                        "year": "$_id.year",
+                        "month": "$_id.month",
+                        "day": "$_id.day"
+                    }
+                },
+                "linksCreated": 1,
+                "extensionLinks": 1,
+                "webLinks": {"$subtract": ["$linksCreated", "$extensionLinks"]},
+                "newUsers": {"$size": "$newUsers"}
+            }},
+            {"$sort": {"date": 1}}
+        ]
+        daily_activity = await db.links.aggregate(daily_activity_pipeline).to_list(1000)
+        
+        return {
+            "summary": {
+                "newUsers": new_users,
+                "linksCreated": links_created,
+                "extensionLinks": extension_links,
+                "webLinks": links_created - extension_links
+            },
+            "dailyActivity": daily_activity,
+            "dateRange": {
+                "startDate": start_date_obj.isoformat(),
+                "endDate": end_date_obj.isoformat()
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await log_system_event("admin_activity_error", {
+            "error": str(e)
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch activity: {str(e)}")
+
+
+@router.get("/admin/logs")
+async def get_admin_logs(
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    log_type: Optional[str] = Query(None),
+    severity: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    current_user: dict = Depends(check_admin_access),
+    db = Depends(get_database)
+):
+    """
+    Get system logs with filtering and pagination
+    """
+    try:
+        # Build match filters
+        match_filters = {}
+        
+        if log_type:
+            match_filters["type"] = log_type
+        
+        if severity:
+            match_filters["severity"] = severity
+        
+        if start_date or end_date:
+            date_filter = {}
+            if start_date:
+                try:
+                    date_filter["$gte"] = datetime.strptime(start_date, "%Y-%m-%d")
+                except ValueError:
+                    raise HTTPException(status_code=400, detail="Invalid start_date format. Use YYYY-MM-DD")
+            if end_date:
+                try:
+                    date_filter["$lte"] = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+                except ValueError:
+                    raise HTTPException(status_code=400, detail="Invalid end_date format. Use YYYY-MM-DD")
+            match_filters["timestamp"] = date_filter
+        
+        # Build pipeline
+        pipeline = []
+        if match_filters:
+            pipeline.append({"$match": match_filters})
+        
+        # Get total count
+        count_pipeline = pipeline + [{"$count": "total"}]
+        count_result = await db.system_logs.aggregate(count_pipeline).to_list(1)
+        total_count = count_result[0]["total"] if count_result else 0
+        
+        # Add sorting, pagination
+        pipeline.append({"$sort": {"timestamp": DESCENDING}})
+        pipeline.append({"$skip": (page - 1) * limit})
+        pipeline.append({"$limit": limit})
+        
+        # Execute
+        logs = await db.system_logs.aggregate(pipeline).to_list(limit)
+        
+        # Transform and filter by search if needed
+        log_list = []
+        for log in logs:
+            log_entry = {
+                "id": str(log["_id"]),
+                "type": log.get("type"),
+                "timestamp": log.get("timestamp").isoformat() if log.get("timestamp") else None,
+                "userId": log.get("userId"),
+                "email": log.get("email"),
+                "severity": log.get("severity", "info"),
+                "details": log.get("details", {})
+            }
+            
+            # Apply search filter
+            if search:
+                search_lower = search.lower()
+                if not any(
+                    search_lower in str(v).lower()
+                    for v in log_entry.values()
+                    if v is not None
+                ):
+                    continue
+            
+            log_list.append(log_entry)
+        
+        return {
+            "logs": log_list,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total_count,
+                "totalPages": (total_count + limit - 1) // limit
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await log_system_event("admin_logs_error", {
+            "error": str(e)
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch logs: {str(e)}")
+
+
+@router.get("/admin/categories")
+async def get_admin_categories(
+    current_user: dict = Depends(check_admin_access),
+    db = Depends(get_database)
+):
+    """
+    Get all categories with usage statistics across all users
+    """
+    try:
+        # Get all categories with usage stats
+        pipeline = [
+            {"$group": {
+                "_id": "$category",
+                "linkCount": {"$sum": 1},
+                "users": {"$addToSet": "$userId"}
+            }},
+            {"$project": {
+                "category": "$_id",
+                "linkCount": 1,
+                "userCount": {"$size": "$users"}
+            }},
+            {"$sort": {"linkCount": -1}}
+        ]
+        
+        categories = await db.links.aggregate(pipeline).to_list(1000)
+        
+        return {
+            "categories": [
+                {
+                    "name": cat["category"],
+                    "linkCount": cat["linkCount"],
+                    "userCount": cat["userCount"]
+                }
+                for cat in categories
+            ]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await log_system_event("admin_categories_error", {
+            "error": str(e)
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch categories: {str(e)}")
+
+
+class MergeCategoriesRequest(BaseModel):
+    source_category: str
+    target_category: str
+
+@router.post("/admin/categories/merge")
+async def merge_categories(
+    request: MergeCategoriesRequest,
+    current_user: dict = Depends(check_admin_access),
+    db = Depends(get_database)
+):
+    """
+    Merge two categories - moves all links from source to target
+    """
+    try:
+        source_normalized = request.source_category.lower().strip()
+        target_normalized = request.target_category.lower().strip()
+        
+        if source_normalized == target_normalized:
+            raise HTTPException(status_code=400, detail="Source and target categories cannot be the same")
+        
+        # Update all links with source category to target category
+        result = await db.links.update_many(
+            {"category": source_normalized},
+            {"$set": {"category": target_normalized}}
+        )
+        
+        await log_system_event("admin_category_merge", {
+            "sourceCategory": request.source_category,
+            "targetCategory": request.target_category,
+            "linksMoved": result.modified_count
+        }, current_user.get("sub"), "info")
+        
+        return {
+            "message": f"Successfully merged '{request.source_category}' into '{request.target_category}'",
+            "linksMoved": result.modified_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await log_system_event("admin_category_merge_error", {
+            "error": str(e)
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Failed to merge categories: {str(e)}")
+
+
+@router.delete("/admin/categories/{category_name}")
+async def delete_global_category(
+    category_name: str,
+    reassign_to: Optional[str] = Query("other", description="Category to reassign links to"),
+    current_user: dict = Depends(check_admin_access),
+    db = Depends(get_database)
+):
+    """
+    Delete a category globally - reassigns all links to another category
+    """
+    try:
+        category_normalized = category_name.lower().strip()
+        reassign_normalized = reassign_to.lower().strip()
+        
+        if category_normalized == reassign_normalized:
+            raise HTTPException(status_code=400, detail="Cannot reassign to the same category")
+        
+        # Update all links with this category
+        result = await db.links.update_many(
+            {"category": category_normalized},
+            {"$set": {"category": reassign_normalized}}
+        )
+        
+        await log_system_event("admin_category_delete", {
+            "deletedCategory": category_name,
+            "reassignedTo": reassign_to,
+            "linksReassigned": result.modified_count
+        }, current_user.get("sub"), "info")
+        
+        return {
+            "message": f"Successfully deleted category '{category_name}'",
+            "linksReassigned": result.modified_count,
+            "reassignedTo": reassign_to
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await log_system_event("admin_category_delete_error", {
+            "error": str(e)
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Failed to delete category: {str(e)}")
+
+
+@router.get("/admin/users/{user_id}/limits")
+async def get_user_limits(
+    user_id: str,
+    current_user: dict = Depends(check_admin_access),
+    db = Depends(get_database)
+):
+    """
+    Get user limits (including overrides if any)
+    """
+    try:
+        # Check for overrides in a user_limits collection (create if doesn't exist)
+        limits = await db.user_limits.find_one({"userId": user_id})
+        
+        defaults = {
+            "linksLimit": settings.MAX_LINKS_PER_USER,
+            "storageLimitBytes": settings.MAX_STORAGE_PER_USER_BYTES
+        }
+        
+        if limits:
+            return {
+                "userId": user_id,
+                "linksLimit": limits.get("linksLimit", defaults["linksLimit"]),
+                "storageLimitBytes": limits.get("storageLimitBytes", defaults["storageLimitBytes"]),
+                "storageLimitKB": limits.get("storageLimitBytes", defaults["storageLimitBytes"]) // 1024,
+                "isOverridden": True,
+                "overriddenAt": limits.get("updatedAt").isoformat() if limits.get("updatedAt") else None
+            }
+        
+        return {
+            "userId": user_id,
+            "linksLimit": defaults["linksLimit"],
+            "storageLimitBytes": defaults["storageLimitBytes"],
+            "storageLimitKB": defaults["storageLimitBytes"] // 1024,
+            "isOverridden": False
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await log_system_event("admin_user_limits_error", {
+            "error": str(e),
+            "userId": user_id
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch user limits: {str(e)}")
+
+
+@router.put("/admin/users/{user_id}/limits")
+async def update_user_limits(
+    user_id: str,
+    links_limit: Optional[int] = Query(None, ge=1),
+    storage_limit_kb: Optional[int] = Query(None, ge=1),
+    current_user: dict = Depends(check_admin_access),
+    db = Depends(get_database)
+):
+    """
+    Manually adjust user limits
+    """
+    try:
+        update_data = {
+            "userId": user_id,
+            "updatedAt": datetime.utcnow(),
+            "updatedBy": current_user.get("email")
+        }
+        
+        if links_limit is not None:
+            update_data["linksLimit"] = links_limit
+        
+        if storage_limit_kb is not None:
+            update_data["storageLimitBytes"] = storage_limit_kb * 1024
+        
+        # Upsert user limits
+        await db.user_limits.update_one(
+            {"userId": user_id},
+            {"$set": update_data},
+            upsert=True
+        )
+        
+        await log_system_event("admin_user_limits_update", {
+            "userId": user_id,
+            "linksLimit": links_limit,
+            "storageLimitKB": storage_limit_kb,
+            "adminEmail": current_user.get("email")
+        }, current_user.get("sub"), "info")
+        
+        return {
+            "message": "User limits updated successfully",
+            "userId": user_id,
+            "linksLimit": links_limit,
+            "storageLimitKB": storage_limit_kb
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await log_system_event("admin_user_limits_update_error", {
+            "error": str(e),
+            "userId": user_id
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Failed to update user limits: {str(e)}")
+
+
+@router.delete("/admin/users/{user_id}/limits")
+async def reset_user_limits(
+    user_id: str,
+    current_user: dict = Depends(check_admin_access),
+    db = Depends(get_database)
+):
+    """
+    Reset user limits to defaults (remove overrides)
+    """
+    try:
+        result = await db.user_limits.delete_one({"userId": user_id})
+        
+        await log_system_event("admin_user_limits_reset", {
+            "userId": user_id,
+            "adminEmail": current_user.get("email")
+        }, current_user.get("sub"), "info")
+        
+        return {
+            "message": "User limits reset to defaults",
+            "userId": user_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await log_system_event("admin_user_limits_reset_error", {
+            "error": str(e),
+            "userId": user_id
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Failed to reset user limits: {str(e)}")
+

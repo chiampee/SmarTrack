@@ -278,8 +278,11 @@ export const Settings: React.FC = () => {
             {activeTab === 'preferences' && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Display Settings</h3>
-                  <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Display Settings</h3>
+                    <span className="px-2 py-0.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-full">Coming Soon</span>
+                  </div>
+                  <div className="space-y-4 opacity-50 pointer-events-none">
                     <div className="flex items-center justify-between py-3 border-b border-gray-200">
                       <div>
                         <p className="font-medium text-gray-900">Dark Mode</p>

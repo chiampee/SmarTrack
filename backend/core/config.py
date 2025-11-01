@@ -30,6 +30,13 @@ class Settings(BaseSettings):
     MAX_STORAGE_PER_USER_BYTES: int = 40 * 1024  # 40 KB per user
     MAX_PAGE_SIZE_BYTES: int = 524288  # 512KB
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 60
+    ADMIN_RATE_LIMIT_REQUESTS_PER_MINUTE: int = 300  # Higher limit for admin endpoints
+    
+    # Admin Access
+    ADMIN_EMAILS: List[str] = ["chaimpeer11@gmail.com"]  # List of admin email addresses
+    
+    # Analytics Cache
+    ANALYTICS_CACHE_TTL_SECONDS: int = 60  # 1 minute cache for analytics
     
     # Debug
     DEBUG: bool = True

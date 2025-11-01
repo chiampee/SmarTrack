@@ -85,18 +85,25 @@ class RateLimiter:
         }
 
 # Create rate limiter instances
-rate_limiter = RateLimiter()
+rate_limiter = RateLimiter()  # Regular users: 60 req/min
+admin_rate_limiter = RateLimiter(
+    requests_per_minute=300,  # Admin: 300 req/min
+    requests_per_hour=10000,
+    requests_per_day=50000
+)
 
-def check_rate_limit(request: Request, client_id: str) -> None:
+def check_rate_limit(request: Request, client_id: str, is_admin: bool = False) -> None:
     """Check rate limit for a request"""
-    is_allowed, error_message = rate_limiter.is_allowed(client_id)
+    limiter = admin_rate_limiter if is_admin else rate_limiter
+    is_allowed, error_message = limiter.is_allowed(client_id)
     
     if not is_allowed:
+        limit_value = "300" if is_admin else "60"
         raise HTTPException(
             status_code=429,
             detail=error_message,
             headers={
-                "X-RateLimit-Limit": "60",
+                "X-RateLimit-Limit": limit_value,
                 "X-RateLimit-Remaining": "0",
                 "Retry-After": "60"
             }
