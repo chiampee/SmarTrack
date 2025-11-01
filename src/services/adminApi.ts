@@ -245,6 +245,22 @@ export const useAdminApi = () => {
     )
   }
 
+  const debugToken = async (): Promise<{
+    status: string
+    user?: any
+    tokenInfo?: any
+    adminCheck?: any
+    error?: string
+  }> => {
+    return makeRequest<{
+      status: string
+      user?: any
+      tokenInfo?: any
+      adminCheck?: any
+      error?: string
+    }>('/api/admin/debug-token')
+  }
+
   return {
     getAnalytics,
     getUsers,
@@ -256,6 +272,7 @@ export const useAdminApi = () => {
     getUserLimits,
     updateUserLimits,
     resetUserLimits,
+    debugToken,
   }
 }
 

@@ -4,11 +4,13 @@ Provides analytics and management functionality for admin users only
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi.security import HTTPAuthorizationCredentials
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 from pydantic import BaseModel
 from services.mongodb import get_database
 from services.admin import check_admin_access, log_system_event
+from services.auth import security
 from core.config import settings
 from pymongo import DESCENDING
 import time
@@ -32,6 +34,68 @@ def set_cached_analytics(cache_key: str, data: Any):
     """Cache analytics data"""
     _analytics_cache[cache_key] = data
     _cache_timestamps[cache_key] = time.time()
+
+@router.get("/admin/debug-token")
+async def debug_admin_token(
+    current_user: dict = Depends(check_admin_access),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Debug endpoint to inspect token contents and verify admin access
+    Only accessible to admins - helps diagnose authentication issues
+    """
+    from jose import jwt
+    from services.auth import extract_email_from_payload
+    
+    try:
+        token = credentials.credentials
+        
+        # Decode token to show contents
+        payload = jwt.decode(
+            token,
+            key="",
+            options={
+                "verify_signature": False,
+                "verify_aud": False,
+                "verify_exp": False,
+            }
+        )
+        
+        # Extract email using the same function
+        extracted_email = extract_email_from_payload(payload)
+        
+        return {
+            "status": "success",
+            "user": current_user,
+            "tokenInfo": {
+                "sub": payload.get("sub"),
+                "email": extracted_email,
+                "emailFields": {
+                    "email": payload.get("email"),
+                    "https://auth0.com/email": payload.get("https://auth0.com/email"),
+                    "https://auth0.com/user/email": payload.get("https://auth0.com/user/email"),
+                },
+                "name": payload.get("name"),
+                "nickname": payload.get("nickname"),
+                "aud": payload.get("aud"),
+                "iss": payload.get("iss"),
+                "exp": payload.get("exp"),
+                "iat": payload.get("iat"),
+            },
+            "adminCheck": {
+                "extractedEmail": extracted_email,
+                "adminEmails": settings.ADMIN_EMAILS,
+                "isAdmin": extracted_email and extracted_email.lower() in [email.lower() for email in settings.ADMIN_EMAILS],
+            },
+            "allPayloadKeys": list(payload.keys())
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "user": current_user
+        }
+
 
 @router.get("/admin/analytics")
 async def get_admin_analytics(
