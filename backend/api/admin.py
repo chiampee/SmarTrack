@@ -35,6 +35,7 @@ async def debug_token_public(
     from jose import jwt
     from services.auth import extract_email_from_payload, get_current_user
     from core.config import settings
+    import traceback
     
     try:
         # Try to get current user (may fail if token is invalid)
@@ -91,10 +92,12 @@ async def debug_token_public(
             "allPayloadKeys": list(payload.keys())
         }
     except Exception as e:
+        import traceback
         return {
             "status": "error",
             "error": str(e),
-            "errorType": type(e).__name__
+            "errorType": type(e).__name__,
+            "traceback": traceback.format_exc()
         }
 
 # Simple in-memory cache for analytics (in production, use Redis)
