@@ -12,6 +12,7 @@ from services.admin import check_admin_access, log_system_event
 from core.config import settings
 from pymongo import DESCENDING
 import time
+import asyncio
 
 router = APIRouter()
 
@@ -65,215 +66,238 @@ async def get_admin_analytics(
         if cached:
             return cached
         
-        # Aggregate total users
-        total_users_pipeline = [
-            {"$group": {"_id": "$userId"}},
-            {"$count": "total"}
-        ]
-        total_users_result = await db.links.aggregate(total_users_pipeline).to_list(1)
-        total_users = total_users_result[0]["total"] if total_users_result else 0
+        # Run independent queries in parallel for better performance
+        async def get_total_users():
+            pipeline = [
+                {"$group": {"_id": "$userId"}},
+                {"$count": "total"}
+            ]
+            result = await db.links.aggregate(pipeline).to_list(1)
+            return result[0]["total"] if result else 0
         
-        # Count extension users (users who created at least one link via extension)
-        extension_users_pipeline = [
-            {"$match": {"source": "extension"}},
-            {"$group": {"_id": "$userId"}},
-            {"$count": "total"}
-        ]
-        extension_users_result = await db.links.aggregate(extension_users_pipeline).to_list(1)
-        extension_users = extension_users_result[0]["total"] if extension_users_result else 0
+        async def get_extension_users():
+            pipeline = [
+                {"$match": {"source": "extension"}},
+                {"$group": {"_id": "$userId"}},
+                {"$count": "total"}
+            ]
+            result = await db.links.aggregate(pipeline).to_list(1)
+            return result[0]["total"] if result else 0
         
-        # Total links
-        total_links = await db.links.count_documents({})
+        async def get_total_links():
+            return await db.links.count_documents({})
         
-        # Links by source
-        extension_links = await db.links.count_documents({"source": "extension"})
-        web_links = await db.links.count_documents({"source": {"$ne": "extension"}})
+        async def get_extension_links():
+            return await db.links.count_documents({"source": "extension"})
         
-        # Storage calculation (approximate)
-        storage_pipeline = [
-            {"$project": {
-                "size": {
-                    "$add": [
-                        {"$strLenCP": {"$ifNull": ["$title", ""]}},
-                        {"$strLenCP": {"$ifNull": ["$url", ""]}},
-                        {"$strLenCP": {"$ifNull": ["$description", ""]}},
-                        {"$strLenCP": {"$ifNull": ["$content", ""]}},
-                        {"$multiply": [{"$size": {"$ifNull": ["$tags", []]}}, 50]},
-                        300  # MongoDB overhead
-                    ]
-                }
-            }},
-            {"$group": {"_id": None, "total": {"$sum": "$size"}}}
-        ]
-        storage_result = await db.links.aggregate(storage_pipeline).to_list(1)
-        total_storage_bytes = storage_result[0]["total"] if storage_result else 0
-        
-        # Growth trends - new users over time
-        user_growth_pipeline = [
-            {"$group": {
-                "_id": {
-                    "year": {"$year": "$createdAt"},
-                    "month": {"$month": "$createdAt"},
-                    "day": {"$dayOfMonth": "$createdAt"}},
-                "users": {"$addToSet": "$userId"}
-            }},
-            {"$project": {
-                "date": {
-                    "$dateFromParts": {
-                        "year": "$_id.year",
-                        "month": "$_id.month",
-                        "day": "$_id.day"
-                    }
-                },
-                "newUsers": {"$size": "$users"}
-            }},
-            {"$match": {
-                "date": {"$gte": start_date_obj, "$lte": end_date_obj}
-            }},
-            {"$sort": {"date": 1}}
-        ]
-        user_growth = await db.links.aggregate(user_growth_pipeline).to_list(1000)
-        
-        # Links created over time
-        links_growth_pipeline = [
-            {"$match": {
-                "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
-            }},
-            {"$group": {
-                "_id": {
-                    "year": {"$year": "$createdAt"},
-                    "month": {"$month": "$createdAt"},
-                    "day": {"$dayOfMonth": "$createdAt"}
-                },
-                "count": {"$sum": 1},
-                "extensionCount": {
-                    "$sum": {"$cond": [{"$eq": ["$source", "extension"]}, 1, 0]}
-                }
-            }},
-            {"$project": {
-                "date": {
-                    "$dateFromParts": {
-                        "year": "$_id.year",
-                        "month": "$_id.month",
-                        "day": "$_id.day"
-                    }
-                },
-                "count": 1,
-                "extensionCount": 1,
-                "webCount": {"$subtract": ["$count", "$extensionCount"]}
-            }},
-            {"$sort": {"date": 1}}
-        ]
-        links_growth = await db.links.aggregate(links_growth_pipeline).to_list(1000)
-        
-        # Top categories
-        top_categories_pipeline = [
-            {"$group": {
-                "_id": "$category",
-                "count": {"$sum": 1},
-                "users": {"$addToSet": "$userId"}
-            }},
-            {"$project": {
-                "category": "$_id",
-                "linkCount": "$count",
-                "userCount": {"$size": "$users"}
-            }},
-            {"$sort": {"linkCount": -1}},
-            {"$limit": 20}
-        ]
-        top_categories = await db.links.aggregate(top_categories_pipeline).to_list(20)
-        
-        # Content type distribution
-        content_type_pipeline = [
-            {"$group": {
-                "_id": "$contentType",
-                "count": {"$sum": 1}
-            }},
-            {"$project": {
-                "contentType": "$_id",
-                "count": 1
-            }},
-            {"$sort": {"count": -1}}
-        ]
-        content_types = await db.links.aggregate(content_type_pipeline).to_list(100)
-        
-        # Average links per user
-        avg_links_pipeline = [
-            {"$group": {
-                "_id": "$userId",
-                "linkCount": {"$sum": 1}
-            }},
-            {"$group": {
-                "_id": None,
-                "avg": {"$avg": "$linkCount"},
-                "max": {"$max": "$linkCount"},
-                "min": {"$min": "$linkCount"}
-            }}
-        ]
-        avg_result = await db.links.aggregate(avg_links_pipeline).to_list(1)
-        avg_links_per_user = avg_result[0]["avg"] if avg_result and avg_result[0].get("avg") else 0
-        
-        # Users approaching limits
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-        
-        # Active users (created/updated link in last 30 days)
-        active_users_pipeline = [
-            {"$match": {
-                "$or": [
-                    {"createdAt": {"$gte": thirty_days_ago}},
-                    {"updatedAt": {"$gte": thirty_days_ago}}
-                ]
-            }},
-            {"$group": {"_id": "$userId"}},
-            {"$count": "total"}
-        ]
-        active_users_result = await db.links.aggregate(active_users_pipeline).to_list(1)
-        active_users = active_users_result[0]["total"] if active_users_result else 0
-        inactive_users = total_users - active_users if total_users >= active_users else 0
-        
-        # Users approaching limits (>= 35 links or >= 35KB storage)
-        users_approaching_limits = []
-        user_stats_pipeline = [
-            {"$group": {
-                "_id": "$userId",
-                "linkCount": {"$sum": 1},
-                "storage": {
-                    "$sum": {
+        async def get_storage():
+            pipeline = [
+                {"$project": {
+                    "size": {
                         "$add": [
                             {"$strLenCP": {"$ifNull": ["$title", ""]}},
                             {"$strLenCP": {"$ifNull": ["$url", ""]}},
                             {"$strLenCP": {"$ifNull": ["$description", ""]}},
                             {"$strLenCP": {"$ifNull": ["$content", ""]}},
-                            300
+                            {"$multiply": [{"$size": {"$ifNull": ["$tags", []]}}, 50]},
+                            300  # MongoDB overhead
                         ]
                     }
-                }
-            }},
-            {"$match": {
-                "$or": [
-                    {"linkCount": {"$gte": 35}},
-                    {"storage": {"$gte": 35 * 1024}}  # 35KB
-                ]
-            }}
-        ]
-        users_approaching = await db.links.aggregate(user_stats_pipeline).to_list(100)
+                }},
+                {"$group": {"_id": None, "total": {"$sum": "$size"}}}
+            ]
+            result = await db.links.aggregate(pipeline).to_list(1)
+            return result[0]["total"] if result else 0
         
-        # Extension version distribution
-        extension_version_pipeline = [
-            {"$match": {"source": "extension", "extensionVersion": {"$exists": True, "$ne": None}}},
-            {"$group": {
-                "_id": "$extensionVersion",
-                "count": {"$sum": 1},
-                "users": {"$addToSet": "$userId"}
-            }},
-            {"$project": {
-                "version": "$_id",
-                "linkCount": "$count",
-                "userCount": {"$size": "$users"}
-            }},
-            {"$sort": {"linkCount": -1}}
-        ]
-        extension_versions = await db.links.aggregate(extension_version_pipeline).to_list(50)
+        # Execute independent queries in parallel
+        total_users, extension_users, total_links, extension_links, total_storage_bytes = await asyncio.gather(
+            get_total_users(),
+            get_extension_users(),
+            get_total_links(),
+            get_extension_links(),
+            get_storage()
+        )
+        
+        web_links = total_links - extension_links
+        
+        # Run remaining queries in parallel for better performance
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        
+        async def get_user_growth():
+            pipeline = [
+                {"$group": {
+                    "_id": {
+                        "year": {"$year": "$createdAt"},
+                        "month": {"$month": "$createdAt"},
+                        "day": {"$dayOfMonth": "$createdAt"}},
+                    "users": {"$addToSet": "$userId"}
+                }},
+                {"$project": {
+                    "date": {
+                        "$dateFromParts": {
+                            "year": "$_id.year",
+                            "month": "$_id.month",
+                            "day": "$_id.day"
+                        }
+                    },
+                    "newUsers": {"$size": "$users"}
+                }},
+                {"$match": {
+                    "date": {"$gte": start_date_obj, "$lte": end_date_obj}
+                }},
+                {"$sort": {"date": 1}}
+            ]
+            return await db.links.aggregate(pipeline).to_list(1000)
+        
+        async def get_links_growth():
+            pipeline = [
+                {"$match": {
+                    "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+                }},
+                {"$group": {
+                    "_id": {
+                        "year": {"$year": "$createdAt"},
+                        "month": {"$month": "$createdAt"},
+                        "day": {"$dayOfMonth": "$createdAt"}
+                    },
+                    "count": {"$sum": 1},
+                    "extensionCount": {
+                        "$sum": {"$cond": [{"$eq": ["$source", "extension"]}, 1, 0]}
+                    }
+                }},
+                {"$project": {
+                    "date": {
+                        "$dateFromParts": {
+                            "year": "$_id.year",
+                            "month": "$_id.month",
+                            "day": "$_id.day"
+                        }
+                    },
+                    "count": 1,
+                    "extensionCount": 1,
+                    "webCount": {"$subtract": ["$count", "$extensionCount"]}
+                }},
+                {"$sort": {"date": 1}}
+            ]
+            return await db.links.aggregate(pipeline).to_list(1000)
+        
+        async def get_top_categories():
+            pipeline = [
+                {"$group": {
+                    "_id": "$category",
+                    "count": {"$sum": 1},
+                    "users": {"$addToSet": "$userId"}
+                }},
+                {"$project": {
+                    "category": "$_id",
+                    "linkCount": "$count",
+                    "userCount": {"$size": "$users"}
+                }},
+                {"$sort": {"linkCount": -1}},
+                {"$limit": 20}
+            ]
+            return await db.links.aggregate(pipeline).to_list(20)
+        
+        async def get_content_types():
+            pipeline = [
+                {"$group": {
+                    "_id": "$contentType",
+                    "count": {"$sum": 1}
+                }},
+                {"$project": {
+                    "contentType": "$_id",
+                    "count": 1
+                }},
+                {"$sort": {"count": -1}}
+            ]
+            return await db.links.aggregate(pipeline).to_list(100)
+        
+        async def get_avg_links_per_user():
+            pipeline = [
+                {"$group": {
+                    "_id": "$userId",
+                    "linkCount": {"$sum": 1}
+                }},
+                {"$group": {
+                    "_id": None,
+                    "avg": {"$avg": "$linkCount"},
+                    "max": {"$max": "$linkCount"},
+                    "min": {"$min": "$linkCount"}
+                }}
+            ]
+            result = await db.links.aggregate(pipeline).to_list(1)
+            return result[0]["avg"] if result and result[0].get("avg") else 0
+        
+        async def get_active_users():
+            pipeline = [
+                {"$match": {
+                    "$or": [
+                        {"createdAt": {"$gte": thirty_days_ago}},
+                        {"updatedAt": {"$gte": thirty_days_ago}}
+                    ]
+                }},
+                {"$group": {"_id": "$userId"}},
+                {"$count": "total"}
+            ]
+            result = await db.links.aggregate(pipeline).to_list(1)
+            return result[0]["total"] if result else 0
+        
+        async def get_users_approaching():
+            pipeline = [
+                {"$group": {
+                    "_id": "$userId",
+                    "linkCount": {"$sum": 1},
+                    "storage": {
+                        "$sum": {
+                            "$add": [
+                                {"$strLenCP": {"$ifNull": ["$title", ""]}},
+                                {"$strLenCP": {"$ifNull": ["$url", ""]}},
+                                {"$strLenCP": {"$ifNull": ["$description", ""]}},
+                                {"$strLenCP": {"$ifNull": ["$content", ""]}},
+                                300
+                            ]
+                        }
+                    }
+                }},
+                {"$match": {
+                    "$or": [
+                        {"linkCount": {"$gte": 35}},
+                        {"storage": {"$gte": 35 * 1024}}  # 35KB
+                    ]
+                }}
+            ]
+            return await db.links.aggregate(pipeline).to_list(100)
+        
+        async def get_extension_versions():
+            pipeline = [
+                {"$match": {"source": "extension", "extensionVersion": {"$exists": True, "$ne": None}}},
+                {"$group": {
+                    "_id": "$extensionVersion",
+                    "count": {"$sum": 1},
+                    "users": {"$addToSet": "$userId"}
+                }},
+                {"$project": {
+                    "version": "$_id",
+                    "linkCount": "$count",
+                    "userCount": {"$size": "$users"}
+                }},
+                {"$sort": {"linkCount": -1}}
+            ]
+            return await db.links.aggregate(pipeline).to_list(50)
+        
+        # Execute all remaining queries in parallel
+        user_growth, links_growth, top_categories, content_types, avg_links_per_user, active_users, users_approaching, extension_versions = await asyncio.gather(
+            get_user_growth(),
+            get_links_growth(),
+            get_top_categories(),
+            get_content_types(),
+            get_avg_links_per_user(),
+            get_active_users(),
+            get_users_approaching(),
+            get_extension_versions()
+        )
+        
+        inactive_users = total_users - active_users if total_users >= active_users else 0
         
         result = {
             "summary": {

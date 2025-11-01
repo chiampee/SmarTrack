@@ -75,8 +75,11 @@ export const useBackendApi = () => {
     try {
       setIsLoading(true)
       // Apply a default timeout to avoid infinite loading UI
+      // Admin endpoints need more time for complex analytics queries (30 seconds)
+      const isAdminEndpoint = endpoint.startsWith('/api/admin')
+      const timeoutDuration = isAdminEndpoint ? 30000 : 10000
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000)
+      const timeoutId = setTimeout(() => controller.abort(), timeoutDuration)
 
       const response = await fetch(url, {
         ...options,
