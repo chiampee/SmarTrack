@@ -22,6 +22,85 @@ router = APIRouter()
 _analytics_cache = {}
 _cache_timestamps = {}
 
+# Public debug endpoint that only requires authentication (not admin)
+# This helps diagnose admin access issues
+@router.get("/debug-token")
+async def debug_token_public(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Public debug endpoint to inspect token contents
+    Only requires authentication (not admin) - helps diagnose authentication issues
+    """
+    from jose import jwt
+    from services.auth import extract_email_from_payload, get_current_user
+    from core.config import settings
+    
+    try:
+        # Try to get current user (may fail if token is invalid)
+        try:
+            current_user = await get_current_user(credentials)
+        except Exception as user_error:
+            current_user = {"error": str(user_error)}
+        
+        token = credentials.credentials
+        
+        # Decode token to show contents
+        payload = jwt.decode(
+            token,
+            key="",
+            options={
+                "verify_signature": False,
+                "verify_aud": False,
+                "verify_exp": False,
+            }
+        )
+        
+        # Extract email using the same function
+        extracted_email = extract_email_from_payload(payload)
+        
+        # Check admin status
+        is_admin = False
+        if extracted_email:
+            is_admin = extracted_email.lower() in [email.lower() for email in settings.ADMIN_EMAILS]
+        
+        return {
+            "status": "success",
+            "currentUser": current_user,
+            "tokenInfo": {
+                "sub": payload.get("sub"),
+                "email": extracted_email,
+                "emailFields": {
+                    "email": payload.get("email"),
+                    "https://auth0.com/email": payload.get("https://auth0.com/email"),
+                    "https://auth0.com/user/email": payload.get("https://auth0.com/user/email"),
+                },
+                "name": payload.get("name"),
+                "nickname": payload.get("nickname"),
+                "aud": payload.get("aud"),
+                "iss": payload.get("iss"),
+                "exp": payload.get("exp"),
+                "iat": payload.get("iat"),
+            },
+            "adminCheck": {
+                "extractedEmail": extracted_email,
+                "adminEmails": settings.ADMIN_EMAILS,
+                "isAdmin": is_admin,
+                "reason": "admin" if is_admin else f"Email '{extracted_email}' not in admin list {settings.ADMIN_EMAILS}" if extracted_email else "No email found in token"
+            },
+            "allPayloadKeys": list(payload.keys())
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "errorType": type(e).__name__
+        }
+
+# Simple in-memory cache for analytics (in production, use Redis)
+_analytics_cache = {}
+_cache_timestamps = {}
+
 def get_cached_analytics(cache_key: str):
     """Get cached analytics if still valid"""
     if cache_key in _analytics_cache:

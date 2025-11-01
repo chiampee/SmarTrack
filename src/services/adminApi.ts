@@ -247,18 +247,19 @@ export const useAdminApi = () => {
 
   const debugToken = async (): Promise<{
     status: string
-    user?: any
+    currentUser?: any
     tokenInfo?: any
     adminCheck?: any
     error?: string
   }> => {
+    // Use public debug endpoint that doesn't require admin access
     return makeRequest<{
       status: string
-      user?: any
+      currentUser?: any
       tokenInfo?: any
       adminCheck?: any
       error?: string
-    }>('/api/admin/debug-token')
+    }>('/api/debug-token')
   }
 
   return {
