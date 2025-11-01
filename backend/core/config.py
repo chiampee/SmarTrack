@@ -3,7 +3,7 @@ Configuration settings for SmarTrack Backend
 """
 
 from pydantic_settings import BaseSettings
-from typing import List, Any
+from typing import List
 
 class Settings(BaseSettings):
     # Database
@@ -37,13 +37,6 @@ class Settings(BaseSettings):
     
     class Config:
         env_file = ".env"
-        # Allow ADMIN_EMAILS to be set via environment variable (comma-separated)
-        @classmethod
-        def parse_env_var(cls, field_name: str, raw_val: str) -> Any:
-            if field_name == 'ADMIN_EMAILS':
-                # Parse comma-separated list from environment variable
-                return [email.strip() for email in raw_val.split(',') if email.strip()]
-            return cls.json_loads(raw_val)
     
     # Analytics Cache
     ANALYTICS_CACHE_TTL_SECONDS: int = 60  # 1 minute cache for analytics
