@@ -22,6 +22,7 @@ export const AdminAnalytics: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [analytics, setAnalytics] = useState<AdminAnalyticsType | null>(null)
   const [refreshingToken, setRefreshingToken] = useState(false)
+  const [error, setError] = useState<{ message: string; type?: string; retryable?: boolean } | null>(null)
   
   // Date range for analytics
   const [startDate, setStartDate] = useState<string>(() => {
@@ -37,10 +38,12 @@ export const AdminAnalytics: React.FC = () => {
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
 
-  // Load analytics data
-  const loadAnalytics = useCallback(async () => {
+  // Load analytics data with comprehensive error handling
+  const loadAnalytics = useCallback(async (retryCount = 0) => {
     try {
       setLoading(true)
+      setError(null)
+      
       // Ensure we have a fresh token with email scope
       try {
         const token = await getAccessTokenSilently({
@@ -52,15 +55,55 @@ export const AdminAnalytics: React.FC = () => {
         localStorage.setItem('authToken', token)
       } catch (tokenError) {
         console.error('Failed to get fresh token:', tokenError)
+        // Don't fail the request if token refresh fails, might still work with cached token
       }
       
       const data = await adminApi.getAnalytics(startDate, endDate)
       setAnalytics(data)
       setLastRefresh(new Date())
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load analytics'
-      toast.error(errorMessage)
+      setError(null) // Clear any previous errors
+    } catch (error: any) {
       console.error('Failed to load analytics:', error)
+      
+      // Parse error to determine type and user-friendly message
+      let errorMessage = 'Failed to load analytics data'
+      let errorType = 'UNKNOWN'
+      let retryable = true
+      
+      if (error?.type === 'NOT_FOUND' || error?.message?.includes('404') || error?.message?.includes('Not found')) {
+        errorMessage = 'Admin access denied. Please ensure you are logged in with the correct account (chaimpeer11@gmail.com). Try clicking "Re-Login" to re-authenticate.'
+        errorType = 'AUTH'
+        retryable = false
+      } else if (error?.message?.includes('timeout') || error?.message?.includes('Timeout')) {
+        errorMessage = 'Request timed out. The analytics query is taking too long. Please try again or use a smaller date range.'
+        errorType = 'TIMEOUT'
+        retryable = true
+      } else if (error?.message?.includes('Network') || error?.message?.includes('fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.'
+        errorType = 'NETWORK'
+        retryable = true
+      } else if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) {
+        errorMessage = 'Authentication failed. Please click "Re-Login" to re-authenticate.'
+        errorType = 'AUTH'
+        retryable = false
+      } else if (error?.message) {
+        errorMessage = error.message
+      }
+      
+      setError({
+        message: errorMessage,
+        type: errorType,
+        retryable
+      })
+      
+      toast.error(errorMessage)
+      
+      // Auto-retry for retryable errors (network, timeout) up to 2 times
+      if (retryable && retryCount < 2) {
+        setTimeout(() => {
+          loadAnalytics(retryCount + 1)
+        }, 2000 * (retryCount + 1)) // Exponential backoff: 2s, 4s
+      }
     } finally {
       setLoading(false)
     }
@@ -179,7 +222,9 @@ export const AdminAnalytics: React.FC = () => {
                 Re-Login
               </button>
               <button
-                onClick={loadAnalytics}
+                onClick={() => {
+                  loadAnalytics(0).catch(console.error)
+                }}
                 disabled={loading}
                 className="btn btn-secondary flex items-center gap-2"
               >
@@ -249,10 +294,49 @@ export const AdminAnalytics: React.FC = () => {
             })}
           </div>
 
+          {/* Error Banner */}
+          {error && (
+            <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-red-900 mb-1">Error Loading Data</h3>
+                  <p className="text-sm text-red-700 mb-3">{error.message}</p>
+                  <div className="flex items-center gap-2">
+                    {error.retryable && (
+                      <button
+                        onClick={() => {
+                          loadAnalytics(0).catch(console.error)
+                        }}
+                        className="px-3 py-1.5 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
+                      >
+                        Retry
+                      </button>
+                    )}
+                    {(error.type === 'AUTH' || error.message.includes('access denied')) && (
+                      <button
+                        onClick={handleReLogin}
+                        className="px-3 py-1.5 text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg transition-colors"
+                      >
+                        Re-Login
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setError(null)}
+                      className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Tab Content */}
           <div className="p-6">
             {activeTab === 'analytics' && (
-              <AnalyticsTab analytics={analytics} loading={loading} />
+              <AnalyticsTab analytics={analytics} loading={loading} error={error} onRetry={() => loadAnalytics(0)} />
             )}
             {activeTab === 'users' && (
               <UsersTab adminApi={adminApi} />
@@ -274,17 +358,63 @@ export const AdminAnalytics: React.FC = () => {
 }
 
 // Analytics Tab Component
-const AnalyticsTab: React.FC<{ analytics: AdminAnalyticsType | null; loading: boolean }> = ({ analytics, loading }) => {
-  if (loading) {
+const AnalyticsTab: React.FC<{ 
+  analytics: AdminAnalyticsType | null; 
+  loading: boolean;
+  error?: { message: string; type?: string; retryable?: boolean } | null;
+  onRetry?: () => void;
+}> = ({ analytics, loading, error, onRetry }) => {
+  if (loading && !analytics) {
     return <LoadingSpinner />
   }
 
-  if (!analytics) {
+  if (error && !analytics) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Analytics</h3>
+        <p className="text-gray-600 mb-4">{error.message}</p>
+        <div className="flex items-center justify-center gap-3">
+          {error.retryable && onRetry && (
+            <button
+              onClick={onRetry}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Retry
+            </button>
+          )}
+          {error.type === 'AUTH' && (
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+            >
+              Re-Login
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (!analytics && !loading) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">No analytics data available</p>
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            Load Analytics
+          </button>
+        )}
       </div>
     )
+  }
+
+  // TypeScript guard: analytics must not be null at this point
+  if (!analytics) {
+    return null
   }
 
   return (
@@ -496,6 +626,7 @@ const CategoryBar: React.FC<{
 const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ adminApi }) => {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [search, setSearch] = useState('')
@@ -505,12 +636,18 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await adminApi.getUsers(page, 25, search || undefined, activeOnly)
       setUsers(data.users)
       setTotal(data.pagination.total)
-    } catch (error) {
-      toast.error('Failed to load users')
-      console.error(error)
+      setError(null)
+    } catch (error: any) {
+      const errorMessage = error?.message || error?.type === 'NOT_FOUND' 
+        ? 'Admin access denied. Please re-authenticate.'
+        : 'Failed to load users'
+      setError(errorMessage)
+      toast.error(errorMessage)
+      console.error('Failed to load users:', error)
     } finally {
       setLoading(false)
     }
@@ -520,8 +657,40 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
     loadUsers()
   }, [loadUsers])
 
+  if (error && users.length === 0 && !loading) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Users</h3>
+        <p className="text-gray-600 mb-4">{error}</p>
+        <button
+          onClick={() => loadUsers()}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
+      {error && users.length > 0 && (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-yellow-700">{error}</p>
+              <button
+                onClick={() => loadUsers()}
+                className="mt-2 px-3 py-1.5 text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded-lg transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex items-center gap-4 mb-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -620,6 +789,7 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
 const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ adminApi }) => {
   const [logs, setLogs] = useState<SystemLog[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [search, setSearch] = useState('')
@@ -632,6 +802,7 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
   const loadLogs = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await adminApi.getLogs(
         page,
         50,
@@ -643,9 +814,14 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
       )
       setLogs(data.logs)
       setTotal(data.pagination.total)
-    } catch (error) {
-      toast.error('Failed to load logs')
-      console.error(error)
+      setError(null)
+    } catch (error: any) {
+      const errorMessage = error?.message || error?.type === 'NOT_FOUND'
+        ? 'Admin access denied. Please re-authenticate.'
+        : 'Failed to load logs'
+      setError(errorMessage)
+      toast.error(errorMessage)
+      console.error('Failed to load logs:', error)
     } finally {
       setLoading(false)
     }
@@ -654,6 +830,22 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
   useEffect(() => {
     loadLogs()
   }, [loadLogs])
+
+  if (error && logs.length === 0 && !loading) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Logs</h3>
+        <p className="text-gray-600 mb-4">{error}</p>
+        <button
+          onClick={() => loadLogs()}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
 
   const getSeverityColor = (severity: string) => {
     switch (severity.toLowerCase()) {
@@ -809,6 +1001,7 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
 
 // Categories Tab Component
 const CategoriesTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ adminApi }) => {
+  const [error, setError] = useState<string | null>(null)
   const [categories, setCategories] = useState<AdminCategory[]>([])
   const [loading, setLoading] = useState(false)
   const [showMergeModal, setShowMergeModal] = useState(false)
@@ -822,11 +1015,17 @@ const CategoriesTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({
   const loadCategories = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await adminApi.getCategories()
       setCategories(data.categories)
-    } catch (error) {
-      toast.error('Failed to load categories')
-      console.error(error)
+      setError(null)
+    } catch (error: any) {
+      const errorMessage = error?.message || error?.type === 'NOT_FOUND'
+        ? 'Admin access denied. Please re-authenticate.'
+        : 'Failed to load categories'
+      setError(errorMessage)
+      toast.error(errorMessage)
+      console.error('Failed to load categories:', error)
     } finally {
       setLoading(false)
     }
@@ -835,6 +1034,22 @@ const CategoriesTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({
   useEffect(() => {
     loadCategories()
   }, [loadCategories])
+
+  if (error && categories.length === 0 && !loading) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Categories</h3>
+        <p className="text-gray-600 mb-4">{error}</p>
+        <button
+          onClick={() => loadCategories()}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
 
   const handleMerge = async () => {
     if (!mergeSource || !mergeTarget || mergeSource === mergeTarget) {
@@ -883,6 +1098,23 @@ const CategoriesTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({
           </button>
         </div>
       </div>
+
+      {error && categories.length > 0 && (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-yellow-700">{error}</p>
+              <button
+                onClick={() => loadCategories()}
+                className="mt-2 px-3 py-1.5 text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded-lg transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <LoadingSpinner />
@@ -1025,6 +1257,8 @@ const SettingsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ a
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [userLimits, setUserLimits] = useState<UserLimits | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [linksLimit, setLinksLimit] = useState<number>(40)
   const [storageLimitKB, setStorageLimitKB] = useState<number>(40)
   const [userSearch, setUserSearch] = useState<string>('')
@@ -1033,18 +1267,25 @@ const SettingsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ a
   const loadUserLimits = useCallback(async () => {
     if (!selectedUserId) {
       setUserLimits(null)
+      setError(null)
       return
     }
 
     try {
       setLoading(true)
+      setError(null)
       const limits = await adminApi.getUserLimits(selectedUserId)
       setUserLimits(limits)
       setLinksLimit(limits.linksLimit)
       setStorageLimitKB(limits.storageLimitKB)
-    } catch (error) {
-      toast.error('Failed to load user limits')
-      console.error(error)
+      setError(null)
+    } catch (error: any) {
+      const errorMessage = error?.message || error?.type === 'NOT_FOUND'
+        ? 'Admin access denied or user not found. Please re-authenticate.'
+        : 'Failed to load user limits'
+      setError(errorMessage)
+      toast.error(errorMessage)
+      console.error('Failed to load user limits:', error)
     } finally {
       setLoading(false)
     }
@@ -1059,12 +1300,16 @@ const SettingsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ a
 
     try {
       setLoading(true)
+      setActionError(null)
       await adminApi.updateUserLimits(selectedUserId, linksLimit, storageLimitKB)
       toast.success('User limits updated successfully')
-      loadUserLimits()
-    } catch (error) {
-      toast.error('Failed to update user limits')
-      console.error(error)
+      await loadUserLimits()
+      setActionError(null)
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Failed to update user limits'
+      setActionError(errorMessage)
+      toast.error(errorMessage)
+      console.error('Failed to update user limits:', error)
     } finally {
       setLoading(false)
     }
@@ -1077,12 +1322,16 @@ const SettingsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ a
 
     try {
       setLoading(true)
+      setActionError(null)
       await adminApi.resetUserLimits(selectedUserId)
       toast.success('User limits reset to defaults')
-      loadUserLimits()
-    } catch (error) {
-      toast.error('Failed to reset user limits')
-      console.error(error)
+      await loadUserLimits()
+      setActionError(null)
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Failed to reset user limits'
+      setActionError(errorMessage)
+      toast.error(errorMessage)
+      console.error('Failed to reset user limits:', error)
     } finally {
       setLoading(false)
     }
