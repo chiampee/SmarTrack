@@ -2,23 +2,26 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { 
   Users, Link as LinkIcon, HardDrive, TrendingUp, 
   RefreshCw, Calendar, BarChart3, FileText, Settings,
-  ChevronLeft, ChevronRight, Search, Filter, X, AlertCircle, Tag
+  ChevronLeft, ChevronRight, Search, Filter, X, AlertCircle, Tag, LogIn
 } from 'lucide-react'
 import { useAdminAccess } from '../hooks/useAdminAccess'
 import { useAdminApi, AdminAnalytics as AdminAnalyticsType, AdminUser, SystemLog, AdminCategory, UserLimits } from '../services/adminApi'
 import { useToast } from '../components/Toast'
 import { LoadingSpinner } from '../components/LoadingSpinner'
+import { useAuth0 } from '@auth0/auth0-react'
 
 type TabType = 'analytics' | 'users' | 'logs' | 'categories' | 'settings'
 
 export const AdminAnalytics: React.FC = () => {
   const { isAdmin, isChecking } = useAdminAccess()
+  const { getAccessTokenSilently, loginWithRedirect } = useAuth0()
   const adminApi = useAdminApi()
   const toast = useToast()
   
   const [activeTab, setActiveTab] = useState<TabType>('analytics')
   const [loading, setLoading] = useState(false)
   const [analytics, setAnalytics] = useState<AdminAnalyticsType | null>(null)
+  const [refreshingToken, setRefreshingToken] = useState(false)
   
   // Date range for analytics
   const [startDate, setStartDate] = useState<string>(() => {
@@ -105,6 +108,23 @@ export const AdminAnalytics: React.FC = () => {
                   className="input-field text-sm"
                 />
               </div>
+              <button
+                onClick={refreshAuthToken}
+                disabled={refreshingToken}
+                className="px-3 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors flex items-center gap-2"
+                title="Refresh authentication token"
+              >
+                <RefreshCw className={`w-3 h-3 ${refreshingToken ? 'animate-spin' : ''}`} />
+                Refresh Token
+              </button>
+              <button
+                onClick={handleReLogin}
+                className="px-3 py-1.5 text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg transition-colors flex items-center gap-2"
+                title="Re-authenticate with Auth0"
+              >
+                <LogIn className="w-3 h-3" />
+                Re-Login
+              </button>
               <button
                 onClick={loadAnalytics}
                 disabled={loading}
