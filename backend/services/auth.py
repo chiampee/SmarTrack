@@ -103,6 +103,31 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
                     detail="Could not validate credentials - missing user ID"
                 )
             
+            # Debug: Log full token payload structure
+            print(f"[AUTH] 📋 Full token payload analysis for user: {user_id}")
+            print(f"[AUTH]   All keys in payload: {list(unverified_payload.keys())}")
+            print(f"[AUTH]   Audience (aud): {unverified_payload.get('aud')}")
+            print(f"[AUTH]   Scope: {unverified_payload.get('scope')}")
+            print(f"[AUTH]   Issuer (iss): {unverified_payload.get('iss')}")
+            
+            # Check each field that might contain email
+            email_fields_to_check = [
+                'email',
+                'https://auth0.com/email',
+                'https://auth0.com/user/email',
+                f"{unverified_payload.get('aud')}/email" if unverified_payload.get('aud') else None,
+            ]
+            # Remove None values
+            email_fields_to_check = [f for f in email_fields_to_check if f]
+            
+            print(f"[AUTH]   Checking email fields: {email_fields_to_check}")
+            for field in email_fields_to_check:
+                value = unverified_payload.get(field)
+                if value:
+                    print(f"[AUTH]     '{field}': {value}")
+                else:
+                    print(f"[AUTH]     '{field}': ❌ not found")
+            
             # Extract email using multiple possible field names
             email = extract_email_from_payload(unverified_payload)
             
