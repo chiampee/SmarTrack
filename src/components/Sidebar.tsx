@@ -92,14 +92,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
     }
   }
 
-  const navItems = [
-    { path: '/', label: 'Dashboard', icon: BarChart3 },
-    { path: '/settings', label: 'Settings', icon: Settings },
-  ]
-
   const isActivePath = (to: string) => {
     return location.pathname + location.search === to
   }
+
+  const isDashboardActive = location.pathname === '/' || location.pathname === '/dashboard'
+  const isSettingsActive = location.pathname === '/settings'
 
   return (
     <>
@@ -150,24 +148,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
 
           {/* Navigation */}
           <nav className="flex-1 p-6 space-y-2 overflow-y-auto">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
-                    isActive
-                      ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 border border-blue-200 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50'
-                  }`}
-                >
-                  <item.icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
-                  <span className="font-medium">{item.label}</span>
-                </Link>
-              )
-            })}
+            {/* Dashboard */}
+            <Link
+              to="/"
+              onClick={onClose}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                isDashboardActive
+                  ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 border border-blue-200 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50'
+              }`}
+            >
+              <BarChart3 className={`w-5 h-5 ${isDashboardActive ? 'text-blue-600' : 'text-gray-500'}`} />
+              <span className="font-medium">Dashboard</span>
+            </Link>
 
             {/* Projects Quick Filters */}
             <div className="mt-6 pt-4 border-t border-gray-200">
@@ -342,6 +335,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 </div>
               </div>
             )}
+
+            {/* Settings - placed at bottom before footer */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <Link
+                to="/settings"
+                onClick={onClose}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                  isSettingsActive
+                    ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 border border-blue-200 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50'
+                }`}
+              >
+                <Settings className={`w-5 h-5 ${isSettingsActive ? 'text-blue-600' : 'text-gray-500'}`} />
+                <span className="font-medium">Settings</span>
+              </Link>
+            </div>
           </nav>
 
           {/* Footer */}
