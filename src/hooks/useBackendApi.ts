@@ -125,12 +125,20 @@ export const useBackendApi = () => {
       const data = await response.json()
       return data as T
       
-    } catch (error) {
+    } catch (error: unknown) {
       // Handle network errors, timeouts, etc.
       if (error instanceof Error && error.name === 'AbortError') {
         const timeoutError = parseError(new Error('Request timeout. Please try again.'))
         logError(timeoutError, `API ${endpoint} timeout`)
         throw timeoutError
+      }
+      
+      // Enhanced error logging for network errors
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        console.error(`[API ERROR] Network error calling: ${url}`)
+        console.error(`[API ERROR] Backend URL configured as: ${API_BASE_URL}`)
+        console.error(`[API ERROR] Environment VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL || 'not set'}`)
+        console.error(`[API ERROR] Check if backend is accessible at: ${API_BASE_URL}/api/health`)
       }
       
       const appError = parseError(error)
