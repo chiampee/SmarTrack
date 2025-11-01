@@ -41,6 +41,7 @@ export const Dashboard: React.FC = () => {
   const [categories, setCategoriesState] = useState<Category[]>([])
   const location = useLocation()
   const navigate = useNavigate()
+  const [currentCategoryName, setCurrentCategoryName] = useState<string | null>(null)
 
   // Load links from backend
   useEffect(() => {
@@ -103,6 +104,7 @@ export const Dashboard: React.FC = () => {
     if (!filter && !collection && !categoryParam) {
       setSelectedCollectionId(null)
       setActiveFilterId(null)
+      setCurrentCategoryName(null)
       // Exclude archived links from default view
       setFilteredLinks(links.filter(l => !l.isArchived))
       return
@@ -111,6 +113,7 @@ export const Dashboard: React.FC = () => {
     if (collection) {
       setSelectedCollectionId(collection)
       setActiveFilterId(null)
+      setCurrentCategoryName(null)
       // Exclude archived links from collection view
       setFilteredLinks(links.filter(l => l.collectionId === collection && !l.isArchived))
       return
@@ -120,6 +123,7 @@ export const Dashboard: React.FC = () => {
       case 'favorites': {
         setSelectedCollectionId(null)
         setActiveFilterId('favorites')
+        setCurrentCategoryName(null)
         // Exclude archived links from favorites view
         setFilteredLinks(links.filter(l => l.isFavorite && !l.isArchived))
         break
@@ -127,6 +131,7 @@ export const Dashboard: React.FC = () => {
       case 'recent': {
         setSelectedCollectionId(null)
         setActiveFilterId('recent')
+        setCurrentCategoryName(null)
         const sevenDaysAgo = new Date()
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
         const recentLinks = links
@@ -138,6 +143,7 @@ export const Dashboard: React.FC = () => {
       case 'archived': {
         setSelectedCollectionId(null)
         setActiveFilterId('archived')
+        setCurrentCategoryName(null)
         setFilteredLinks(links.filter(l => l.isArchived))
         break
       }
@@ -606,16 +612,24 @@ export const Dashboard: React.FC = () => {
                   onClick={() => handleCollectionSelect('all')}
                   className="text-3xl font-bold text-gray-900 hover:text-blue-600 hover:underline cursor-pointer transition-all duration-200"
                 >
-                  Research Dashboard
+                  {currentCategoryName 
+                    ? currentCategoryName 
+                    : selectedCollectionId 
+                      ? collections.find(c => c.id === selectedCollectionId)?.name || 'Collection'
+                      : activeFilterId === 'favorites'
+                        ? 'Favorites'
+                        : activeFilterId === 'recent'
+                          ? 'Recent'
+                          : activeFilterId === 'archived'
+                            ? 'Archived'
+                            : 'Research Dashboard'}
                 </button>
                 {selectedCollectionId && (
                   <>
                     <span className="text-gray-400 select-none">/</span>
-                    <button
-                      className="text-2xl font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-                    >
+                    <span className="text-2xl font-semibold text-blue-600">
                       {collections.find(c => c.id === selectedCollectionId)?.name || 'Collection'}
-                    </button>
+                    </span>
                   </>
                 )}
               </div>

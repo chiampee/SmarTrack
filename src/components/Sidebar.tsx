@@ -96,7 +96,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
     return location.pathname + location.search === to
   }
 
-  const isDashboardActive = location.pathname === '/' || location.pathname === '/dashboard'
   const isSettingsActive = location.pathname === '/settings'
 
   return (
@@ -148,17 +147,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
 
           {/* Navigation */}
           <nav className="flex-1 p-6 space-y-2 overflow-y-auto">
-            {/* Dashboard */}
+            {/* Dashboard - always show as inactive (no active state) */}
             <Link
               to="/"
               onClick={onClose}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
-                isDashboardActive
-                  ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 border border-blue-200 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50'
-              }`}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50"
             >
-              <BarChart3 className={`w-5 h-5 ${isDashboardActive ? 'text-blue-600' : 'text-gray-500'}`} />
+              <BarChart3 className="w-5 h-5 text-gray-500" />
               <span className="font-medium">Dashboard</span>
             </Link>
 
