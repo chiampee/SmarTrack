@@ -43,13 +43,19 @@ export function createError(
  * Parse error from different sources
  */
 export function parseError(error: unknown): AppError {
-  // Handle AppError
+  // Handle AppError - preserve suppressLogging flag if present
   if (isAppError(error)) {
     return error
   }
 
   // Handle Error objects
   if (error instanceof Error) {
+    // If it's "Authentication required", create error with suppression
+    if (error.message === 'Authentication required' || error.message?.includes('Authentication required')) {
+      const appError = createError(ErrorType.UNKNOWN_ERROR, error.message, error)
+      appError.suppressLogging = true
+      return appError
+    }
     // Check for network errors
     if (error.message.includes('fetch') || error.message.includes('Network')) {
       return createError(
@@ -117,7 +123,11 @@ export function parseError(error: unknown): AppError {
 
   // Handle string errors
   if (typeof error === 'string') {
-    return createError(ErrorType.UNKNOWN_ERROR, error)
+    const appError = createError(ErrorType.UNKNOWN_ERROR, error)
+    if (error === 'Authentication required' || error?.includes('Authentication required')) {
+      appError.suppressLogging = true
+    }
+    return appError
   }
 
   // Fallback
