@@ -189,8 +189,8 @@ function extractErrorMessage(error: unknown): string {
  * Log error to console (and potentially external service)
  */
 export function logError(error: AppError, context?: string): void {
-  // Skip logging if explicitly suppressed
-  if (error.suppressLogging) {
+  // Skip logging if explicitly suppressed (check FIRST before any other logic)
+  if (error.suppressLogging === true) {
     return
   }
 
@@ -200,11 +200,14 @@ export function logError(error: AppError, context?: string): void {
   
   // Suppress "Authentication required" errors during initial load (expected behavior)
   // They occur when components mount before token is fetched or when user is not authenticated
+  // Check multiple ways the error message might appear
   const isAuthRequiredError = error.message === 'Authentication required' || 
                                error.message?.includes('Authentication required') ||
-                               errorMessage === 'Authentication required'
+                               errorMessage === 'Authentication required' ||
+                               errorMessage?.includes('Authentication required')
   
-  if (isAuthRequiredError && (context?.includes('makeAuthenticatedRequest') || context?.includes('API'))) {
+  // Aggressively suppress ALL "Authentication required" errors - they're expected during initialization
+  if (isAuthRequiredError) {
     // Silently suppress - these are expected during initialization
     // Only log in development at debug level for troubleshooting
     if (import.meta.env.DEV) {

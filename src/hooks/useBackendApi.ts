@@ -55,14 +55,10 @@ export const useBackendApi = () => {
         localStorage.setItem('authToken', requestToken)
       } catch (error) {
         // If we can't get token even though authenticated, this might be temporary
-        // Don't log it as an error if it's a common auth flow issue
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        // Only log if it's a persistent error, not a transient auth flow issue
-        if (!errorMessage.includes('login_required') && !errorMessage.includes('consent_required')) {
-          const authError = parseError(new Error(`Failed to get access token: ${errorMessage}`))
-          logError(authError, 'useBackendApi.makeAuthenticatedRequest')
-        }
-        throw parseError(new Error('Authentication required'))
+        // Don't log "Authentication required" errors - they're expected during initialization
+        const authError = parseError(new Error('Authentication required'))
+        authError.suppressLogging = true // Suppress logging for this expected error
+        throw authError
       }
     }
 
