@@ -23,34 +23,36 @@ async def lifespan(app: FastAPI):
     # Initialize database indexes (idempotent - safe to run multiple times)
     try:
         from services.mongodb import get_database
+        from services.index_utils import create_index_safely
         db = get_database()
         
         # Create indexes for links collection
-        await db.links.create_index("userId")
-        await db.links.create_index([("userId", 1), ("isFavorite", 1)])
-        await db.links.create_index([("userId", 1), ("isArchived", 1)])
-        await db.links.create_index([("userId", 1), ("createdAt", -1)])
-        await db.links.create_index([("userId", 1), ("url", 1)])
-        await db.links.create_index([("userId", 1), ("category", 1)])
-        await db.links.create_index([("userId", 1), ("collectionId", 1)])
+        await create_index_safely(db.links, "userId")
+        await create_index_safely(db.links, [("userId", 1), ("isFavorite", 1)])
+        await create_index_safely(db.links, [("userId", 1), ("isArchived", 1)])
+        await create_index_safely(db.links, [("userId", 1), ("createdAt", -1)])
+        # Explicitly set unique=False for userId + url to avoid conflicts with existing unique index
+        await create_index_safely(db.links, [("userId", 1), ("url", 1)], unique=False)
+        await create_index_safely(db.links, [("userId", 1), ("category", 1)])
+        await create_index_safely(db.links, [("userId", 1), ("collectionId", 1)])
         
         # Create indexes for collections collection
-        await db.collections.create_index("userId")
-        await db.collections.create_index([("userId", 1), ("name", 1)])
+        await create_index_safely(db.collections, "userId")
+        await create_index_safely(db.collections, [("userId", 1), ("name", 1)], unique=False)
         
         # Create indexes for categories collection
-        await db.categories.create_index("userId")
+        await create_index_safely(db.categories, "userId")
         
         # Create indexes for system_logs collection
-        await db.system_logs.create_index("timestamp")
-        await db.system_logs.create_index("type")
-        await db.system_logs.create_index("userId")
-        await db.system_logs.create_index([("type", 1), ("timestamp", -1)])
+        await create_index_safely(db.system_logs, "timestamp")
+        await create_index_safely(db.system_logs, "type")
+        await create_index_safely(db.system_logs, "userId")
+        await create_index_safely(db.system_logs, [("type", 1), ("timestamp", -1)])
         
         # Create indexes for source tracking in links
-        await db.links.create_index("source")
-        await db.links.create_index([("source", 1), ("createdAt", -1)])
-        await db.links.create_index("extensionVersion")
+        await create_index_safely(db.links, "source")
+        await create_index_safely(db.links, [("source", 1), ("createdAt", -1)])
+        await create_index_safely(db.links, "extensionVersion")
         
         print("✅ Database indexes initialized")
     except Exception as e:
