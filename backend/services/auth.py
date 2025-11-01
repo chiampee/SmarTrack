@@ -114,27 +114,55 @@ async def fetch_email_from_auth0(token: str, user_id: str) -> str:
         # Call Auth0 userinfo endpoint
         userinfo_url = f"https://{settings.AUTH0_DOMAIN}/userinfo"
         print(f"[AUTH] Calling Auth0 userinfo endpoint: {userinfo_url}")
+        print(f"[AUTH] Using token for user: {user_id}")
         
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(
-                userinfo_url,
-                headers={"Authorization": f"Bearer {token}"}
-            )
-            
-            print(f"[AUTH] Auth0 userinfo response status: {response.status_code}")
-            
-            if response.status_code == 200:
-                userinfo = response.json()
-                print(f"[AUTH] Auth0 userinfo response keys: {list(userinfo.keys())}")
-                email = extract_email_from_payload(userinfo)
-                if email:
-                    logger.info(f"Fetched email from Auth0 userinfo for user {user_id}: {email}")
-                    print(f"[AUTH] Successfully extracted email: {email}")
-                    return email
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                response = await client.get(
+                    userinfo_url,
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Content-Type": "application/json"
+                    }
+                )
+                
+                print(f"[AUTH] Auth0 userinfo response status: {response.status_code}")
+                print(f"[AUTH] Auth0 userinfo response headers: {dict(response.headers)}")
+                
+                if response.status_code == 200:
+                    userinfo = response.json()
+                    print(f"[AUTH] Auth0 userinfo full response: {userinfo}")
+                    print(f"[AUTH] Auth0 userinfo response keys: {list(userinfo.keys())}")
+                    
+                    # Try to extract email
+                    email = extract_email_from_payload(userinfo)
+                    if email:
+                        logger.info(f"Fetched email from Auth0 userinfo for user {user_id}: {email}")
+                        print(f"[AUTH] ✅ Successfully extracted email: {email}")
+                        return email
+                    else:
+                        print(f"[AUTH] ❌ Email not found in userinfo response")
+                        print(f"[AUTH] Available fields: {list(userinfo.keys())}")
+                        # Check if email_verified is preventing inclusion
+                        if 'email_verified' in userinfo:
+                            print(f"[AUTH] Email verified status: {userinfo.get('email_verified')}")
+                elif response.status_code == 401:
+                    print(f"[AUTH] ❌ Auth0 userinfo returned 401 Unauthorized - token may be invalid or expired")
+                    print(f"[AUTH] Response text: {response.text[:500]}")
+                elif response.status_code == 403:
+                    print(f"[AUTH] ❌ Auth0 userinfo returned 403 Forbidden - may need userinfo scope")
+                    print(f"[AUTH] Response text: {response.text[:500]}")
                 else:
-                    print(f"[AUTH] Email not found in userinfo response")
-            else:
-                print(f"[AUTH] Auth0 userinfo endpoint returned error: {response.status_code}, {response.text[:200]}")
+                    print(f"[AUTH] ❌ Auth0 userinfo endpoint returned error: {response.status_code}")
+                    print(f"[AUTH] Response text: {response.text[:500]}")
+            except httpx.TimeoutException:
+                print(f"[AUTH] ❌ Timeout calling Auth0 userinfo endpoint")
+                logger.error("Timeout calling Auth0 userinfo endpoint")
+                return None
+            except httpx.RequestError as e:
+                print(f"[AUTH] ❌ Request error calling Auth0 userinfo: {str(e)}")
+                logger.error(f"Request error calling Auth0 userinfo: {e}")
+                return None
         
         logger.warning(f"Could not fetch email from Auth0 userinfo for user {user_id}")
         return None
@@ -142,6 +170,7 @@ async def fetch_email_from_auth0(token: str, user_id: str) -> str:
         import logging
         logger = logging.getLogger(__name__)
         error_msg = str(e)
-        print(f"[AUTH] Exception fetching email from Auth0 userinfo: {error_msg}")
+        print(f"[AUTH] ❌ Exception fetching email from Auth0 userinfo: {error_msg}")
+        print(f"[AUTH] Exception type: {type(e).__name__}")
         logger.warning(f"Failed to fetch email from Auth0 userinfo: {e}")
         return None
