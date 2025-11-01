@@ -75,13 +75,25 @@ export const Dashboard: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated])
 
+  // Handle createCollection query parameter separately to ensure modal opens
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const createCollection = params.get('createCollection')
+    
+    if (createCollection === '1') {
+      setShowCreateCollectionModal(true)
+    } else if (showCreateCollectionModal && !createCollection) {
+      // Close modal if param is removed from URL
+      setShowCreateCollectionModal(false)
+    }
+  }, [location.search, showCreateCollectionModal])
+
   // React to sidebar query params: filter, collection, category
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const filter = params.get('filter')
     const collection = params.get('collection')
     const categoryParam = params.get('category')
-    const createCollection = params.get('createCollection')
 
     // Persist current view for future visits
     try {
@@ -145,10 +157,6 @@ export const Dashboard: React.FC = () => {
           setFilteredLinks(links.filter(l => !l.isArchived))
         }
       }
-    }
-
-    if (createCollection === '1') {
-      setShowCreateCollectionModal(true)
     }
   }, [location.search, links])
 
@@ -477,9 +485,14 @@ export const Dashboard: React.FC = () => {
       toast.success('Project created successfully!')
       setShowCreateCollectionModal(false)
       
-      // Navigate to the new collection
+      // Navigate to the new collection (clear createCollection param)
       if (createdCollection.id) {
-        navigate('/?collection=' + createdCollection.id)
+        navigate('/?collection=' + createdCollection.id, { replace: true })
+      } else {
+        // Clear createCollection param if no ID
+        const params = new URLSearchParams(location.search)
+        params.delete('createCollection')
+        navigate({ pathname: location.pathname, search: params.toString() }, { replace: true })
       }
     } catch (error) {
       logger.error('Failed to create project', { component: 'Dashboard', action: 'createCollection', metadata: collectionData }, error as Error)
@@ -1013,7 +1026,13 @@ export const Dashboard: React.FC = () => {
       {/* Create Collection Modal */}
       <CreateCollectionModal
         isOpen={showCreateCollectionModal}
-        onClose={() => setShowCreateCollectionModal(false)}
+        onClose={() => {
+          setShowCreateCollectionModal(false)
+          // Clear createCollection param from URL when modal closes
+          const params = new URLSearchParams(location.search)
+          params.delete('createCollection')
+          navigate({ pathname: location.pathname, search: params.toString() }, { replace: true })
+        }}
         onCreate={handleCreateCollection}
       />
     </div>
