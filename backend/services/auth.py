@@ -16,27 +16,63 @@ def extract_email_from_payload(payload: dict) -> str:
     - 'email' (standard)
     - 'https://auth0.com/email' (namespaced)
     - 'https://auth0.com/user/email' (alternative namespaced)
+    - Custom namespaced claims with audience
     """
+    # Log all payload keys for debugging
+    all_keys = list(payload.keys())
+    print(f"[AUTH] Token payload keys: {all_keys}")
+    
     # Check standard email field first
     email = payload.get("email")
     if email:
+        print(f"[AUTH] ✅ Found email in standard 'email' field: {email}")
         return email
     
     # Check Auth0 namespaced fields
     auth0_email = payload.get("https://auth0.com/email")
     if auth0_email:
+        print(f"[AUTH] ✅ Found email in 'https://auth0.com/email': {auth0_email}")
         return auth0_email
     
     auth0_user_email = payload.get("https://auth0.com/user/email")
     if auth0_user_email:
+        print(f"[AUTH] ✅ Found email in 'https://auth0.com/user/email': {auth0_user_email}")
         return auth0_user_email
     
-    # Check if email is in any namespaced field (fallback)
-    for key, value in payload.items():
-        if key.endswith("/email") or key.endswith("/user_email"):
-            if isinstance(value, str) and "@" in value:
-                return value
+    # Check for custom namespaced claims with audience (e.g., https://api.smartrack.com/email)
+    audience = payload.get("aud")
+    if audience:
+        # Handle both string and list audiences
+        if isinstance(audience, list):
+            for aud in audience:
+                custom_email = payload.get(f"{aud}/email")
+                if custom_email:
+                    print(f"[AUTH] ✅ Found email in custom claim '{aud}/email': {custom_email}")
+                    return custom_email
+        elif isinstance(audience, str):
+            custom_email = payload.get(f"{audience}/email")
+            if custom_email:
+                print(f"[AUTH] ✅ Found email in custom claim '{audience}/email': {custom_email}")
+                return custom_email
     
+    # Check if email is in any namespaced field (fallback)
+    print(f"[AUTH] 🔍 Searching for email in all payload fields...")
+    for key, value in payload.items():
+        if isinstance(value, str) and "@" in value and "." in value:
+            # Check if it looks like an email
+            if key.endswith("/email") or key.endswith("/user_email") or "email" in key.lower():
+                print(f"[AUTH] ✅ Found potential email in field '{key}': {value}")
+                # Verify it's actually an email format
+                if "@" in value and "." in value.split("@")[1]:
+                    return value
+    
+    # Log all string values that contain @ (potential emails)
+    print(f"[AUTH] ⚠️  Email not found. Checking for email-like values in payload...")
+    for key, value in payload.items():
+        if isinstance(value, str) and "@" in value:
+            print(f"[AUTH]   Found '@' in '{key}': {value}")
+    
+    print(f"[AUTH] ❌ Email not found in token payload")
     return None
 
 
