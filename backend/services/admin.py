@@ -19,12 +19,41 @@ async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends
     Check if current user is an admin
     Returns admin user info if authorized, raises 404 otherwise
     """
+    user_id = None
+    user_email = None
+    current_user = None
+    
     try:
         # Get current user from token
         current_user = await get_current_user(credentials)
         
-        user_id = current_user.get("sub")
-        user_email = current_user.get("email")
+        user_id = current_user.get("sub") if current_user else None
+        user_email = current_user.get("email") if current_user else None
+        
+        # If email not found, try to get from cache using user_id
+        if not user_email and user_id:
+            import time
+            from services.auth import _user_email_cache, _CACHE_TTL_SECONDS
+            current_time = time.time()
+            if user_id in _user_email_cache:
+                cache_entry = _user_email_cache[user_id]
+                # Handle both old format (string) and new format (dict)
+                if isinstance(cache_entry, dict):
+                    cached_email = cache_entry.get('email')
+                    cached_at = cache_entry.get('cached_at', 0)
+                    # Check if cache is still valid
+                    if cached_email and (current_time - cached_at < _CACHE_TTL_SECONDS):
+                        print(f"[ADMIN CHECK] ✅ Found email in cache for user {user_id}: {cached_email}")
+                        user_email = cached_email
+                        # Update current_user with cached email
+                        if current_user:
+                            current_user["email"] = cached_email
+                else:
+                    # Old format
+                    print(f"[ADMIN CHECK] ✅ Found email in cache (old format) for user {user_id}: {cache_entry}")
+                    user_email = cache_entry
+                    if current_user:
+                        current_user["email"] = cache_entry
         
         # Log extracted email and admin list for debugging (use print for Render logs visibility)
         print(f"[ADMIN CHECK] User ID: {user_id}, Email extracted: {user_email or 'None'}")
@@ -34,10 +63,14 @@ async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends
         
         if not user_email:
             # Log failed admin access attempt with reason
-            denial_reason = "No email in token - ensure token includes 'email' scope"
+            denial_reason = "No email in token or cache - ensure token includes 'email' scope"
             print(f"[ADMIN DENIED] User ID: {user_id}, Reason: {denial_reason}")
             logger.warning(f"Admin access denied - User ID: {user_id}, Reason: {denial_reason}")
-            await log_admin_access_attempt(user_id, False, denial_reason)
+            # Don't let logging failure crash the request
+            try:
+                await log_admin_access_attempt(user_id, False, denial_reason)
+            except Exception as log_error:
+                logger.error(f"Failed to log admin access attempt: {log_error}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Not found"
@@ -52,14 +85,22 @@ async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends
             # Log successful admin access
             print(f"[ADMIN GRANTED] User ID: {user_id}, Email: {user_email}")
             logger.info(f"Admin access granted - User ID: {user_id}, Email: {user_email}")
-            await log_admin_access_attempt(user_id, True, user_email)
-            return current_user
+            # Don't let logging failure crash the request
+            try:
+                await log_admin_access_attempt(user_id, True, user_email)
+            except Exception as log_error:
+                logger.error(f"Failed to log admin access attempt: {log_error}")
+            return current_user or {"sub": user_id, "email": user_email}
         else:
             # Log failed admin access attempt with reason
             denial_reason = f"Email '{user_email_lower}' not in admin list {admin_emails_lower}"
             print(f"[ADMIN DENIED] User ID: {user_id}, Email: {user_email}, Reason: {denial_reason}")
             logger.warning(f"Admin access denied - User ID: {user_id}, Email: {user_email}, Reason: {denial_reason}, Admin list: {admin_emails_lower}")
-            await log_admin_access_attempt(user_id, False, denial_reason)
+            # Don't let logging failure crash the request
+            try:
+                await log_admin_access_attempt(user_id, False, denial_reason)
+            except Exception as log_error:
+                logger.error(f"Failed to log admin access attempt: {log_error}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Not found"
@@ -69,18 +110,41 @@ async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends
         raise
     except Exception as e:
         # Log failed admin access attempt with exception details
-        user_id = None
-        user_email = None
-        try:
-            current_user = await get_current_user(credentials)
-            user_id = current_user.get("sub")
-            user_email = current_user.get("email")
-        except Exception as inner_e:
-            logger.error(f"Admin access check failed - Could not get current user: {str(inner_e)}")
+        # Try to extract user info even if get_current_user failed
+        if not user_id or not user_email:
+            try:
+                if not current_user:
+                    current_user = await get_current_user(credentials)
+                if current_user:
+                    user_id = current_user.get("sub") or user_id
+                    user_email = current_user.get("email") or user_email
+                    # Try cache as last resort
+                    if not user_email and user_id:
+                        import time
+                        from services.auth import _user_email_cache, _CACHE_TTL_SECONDS
+                        current_time = time.time()
+                        if user_id in _user_email_cache:
+                            cache_entry = _user_email_cache[user_id]
+                            if isinstance(cache_entry, dict):
+                                cached_email = cache_entry.get('email')
+                                if cached_email and (current_time - cache_entry.get('cached_at', 0) < _CACHE_TTL_SECONDS):
+                                    user_email = cached_email
+                            else:
+                                # Old format
+                                user_email = cache_entry
+            except Exception as inner_e:
+                logger.error(f"Admin access check failed - Could not get current user: {str(inner_e)}")
         
         denial_reason = f"Exception during admin check: {str(e)}"
+        print(f"[ADMIN CHECK] ❌ Exception: {denial_reason}")
         logger.error(f"Admin access denied - User ID: {user_id}, Email: {user_email or 'Unknown'}, Error: {str(e)}")
-        await log_admin_access_attempt(user_id, False, denial_reason)
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        # Don't let logging failure crash the request
+        try:
+            await log_admin_access_attempt(user_id, False, denial_reason)
+        except Exception as log_error:
+            logger.error(f"Failed to log admin access attempt: {log_error}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Not found"

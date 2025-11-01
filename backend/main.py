@@ -71,6 +71,38 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Global exception handler to ensure CORS headers are always sent
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Catch all unhandled exceptions and return proper error response with CORS headers
+    """
+    import traceback
+    from fastapi.responses import JSONResponse
+    
+    error_detail = str(exc)
+    error_type = type(exc).__name__
+    
+    # Log the error
+    print(f"❌ [GLOBAL ERROR HANDLER] {error_type}: {error_detail}")
+    print(f"❌ [GLOBAL ERROR HANDLER] Path: {request.url.path}")
+    print(f"❌ [GLOBAL ERROR HANDLER] Traceback: {traceback.format_exc()}")
+    
+    # Return 500 for unexpected errors, but with proper CORS headers
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal server error",
+            "detail": error_detail if settings.DEBUG else "An unexpected error occurred"
+        },
+        headers={
+            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
 # Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
