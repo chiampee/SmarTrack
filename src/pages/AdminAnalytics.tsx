@@ -41,6 +41,19 @@ export const AdminAnalytics: React.FC = () => {
   const loadAnalytics = useCallback(async () => {
     try {
       setLoading(true)
+      // Ensure we have a fresh token with email scope
+      try {
+        const token = await getAccessTokenSilently({
+          cacheMode: 'off',
+          authorizationParams: {
+            scope: 'openid profile email',
+          }
+        })
+        localStorage.setItem('authToken', token)
+      } catch (tokenError) {
+        console.error('Failed to get fresh token:', tokenError)
+      }
+      
       const data = await adminApi.getAnalytics(startDate, endDate)
       setAnalytics(data)
       setLastRefresh(new Date())
@@ -51,7 +64,76 @@ export const AdminAnalytics: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }, [adminApi, startDate, endDate, toast])
+  }, [adminApi, startDate, endDate, toast, getAccessTokenSilently])
+
+  // Force refresh token to get fresh token with email
+  const refreshAuthToken = useCallback(async () => {
+    try {
+      setRefreshingToken(true)
+      // Get a fresh token with cache disabled
+      const token = await getAccessTokenSilently({
+        cacheMode: 'off',
+        authorizationParams: {
+          scope: 'openid profile email',
+        }
+      })
+      localStorage.setItem('authToken', token)
+      toast.success('Token refreshed successfully')
+      // Retry loading analytics after token refresh
+      await loadAnalytics()
+    } catch (error) {
+      console.error('Failed to refresh token:', error)
+      toast.error('Failed to refresh token. Please try logging in again.')
+    } finally {
+      setRefreshingToken(false)
+    }
+  }, [getAccessTokenSilently, toast, loadAnalytics])
+
+  // Force re-login for admin access
+  const handleReLogin = useCallback(async () => {
+    try {
+      await loginWithRedirect({
+        authorizationParams: {
+          redirect_uri: window.location.origin + '/analytics',
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+          scope: 'openid profile email',
+          prompt: 'login', // Force login screen
+        }
+      })
+    } catch (error) {
+      console.error('Failed to re-login:', error)
+      toast.error('Failed to re-authenticate')
+    }
+  }, [loginWithRedirect, toast])
+
+  // Load analytics data
+  const loadAnalytics = useCallback(async () => {
+    try {
+      setLoading(true)
+      // Ensure we have a fresh token with email scope
+      try {
+        const token = await getAccessTokenSilently({
+          cacheMode: 'off',
+          authorizationParams: {
+            scope: 'openid profile email',
+          }
+        })
+        localStorage.setItem('authToken', token)
+      } catch (tokenError) {
+        console.error('Failed to get fresh token:', tokenError)
+      }
+      
+      const data = await adminApi.getAnalytics(startDate, endDate)
+      setAnalytics(data)
+      setLastRefresh(new Date())
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load analytics'
+      toast.error(errorMessage)
+      console.error('Failed to load analytics:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [adminApi, startDate, endDate, toast, getAccessTokenSilently])
 
   // Initial load
   useEffect(() => {
