@@ -6,6 +6,7 @@ Refactored to use utility functions for better maintainability
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from pydantic import BaseModel
+from urllib.parse import unquote
 from services.mongodb import get_database
 from services.auth import get_current_user
 
@@ -87,12 +88,15 @@ async def rename_category(
     try:
         user_id = current_user["sub"]
         
+        # URL decode the category name (FastAPI should do this automatically, but ensure it's decoded)
+        category_name = unquote(category_name)
+        
         # Validate new category name
         validated_new_name = validate_category_name(rename_data.newName, max_length=50)
         
         # Normalize category names for comparison
-        category_name_normalized = category_name.lower()
-        new_name_normalized = validated_new_name.lower()
+        category_name_normalized = category_name.lower().strip()
+        new_name_normalized = validated_new_name.lower().strip()
         
         # Prevent renaming to the same name
         if category_name_normalized == new_name_normalized:

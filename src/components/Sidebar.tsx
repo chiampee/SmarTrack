@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, Star, Clock, Archive, Library, Edit2, Trash2 } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useBackendApi } from '../hooks/useBackendApi'
+import { isAppError, getUserFriendlyMessage } from '../utils/errorHandler'
 
 interface Category {
   id: string
@@ -77,8 +78,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
         body: JSON.stringify({ newName: newName.trim() }),
       })
       window.location.reload() // Refresh to show updated categories
-    } catch (e) {
-      alert('Failed to rename category')
+    } catch (e: any) {
+      // Extract error message from various error types
+      let errorMessage = 'Unknown error'
+      if (isAppError(e)) {
+        errorMessage = getUserFriendlyMessage(e)
+      } else if (e?.message) {
+        errorMessage = e.message
+      } else if (typeof e === 'string') {
+        errorMessage = e
+      } else if (e instanceof Error) {
+        errorMessage = e.message
+      }
+      console.error('Failed to rename category:', e)
+      alert(`Failed to rename category: ${errorMessage}`)
     }
   }
 
@@ -257,7 +270,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 </div>
               )}
               {collections.length === 0 && (
-                <Link to="/?createCollection=1" onClick={onClose} className="mt-3 inline-flex items-center gap-2 px-3 py-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg">
+                <Link to="/?createCollection=1" onClick={onClose} className="mt-3 inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 rounded-lg transition-all duration-300">
                   <span>+ Create New Project</span>
                 </Link>
               )}
