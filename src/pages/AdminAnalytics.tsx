@@ -5,7 +5,7 @@ import {
   ChevronLeft, ChevronRight, Search, Filter, X, AlertCircle, Tag
 } from 'lucide-react'
 import { useAdminAccess } from '../hooks/useAdminAccess'
-import { useAdminApi, AdminAnalytics, AdminUser, SystemLog, AdminCategory, UserLimits } from '../services/adminApi'
+import { useAdminApi, AdminAnalytics as AdminAnalyticsType, AdminUser, SystemLog, AdminCategory, UserLimits } from '../services/adminApi'
 import { useToast } from '../components/Toast'
 import { LoadingSpinner } from '../components/LoadingSpinner'
 
@@ -18,7 +18,7 @@ export const AdminAnalytics: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState<TabType>('analytics')
   const [loading, setLoading] = useState(false)
-  const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null)
+  const [analytics, setAnalytics] = useState<AdminAnalyticsType | null>(null)
   
   // Date range for analytics
   const [startDate, setStartDate] = useState<string>(() => {
@@ -184,7 +184,7 @@ export const AdminAnalytics: React.FC = () => {
 }
 
 // Analytics Tab Component
-const AnalyticsTab: React.FC<{ analytics: AdminAnalytics | null; loading: boolean }> = ({ analytics, loading }) => {
+const AnalyticsTab: React.FC<{ analytics: AdminAnalyticsType | null; loading: boolean }> = ({ analytics, loading }) => {
   if (loading) {
     return <LoadingSpinner />
   }
