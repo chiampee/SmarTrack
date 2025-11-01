@@ -9,6 +9,10 @@ from core.config import settings
 
 security = HTTPBearer()
 
+# In-memory cache for user emails (to avoid repeated userinfo calls)
+# Key: user_id, Value: email
+_user_email_cache = {}
+
 def extract_email_from_payload(payload: dict) -> str:
     """
     Extract email from JWT payload, checking multiple possible Auth0 field names.
@@ -131,14 +135,23 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             # Extract email using multiple possible field names
             email = extract_email_from_payload(unverified_payload)
             
-            # If email not in token, try to fetch from Auth0 userinfo endpoint
+            # If email not in token, check cache first, then try userinfo endpoint
             if not email:
-                print(f"[AUTH] Email not in token for user {user_id}, attempting to fetch from Auth0 userinfo endpoint...")
-                email = await fetch_email_from_auth0(token, user_id)
-                if email:
-                    print(f"[AUTH] Successfully fetched email from Auth0 userinfo: {email}")
+                # Check cache first (to avoid repeated userinfo calls)
+                if user_id in _user_email_cache:
+                    cached_email = _user_email_cache[user_id]
+                    print(f"[AUTH] ✅ Using cached email for user {user_id}: {cached_email}")
+                    email = cached_email
                 else:
-                    print(f"[AUTH] Failed to fetch email from Auth0 userinfo for user {user_id}")
+                    print(f"[AUTH] ⚠️  Email not in token for user {user_id}, attempting to fetch from Auth0 userinfo endpoint...")
+                    email = await fetch_email_from_auth0(token, user_id)
+                    if email:
+                        print(f"[AUTH] ✅ Successfully fetched email from Auth0 userinfo: {email}")
+                        # Cache the email to avoid repeated userinfo calls
+                        _user_email_cache[user_id] = email
+                        print(f"[AUTH] ✅ Cached email for future requests")
+                    else:
+                        print(f"[AUTH] ❌ Failed to fetch email from Auth0 userinfo for user {user_id}")
             
             # Return user info from token
             return {
@@ -166,11 +179,18 @@ async def fetch_email_from_auth0(token: str, user_id: str) -> str:
     """
     Fetch user email from Auth0 userinfo endpoint if not in token.
     This is a fallback when the token doesn't include email claim.
+    Rate-limited to 10 requests/minute - use caching to avoid repeated calls.
     """
     try:
         import httpx
         import logging
         logger = logging.getLogger(__name__)
+        
+        # Check cache first
+        if user_id in _user_email_cache:
+            cached_email = _user_email_cache[user_id]
+            print(f"[AUTH] ✅ Using cached email (avoiding userinfo call): {cached_email}")
+            return cached_email
         
         # Call Auth0 userinfo endpoint
         userinfo_url = f"https://{settings.AUTH0_DOMAIN}/userinfo"
@@ -200,6 +220,9 @@ async def fetch_email_from_auth0(token: str, user_id: str) -> str:
                     if email:
                         logger.info(f"Fetched email from Auth0 userinfo for user {user_id}: {email}")
                         print(f"[AUTH] ✅ Successfully extracted email: {email}")
+                        # Cache the email
+                        _user_email_cache[user_id] = email
+                        print(f"[AUTH] ✅ Cached email for user {user_id}")
                         return email
                     else:
                         print(f"[AUTH] ❌ Email not found in userinfo response")
@@ -218,7 +241,13 @@ async def fetch_email_from_auth0(token: str, user_id: str) -> str:
                     rate_limit_reset = response.headers.get('x-ratelimit-reset', 'unknown')
                     print(f"[AUTH] ❌ Auth0 userinfo returned 429 Too Many Requests")
                     print(f"[AUTH] Rate limit info: retry-after={retry_after}s, reset={rate_limit_reset}")
-                    print(f"[AUTH] ⚠️  Auth0 rate limit exceeded. Email must be included in JWT token.")
+                    print(f"[AUTH] ⚠️  Auth0 rate limit exceeded. Checking cache...")
+                    # Try cache as fallback even if we got rate limited
+                    if user_id in _user_email_cache:
+                        cached_email = _user_email_cache[user_id]
+                        print(f"[AUTH] ✅ Using cached email despite rate limit: {cached_email}")
+                        return cached_email
+                    print(f"[AUTH] ⚠️  No cached email available. Email must be included in JWT token.")
                     print(f"[AUTH] ⚠️  Solution: Configure Auth0 to include email in access token.")
                     logger.warning(f"Auth0 userinfo rate limit exceeded for user {user_id}. Configure Auth0 to include email in token.")
                     # Don't retry immediately - rate limit is per minute, wait for reset
@@ -228,10 +257,20 @@ async def fetch_email_from_auth0(token: str, user_id: str) -> str:
             except httpx.TimeoutException:
                 print(f"[AUTH] ❌ Timeout calling Auth0 userinfo endpoint")
                 logger.error("Timeout calling Auth0 userinfo endpoint")
+                # Try cache as fallback
+                if user_id in _user_email_cache:
+                    cached_email = _user_email_cache[user_id]
+                    print(f"[AUTH] ✅ Using cached email after timeout: {cached_email}")
+                    return cached_email
                 return None
             except httpx.RequestError as e:
                 print(f"[AUTH] ❌ Request error calling Auth0 userinfo: {str(e)}")
                 logger.error(f"Request error calling Auth0 userinfo: {e}")
+                # Try cache as fallback
+                if user_id in _user_email_cache:
+                    cached_email = _user_email_cache[user_id]
+                    print(f"[AUTH] ✅ Using cached email after request error: {cached_email}")
+                    return cached_email
                 return None
         
         logger.warning(f"Could not fetch email from Auth0 userinfo for user {user_id}")
@@ -243,4 +282,9 @@ async def fetch_email_from_auth0(token: str, user_id: str) -> str:
         print(f"[AUTH] ❌ Exception fetching email from Auth0 userinfo: {error_msg}")
         print(f"[AUTH] Exception type: {type(e).__name__}")
         logger.warning(f"Failed to fetch email from Auth0 userinfo: {e}")
+        # Try cache as fallback
+        if user_id in _user_email_cache:
+            cached_email = _user_email_cache[user_id]
+            print(f"[AUTH] ✅ Using cached email after exception: {cached_email}")
+            return cached_email
         return None
