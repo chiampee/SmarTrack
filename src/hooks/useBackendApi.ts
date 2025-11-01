@@ -84,6 +84,13 @@ export const useBackendApi = () => {
 
     const url = `${API_BASE_URL}${endpoint}`
     
+    // Log backend URL for debugging (only in development or if explicitly enabled)
+    if (import.meta.env.DEV || import.meta.env.VITE_DEBUG_API === 'true') {
+      console.log(`[API] Making request to: ${url}`)
+      console.log(`[API] Backend URL: ${API_BASE_URL}`)
+      console.log(`[API] Environment VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL || 'not set'}`)
+    }
+    
     try {
       setIsLoading(true)
       // Apply a default timeout to avoid infinite loading UI
