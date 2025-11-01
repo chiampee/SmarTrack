@@ -4,7 +4,9 @@ import { parseError, logError, withErrorHandling, ErrorType } from '../utils/err
 import { validateApiResponse } from '../utils/validation'
 import { Link } from '../types/Link'
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5554'
+// Backend URL - use environment variable or default to Render backend
+// If running locally, set VITE_BACKEND_URL=http://localhost:8000 in .env
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://smartrack-back.onrender.com'
 
 export interface UserStats {
   linksUsed: number
