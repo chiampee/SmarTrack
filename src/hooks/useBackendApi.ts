@@ -25,7 +25,12 @@ export const useBackendApi = () => {
     const fetchToken = async () => {
       if (isAuthenticated) {
         try {
-          const accessToken = await getAccessTokenSilently()
+          // Always request email scope to ensure email is in token
+          const accessToken = await getAccessTokenSilently({
+            authorizationParams: {
+              scope: 'openid profile email',
+            }
+          })
           setToken(accessToken)
           localStorage.setItem('authToken', accessToken) // Store for extension
         } catch (error) {
@@ -50,7 +55,12 @@ export const useBackendApi = () => {
     let requestToken = token
     if (!requestToken && isAuthenticated) {
       try {
-        requestToken = await getAccessTokenSilently()
+        // Always request email scope to ensure email is in token
+        requestToken = await getAccessTokenSilently({
+          authorizationParams: {
+            scope: 'openid profile email',
+          }
+        })
         setToken(requestToken)
         localStorage.setItem('authToken', requestToken)
       } catch (error) {
