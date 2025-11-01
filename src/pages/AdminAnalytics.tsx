@@ -106,35 +106,6 @@ export const AdminAnalytics: React.FC = () => {
     }
   }, [loginWithRedirect, toast])
 
-  // Load analytics data
-  const loadAnalytics = useCallback(async () => {
-    try {
-      setLoading(true)
-      // Ensure we have a fresh token with email scope
-      try {
-        const token = await getAccessTokenSilently({
-          cacheMode: 'off',
-          authorizationParams: {
-            scope: 'openid profile email',
-          }
-        })
-        localStorage.setItem('authToken', token)
-      } catch (tokenError) {
-        console.error('Failed to get fresh token:', tokenError)
-      }
-      
-      const data = await adminApi.getAnalytics(startDate, endDate)
-      setAnalytics(data)
-      setLastRefresh(new Date())
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load analytics'
-      toast.error(errorMessage)
-      console.error('Failed to load analytics:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [adminApi, startDate, endDate, toast, getAccessTokenSilently])
-
   // Initial load
   useEffect(() => {
     if (isAdmin && !isChecking) {
