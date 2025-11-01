@@ -122,6 +122,23 @@ export const AdminAnalytics: React.FC = () => {
                 />
                 Auto-refresh (10 min)
               </label>
+              <button
+                onClick={async () => {
+                  try {
+                    const debugInfo = await adminApi.debugToken()
+                    console.log('Debug Token Info:', debugInfo)
+                    alert(`Token Debug Info:\n\n${JSON.stringify(debugInfo, null, 2)}`)
+                    toast.success('Token debug info logged to console')
+                  } catch (error) {
+                    console.error('Debug token error:', error)
+                    toast.error('Failed to debug token')
+                  }
+                }}
+                className="px-3 py-1.5 text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+                title="Debug token authentication - shows token contents"
+              >
+                Debug Token
+              </button>
             </div>
           </div>
           {lastRefresh && (
