@@ -19,6 +19,7 @@ export interface AppError {
   originalError?: Error
   statusCode?: number
   details?: Record<string, any>
+  suppressLogging?: boolean // Flag to suppress logging for expected errors
 }
 
 /**
@@ -161,28 +162,74 @@ export function getUserFriendlyMessage(error: AppError): string {
 }
 
 /**
+ * Safely extract error message from unknown error type
+ */
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+  if (typeof error === 'string') {
+    return error
+  }
+  if (typeof error === 'object' && error !== null) {
+    const err = error as any
+    if (err.message) return String(err.message)
+    if (err.detail) return String(err.detail)
+    if (err.error) return String(err.error)
+    try {
+      return JSON.stringify(error)
+    } catch {
+      return 'Unknown error'
+    }
+  }
+  return 'Unknown error'
+}
+
+/**
  * Log error to console (and potentially external service)
  */
 export function logError(error: AppError, context?: string): void {
+  // Skip logging if explicitly suppressed
+  if (error.suppressLogging) {
+    return
+  }
+
   const timestamp = new Date().toISOString()
-  const logData = {
-    timestamp,
-    context,
+  const errorMessage = error.message || extractErrorMessage(error.originalError) || 'Unknown error'
+  const contextStr = context ? `[${context}]` : ''
+  
+  // Suppress "Authentication required" errors during initial load (expected behavior)
+  // They occur when components mount before token is fetched or when user is not authenticated
+  const isAuthRequiredError = error.message === 'Authentication required' || 
+                               error.message?.includes('Authentication required') ||
+                               errorMessage === 'Authentication required'
+  
+  if (isAuthRequiredError && (context?.includes('makeAuthenticatedRequest') || context?.includes('API'))) {
+    // Silently suppress - these are expected during initialization
+    // Only log in development at debug level for troubleshooting
+    if (import.meta.env.DEV) {
+      console.debug(`[Auth] Authentication required${contextStr} - this is expected during initialization`)
+    }
+    return
+  }
+  
+  // Log to console with proper serialization - use multiple console.error calls
+  // so browsers don't collapse them into just "Object"
+  console.error(`[Error]${contextStr} ${errorMessage}`)
+  console.error('Error details:', {
     type: error.type,
-    message: error.message,
+    message: errorMessage,
     details: error.details,
     originalError: error.originalError?.message,
     stack: error.originalError?.stack,
-  }
-
-  // Log to console
-  console.error('[Error]', logData)
+    timestamp,
+  })
 
   // In production, send to error tracking service (e.g., Sentry)
   if (process.env.NODE_ENV === 'production') {
     // TODO: Send to Sentry or other error tracking service
     // Sentry.captureException(error.originalError || new Error(error.message), {
-    //   contexts: { app: logData },
+    //   contexts: { app: { type: error.type, message: errorMessage, details: error.details } },
     // })
   }
 }

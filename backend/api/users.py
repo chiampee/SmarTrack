@@ -8,6 +8,10 @@ from services.mongodb import get_database
 from services.auth import get_current_user
 from core.config import settings
 
+# User limits constants
+MAX_LINKS_PER_USER = 40
+MAX_STORAGE_PER_USER_BYTES = 200 * 1024  # 200 KB
+
 router = APIRouter()
 
 @router.get("/users/stats")
@@ -81,8 +85,8 @@ async def get_user_stats(
             storage_used = 0
             average_per_link = 0
         
-        storage_limit = 5 * 1024 * 1024  # 5MB limit
-        links_limit = 100  # 100 links limit
+        storage_limit = MAX_STORAGE_PER_USER_BYTES  # 200 KB limit
+        links_limit = MAX_LINKS_PER_USER  # 40 links limit
         
         result = {
             "totalLinks": total_links,
@@ -115,10 +119,10 @@ async def get_user_stats(
                 "favoriteLinks": 0,
                 "archivedLinks": 0,
                 "storageUsed": 0,
-                "storageLimit": 5 * 1024 * 1024,
-                "linksLimit": 100,
+                "storageLimit": MAX_STORAGE_PER_USER_BYTES,  # 200 KB
+                "linksLimit": MAX_LINKS_PER_USER,  # 40 links
                 "averagePerLink": 0,
-                "linksRemaining": 100,
-                "storageRemaining": 5 * 1024 * 1024
+                "linksRemaining": MAX_LINKS_PER_USER,
+                "storageRemaining": MAX_STORAGE_PER_USER_BYTES
             }
         raise HTTPException(status_code=500, detail=error_msg)

@@ -5,7 +5,7 @@ import { Collection } from '../types/Link'
 interface CreateCollectionModalProps {
   isOpen: boolean
   onClose: () => void
-  onCreate: (collection: Omit<Collection, 'id' | 'userId' | 'linkCount' | 'createdAt' | 'updatedAt'>) => void
+  onCreate: (collection: Omit<Collection, 'id' | 'userId' | 'linkCount' | 'createdAt' | 'updatedAt'>) => Promise<void> | void
 }
 
 export const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({ 
@@ -18,6 +18,7 @@ export const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
   const [color, setColor] = useState('#3B82F6')
   const [icon, setIcon] = useState('project')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const colors = [
     { value: '#3B82F6', label: 'Blue', bg: 'bg-blue-500' },
@@ -38,7 +39,7 @@ export const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
     { value: 'star', label: 'Star', icon: '⭐' },
   ]
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
 
@@ -59,21 +60,42 @@ export const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
       return
     }
 
-    // Create collection
-    onCreate({
-      name: name.trim(),
-      description: description.trim() || undefined,
-      color,
-      icon,
-      isDefault: false,
-    })
+    try {
+      setIsSubmitting(true)
+      setErrors({})
+      
+      // Create collection (await if it's async)
+      const result = onCreate({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        color,
+        icon,
+        isDefault: false,
+      })
+      
+      // If onCreate returns a promise, wait for it
+      if (result instanceof Promise) {
+        await result
+      }
 
-    // Reset form
-    setName('')
-    setDescription('')
-    setColor('#3B82F6')
-    setIcon('project')
-    onClose()
+      // Reset form only on success (if we reach here, creation succeeded)
+      setName('')
+      setDescription('')
+      setColor('#3B82F6')
+      setIcon('project')
+      setErrors({})
+      onClose()
+    } catch (error) {
+      // Display error in form
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create project'
+      setErrors({ 
+        submit: errorMessage.includes('already exists') 
+          ? 'A project with this name already exists' 
+          : errorMessage 
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleClose = () => {
@@ -185,20 +207,36 @@ export const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
             </div>
           </div>
 
+          {/* Submit Error */}
+          {errors.submit && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{errors.submit}</p>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
             <button
               type="button"
               onClick={handleClose}
-              className="btn btn-secondary"
+              disabled={isSubmitting}
+              className="btn btn-secondary disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="btn btn-primary"
+              disabled={isSubmitting}
+              className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              Create Project
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Creating...</span>
+                </>
+              ) : (
+                'Create Project'
+              )}
             </button>
           </div>
         </form>

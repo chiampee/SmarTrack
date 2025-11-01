@@ -26,7 +26,8 @@ class Settings(BaseSettings):
     ]
     
     # Usage Limits
-    MAX_LINKS_PER_USER: int = 1000
+    MAX_LINKS_PER_USER: int = 40  # 40 links per user
+    MAX_STORAGE_PER_USER_BYTES: int = 200 * 1024  # 200 KB per user
     MAX_PAGE_SIZE_BYTES: int = 524288  # 512KB
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 60
     

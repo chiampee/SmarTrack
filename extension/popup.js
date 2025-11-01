@@ -1,625 +1,1103 @@
 /**
  * SmarTrack Chrome Extension Popup
  * Enhanced with selected text capture and metadata extraction
+ * 
+ * @fileoverview Main popup controller for the SmarTrack Chrome extension
+ * @version 2.0.0
  */
 
+// ============================================================================
+// Constants
+// ============================================================================
+
+const CONSTANTS = {
+  // API Configuration
+  DASHBOARD_URL: 'https://smar-track.vercel.app',
+  TOKEN_CHECK_INTERVAL: 2000, // ms
+  TOAST_DISPLAY_DURATION: 3000, // ms
+  AUTO_CLOSE_DELAY: 2000, // ms
+  SELECTED_TEXT_MIN_LENGTH: 20,
+  
+  // Storage Keys
+  STORAGE_KEYS: {
+    AUTH_TOKEN: 'authToken',
+    TOKEN_EXPIRY: 'tokenExpiry',
+    SETTINGS: 'settings',
+    LAST_CATEGORY: 'lastCategory'
+  },
+  
+  // Default Categories (note: "other" is always added separately to trigger custom category input)
+  DEFAULT_CATEGORIES: ['research', 'articles', 'tools', 'references', 'other'],
+  
+  // DOM Selectors
+  SELECTORS: {
+    LOGIN_VIEW: 'loginView',
+    MAIN_VIEW: 'mainView',
+    LINK_FORM: 'linkForm',
+    TITLE_INPUT: 'title',
+    DESCRIPTION_INPUT: 'description',
+    CATEGORY_SELECT: 'category',
+    CUSTOM_CATEGORY_ROW: 'customCategoryRow',
+    CUSTOM_CATEGORY_INPUT: 'customCategoryInput',
+    SAVE_CUSTOM_CATEGORY_BTN: 'saveCustomCategoryBtn',
+    ADD_CATEGORY_BTN: 'addCategoryBtn',
+    SAVE_BTN: 'saveBtn',
+    CANCEL_BTN: 'cancelBtn',
+    LOGIN_BTN: 'loginBtn',
+    OPEN_DASHBOARD_BTN: 'openDashboardBtn',
+    LOADING: 'loading',
+    STATUS: 'status',
+    DUPLICATES_PANEL: 'duplicatesPanel',
+    DUPE_LIST: 'dupeList',
+    SELECTED_TEXT_INFO: 'selectedTextInfo',
+    PAGE_TITLE: 'pageTitle',
+    PAGE_URL: 'pageUrl',
+    FAVICON: 'favicon'
+  },
+  
+  // Error Messages
+  ERROR_MESSAGES: {
+    GENERIC: 'Failed to save link',
+    UNAUTHORIZED: 'Please log in to SmarTrack',
+    NETWORK: 'Connection error. Check your internet',
+    SERVER_ERROR: 'Server error. Please try again',
+    DUPLICATE: 'This link already exists in SmarTrack',
+    INVALID_TOKEN: 'Please log in at https://smar-track.vercel.app first'
+  },
+  
+  // Custom Category Option Value
+  CUSTOM_CATEGORY_VALUE: '__custom__',
+  
+  // System URLs to skip (cannot inject scripts)
+  SKIP_URL_PREFIXES: [
+    'chrome://',
+    'chrome-extension://',
+    'edge://',
+    'about:',
+    'moz-extension://',
+    'brave://',
+    'opera://'
+  ]
+};
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+/**
+ * Safely gets an element by ID
+ * @param {string} id - Element ID
+ * @returns {HTMLElement|null}
+ */
+const getElement = (id) => {
+  try {
+    return document.getElementById(id);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Capitalizes the first letter of a string
+ * @param {string} str - String to capitalize
+ * @returns {string}
+ */
+const capitalize = (str) => {
+  if (!str || typeof str !== 'string') return str;
+  try {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  } catch {
+    return str;
+  }
+};
+
+/**
+ * Trims and validates a string
+ * @param {string} str - String to sanitize
+ * @param {number} maxLength - Maximum allowed length
+ * @returns {string}
+ */
+const sanitizeString = (str, maxLength = 1000) => {
+  if (typeof str !== 'string') return '';
+  return str.trim().slice(0, maxLength);
+};
+
+/**
+ * Validates URL format
+ * @param {string} url - URL to validate
+ * @returns {boolean}
+ */
+const isValidUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Checks if a URL is a system URL that should be skipped
+ * @param {string} url - URL to check
+ * @returns {boolean}
+ */
+const isSystemUrl = (url) => {
+  if (!url || typeof url !== 'string') {
+    return true;
+  }
+  
+  return CONSTANTS.SKIP_URL_PREFIXES.some(prefix => 
+    url.toLowerCase().startsWith(prefix.toLowerCase())
+  );
+};
+
+/**
+ * Creates a debounced function
+ * @param {Function} func - Function to debounce
+ * @param {number} wait - Wait time in ms
+ * @returns {Function}
+ */
+const debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
+// ============================================================================
+// Main Popup Class
+// ============================================================================
+
+/**
+ * SmarTrack Popup Controller
+ * Manages the Chrome extension popup UI and interactions
+ */
 class SmarTrackPopup {
+  /**
+   * Creates a new SmarTrackPopup instance
+   */
   constructor() {
-    this.tags = [];
+    /** @type {boolean} */
     this.isProcessing = false;
+    
+    /** @type {chrome.tabs.Tab|null} */
     this.currentTab = null;
+    
+    /** @type {Object} */
     this.pageData = {};
+    
+    /** @type {string} */
     this.selectedText = '';
+    
+    /** @type {string[]} */
     this.categories = [];
+    
+    /** @type {string|null} */
+    this.lastCategory = null;
+    
+    /** @type {number|null} */
+    this.tokenCheckInterval = null;
+    
+    /** @type {Function[]} */
+    this.cleanupFunctions = [];
     
     this.init();
   }
 
+  /**
+   * Initializes the popup
+   * @async
+   * @returns {Promise<void>}
+   */
   async init() {
     try {
-      // Load categories from settings first
       await this.loadCategories();
-
-      // Get current tab
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      this.currentTab = tab;
+      await this.loadCurrentTab();
       
-      // Check if user is logged in
       const token = await this.getAuthToken();
-      
-      // Always setup event listeners first
       this.setupEventListeners();
-      
-      // Render category options
       this.renderCategories();
       
       if (!token) {
-        // Show login view
         this.showLoginView();
+        this.startBackgroundTokenCheck();
       } else {
-        // Extract page metadata
         await this.extractPageMetadata();
-        
-        // Check for selected text
         await this.captureSelectedText();
-        
-        // Populate UI
         this.populateUI();
-        
-        // Show main view
         this.showMainView();
       }
-
-      // Focus title for quick editing
-      setTimeout(() => {
-        const titleInput = document.getElementById('title');
-        if (titleInput) titleInput.focus();
-      }, 0);
       
+      this.focusTitleInput();
     } catch (error) {
-      // Silently handle error
-      this.showStatus('Failed to load page', 'error');
+      this.handleInitializationError(error);
     }
   }
 
+  /**
+   * Handles initialization errors gracefully
+   * @param {Error} error - Error object
+   * @returns {void}
+   */
+  handleInitializationError(error) {
+    this.showStatus('Failed to load page', 'error');
+    // Log error for debugging without exposing to user
+    if (chrome.runtime?.lastError) {
+      console.error('[SRT] Initialization error:', chrome.runtime.lastError);
+    }
+  }
+
+  /**
+   * Loads the current active tab
+   * @async
+   * @returns {Promise<void>}
+   */
+  async loadCurrentTab() {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab || !tab.id) {
+        throw new Error('No active tab found');
+      }
+      this.currentTab = tab;
+    } catch (error) {
+      console.error('[SRT] Failed to load current tab:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Focuses the title input field for quick editing
+   * @returns {void}
+   */
+  focusTitleInput() {
+    // Use requestAnimationFrame for better timing
+    requestAnimationFrame(() => {
+      const titleInput = getElement(CONSTANTS.SELECTORS.TITLE_INPUT);
+      if (titleInput) {
+        titleInput.focus();
+        // Select all text for quick replacement
+        titleInput.select();
+      }
+    });
+  }
+
+  /**
+   * Loads categories from storage
+   * @async
+   * @returns {Promise<void>}
+   */
   async loadCategories() {
     try {
-      const result = await chrome.storage.sync.get(['settings', 'lastCategory']);
-      const defaults = ['research', 'articles', 'tools', 'references', 'other'];
-      const stored = result?.settings?.categories;
-      this.categories = Array.isArray(stored) && stored.length ? stored : defaults;
-      this.lastCategory = result?.lastCategory || null;
-    } catch (_) {
-      this.categories = ['research', 'articles', 'tools', 'references', 'other'];
+      const result = await chrome.storage.sync.get([
+        CONSTANTS.STORAGE_KEYS.SETTINGS,
+        CONSTANTS.STORAGE_KEYS.LAST_CATEGORY
+      ]);
+      
+      const stored = result?.[CONSTANTS.STORAGE_KEYS.SETTINGS]?.categories;
+      this.categories = Array.isArray(stored) && stored.length > 0
+        ? stored
+        : [...CONSTANTS.DEFAULT_CATEGORIES];
+      
+      this.lastCategory = result?.[CONSTANTS.STORAGE_KEYS.LAST_CATEGORY] || null;
+    } catch (error) {
+      console.error('[SRT] Failed to load categories:', error);
+      this.categories = [...CONSTANTS.DEFAULT_CATEGORIES];
       this.lastCategory = null;
     }
   }
 
+  /**
+   * Saves categories to storage
+   * @async
+   * @param {string[]} categories - Array of category names
+   * @returns {Promise<void>}
+   */
   async saveCategories(categories) {
+    if (!Array.isArray(categories) || categories.length === 0) {
+      return;
+    }
+    
     try {
-      const res = await chrome.storage.sync.get(['settings']);
-      const settings = res.settings || {};
+      const result = await chrome.storage.sync.get([CONSTANTS.STORAGE_KEYS.SETTINGS]);
+      const settings = result[CONSTANTS.STORAGE_KEYS.SETTINGS] || {};
       settings.categories = categories;
-      await chrome.storage.sync.set({ settings });
+      
+      await chrome.storage.sync.set({ [CONSTANTS.STORAGE_KEYS.SETTINGS]: settings });
       this.categories = categories;
-    } catch (_) {
-      // ignore
+    } catch (error) {
+      console.error('[SRT] Failed to save categories:', error);
+      // Non-critical, continue execution
     }
   }
 
+  /**
+   * Renders category options in the select dropdown
+   * @param {string|null} selectedValue - Value to pre-select
+   * @returns {void}
+   */
   renderCategories(selectedValue = null) {
-    const select = document.getElementById('category');
+    const select = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
     if (!select) return;
 
+    // Clear existing options
     select.innerHTML = '';
 
-    // Add stored categories
-    this.categories.forEach((c) => {
-      const opt = document.createElement('option');
-      opt.value = c;
-      opt.textContent = this.capitalize(c);
-      select.appendChild(opt);
+    // Ensure "other" is in the categories list
+    const categoriesWithOther = [...this.categories];
+    if (!categoriesWithOther.includes('other')) {
+      categoriesWithOther.push('other');
+    }
+
+    // Add stored categories (including "other")
+    categoriesWithOther.forEach((category) => {
+      const option = document.createElement('option');
+      option.value = category;
+      option.textContent = capitalize(category);
+      select.appendChild(option);
     });
 
-    // Custom… option
-    const customOpt = document.createElement('option');
-    customOpt.value = '__custom__';
-    customOpt.textContent = 'Custom…';
-    select.appendChild(customOpt);
-
-    // Determine selection priority: explicit > lastCategory > default
-    const fallback = this.categories[0] || 'research';
+    // Determine selection: explicit > lastCategory > default
+    const fallback = this.categories[0] || CONSTANTS.DEFAULT_CATEGORIES[0];
     const toSelect = selectedValue || this.lastCategory || fallback;
-    select.value = this.categories.includes(toSelect) ? toSelect : fallback;
+    select.value = categoriesWithOther.includes(toSelect) ? toSelect : fallback;
+    
+    // Show/hide custom category input based on selection
+    this.updateCustomCategoryVisibility();
   }
 
+  /**
+   * Shows or hides the custom category input row
+   * @param {boolean} show - Whether to show the row
+   * @returns {void}
+   */
   showCustomCategoryRow(show) {
-    const row = document.getElementById('customCategoryRow');
-    const input = document.getElementById('customCategoryInput');
+    const row = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_ROW);
+    const input = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_INPUT);
+    
     if (!row || !input) return;
+    
     if (show) {
       row.classList.remove('hidden');
-      setTimeout(() => input.focus(), 0);
+      // Focus input after DOM update
+      requestAnimationFrame(() => input.focus());
     } else {
       row.classList.add('hidden');
       input.value = '';
     }
   }
 
-  capitalize(str) {
+  /**
+   * Updates custom category input visibility based on current selection
+   * @returns {void}
+   */
+  updateCustomCategoryVisibility() {
+    const select = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
+    if (!select) return;
+    
+    // Show custom input only when "other" is selected
+    const isOtherSelected = select.value === 'other';
+    this.showCustomCategoryRow(isOtherSelected);
+  }
+
+  /**
+   * Shows the login view and hides main view
+   * @returns {void}
+   */
+  showLoginView() {
+    const loginView = getElement(CONSTANTS.SELECTORS.LOGIN_VIEW);
+    const mainView = getElement(CONSTANTS.SELECTORS.MAIN_VIEW);
+    
+    if (loginView) loginView.classList.remove('hidden');
+    if (mainView) mainView.classList.add('hidden');
+  }
+
+  /**
+   * Shows the main view and hides login view
+   * @returns {void}
+   */
+  showMainView() {
+    const loginView = getElement(CONSTANTS.SELECTORS.LOGIN_VIEW);
+    const mainView = getElement(CONSTANTS.SELECTORS.MAIN_VIEW);
+    
+    if (loginView) loginView.classList.add('hidden');
+    if (mainView) mainView.classList.remove('hidden');
+  }
+
+  /**
+   * Extracts page metadata from the current tab
+   * @async
+   * @returns {Promise<void>}
+   */
+  async extractPageMetadata() {
+    if (!this.currentTab?.id) {
+      this.pageData = this.getFallbackPageData();
+      return;
+    }
+    
+    // Check if URL is a system URL (cannot inject scripts)
+    const currentUrl = this.currentTab.url || '';
+    if (isSystemUrl(currentUrl)) {
+      // Use fallback data for system pages (this is expected behavior)
+      this.pageData = this.getFallbackPageData();
+      return;
+    }
+    
     try {
-      if (!str) return str;
-      return str.charAt(0).toUpperCase() + str.slice(1);
-    } catch (_) {
-      return str;
+      const [result] = await chrome.scripting.executeScript({
+        target: { tabId: this.currentTab.id },
+        func: this.extractMetadataFromPage
+      });
+      
+      this.pageData = result?.result || this.getFallbackPageData();
+      
+      // Fetch potential duplicates (best-effort, non-blocking)
+      this.fetchDuplicates().catch(() => {
+        // Silently fail - duplicates are not critical
+      });
+      
+    } catch (error) {
+      // Check if error is due to system page (expected)
+      const errorMessage = error.message || '';
+      if (errorMessage.includes('Cannot access') && errorMessage.includes('chrome://')) {
+        // Expected error for system pages, use fallback silently
+        this.pageData = this.getFallbackPageData();
+      } else {
+        // Unexpected error, log but continue with fallback
+        console.error('[SRT] Failed to extract metadata:', error);
+        this.pageData = this.getFallbackPageData();
+      }
     }
   }
 
-  showLoginView() {
-    document.getElementById('loginView').classList.remove('hidden');
-    document.getElementById('mainView').classList.add('hidden');
-  }
+  /**
+   * Extracts metadata from the current page (injected function)
+   * @returns {Object} Page metadata
+   */
+  extractMetadataFromPage() {
+    const getMetaContent = (name) => {
+      const meta = document.querySelector(
+        `meta[name="${name}"], meta[property="${name}"]`
+      );
+      return meta ? meta.getAttribute('content') : null;
+    };
 
-  showMainView() {
-    document.getElementById('loginView').classList.add('hidden');
-    document.getElementById('mainView').classList.remove('hidden');
-  }
-
-  async extractPageMetadata() {
-    try {
-      // Extract metadata silently
+    const getFaviconUrl = () => {
+      const favicon = document.querySelector('link[rel="icon"]') ||
+        document.querySelector('link[rel="shortcut icon"]') ||
+        document.querySelector('link[rel="apple-touch-icon"]');
       
-      // Execute content script to extract metadata
-      const [result] = await chrome.scripting.executeScript({
-        target: { tabId: this.currentTab.id },
-        func: () => {
-          const getMetaContent = (name) => {
-            const meta = document.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
-            return meta ? meta.getAttribute('content') : null;
-          };
+      if (favicon) {
+        const href = favicon.getAttribute('href');
+        try {
+          return new URL(href, window.location.origin).href;
+        } catch {
+          return href;
+        }
+      }
+      
+      try {
+        return new URL('/favicon.ico', window.location.origin).href;
+      } catch {
+        return '';
+      }
+    };
 
-          // Get favicon URL
-          const getFaviconUrl = () => {
-            const favicon = document.querySelector('link[rel="icon"]') || 
-                          document.querySelector('link[rel="shortcut icon"]') ||
-                          document.querySelector('link[rel="apple-touch-icon"]');
-            if (favicon) {
-              const href = favicon.getAttribute('href');
-              try {
-                return new URL(href, window.location.origin).href;
-              } catch (e) {
-                return href;
-              }
-            }
-            // Try to get default favicon
-            try {
-              return new URL('/favicon.ico', window.location.origin).href;
-            } catch (e) {
-              return '';
-            }
-          };
+    const selectedText = window.getSelection().toString().trim();
+    const title = document.title;
+    const url = window.location.href;
+    
+    const description = getMetaContent('description') ||
+      getMetaContent('og:description') ||
+      getMetaContent('twitter:description') ||
+      (document.querySelector('p')?.textContent?.substring(0, 200) || '');
+    
+    const image = getMetaContent('og:image') || getMetaContent('twitter:image');
+    const favicon = getFaviconUrl();
 
-          const selectedText = window.getSelection().toString().trim();
-          const title = document.title;
-          const url = window.location.href;
-          const desc = getMetaContent('description') || 
-                       getMetaContent('og:description') || 
-                       getMetaContent('twitter:description') ||
-                       (document.querySelector('p') ? document.querySelector('p').textContent.substring(0, 200) : '');
-          const image = getMetaContent('og:image') || getMetaContent('twitter:image');
-          const favicon = getFaviconUrl();
+    return {
+      title: title || 'Untitled',
+      url: url || '',
+      description: description || '',
+      image: image || null,
+      favicon: favicon || null,
+      selectedText: selectedText || ''
+    };
+  }
 
-          // Metadata extracted
+  /**
+   * Gets fallback page data from tab information
+   * @returns {Object} Fallback page data
+   */
+  getFallbackPageData() {
+    return {
+      title: this.currentTab?.title || 'Untitled',
+      url: this.currentTab?.url || '',
+      description: '',
+      favicon: null,
+      selectedText: '',
+      image: null
+    };
+  }
 
-          return {
-            title: title,
-            url: url,
-            description: desc,
-            image: image,
-            favicon: favicon,
-            selectedText: selectedText
-          };
+  /**
+   * Fetches potential duplicate links
+   * @async
+   * @returns {Promise<void>}
+   */
+  async fetchDuplicates() {
+    try {
+      const api = new BackendApiService();
+      const url = this.pageData.url || this.currentTab?.url || '';
+      
+      // Skip duplicate search for system URLs or invalid URLs
+      if (!url || isSystemUrl(url)) {
+        return;
+      }
+      
+      const duplicates = await api.searchDuplicates(url);
+      this.renderDuplicates(duplicates || []);
+    } catch (error) {
+      // Silently fail - duplicates are non-critical
+      console.error('[SRT] Duplicate search failed:', error);
+    }
+  }
+
+  /**
+   * Renders duplicate links panel
+   * @param {Array<Object>} duplicates - Array of duplicate link objects
+   * @returns {void}
+   */
+  renderDuplicates(duplicates) {
+    const panel = getElement(CONSTANTS.SELECTORS.DUPLICATES_PANEL);
+    const list = getElement(CONSTANTS.SELECTORS.DUPE_LIST);
+    
+    if (!panel || !list) return;
+    
+    if (!Array.isArray(duplicates) || duplicates.length === 0) {
+      panel.classList.add('hidden');
+      return;
+    }
+    
+    panel.classList.remove('hidden');
+    list.innerHTML = '';
+    
+    // Show max 3 duplicates
+    duplicates.slice(0, 3).forEach((duplicate) => {
+      const li = document.createElement('li');
+      li.className = 'row';
+      li.setAttribute('role', 'listitem');
+      
+      const title = document.createElement('div');
+      title.style.cssText = 'flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
+      title.textContent = duplicate.title || duplicate.url || 'Untitled';
+      title.setAttribute('title', duplicate.title || duplicate.url || '');
+      
+      const openButton = document.createElement('button');
+      openButton.className = 'open';
+      openButton.textContent = 'Open';
+      openButton.setAttribute('aria-label', `Open ${duplicate.title || 'duplicate link'}`);
+      openButton.addEventListener('click', () => {
+        try {
+          chrome.tabs.create({ url: duplicate.url });
+        } catch (error) {
+          console.error('[SRT] Failed to open duplicate:', error);
         }
       });
       
-      this.pageData = result.result || {};
-      
-      // Fallback to tab data if extraction failed
-      if (!this.pageData.title) {
-        this.pageData = {
-          title: this.currentTab.title || 'Untitled',
-          url: this.currentTab.url || '',
-          description: '',
-          favicon: null,
-          selectedText: ''
-        };
-      }
-      
-      // Fetch potential duplicates (best-effort)
-      try {
-        const api = new BackendApiService();
-        const dupes = await api.searchDuplicates(this.pageData.url || this.currentTab.url || '');
-        this.renderDuplicates(dupes || []);
-      } catch (_) {}
-      
-      // Page data extracted successfully
-      
-    } catch (error) {
-      // Failed to extract metadata, using fallback
-      // Use tab data as fallback
-      this.pageData = {
-        title: this.currentTab.title || 'Untitled',
-        url: this.currentTab.url || '',
-        description: '',
-        favicon: null,
-        selectedText: ''
-      };
-    }
+      li.appendChild(title);
+      li.appendChild(openButton);
+      list.appendChild(li);
+    });
   }
 
-  renderDuplicates(dupes) {
-    try {
-      const panel = document.getElementById('duplicatesPanel');
-      const list = document.getElementById('dupeList');
-      if (!panel || !list) return;
-      if (!Array.isArray(dupes) || dupes.length === 0) {
-        panel.classList.add('hidden');
-        return;
-      }
-      panel.classList.remove('hidden');
-      list.innerHTML = '';
-      dupes.slice(0, 3).forEach((d) => {
-        const li = document.createElement('li');
-        li.className = 'row';
-        const title = document.createElement('div');
-        title.style.flex = '1';
-        title.style.minWidth = '0';
-        title.style.whiteSpace = 'nowrap';
-        title.style.overflow = 'hidden';
-        title.style.textOverflow = 'ellipsis';
-        title.textContent = d.title || d.url;
-        const open = document.createElement('button');
-        open.className = 'open';
-        open.textContent = 'Open';
-        open.addEventListener('click', () => {
-          try { chrome.tabs.create({ url: d.url }); } catch(_) {}
-        });
-        li.appendChild(title);
-        li.appendChild(open);
-        list.appendChild(li);
-      });
-    } catch(_) {}
-  }
-
+  /**
+   * Captures selected text from the current page
+   * @async
+   * @returns {Promise<void>}
+   */
   async captureSelectedText() {
+    if (!this.currentTab?.id) {
+      this.selectedText = '';
+      return;
+    }
+    
+    // Check if URL is a system URL (cannot inject scripts)
+    const currentUrl = this.currentTab.url || '';
+    if (isSystemUrl(currentUrl)) {
+      // Cannot capture text from system pages
+      this.selectedText = '';
+      return;
+    }
+    
     try {
-      // Check if there's selected text
       const [result] = await chrome.scripting.executeScript({
         target: { tabId: this.currentTab.id },
         func: () => window.getSelection().toString().trim()
       });
       
-      this.selectedText = result.result || '';
+      this.selectedText = result?.result || '';
       
       if (this.selectedText) {
         this.showSelectedTextInfo(this.selectedText);
       }
     } catch (error) {
-      // Failed to capture selected text
-      this.selectedText = '';
+      // Check if error is due to system page (expected)
+      const errorMessage = error.message || '';
+      if (errorMessage.includes('Cannot access') && errorMessage.includes('chrome://')) {
+        // Expected error for system pages, silently skip
+        this.selectedText = '';
+      } else {
+        // Unexpected error, log but continue
+        console.error('[SRT] Failed to capture selected text:', error);
+        this.selectedText = '';
+      }
     }
   }
 
+  /**
+   * Populates the UI with extracted page data
+   * @returns {void}
+   */
   populateUI() {
-    // Set page preview
-    const titleEl = document.getElementById('pageTitle');
-    const urlEl = document.getElementById('pageUrl');
-    const faviconEl = document.getElementById('favicon');
+    const titleEl = getElement(CONSTANTS.SELECTORS.PAGE_TITLE);
+    const urlEl = getElement(CONSTANTS.SELECTORS.PAGE_URL);
+    const faviconEl = getElement(CONSTANTS.SELECTORS.FAVICON);
+    const titleInput = getElement(CONSTANTS.SELECTORS.TITLE_INPUT);
+    const descriptionInput = getElement(CONSTANTS.SELECTORS.DESCRIPTION_INPUT);
     
-    const title = this.pageData.title || this.currentTab.title || 'Untitled';
-    const url = this.pageData.url || this.currentTab.url || '';
+    const title = this.pageData.title || this.currentTab?.title || 'Untitled';
+    const url = this.pageData.url || this.currentTab?.url || '';
     
-    titleEl.textContent = title;
-    urlEl.textContent = url;
+    if (titleEl) titleEl.textContent = title;
+    if (urlEl) {
+      urlEl.textContent = url;
+      urlEl.setAttribute('title', url); // Tooltip for long URLs
+    }
     
     // Set favicon
-    if (this.pageData.favicon) {
+    if (faviconEl && this.pageData.favicon) {
       try {
-        const faviconUrl = this.pageData.favicon.startsWith('http') 
-          ? this.pageData.favicon 
+        const faviconUrl = this.pageData.favicon.startsWith('http')
+          ? this.pageData.favicon
           : new URL(this.pageData.favicon, url).href;
-        faviconEl.style.backgroundImage = `url(${faviconUrl})`;
-        faviconEl.style.backgroundSize = 'cover';
-        faviconEl.style.backgroundPosition = 'center';
-        faviconEl.style.backgroundColor = '#e2e8f0';
-      } catch (e) {
-        // Could not load favicon
+        
+        faviconEl.style.cssText = `
+          background-image: url(${faviconUrl});
+          background-size: cover;
+          background-position: center;
+          background-color: #e2e8f0;
+        `;
+      } catch (error) {
+        console.error('[SRT] Failed to set favicon:', error);
       }
     }
     
-    // Auto-fill title in form
-    document.getElementById('title').value = title;
-    
-    // Auto-fill description (only if there's actual content)
-    if (this.pageData.description && this.pageData.description.length > 20) {
-      document.getElementById('description').value = this.pageData.description;
+    // Auto-fill form inputs
+    if (titleInput) {
+      titleInput.value = sanitizeString(title, 200);
     }
     
-    // UI populated
+    // Only auto-fill description if meaningful content exists
+    if (descriptionInput && this.pageData.description) {
+      const description = sanitizeString(this.pageData.description);
+      if (description.length >= CONSTANTS.SELECTED_TEXT_MIN_LENGTH) {
+        descriptionInput.value = description;
+      }
+    }
   }
 
+  /**
+   * Shows selected text info banner
+   * @param {string} text - Selected text
+   * @returns {void}
+   */
   showSelectedTextInfo(text) {
-    const infoEl = document.getElementById('selectedTextInfo');
-    infoEl.textContent = `📝 Using selected text (${text.length} chars)`;
+    const infoEl = getElement(CONSTANTS.SELECTORS.SELECTED_TEXT_INFO);
+    if (!infoEl) return;
+    
+    const charCount = text.length;
+    infoEl.textContent = `📝 Using selected text (${charCount} chars)`;
     infoEl.classList.remove('hidden');
+    infoEl.setAttribute('aria-live', 'polite');
   }
 
+  /**
+   * Sets up all event listeners
+   * @returns {void}
+   */
   setupEventListeners() {
-    // Form submission
-    const linkForm = document.getElementById('linkForm');
+    this.setupFormListeners();
+    this.setupButtonListeners();
+    this.setupCategoryListeners();
+    this.setupKeyboardShortcuts();
+  }
+
+  /**
+   * Sets up form-related event listeners
+   * @returns {void}
+   */
+  setupFormListeners() {
+    const linkForm = getElement(CONSTANTS.SELECTORS.LINK_FORM);
     if (linkForm) {
-      linkForm.addEventListener('submit', (e) => {
+      const handleSubmit = (e) => {
         e.preventDefault();
         this.handleSave();
+      };
+      linkForm.addEventListener('submit', handleSubmit);
+      this.cleanupFunctions.push(() => {
+        linkForm.removeEventListener('submit', handleSubmit);
       });
     }
+  }
 
-    // Tag input
-    const tagInput = document.getElementById('tagInput');
-    if (tagInput) {
-      tagInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          const tag = tagInput.value.trim();
-          if (tag) {
-            this.addTag(tag);
-            tagInput.value = '';
-          }
-        }
-      });
-    }
-
-    // Cancel button
-    const cancelBtn = document.getElementById('cancelBtn');
+  /**
+   * Sets up button event listeners
+   * @returns {void}
+   */
+  setupButtonListeners() {
+    const cancelBtn = getElement(CONSTANTS.SELECTORS.CANCEL_BTN);
     if (cancelBtn) {
-      cancelBtn.addEventListener('click', () => {
-        window.close();
+      const handleCancel = () => window.close();
+      cancelBtn.addEventListener('click', handleCancel);
+      this.cleanupFunctions.push(() => {
+        cancelBtn.removeEventListener('click', handleCancel);
       });
     }
 
-    // Login button
-    const loginBtn = document.getElementById('loginBtn');
+    const loginBtn = getElement(CONSTANTS.SELECTORS.LOGIN_BTN);
     if (loginBtn) {
-      loginBtn.addEventListener('click', () => {
-        this.handleLogin();
+      const handleLogin = () => this.handleLogin();
+      loginBtn.addEventListener('click', handleLogin);
+      this.cleanupFunctions.push(() => {
+        loginBtn.removeEventListener('click', handleLogin);
       });
     }
 
-    // Category: open custom input
-    const addCategoryBtn = document.getElementById('addCategoryBtn');
+    const openDashBtn = getElement(CONSTANTS.SELECTORS.OPEN_DASHBOARD_BTN);
+    if (openDashBtn) {
+      const handleOpenDashboard = () => {
+        chrome.tabs.create({ url: CONSTANTS.DASHBOARD_URL + '/dashboard' });
+        window.close();
+      };
+      openDashBtn.addEventListener('click', handleOpenDashboard);
+      this.cleanupFunctions.push(() => {
+        openDashBtn.removeEventListener('click', handleOpenDashboard);
+      });
+    }
+  }
+
+  /**
+   * Sets up category-related event listeners
+   * @returns {void}
+   */
+  setupCategoryListeners() {
+    // Hide the "Add custom category" button since it's triggered by selecting "other"
+    const addCategoryBtn = getElement(CONSTANTS.SELECTORS.ADD_CATEGORY_BTN);
     if (addCategoryBtn) {
-      addCategoryBtn.addEventListener('click', () => {
-        this.showCustomCategoryRow(true);
-        const select = document.getElementById('category');
-        if (select) select.value = '__custom__';
-      });
+      addCategoryBtn.style.display = 'none';
     }
 
-    // Category select change
-    const categorySelect = document.getElementById('category');
+    const categorySelect = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
     if (categorySelect) {
-      categorySelect.addEventListener('change', () => {
-        if (categorySelect.value === '__custom__') {
-          this.showCustomCategoryRow(true);
-        } else {
-          this.showCustomCategoryRow(false);
-          // remember last category on change
-          try { chrome.storage.sync.set({ lastCategory: categorySelect.value }); } catch(_) {}
+      const handleCategoryChange = () => {
+        // Show custom input only when "other" is selected
+        this.updateCustomCategoryVisibility();
+        
+        // Save last category if not "other" (don't save "other" as it's just a trigger)
+        if (categorySelect.value !== 'other') {
+          this.saveLastCategory(categorySelect.value);
         }
+      };
+      categorySelect.addEventListener('change', handleCategoryChange);
+      this.cleanupFunctions.push(() => {
+        categorySelect.removeEventListener('change', handleCategoryChange);
       });
     }
 
-    // Save custom category
-    const saveCustomCategoryBtn = document.getElementById('saveCustomCategoryBtn');
-    const customCategoryInput = document.getElementById('customCategoryInput');
+    const saveCustomCategoryBtn = getElement(CONSTANTS.SELECTORS.SAVE_CUSTOM_CATEGORY_BTN);
+    const customCategoryInput = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_INPUT);
+    
     if (saveCustomCategoryBtn && customCategoryInput) {
-      saveCustomCategoryBtn.addEventListener('click', async () => {
-        const raw = customCategoryInput.value.trim();
-        if (!raw) return;
-        const value = raw.toLowerCase();
-        if (!this.categories.includes(value)) {
-          const next = [...this.categories, value];
-          await this.saveCategories(next);
-          this.renderCategories(value);
-        } else {
-          this.renderCategories(value);
-        }
-        // remember last category
-        try { await chrome.storage.sync.set({ lastCategory: value }); } catch(_) {}
-        this.showCustomCategoryRow(false);
-      });
-      // Enter key to save
-      customCategoryInput.addEventListener('keypress', async (e) => {
+      const handleSaveCustomCategory = async () => {
+        await this.handleSaveCustomCategory();
+      };
+      
+      saveCustomCategoryBtn.addEventListener('click', handleSaveCustomCategory);
+      
+      // Enter key support
+      const handleCustomCategoryKeyPress = async (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
-          saveCustomCategoryBtn.click();
+          await handleSaveCustomCategory();
         }
+      };
+      customCategoryInput.addEventListener('keypress', handleCustomCategoryKeyPress);
+      
+      this.cleanupFunctions.push(() => {
+        saveCustomCategoryBtn.removeEventListener('click', handleSaveCustomCategory);
+        customCategoryInput.removeEventListener('keypress', handleCustomCategoryKeyPress);
       });
     }
+  }
 
-    // Open dashboard button
-    const openDash = document.getElementById('openDashboardBtn');
-    if (openDash) {
-      openDash.addEventListener('click', () => {
-        chrome.tabs.create({ url: 'https://smar-track.vercel.app/dashboard' });
-        window.close();
-      });
+  /**
+   * Handles saving a custom category
+   * @async
+   * @returns {Promise<void>}
+   */
+  async handleSaveCustomCategory() {
+    const input = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_INPUT);
+    if (!input) return;
+    
+    const rawValue = input.value.trim();
+    if (!rawValue) return;
+    
+    const normalizedValue = rawValue.toLowerCase();
+    
+    // Add to categories if not already present (but keep "other" out of the saved list)
+    if (!this.categories.includes(normalizedValue) && normalizedValue !== 'other') {
+      const updatedCategories = [...this.categories, normalizedValue];
+      await this.saveCategories(updatedCategories);
     }
+    
+    // Select the new category and update UI
+    this.renderCategories(normalizedValue);
+    await this.saveLastCategory(normalizedValue);
+    
+    // Clear and hide the custom input
+    input.value = '';
+    this.showCustomCategoryRow(false);
+  }
 
-    // Start background token checker
-    this.startBackgroundTokenCheck();
+  /**
+   * Saves the last selected category
+   * @async
+   * @param {string} category - Category name
+   * @returns {Promise<void>}
+   */
+  async saveLastCategory(category) {
+    if (!category) return;
+    
+    try {
+      await chrome.storage.sync.set({
+        [CONSTANTS.STORAGE_KEYS.LAST_CATEGORY]: category
+      });
+      this.lastCategory = category;
+    } catch (error) {
+      console.error('[SRT] Failed to save last category:', error);
+    }
+  }
 
-    // Keyboard shortcut: Cmd/Ctrl + Enter to save
-    document.addEventListener('keydown', (e) => {
+  /**
+   * Sets up keyboard shortcuts
+   * @returns {void}
+   */
+  setupKeyboardShortcuts() {
+    const handleKeyboardShortcut = (e) => {
+      // Cmd/Ctrl + Enter to save
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-        const form = document.getElementById('linkForm');
-        if (form) {
+        const form = getElement(CONSTANTS.SELECTORS.LINK_FORM);
+        if (form && !this.isProcessing) {
           e.preventDefault();
           this.handleSave();
         }
       }
+    };
+    
+    document.addEventListener('keydown', handleKeyboardShortcut);
+    this.cleanupFunctions.push(() => {
+      document.removeEventListener('keydown', handleKeyboardShortcut);
     });
-
-    // Quick Save button
-    const quickSaveBtn = document.getElementById('quickSaveBtn');
-    if (quickSaveBtn) {
-      quickSaveBtn.addEventListener('click', () => {
-        this.handleSave();
-      });
-    }
   }
 
+  /**
+   * Starts background token checking when showing login view
+   * @returns {void}
+   */
   startBackgroundTokenCheck() {
-    // Check for token every 2 seconds if showing login view
-    setInterval(async () => {
-      const loginView = document.getElementById('loginView');
+    // Clear any existing interval
+    if (this.tokenCheckInterval) {
+      clearInterval(this.tokenCheckInterval);
+    }
+    
+    this.tokenCheckInterval = setInterval(async () => {
+      const loginView = getElement(CONSTANTS.SELECTORS.LOGIN_VIEW);
       if (loginView && !loginView.classList.contains('hidden')) {
-        // Checking for token in background
         const token = await this.getAuthToken();
-        
         if (token) {
-          // Token found, reloading
+          // Stop checking once token is found
+          this.stopBackgroundTokenCheck();
           location.reload();
         }
       }
-    }, 2000); // Check every 2 seconds
-  }
-
-  handleLogin() {
-    // Open web app in new tab
-    chrome.tabs.create({
-      url: 'https://smar-track.vercel.app'
-    });
+    }, CONSTANTS.TOKEN_CHECK_INTERVAL);
     
-    // Close popup
-    window.close();
+    // Cleanup on window close
+    window.addEventListener('beforeunload', () => {
+      this.stopBackgroundTokenCheck();
+    });
   }
 
-  addTag(tagText) {
-    if (tagText && !this.tags.includes(tagText)) {
-      this.tags.push(tagText);
-      this.renderTags();
+  /**
+   * Stops background token checking
+   * @returns {void}
+   */
+  stopBackgroundTokenCheck() {
+    if (this.tokenCheckInterval) {
+      clearInterval(this.tokenCheckInterval);
+      this.tokenCheckInterval = null;
     }
   }
 
-  removeTag(tagText) {
-    this.tags = this.tags.filter(tag => tag !== tagText);
-    this.renderTags();
-  }
-
-  renderTags() {
-    const container = document.getElementById('tagsContainer');
-    container.innerHTML = '';
-    
-    this.tags.forEach(tag => {
-      const tagEl = document.createElement('div');
-      tagEl.className = 'tag';
-      tagEl.innerHTML = `
-        ${tag}
-        <span class="tag-remove" data-tag="${tag}">×</span>
-      `;
-      
-      tagEl.querySelector('.tag-remove').addEventListener('click', () => {
-        this.removeTag(tag);
-      });
-      
-      container.appendChild(tagEl);
+  /**
+   * Handles login button click
+   * @returns {void}
+   */
+  handleLogin() {
+    chrome.tabs.create({
+      url: CONSTANTS.DASHBOARD_URL
     });
+    window.close();
   }
 
+  /**
+   * Handles saving a link
+   * @async
+   * @returns {Promise<void>}
+   */
   async handleSave() {
     if (this.isProcessing) return;
     
     try {
       this.isProcessing = true;
-      // Hide form immediately, show loading
       this.showLoading(true);
       this.hideStatus();
-      // Disable save button and show progress text
-      const saveBtn = document.getElementById('saveBtn');
-      if (saveBtn) { saveBtn.setAttribute('disabled', 'true'); saveBtn.textContent = 'Saving…'; }
+      this.setSaveButtonState(true, 'Saving…');
       
-      // Get auth token first
       const token = await this.getAuthToken();
-      
       if (!token) {
-        throw new Error('Please log in at https://smar-track.vercel.app first');
+        throw new Error(CONSTANTS.ERROR_MESSAGES.INVALID_TOKEN);
       }
       
-      // Get form data
       const linkData = this.getLinkData();
-      // Remember last category
-      try { await chrome.storage.sync.set({ lastCategory: linkData.category }); } catch(_) {}
       
-      // Save to backend
-      const result = await this.saveLink(linkData, token);
+      // Validate link data
+      if (!isValidUrl(linkData.url)) {
+        throw new Error('Invalid URL');
+      }
       
-      // Show browser notification
+      if (!linkData.title || linkData.title.trim().length === 0) {
+        throw new Error('Title is required');
+      }
+      
+      await this.saveLastCategory(linkData.category);
+      await this.saveLink(linkData, token);
+      
+      // Success
       this.showNotification('Saved', 'Link added to SmarTrack');
-      
-      // Make body toast-only (transparent, shows only notification)
       document.body.classList.add('toast-only');
       this.showToast('Link added to SmarTrack', 'success');
       
-      // Close after 2 seconds
       setTimeout(() => {
         window.close();
-      }, 2000);
+      }, CONSTANTS.AUTO_CLOSE_DELAY);
       
     } catch (error) {
-      // Silently handle errors without showing technical details to user
-      
-      // Show detailed error message
-        let errorMsg = 'Failed to save link';
-        let isDuplicate = false;
-        
-        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-          errorMsg = 'Please log in to SmarTrack';
-        } else if (error.message.includes('Network') || error.message.includes('Failed to fetch')) {
-          errorMsg = 'Connection error. Check your internet';
-          // enqueue offline save
-          try {
-            const payload = this.getLinkData();
-            chrome.runtime.sendMessage({ type: 'ENQUEUE_SAVE', linkData: payload });
-            document.body.classList.add('toast-only');
-            this.showToast('Saved offline. Will retry.', 'error');
-            setTimeout(() => window.close(), 1500);
-            return;
-          } catch(_) {}
-        } else if (error.message.includes('500')) {
-          errorMsg = 'Server error. Please try again';
-        } else if (error.message.includes('already exists') || error.message.includes('duplicate')) {
-          isDuplicate = true;
-          errorMsg = 'This link already exists in SmarTrack';
-        } else if (error.message) {
-          errorMsg = error.message;
-        }
-      
-      // Show message based on error type
-      if (isDuplicate) {
-        // Show error notification for duplicate
-        this.showNotification('Duplicate', 'Link already exists in SmarTrack');
-        // Make body toast-only (transparent, shows only error)
-        document.body.classList.add('toast-only');
-        this.showToast('Link already exists!', 'error');
-        // Close after 2 seconds
-        setTimeout(() => {
-          window.close();
-        }, 2000);
-      } else {
-        // Show error and keep popup open
-        this.showStatus(`❌ ${errorMsg}`, 'error');
-      }
+      this.handleSaveError(error);
     } finally {
       this.isProcessing = false;
       this.showLoading(false);
-      const saveBtn = document.getElementById('saveBtn');
-      if (saveBtn) { saveBtn.removeAttribute('disabled'); saveBtn.textContent = 'Save Link'; }
+      this.setSaveButtonState(false, 'Save Link');
     }
   }
 
-  showSuccessAnimation() {
-    // Add a brief success animation
-    const container = document.querySelector('.container');
-    if (container) {
-      container.style.transition = 'all 0.3s ease';
-      container.style.transform = 'scale(0.98)';
-      setTimeout(() => {
-        container.style.transform = 'scale(1)';
-      }, 100);
+  /**
+   * Sets the save button state
+   * @param {boolean} disabled - Whether button should be disabled
+   * @param {string} text - Button text
+   * @returns {void}
+   */
+  setSaveButtonState(disabled, text) {
+    const saveBtn = getElement(CONSTANTS.SELECTORS.SAVE_BTN);
+    if (!saveBtn) return;
+    
+    if (disabled) {
+      saveBtn.setAttribute('disabled', 'true');
+      saveBtn.setAttribute('aria-busy', 'true');
+    } else {
+      saveBtn.removeAttribute('disabled');
+      saveBtn.removeAttribute('aria-busy');
+    }
+    saveBtn.textContent = text;
+  }
+
+  /**
+   * Handles save errors with appropriate user feedback
+   * @param {Error} error - Error object
+   * @returns {void}
+   */
+  handleSaveError(error) {
+    const errorMessage = error.message || '';
+    let userMessage = CONSTANTS.ERROR_MESSAGES.GENERIC;
+    let isDuplicate = false;
+    
+    if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+      userMessage = CONSTANTS.ERROR_MESSAGES.UNAUTHORIZED;
+    } else if (errorMessage.includes('Network') || errorMessage.includes('Failed to fetch')) {
+      userMessage = CONSTANTS.ERROR_MESSAGES.NETWORK;
+      this.handleOfflineSave();
+      return;
+    } else if (errorMessage.includes('500')) {
+      userMessage = CONSTANTS.ERROR_MESSAGES.SERVER_ERROR;
+    } else if (errorMessage.includes('already exists') || errorMessage.includes('duplicate')) {
+      isDuplicate = true;
+      userMessage = CONSTANTS.ERROR_MESSAGES.DUPLICATE;
+    } else if (errorMessage) {
+      userMessage = errorMessage;
+    }
+    
+    if (isDuplicate) {
+      this.showNotification('Duplicate', 'Link already exists in SmarTrack');
+      document.body.classList.add('toast-only');
+      this.showToast('Link already exists!', 'error');
+      setTimeout(() => window.close(), CONSTANTS.AUTO_CLOSE_DELAY);
+    } else {
+      this.showStatus(`❌ ${userMessage}`, 'error');
     }
   }
 
+  /**
+   * Handles offline save by enqueuing for later
+   * @returns {void}
+   */
+  handleOfflineSave() {
+    try {
+      const payload = this.getLinkData();
+      chrome.runtime.sendMessage({
+        type: 'ENQUEUE_SAVE',
+        linkData: payload
+      });
+      document.body.classList.add('toast-only');
+      this.showToast('Saved offline. Will retry.', 'error');
+      setTimeout(() => window.close(), 1500);
+    } catch (error) {
+      console.error('[SRT] Failed to enqueue offline save:', error);
+      this.showStatus(`❌ ${CONSTANTS.ERROR_MESSAGES.NETWORK}`, 'error');
+    }
+  }
+
+  /**
+   * Shows a browser notification
+   * @param {string} title - Notification title
+   * @param {string} message - Notification message
+   * @returns {void}
+   */
   showNotification(title, message) {
     try {
       chrome.notifications.create({
@@ -628,61 +1106,81 @@ class SmarTrackPopup {
         title: title,
         message: message
       });
-      // Notification sent
-    } catch (e) {
-      // Notification not supported
+    } catch (error) {
+      // Notifications not supported or permission not granted
+      console.error('[SRT] Failed to show notification:', error);
     }
     
-    // Also show visual toast
     this.showToast(message, 'success');
   }
 
+  /**
+   * Shows a toast message
+   * @param {string} message - Toast message
+   * @param {string} type - Toast type ('success' or 'error')
+   * @returns {void}
+   */
   showToast(message, type = 'success') {
-    // Remove existing toast if any
+    // Remove existing toast
     const existingToast = document.getElementById('toast');
     if (existingToast) {
       existingToast.remove();
     }
     
-    // Create toast element
+    // Create new toast
     const toast = document.createElement('div');
     toast.id = 'toast';
     toast.className = `toast ${type === 'error' ? 'toast-error' : ''}`;
     toast.textContent = message;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
     document.body.appendChild(toast);
     
-    // Remove after 3 seconds
+    // Remove after duration
     setTimeout(() => {
       toast.style.animation = 'slideDown 0.3s ease-out reverse';
       setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    }, CONSTANTS.TOAST_DISPLAY_DURATION);
   }
 
+  /**
+   * Gets link data from form inputs
+   * @returns {Object} Link data object
+   */
   getLinkData() {
-    const url = this.pageData.url || this.currentTab.url;
-    
-    // Get content text - prefer selected text, fallback to page metadata description
+    const url = this.pageData.url || this.currentTab?.url || '';
     const content = this.selectedText || this.pageData.description || '';
     
-    // Resolve category (custom or selected)
-    let category = 'research';
+    // Get category
+    let category = CONSTANTS.DEFAULT_CATEGORIES[0];
     try {
-      const select = document.getElementById('category');
-      const customInput = document.getElementById('customCategoryInput');
-      if (select && select.value === '__custom__' && customInput && customInput.value.trim()) {
-        category = customInput.value.trim().toLowerCase();
-      } else if (select && select.value) {
+      const select = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
+      const customInput = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_INPUT);
+      
+      // If "other" is selected and there's a custom category input, use that
+      if (select?.value === 'other' && customInput?.value.trim()) {
+        category = sanitizeString(customInput.value.trim().toLowerCase(), 50);
+      } else if (select?.value && select.value !== 'other') {
+        // Use selected category (not "other")
         category = select.value;
+      } else if (select?.value === 'other' && !customInput?.value.trim()) {
+        // If "other" is selected but no custom value, default to "other"
+        category = 'other';
       }
-    } catch (_) {}
-
+    } catch (error) {
+      console.error('[SRT] Failed to get category:', error);
+    }
+    
+    const titleInput = getElement(CONSTANTS.SELECTORS.TITLE_INPUT);
+    const descriptionInput = getElement(CONSTANTS.SELECTORS.DESCRIPTION_INPUT);
+    
     return {
       url: url,
-      title: document.getElementById('title').value.trim(),
-      description: document.getElementById('description').value.trim(),
-      content: content, // Full text content (selected text or description)
+      title: sanitizeString(titleInput?.value || '', 200),
+      description: sanitizeString(descriptionInput?.value || '', 1000),
+      content: sanitizeString(content, 5000),
       category: category,
-      tags: this.tags,
+      tags: [], // Tags removed for better UX - can be added later in dashboard
       contentType: this.detectContentType(url),
       thumbnail: this.pageData.image || null,
       favicon: this.pageData.favicon || null,
@@ -691,8 +1189,14 @@ class SmarTrackPopup {
     };
   }
 
+  /**
+   * Detects content type from URL
+   * @param {string} url - URL to analyze
+   * @returns {string} Content type
+   */
   detectContentType(url) {
-    if (!url) return 'webpage';
+    if (!url || typeof url !== 'string') return 'webpage';
+    
     const urlLower = url.toLowerCase();
     
     if (urlLower.includes('.pdf')) return 'pdf';
@@ -704,142 +1208,208 @@ class SmarTrackPopup {
     return 'webpage';
   }
 
-  async saveLink(linkData) {
+  /**
+   * Saves link to backend
+   * @async
+   * @param {Object} linkData - Link data object
+   * @param {string} token - Auth token
+   * @returns {Promise<void>}
+   */
+  async saveLink(linkData, token) {
+    if (!token) {
+      throw new Error(CONSTANTS.ERROR_MESSAGES.INVALID_TOKEN);
+    }
+    
     try {
-      // Get auth token
-      const token = await this.getAuthToken();
-      
-      if (!token) {
-        throw new Error('Please log in to SmarTrack first at https://smar-track.vercel.app');
-      }
-      
-      // Save to backend
       const backendApi = new BackendApiService();
       await backendApi.saveLink(linkData, token);
-      
     } catch (error) {
-      // Silently re-throw error without logging
       throw error;
     }
   }
 
+  /**
+   * Gets auth token from storage or page
+   * @async
+   * @returns {Promise<string|null>}
+   */
   async getAuthToken() {
     try {
-      // First, try to get from Chrome storage
-      const result = await chrome.storage.local.get(['authToken', 'tokenExpiry']);
+      // Try Chrome storage first
+      const result = await chrome.storage.local.get([
+        CONSTANTS.STORAGE_KEYS.AUTH_TOKEN,
+        CONSTANTS.STORAGE_KEYS.TOKEN_EXPIRY
+      ]);
       
-      if (result.authToken) {
-        // Check if token is valid (not expired)
-        if (this.isTokenValid(result.tokenExpiry)) {
-          return result.authToken;
+      if (result[CONSTANTS.STORAGE_KEYS.AUTH_TOKEN]) {
+        if (this.isTokenValid(result[CONSTANTS.STORAGE_KEYS.TOKEN_EXPIRY])) {
+          return result[CONSTANTS.STORAGE_KEYS.AUTH_TOKEN];
         } else {
-          // Token expired, clearing
-          await chrome.storage.local.remove(['authToken', 'tokenExpiry']);
+          // Token expired, clear it
+          await chrome.storage.local.remove([
+            CONSTANTS.STORAGE_KEYS.AUTH_TOKEN,
+            CONSTANTS.STORAGE_KEYS.TOKEN_EXPIRY
+          ]);
         }
       }
       
-      // Try to get from localStorage (current page)
-      try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        const injectionResults = await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: () => {
-            try {
-              return localStorage.getItem('authToken');
-            } catch (e) {
-              return null;
+      // Try to get from page localStorage
+      if (this.currentTab?.id) {
+        try {
+          const [injectionResult] = await chrome.scripting.executeScript({
+            target: { tabId: this.currentTab.id },
+            func: () => {
+              try {
+                return localStorage.getItem('authToken');
+              } catch {
+                return null;
+              }
             }
-          }
-        });
-        
-        const token = injectionResults[0]?.result;
-        
-        if (token && this.isTokenValid(null, token)) {
-          // Extract expiry from token
-          const expiry = this.getTokenExpiry(token);
-          // Store in Chrome storage with expiry
-          await chrome.storage.local.set({ 
-            authToken: token, 
-            tokenExpiry: expiry 
           });
-          return token;
+          
+          const token = injectionResult?.result;
+          
+          if (token && this.isTokenValid(null, token)) {
+            const expiry = this.getTokenExpiry(token);
+            await chrome.storage.local.set({
+              [CONSTANTS.STORAGE_KEYS.AUTH_TOKEN]: token,
+              [CONSTANTS.STORAGE_KEYS.TOKEN_EXPIRY]: expiry
+            });
+            return token;
+          }
+        } catch (error) {
+          // Not a problem - page might not allow script injection
+          console.error('[SRT] Failed to get token from page:', error);
         }
-      } catch (e) {
-        // Not a problem
       }
       
       return null;
-      
     } catch (error) {
-      // Failed to get auth token
+      console.error('[SRT] Failed to get auth token:', error);
       return null;
     }
   }
 
+  /**
+   * Checks if token is valid
+   * @param {number|null} expiry - Expiry timestamp
+   * @param {string|null} token - Token string
+   * @returns {boolean}
+   */
   isTokenValid(expiry, token = null) {
-    // If expiry is a timestamp
-    if (expiry && expiry > Date.now()) {
+    // Check stored expiry
+    if (expiry && typeof expiry === 'number' && expiry > Date.now()) {
       return true;
     }
     
     // Decode token to check expiry
-    if (token) {
+    if (token && typeof token === 'string') {
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const parts = token.split('.');
+        if (parts.length !== 3) return false;
+        
+        const payload = JSON.parse(atob(parts[1]));
         const expiryTime = payload.exp * 1000; // Convert to milliseconds
         return expiryTime > Date.now();
-      } catch (e) {
-        return true; // Assume valid if can't decode
+      } catch {
+        return false; // Invalid token format
       }
     }
     
-    return !expiry; // If no expiry stored and no token, assume not valid
+    return false;
   }
 
+  /**
+   * Gets token expiry from JWT
+   * @param {string} token - JWT token
+   * @returns {number|null}
+   */
   getTokenExpiry(token) {
+    if (!token || typeof token !== 'string') return null;
+    
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.exp * 1000; // Return in milliseconds
-    } catch (e) {
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+      
+      const payload = JSON.parse(atob(parts[1]));
+      return payload.exp ? payload.exp * 1000 : null; // Convert to milliseconds
+    } catch {
       return null;
     }
   }
 
+  /**
+   * Shows or hides loading state
+   * @param {boolean} show - Whether to show loading
+   * @returns {void}
+   */
   showLoading(show) {
-    const loading = document.getElementById('loading');
-    const form = document.getElementById('linkForm');
+    const loading = getElement(CONSTANTS.SELECTORS.LOADING);
+    const form = getElement(CONSTANTS.SELECTORS.LINK_FORM);
     
-    if (show) {
-      loading.style.display = 'block';
-      form.style.display = 'none';
-    } else {
-      loading.style.display = 'none';
-      form.style.display = 'block';
+    if (loading) {
+      loading.style.display = show ? 'block' : 'none';
+    }
+    
+    if (form) {
+      form.style.display = show ? 'none' : 'block';
     }
   }
 
+  /**
+   * Shows status message
+   * @param {string} message - Status message
+   * @param {string} type - Status type ('success' or 'error')
+   * @returns {void}
+   */
   showStatus(message, type) {
-    const status = document.getElementById('status');
+    const status = getElement(CONSTANTS.SELECTORS.STATUS);
+    if (!status) return;
+    
     status.textContent = message;
     status.className = `status status-${type}`;
     status.classList.remove('hidden');
+    status.setAttribute('role', 'alert');
+    status.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
     
-    // Add pulse animation for success
     if (type === 'success') {
       status.classList.add('pulse');
     }
-    
-    // No console logging
   }
 
+  /**
+   * Hides status message
+   * @returns {void}
+   */
   hideStatus() {
-    const status = document.getElementById('status');
+    const status = getElement(CONSTANTS.SELECTORS.STATUS);
+    if (!status) return;
+    
     status.classList.add('hidden');
     status.classList.remove('pulse');
   }
+
+  /**
+   * Cleanup function to remove event listeners
+   * @returns {void}
+   */
+  cleanup() {
+    this.stopBackgroundTokenCheck();
+    this.cleanupFunctions.forEach(cleanup => cleanup());
+    this.cleanupFunctions = [];
+  }
 }
 
-// Initialize popup when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+// ============================================================================
+// Initialization
+// ============================================================================
+
+// Initialize popup when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    new SmarTrackPopup();
+  });
+} else {
+  // DOM already loaded
   new SmarTrackPopup();
-});
+}

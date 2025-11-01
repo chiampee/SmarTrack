@@ -24,21 +24,22 @@ export const UsageStats: React.FC = () => {
       setError(null)
       
       // Set a timeout for the stats API
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Stats request timeout')), 10000)
+      const timeoutPromise = new Promise<UserStats>((_, reject) => 
+        setTimeout(() => reject(new Error('Stats request timeout after 10 seconds')), 10000)
       )
       
       const userStats = await Promise.race([
         getUserStats(),
         timeoutPromise
-      ]) as UserStats
+      ])
       
       setStats(userStats)
       setError(null)
     } catch (err) {
       // Log detailed error for debugging
       const errorMessage = isAppError(err) ? getUserFriendlyMessage(err) : 'Stats temporarily unavailable'
-      console.error('Failed to fetch usage stats:', err)
+      const errorDetails = err instanceof Error ? err.message : String(err)
+      console.error('Failed to fetch usage stats:', errorDetails, err)
       
       // Show error to user with option to retry
       setError(errorMessage)
@@ -46,11 +47,11 @@ export const UsageStats: React.FC = () => {
       // Fallback to zero stats but still show error
       setStats({
         linksUsed: 0,
-        linksLimit: 100,
+        linksLimit: 40,
         storageUsed: 0,
-        storageLimit: 5 * 1024 * 1024,
-        linksRemaining: 100,
-        storageRemaining: 5 * 1024 * 1024,
+        storageLimit: 200 * 1024, // 200 KB
+        linksRemaining: 40,
+        storageRemaining: 200 * 1024,
         averagePerLink: 0,
       })
     } finally {

@@ -1,160 +1,345 @@
 /**
  * SmarTrack Content Script
- * Handles page content extraction and communication with popup
+ * Handles page content extraction and communication with popup/background
+ * 
+ * @fileoverview Content script injected into web pages for metadata extraction
+ * @version 2.0.0
  */
 
-// Prevent multiple initializations
-if (typeof window.smartrackContentScript === 'undefined') {
-  window.smartrackContentScript = true;
+// ============================================================================
+// Constants
+// ============================================================================
 
-  class SmarTrackContentScript {
-    constructor() {
-      this.isInitialized = false;
-      this.init();
+const CONTENT_SCRIPT_CONSTANTS = {
+  // Message Types
+  MESSAGE_TYPES: {
+    REQUEST_AUTH_TOKEN: 'SRT_REQUEST_AUTH_TOKEN',
+    AUTH_TOKEN_RESPONSE: 'SRT_AUTH_TOKEN_RESPONSE',
+    EXTRACT_PAGE_DATA: 'EXTRACT_PAGE_DATA',
+    SAVE_LINK: 'SAVE_LINK',
+    LINK_SAVED: 'LINK_SAVED'
+  },
+  
+  // Storage
+  INDEXEDDB_NAME: 'smartResearchDB',
+  INDEXEDDB_VERSION: 1,
+  OBJECT_STORE_NAME: 'links',
+  
+  // Text Extraction
+  MAX_PAGE_TEXT_LENGTH: 2000,
+  ELEMENTS_TO_REMOVE: ['script', 'style', 'nav', 'header', 'footer', 'aside'],
+  
+  // Meta Tags
+  META_TAGS: {
+    DESCRIPTION: ['description', 'og:description', 'twitter:description'],
+    IMAGE: ['og:image', 'twitter:image'],
+    SITE_NAME: ['og:site_name'],
+    AUTHOR: ['author'],
+    PUBLISHED_DATE: ['article:published_time']
+  }
+};
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+/**
+ * Gets meta content from page
+ * @param {string|Array<string>} names - Meta name(s) to search for
+ * @returns {string|null}
+ */
+const getMetaContent = (names) => {
+  const nameArray = Array.isArray(names) ? names : [names];
+  
+  for (const name of nameArray) {
+    const meta = document.querySelector(
+      `meta[name="${name}"], meta[property="${name}"]`
+    );
+    if (meta) {
+      const content = meta.getAttribute('content');
+      if (content) return content;
     }
+  }
+  
+  return null;
+};
 
-    init() {
-      if (this.isInitialized) return;
-      this.isInitialized = true;
-
-      console.log('[SRT] Content script loaded on:', window.location.href);
-      
-      // Setup message listeners
-      this.setupMessageListeners();
-      
-      // Initialize IndexedDB for local storage
-      this.initIndexedDB();
+/**
+ * Gets favicon URL from page
+ * @returns {string}
+ */
+const getFaviconUrl = () => {
+  const favicon = document.querySelector(
+    'link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]'
+  );
+  
+  if (favicon) {
+    const href = favicon.getAttribute('href');
+    if (!href) return '';
+    
+    try {
+      if (href.startsWith('http://') || href.startsWith('https://')) {
+        return href;
+      }
+      return new URL(href, window.location.origin).href;
+    } catch {
+      return href;
     }
+  }
+  
+  // Fallback to default favicon
+  try {
+    return new URL('/favicon.ico', window.location.origin).href;
+  } catch {
+    return '';
+  }
+};
 
+/**
+ * Extracts text content from page
+ * @param {number} maxLength - Maximum text length
+ * @returns {string}
+ */
+const extractPageText = (maxLength = CONTENT_SCRIPT_CONSTANTS.MAX_PAGE_TEXT_LENGTH) => {
+  try {
+    // Clone document to avoid modifying original
+    const clone = document.cloneNode(true);
+    
+    // Remove unwanted elements
+    CONTENT_SCRIPT_CONSTANTS.ELEMENTS_TO_REMOVE.forEach(selector => {
+      const elements = clone.querySelectorAll(selector);
+      elements.forEach(el => el.remove());
+    });
+    
+    // Get text content
+    const text = clone.body?.innerText || clone.body?.textContent || '';
+    
+    // Clean up whitespace and limit length
+    return text
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, maxLength);
+  } catch (error) {
+    console.error('[SRT] Failed to extract page text:', error);
+    return '';
+  }
+};
+
+// ============================================================================
+// Content Script Class
+// ============================================================================
+
+/**
+ * SmarTrack Content Script
+ * Manages page data extraction and IndexedDB operations
+ */
+class SmarTrackContentScript {
+  /**
+   * Creates a new SmarTrackContentScript instance
+   */
+  constructor() {
+    /** @type {boolean} */
+    this.isInitialized = false;
+    
+    /** @type {IDBDatabase|null} */
+    this.db = null;
+    
+    this.init();
+  }
+
+  /**
+   * Initializes the content script
+   * @returns {void}
+   */
+  init() {
+    if (this.isInitialized) {
+      console.warn('[SRT] Content script already initialized');
+      return;
+    }
+    
+    // Prevent multiple initializations
+    if (typeof window.smartrackContentScript !== 'undefined') {
+      return;
+    }
+    
+    window.smartrackContentScript = true;
+    this.isInitialized = true;
+    
+    console.log('[SRT] Content script loaded on:', window.location.href);
+    
+    this.setupMessageListeners();
+    this.initIndexedDB();
+  }
+
+  /**
+   * Sets up message listeners for communication
+   * @returns {void}
+   */
   setupMessageListeners() {
-    // Listen for messages from popup
+    // Listen for token requests from popup
     window.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'SRT_REQUEST_AUTH_TOKEN') {
-        this.handleTokenRequest(event.data.messageId);
+      if (!event.data || typeof event.data !== 'object') {
+        return;
+      }
+      
+      if (event.data.type === CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.REQUEST_AUTH_TOKEN) {
+        this.handleTokenRequest(event.data.messageId).catch((error) => {
+          console.error('[SRT] Token request handler failed:', error);
+        });
       }
     });
 
     // Listen for messages from background script
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      this.handleBackgroundMessage(request, sender, sendResponse);
-    });
+    if (chrome.runtime?.onMessage) {
+      chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        this.handleBackgroundMessage(request, sender, sendResponse).catch((error) => {
+          console.error('[SRT] Background message handler failed:', error);
+          sendResponse({ success: false, error: error.message });
+        });
+        return true; // Keep channel open for async response
+      });
+    }
   }
 
+  /**
+   * Handles token request from popup
+   * @async
+   * @param {string} messageId - Message ID for response matching
+   * @returns {Promise<void>}
+   */
   async handleTokenRequest(messageId) {
+    if (!messageId || typeof messageId !== 'string') {
+      console.warn('[SRT] Invalid message ID in token request');
+      return;
+    }
+    
     try {
-      // Try to get token from localStorage (set by frontend)
-      const token = localStorage.getItem('authToken');
+      let token = null;
       
-      if (token) {
-        // Send token back to popup
-        window.postMessage({
-          type: 'SRT_AUTH_TOKEN_RESPONSE',
-          messageId: messageId,
-          token: token
-        }, '*');
-      } else {
-        // No token available
-        window.postMessage({
-          type: 'SRT_AUTH_TOKEN_RESPONSE',
-          messageId: messageId,
-          token: null
-        }, '*');
+      // Try to get token from localStorage (set by frontend)
+      try {
+        token = localStorage.getItem('authToken');
+      } catch (error) {
+        // localStorage might be blocked in some contexts
+        console.debug('[SRT] Could not access localStorage:', error);
       }
+      
+      // Send response
+      window.postMessage({
+        type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
+        messageId: messageId,
+        token: token
+      }, '*');
     } catch (error) {
       console.error('[SRT] Failed to handle token request:', error);
+      
+      // Send error response
       window.postMessage({
-        type: 'SRT_AUTH_TOKEN_RESPONSE',
+        type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
         messageId: messageId,
         token: null
       }, '*');
     }
   }
 
+  /**
+   * Handles messages from background script
+   * @async
+   * @param {Object} request - Message request
+   * @param {chrome.runtime.MessageSender} sender - Message sender
+   * @param {Function} sendResponse - Response callback
+   * @returns {Promise<void>}
+   */
   async handleBackgroundMessage(request, sender, sendResponse) {
+    if (!request || !request.type) {
+      sendResponse({ success: false, error: 'Invalid message format' });
+      return;
+    }
+    
     try {
       switch (request.type) {
-        case 'EXTRACT_PAGE_DATA':
+        case CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.EXTRACT_PAGE_DATA:
           const pageData = this.extractPageData();
           sendResponse({ success: true, data: pageData });
           break;
           
-        case 'SAVE_LINK':
+        case CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.SAVE_LINK:
           const result = await this.saveLink(request.data);
           sendResponse({ success: true, result: result });
           break;
           
         default:
-          sendResponse({ success: false, error: 'Unknown message type' });
+          sendResponse({ success: false, error: `Unknown message type: ${request.type}` });
       }
     } catch (error) {
-      console.error('[SRT] Background message handling failed:', error);
-      sendResponse({ success: false, error: error.message });
+      console.error('[SRT] Message handling failed:', error);
+      sendResponse({ success: false, error: error.message || 'Handler failed' });
     }
   }
 
+  /**
+   * Extracts page data and metadata
+   * @returns {Object} Page data object
+   */
   extractPageData() {
-    const getMetaContent = (name) => {
-      const meta = document.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
-      return meta ? meta.getAttribute('content') : null;
-    };
-
-    return {
-      title: document.title,
-      url: window.location.href,
-      description: getMetaContent('description') || getMetaContent('og:description'),
-      image: getMetaContent('og:image'),
-      siteName: getMetaContent('og:site_name'),
-      author: getMetaContent('author'),
-      publishedDate: getMetaContent('article:published_time'),
-      pageText: this.extractPageText(),
-      favicon: this.getFaviconUrl()
-    };
-  }
-
-  extractPageText() {
     try {
-      // Remove script and style elements
-      const clone = document.cloneNode(true);
-      const scripts = clone.querySelectorAll('script, style, nav, header, footer, aside');
-      scripts.forEach(el => el.remove());
-      
-      // Get text content
-      const text = clone.body.innerText || clone.body.textContent || '';
-      
-      // Clean up and limit length
-      return text.replace(/\s+/g, ' ').trim().substring(0, 2000);
+      return {
+        title: document.title || 'Untitled',
+        url: window.location.href || '',
+        description: getMetaContent(CONTENT_SCRIPT_CONSTANTS.META_TAGS.DESCRIPTION) || '',
+        image: getMetaContent(CONTENT_SCRIPT_CONSTANTS.META_TAGS.IMAGE) || null,
+        siteName: getMetaContent(CONTENT_SCRIPT_CONSTANTS.META_TAGS.SITE_NAME) || null,
+        author: getMetaContent(CONTENT_SCRIPT_CONSTANTS.META_TAGS.AUTHOR) || null,
+        publishedDate: getMetaContent(CONTENT_SCRIPT_CONSTANTS.META_TAGS.PUBLISHED_DATE) || null,
+        pageText: extractPageText(),
+        favicon: getFaviconUrl()
+      };
     } catch (error) {
-      console.error('[SRT] Failed to extract page text:', error);
-      return '';
+      console.error('[SRT] Failed to extract page data:', error);
+      return {
+        title: document.title || 'Untitled',
+        url: window.location.href || '',
+        description: '',
+        image: null,
+        siteName: null,
+        author: null,
+        publishedDate: null,
+        pageText: '',
+        favicon: ''
+      };
     }
   }
 
-  getFaviconUrl() {
-    const favicon = document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
-    if (favicon) {
-      const href = favicon.getAttribute('href');
-      return href.startsWith('http') ? href : new URL(href, window.location.origin).href;
-    }
-    return `${window.location.origin}/favicon.ico`;
-  }
-
+  /**
+   * Saves link to IndexedDB and notifies background
+   * @async
+   * @param {Object} linkData - Link data to save
+   * @returns {Promise<Object>}
+   */
   async saveLink(linkData) {
+    if (!linkData || typeof linkData !== 'object') {
+      throw new Error('Invalid link data');
+    }
+    
     try {
-      // Save to IndexedDB
       const link = {
-        id: Date.now().toString(),
+        id: linkData.id || `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         ...linkData,
-        createdAt: new Date().toISOString(),
+        createdAt: linkData.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
       await this.saveToIndexedDB(link);
       
       // Notify background script
-      chrome.runtime.sendMessage({
-        type: 'LINK_SAVED',
-        link: link
-      });
+      if (chrome.runtime?.sendMessage) {
+        chrome.runtime.sendMessage({
+          type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.LINK_SAVED,
+          link: link
+        }).catch((error) => {
+          console.error('[SRT] Failed to notify background:', error);
+        });
+      }
 
       return link;
     } catch (error) {
@@ -163,27 +348,50 @@ if (typeof window.smartrackContentScript === 'undefined') {
     }
   }
 
-  async initIndexedDB() {
+  /**
+   * Initializes IndexedDB connection
+   * @returns {void}
+   */
+  initIndexedDB() {
+    if (!window.indexedDB) {
+      console.warn('[SRT] IndexedDB not available');
+      return;
+    }
+    
     try {
-      const request = indexedDB.open('smartResearchDB', 1);
+      const request = indexedDB.open(
+        CONTENT_SCRIPT_CONSTANTS.INDEXEDDB_NAME,
+        CONTENT_SCRIPT_CONSTANTS.INDEXEDDB_VERSION
+      );
       
       request.onerror = () => {
-        console.error('[SRT] IndexedDB failed to open');
+        console.error('[SRT] IndexedDB failed to open:', request.error);
       };
       
       request.onsuccess = () => {
-        console.log('[SRT] ✅ IndexedDB connection established successfully');
         this.db = request.result;
+        console.log('[SRT] IndexedDB connection established');
+        
+        // Handle database closure
+        this.db.onerror = (event) => {
+          console.error('[SRT] IndexedDB error:', event.target?.error);
+        };
       };
       
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
         
-        // Create links store
-        if (!db.objectStoreNames.contains('links')) {
-          const linksStore = db.createObjectStore('links', { keyPath: 'id' });
+        // Create links store if it doesn't exist
+        if (!db.objectStoreNames.contains(CONTENT_SCRIPT_CONSTANTS.OBJECT_STORE_NAME)) {
+          const linksStore = db.createObjectStore(
+            CONTENT_SCRIPT_CONSTANTS.OBJECT_STORE_NAME,
+            { keyPath: 'id' }
+          );
+          
+          // Create indexes
           linksStore.createIndex('url', 'url', { unique: false });
           linksStore.createIndex('createdAt', 'createdAt', { unique: false });
+          linksStore.createIndex('updatedAt', 'updatedAt', { unique: false });
         }
       };
     } catch (error) {
@@ -191,30 +399,56 @@ if (typeof window.smartrackContentScript === 'undefined') {
     }
   }
 
+  /**
+   * Saves link to IndexedDB
+   * @async
+   * @param {Object} link - Link object to save
+   * @returns {Promise<Object>}
+   */
   async saveToIndexedDB(link) {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+    
+    if (!link || !link.id) {
+      throw new Error('Invalid link: missing id');
+    }
+    
     return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
+      try {
+        const transaction = this.db.transaction(
+          [CONTENT_SCRIPT_CONSTANTS.OBJECT_STORE_NAME],
+          'readwrite'
+        );
+        
+        const store = transaction.objectStore(CONTENT_SCRIPT_CONSTANTS.OBJECT_STORE_NAME);
+        const request = store.put(link); // Use put to handle updates
+        
+        request.onsuccess = () => {
+          console.log('[SRT] Link saved to IndexedDB:', link.id);
+          resolve(link);
+        };
+        
+        request.onerror = () => {
+          const error = request.error || new Error('Failed to save link');
+          console.error('[SRT] Failed to save link to IndexedDB:', error);
+          reject(error);
+        };
+      } catch (error) {
+        console.error('[SRT] IndexedDB transaction failed:', error);
+        reject(error);
       }
-
-      const transaction = this.db.transaction(['links'], 'readwrite');
-      const store = transaction.objectStore('links');
-      const request = store.add(link);
-
-      request.onsuccess = () => {
-        console.log('[SRT] Link saved to IndexedDB:', link.id);
-        resolve(link);
-      };
-
-      request.onerror = () => {
-        console.error('[SRT] Failed to save link to IndexedDB');
-        reject(new Error('Failed to save link'));
-      };
     });
   }
 }
 
+// ============================================================================
+// Initialization
+// ============================================================================
+
 // Initialize content script
-new SmarTrackContentScript();
+try {
+  new SmarTrackContentScript();
+} catch (error) {
+  console.error('[SRT] Failed to initialize content script:', error);
 }

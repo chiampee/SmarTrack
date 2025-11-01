@@ -201,7 +201,8 @@ export const Dashboard: React.FC = () => {
         setCategoriesState(cats || [])
         setCollections(cols || [])
       } catch (e) {
-        logger.error('Failed to load metadata', { component: 'Dashboard', action: 'fetchMetadata' }, e as Error)
+        const error = e instanceof Error ? e : new Error(String(e))
+        logger.error('Failed to load metadata', { component: 'Dashboard', action: 'fetchMetadata' }, error)
       }
     }
     fetchMeta()
@@ -460,18 +461,36 @@ export const Dashboard: React.FC = () => {
   // Handle create collection
   const handleCreateCollection = async (collectionData: Omit<Collection, 'id' | 'userId' | 'linkCount' | 'createdAt' | 'updatedAt'>) => {
     try {
-      await makeRequest<Collection>('/api/collections', {
+      logger.info('Creating collection', { component: 'Dashboard', action: 'createCollection', metadata: { name: collectionData.name } })
+      
+      const createdCollection = await makeRequest<Collection>('/api/collections', {
         method: 'POST',
         body: JSON.stringify(collectionData),
       })
+      
       // Refresh collections
       const updatedCollections = await makeRequest<Collection[]>('/api/collections')
       setCollections(updatedCollections || [])
+      
+      logger.info('Collection created successfully', { component: 'Dashboard', action: 'createCollection', metadata: { collectionId: createdCollection.id } })
+      
       toast.success('Project created successfully!')
       setShowCreateCollectionModal(false)
+      
+      // Navigate to the new collection
+      if (createdCollection.id) {
+        navigate('/?collection=' + createdCollection.id)
+      }
     } catch (error) {
-      console.error('Failed to create project:', error)
-      toast.error('Failed to create project. Please try again.')
+      logger.error('Failed to create project', { component: 'Dashboard', action: 'createCollection', metadata: collectionData }, error as Error)
+      
+      // More detailed error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      if (errorMessage.includes('already exists') || errorMessage.includes('duplicate')) {
+        toast.error('A project with this name already exists. Please choose a different name.')
+      } else {
+        toast.error(`Failed to create project: ${errorMessage}`)
+      }
     }
   }
 
@@ -509,7 +528,8 @@ export const Dashboard: React.FC = () => {
       setLinks(refreshedLinks)
       setFilteredLinks(refreshedLinks)
     } catch (error) {
-      console.error('Failed to add link to collection:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('Failed to add link to collection:', errorMessage, error)
       toast.error('Failed to add link to collection. Please try again.')
     }
   }
@@ -537,7 +557,8 @@ export const Dashboard: React.FC = () => {
       toast.success('Link added successfully!')
       setShowAddModal(false) // Close modal on success
     } catch (error) {
-      console.error('Failed to add link:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('Failed to add link:', errorMessage, error)
       toast.error('Failed to add link. Please try again.')
     }
   }
@@ -889,7 +910,8 @@ export const Dashboard: React.FC = () => {
                               clearSelection()
                               toast.success(`${linkIds.length} link(s) deleted successfully`)
                             } catch (error) {
-                              console.error('Failed to delete links:', error)
+                              const errorMessage = error instanceof Error ? error.message : String(error)
+                              console.error('Failed to delete links:', errorMessage, error)
                               toast.error('Failed to delete some links. Please try again.')
                             } finally {
                               setLoading(false)

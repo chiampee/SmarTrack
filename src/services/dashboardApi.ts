@@ -40,8 +40,9 @@ class DashboardApiService {
 
       return await response.json();
     } catch (error) {
-      console.error(`API request failed for ${endpoint}:`, error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error(`API request failed for ${endpoint}:`, errorMessage, error)
+      throw error
     }
   }
 

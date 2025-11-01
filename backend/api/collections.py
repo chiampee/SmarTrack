@@ -1,5 +1,6 @@
 """
 Collections API endpoints
+Refactored to use utility functions for better maintainability
 """
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -8,6 +9,19 @@ from datetime import datetime
 from pydantic import BaseModel
 from services.mongodb import get_database
 from services.auth import get_current_user
+
+# Import utility functions
+from utils.mongodb_utils import (
+    validate_object_id,
+    normalize_document,
+    normalize_documents,
+    build_user_filter
+)
+from utils.validation import (
+    validate_collection_name,
+    sanitize_string
+)
+from utils.errors import NotFoundError, DuplicateError
 
 router = APIRouter()
 
@@ -43,40 +57,35 @@ async def get_collections(
     """Get user's collections"""
     try:
         user_id = current_user["sub"]
-        print(f"📚 Fetching collections for user: {user_id}")
         
-        raw = await db.collections.find({"userId": user_id}).to_list(100)
-        print(f"✅ Found {len(raw)} collections")
-
-        # Normalize and validate fields for response model
-        normalized: List[dict] = []
-        for item in raw:
-            coll_id = str(item.get("_id") or item.get("id"))
-
-            normalized.append({
-                "id": coll_id,
-                "userId": item.get("userId", user_id),
-                "name": item.get("name", ""),
-                "description": item.get("description"),
-                "color": item.get("color", "#3B82F6"),
-                "icon": item.get("icon", "book"),
-                "isDefault": bool(item.get("isDefault", False)),
-                "linkCount": 0,  # Removed expensive query for performance
-                "createdAt": item.get("createdAt", datetime.utcnow()),
-                "updatedAt": item.get("updatedAt", datetime.utcnow()),
-            })
-
-        print(f"✅ Returning {len(normalized)} normalized collections")
+        # Fetch collections
+        raw = await db.collections.find(build_user_filter(user_id)).to_list(100)
+        
+        # Normalize documents
+        normalized = normalize_documents(raw)
+        
+        # Set default values and ensure proper types
+        for item in normalized:
+            item.setdefault("name", "")
+            item.setdefault("color", "#3B82F6")
+            item.setdefault("icon", "book")
+            item.setdefault("isDefault", False)
+            item.setdefault("linkCount", 0)
+            
+            # Ensure datetime fields exist
+            if "createdAt" not in item:
+                item["createdAt"] = datetime.utcnow()
+            if "updatedAt" not in item:
+                item["updatedAt"] = datetime.utcnow()
+        
         return normalized
         
     except Exception as e:
-        error_msg = f"❌ Error fetching collections: {str(e)}"
-        print(error_msg)
+        error_msg = f"Error fetching collections: {str(e)}"
         
         # Fail open in debug to avoid breaking the UI during setup
         from core.config import settings
         if getattr(settings, "DEBUG", False):
-            print("⚠️  Debug mode: returning empty list")
             return []
         raise HTTPException(status_code=500, detail=error_msg)
 
@@ -89,30 +98,47 @@ async def create_collection(
     """Create a new collection"""
     try:
         user_id = current_user["sub"]
-        print(f"📝 Creating collection: {collection_data.name} for user: {user_id}")
         
+        # Validate and sanitize collection name
+        validated_name = validate_collection_name(collection_data.name, max_length=50)
+        
+        # Check for duplicate collection name for this user
+        existing_collection = await db.collections.find_one(
+            build_user_filter(user_id, {"name": validated_name})
+        )
+        
+        if existing_collection:
+            raise DuplicateError("Collection", validated_name)
+        
+        # Sanitize description if provided
+        sanitized_description = sanitize_string(
+            collection_data.description or "",
+            max_length=500,
+            field_name="Description"
+        ) if collection_data.description else None
+        
+        # Create collection document
         collection_doc = {
             "userId": user_id,
-            "name": collection_data.name,
-            "description": collection_data.description,
-            "color": collection_data.color,
-            "icon": collection_data.icon,
+            "name": validated_name,
+            "description": sanitized_description,
+            "color": collection_data.color or "#3B82F6",
+            "icon": collection_data.icon or "book",
             "isDefault": False,
             "createdAt": datetime.utcnow(),
             "updatedAt": datetime.utcnow()
         }
         
         result = await db.collections.insert_one(collection_doc)
-        collection_id = str(result.inserted_id)
-        collection_doc["id"] = collection_id
+        collection_doc["id"] = str(result.inserted_id)
         del collection_doc["_id"]
         
-        print(f"✅ Collection created successfully with ID: {collection_id}")
         return collection_doc
         
+    except HTTPException:
+        raise
     except Exception as e:
-        error_msg = f"❌ Error creating collection: {str(e)}"
-        print(error_msg)
+        error_msg = f"Error creating collection: {str(e)}"
         raise HTTPException(status_code=500, detail=error_msg)
 
 @router.put("/collections/{collection_id}", response_model=CollectionResponse)
@@ -124,30 +150,52 @@ async def update_collection(
 ):
     """Update a collection"""
     try:
-        from bson import ObjectId
+        user_id = current_user["sub"]
+        
+        # Validate ObjectId format
+        object_id = validate_object_id(collection_id, "Collection")
         
         # Build update data
         update_data = {"updatedAt": datetime.utcnow()}
         
+        # Process update fields with validation
         for field, value in collection_data.dict(exclude_unset=True).items():
             if value is not None:
-                update_data[field] = value
+                if field == "name":
+                    update_data[field] = validate_collection_name(value, max_length=50)
+                    
+                    # Check for duplicate name if name is being updated
+                    existing = await db.collections.find_one({
+                        "userId": user_id,
+                        "name": update_data[field],
+                        "_id": {"$ne": object_id}
+                    })
+                    if existing:
+                        raise DuplicateError("Collection", update_data[field])
+                elif field == "description":
+                    update_data[field] = sanitize_string(
+                        value,
+                        max_length=500,
+                        field_name="Description"
+                    ) if value else None
+                else:
+                    update_data[field] = value
         
+        # Update the collection
         result = await db.collections.update_one(
-            {"_id": ObjectId(collection_id), "userId": current_user["sub"]},
+            build_user_filter(user_id, {"_id": object_id}),
             {"$set": update_data}
         )
         
         if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="Collection not found")
+            raise NotFoundError("Collection", collection_id)
         
         # Return updated collection
-        collection = await db.collections.find_one({"_id": ObjectId(collection_id)})
-        collection["id"] = str(collection["_id"])
-        del collection["_id"]
+        collection = await db.collections.find_one({"_id": object_id})
+        return normalize_document(collection)
         
-        return collection
-        
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -159,13 +207,22 @@ async def delete_collection(
 ):
     """Delete a collection"""
     try:
-        from bson import ObjectId
-        result = await db.collections.delete_one({"_id": ObjectId(collection_id), "userId": current_user["sub"]})
+        user_id = current_user["sub"]
+        
+        # Validate ObjectId format
+        object_id = validate_object_id(collection_id, "Collection")
+        
+        # Delete the collection
+        result = await db.collections.delete_one(
+            build_user_filter(user_id, {"_id": object_id})
+        )
         
         if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Collection not found")
+            raise NotFoundError("Collection", collection_id)
         
         return {"message": "Collection deleted successfully"}
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

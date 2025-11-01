@@ -29,7 +29,8 @@ export const useBackendApi = () => {
           setToken(accessToken)
           localStorage.setItem('authToken', accessToken) // Store for extension
         } catch (error) {
-          console.error('Error fetching access token:', error)
+          const errorMessage = error instanceof Error ? error.message : String(error)
+          console.error('Error fetching access token:', errorMessage, error)
           setToken(null)
           localStorage.removeItem('authToken')
         }
@@ -45,9 +46,31 @@ export const useBackendApi = () => {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> => {
-    if (!token) {
+    // If authenticated but token not yet loaded, try to fetch it
+    let requestToken = token
+    if (!requestToken && isAuthenticated) {
+      try {
+        requestToken = await getAccessTokenSilently()
+        setToken(requestToken)
+        localStorage.setItem('authToken', requestToken)
+      } catch (error) {
+        // If we can't get token even though authenticated, this might be temporary
+        // Don't log it as an error if it's a common auth flow issue
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        // Only log if it's a persistent error, not a transient auth flow issue
+        if (!errorMessage.includes('login_required') && !errorMessage.includes('consent_required')) {
+          const authError = parseError(new Error(`Failed to get access token: ${errorMessage}`))
+          logError(authError, 'useBackendApi.makeAuthenticatedRequest')
+        }
+        throw parseError(new Error('Authentication required'))
+      }
+    }
+
+    if (!requestToken) {
+      // Don't log "Authentication required" errors - they're expected during initialization
+      // or when user is not authenticated. Just throw so callers can handle gracefully.
       const error = parseError(new Error('Authentication required'))
-      logError(error, 'useBackendApi.makeAuthenticatedRequest')
+      error.suppressLogging = true // Suppress logging for this expected error
       throw error
     }
 
@@ -62,7 +85,7 @@ export const useBackendApi = () => {
       const response = await fetch(url, {
         ...options,
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${requestToken}`,
           'Content-Type': 'application/json',
           ...options.headers,
         },
@@ -99,7 +122,7 @@ export const useBackendApi = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [token])
+  }, [token, isAuthenticated, getAccessTokenSilently])
 
   // Health check
   const healthCheck = useCallback(async (): Promise<{ status: string; timestamp: string }> => {
@@ -112,12 +135,12 @@ export const useBackendApi = () => {
       // Return fallback stats if not authenticated yet
       return {
         linksUsed: 0,
-        linksLimit: 100,
+        linksLimit: 40,
         storageUsed: 0,
-        storageLimit: 5 * 1024 * 1024,
+        storageLimit: 200 * 1024, // 200 KB
         averagePerLink: 0,
-        linksRemaining: 100,
-        storageRemaining: 5 * 1024 * 1024,
+        linksRemaining: 40,
+        storageRemaining: 200 * 1024,
       }
     }
 
@@ -138,25 +161,26 @@ export const useBackendApi = () => {
       // Transform backend response to frontend format
       const result = {
         linksUsed: data.totalLinks || 0,
-        linksLimit: data.linksLimit || 100,
+        linksLimit: data.linksLimit || 40,
         storageUsed: data.storageUsed || 0,
-        storageLimit: data.storageLimit || 5 * 1024 * 1024,
+        storageLimit: data.storageLimit || 200 * 1024, // 200 KB
         averagePerLink: data.averagePerLink || 0,
-        linksRemaining: data.linksRemaining || (data.linksLimit || 100) - (data.totalLinks || 0),
-        storageRemaining: data.storageRemaining || (data.storageLimit || 5 * 1024 * 1024) - (data.storageUsed || 0),
+        linksRemaining: data.linksRemaining || (data.linksLimit || 40) - (data.totalLinks || 0),
+        storageRemaining: data.storageRemaining || (data.storageLimit || 200 * 1024) - (data.storageUsed || 0),
       }
       return result
     } catch (error) {
-      console.error('Error fetching user stats:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('Error fetching user stats:', errorMessage, error)
       // Return fallback on error
       return {
         linksUsed: 0,
-        linksLimit: 100,
+        linksLimit: 40,
         storageUsed: 0,
-        storageLimit: 5 * 1024 * 1024,
+        storageLimit: 200 * 1024, // 200 KB
         averagePerLink: 0,
-        linksRemaining: 100,
-        storageRemaining: 5 * 1024 * 1024,
+        linksRemaining: 40,
+        storageRemaining: 200 * 1024,
       }
     }
   }, [makeAuthenticatedRequest, token])
@@ -180,7 +204,8 @@ export const useBackendApi = () => {
       
       return []
     } catch (error) {
-      console.error('Error fetching links:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('Error fetching links:', errorMessage, error)
       // Return empty array on error instead of throwing
       return []
     }

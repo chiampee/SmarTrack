@@ -1,5 +1,6 @@
 """
 Links API endpoints
+Refactored to use utility functions for better maintainability
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Query
@@ -9,6 +10,24 @@ from pydantic import BaseModel
 from services.mongodb import get_database
 from services.auth import get_current_user
 from core.config import settings
+
+# Import utility functions
+from utils.mongodb_utils import (
+    validate_object_id,
+    normalize_document,
+    normalize_documents,
+    build_user_filter,
+    build_pagination_query,
+    build_search_filter,
+    validate_and_convert_date
+)
+from utils.validation import (
+    validate_url,
+    validate_title,
+    validate_description,
+    validate_tags
+)
+from utils.errors import NotFoundError, DuplicateError
 
 router = APIRouter()
 
@@ -73,35 +92,47 @@ async def get_links(
 ):
     """Get user's links with pagination and filtering"""
     try:
-        # Build filter query
-        filter_query = {"userId": current_user["sub"]}
+        user_id = current_user["sub"]
         
+        # Build base filter with user filter
+        filter_query = build_user_filter(user_id)
+        
+        # Add search filter if query provided
         if q:
-            filter_query["$or"] = [
-                {"title": {"$regex": q, "$options": "i"}},
-                {"description": {"$regex": q, "$options": "i"}},
-                {"url": {"$regex": q, "$options": "i"}}
-            ]
+            search_filter = build_search_filter(q, ["title", "description", "url"])
+            filter_query.update(search_filter)
         
+        # Add category filter
         if category:
-            filter_query["category"] = category
+            filter_query["category"] = category.lower()
         
+        # Add tags filter
         if tags:
-            tag_list = [tag.strip() for tag in tags.split(",")]
+            tag_list = [tag.strip().lower() for tag in tags.split(",")]
             filter_query["tags"] = {"$in": tag_list}
         
+        # Add contentType filter
         if contentType:
             filter_query["contentType"] = contentType
         
+        # Add date range filters
         if dateFrom:
-            filter_query["createdAt"] = {"$gte": datetime.fromisoformat(dateFrom)}
+            filter_query["createdAt"] = {"$gte": validate_and_convert_date(dateFrom, "dateFrom")}
         
         if dateTo:
+            date_to_obj = validate_and_convert_date(dateTo, "dateTo")
             if "createdAt" in filter_query:
-                filter_query["createdAt"]["$lte"] = datetime.fromisoformat(dateTo)
+                if isinstance(filter_query["createdAt"], dict):
+                    filter_query["createdAt"]["$lte"] = date_to_obj
+                else:
+                    filter_query["createdAt"] = {
+                        "$gte": filter_query["createdAt"],
+                        "$lte": date_to_obj
+                    }
             else:
-                filter_query["createdAt"] = {"$lte": datetime.fromisoformat(dateTo)}
+                filter_query["createdAt"] = {"$lte": date_to_obj}
         
+        # Add boolean filters
         if isFavorite is not None:
             filter_query["isFavorite"] = isFavorite
         
@@ -112,22 +143,22 @@ async def get_links(
         total = await db.links.count_documents(filter_query)
         
         # Get links with pagination
-        skip = (page - 1) * limit
-        links = await db.links.find(filter_query).skip(skip).limit(limit).to_list(limit)
+        skip, sort_dict = build_pagination_query(page, limit, "createdAt", -1)
+        links = await db.links.find(filter_query).sort(list(sort_dict.items())).skip(skip).limit(limit).to_list(limit)
         
-        # Convert ObjectId to string
-        for link in links:
-            link["id"] = str(link["_id"])
-            del link["_id"]
+        # Normalize documents
+        normalized_links = normalize_documents(links)
         
         return {
-            "links": links,
+            "links": normalized_links,
             "total": total,
             "hasMore": skip + limit < total,
             "page": page,
             "limit": limit
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         if getattr(settings, "DEBUG", False):
             return {
@@ -153,35 +184,34 @@ async def search_links(
 ):
     """Search links"""
     try:
-        # Build search query
-        search_query = {
-            "userId": current_user["sub"],
-            "$or": [
-                {"title": {"$regex": q, "$options": "i"}},
-                {"description": {"$regex": q, "$options": "i"}},
-                {"url": {"$regex": q, "$options": "i"}}
-            ]
-        }
+        user_id = current_user["sub"]
         
+        # Build search query
+        search_query = build_user_filter(user_id)
+        search_filter = build_search_filter(q, ["title", "description", "url"])
+        search_query.update(search_filter)
+        
+        # Add additional filters
         if category:
-            search_query["category"] = category
+            search_query["category"] = category.lower()
         
         if tags:
-            tag_list = [tag.strip() for tag in tags.split(",")]
+            tag_list = [tag.strip().lower() for tag in tags.split(",")]
             search_query["tags"] = {"$in": tag_list}
         
         if contentType:
             search_query["contentType"] = contentType
         
+        # Execute search with limit
         links = await db.links.find(search_query).limit(20).to_list(20)
         
-        # Convert ObjectId to string
-        for link in links:
-            link["id"] = str(link["_id"])
-            del link["_id"]
+        # Normalize documents
+        normalized_links = normalize_documents(links)
         
-        return {"links": links}
+        return {"links": normalized_links}
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -193,24 +223,19 @@ async def get_link(
 ):
     """Get a specific link"""
     try:
-        from bson import ObjectId
-        from bson.errors import InvalidId
+        user_id = current_user["sub"]
         
-        # Validate ObjectId format before using it
-        try:
-            object_id = ObjectId(link_id)
-        except (InvalidId, ValueError, TypeError):
-            raise HTTPException(status_code=400, detail="Invalid link id format")
+        # Validate ObjectId format
+        object_id = validate_object_id(link_id, "Link")
         
-        link = await db.links.find_one({"_id": object_id, "userId": current_user["sub"]})
+        # Find link with user filter
+        link = await db.links.find_one(build_user_filter(user_id, {"_id": object_id}))
         
         if not link:
-            raise HTTPException(status_code=404, detail="Link not found")
+            raise NotFoundError("Link", link_id)
         
-        link["id"] = str(link["_id"])
-        del link["_id"]
-        
-        return link
+        # Normalize and return
+        return normalize_document(link)
         
     except HTTPException:
         raise
@@ -227,64 +252,68 @@ async def create_link(
     try:
         user_id = current_user["sub"]
         
-        # Validation 1: Check if URL is already saved for this user
-        existing_link = await db.links.find_one({
-            "userId": user_id,
-            "url": link_data.url
-        })
+        # Check user limits before creating link
+        MAX_LINKS = settings.MAX_LINKS_PER_USER  # 40 links
+        MAX_STORAGE = settings.MAX_STORAGE_PER_USER_BYTES  # 200 KB
+        
+        # Get current link count
+        current_link_count = await db.links.count_documents(build_user_filter(user_id))
+        
+        if current_link_count >= MAX_LINKS:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Link limit reached. Maximum {MAX_LINKS} links allowed per account."
+            )
+        
+        # Get current storage usage
+        all_links = await db.links.find(
+            build_user_filter(user_id),
+            {"title": 1, "url": 1, "description": 1, "content": 1, "tags": 1, "_id": 0}
+        ).to_list(10000)
+        
+        current_storage = 0
+        if all_links:
+            for link in all_links:
+                title_bytes = len((link.get("title") or "").encode('utf-8'))
+                url_bytes = len((link.get("url") or "").encode('utf-8'))
+                desc_bytes = len((link.get("description") or "").encode('utf-8'))
+                content_bytes = len((link.get("content") or "").encode('utf-8'))
+                tags_bytes = sum(len(str(tag).encode('utf-8')) for tag in (link.get("tags") or []))
+                current_storage += title_bytes + url_bytes + desc_bytes + content_bytes + tags_bytes + 300
+        
+        # Calculate size of new link
+        title_bytes = len((link_data.title or "").encode('utf-8'))
+        url_bytes = len((link_data.url or "").encode('utf-8'))
+        desc_bytes = len((link_data.description or "").encode('utf-8'))
+        content_bytes = len((link_data.content or "").encode('utf-8'))
+        tags_bytes = sum(len(str(tag).encode('utf-8')) for tag in (link_data.tags or []))
+        new_link_size = title_bytes + url_bytes + desc_bytes + content_bytes + tags_bytes + 300
+        
+        if current_storage + new_link_size > MAX_STORAGE:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Storage limit reached. Maximum {MAX_STORAGE // 1024} KB allowed per account. Please delete some links to free up space."
+            )
+        
+        # Validate and sanitize URL
+        validated_url = validate_url(link_data.url, "URL")
+        
+        # Check for duplicate URL
+        existing_link = await db.links.find_one(
+            build_user_filter(user_id, {"url": validated_url})
+        )
         
         if existing_link:
-            raise HTTPException(
-                status_code=409,
-                detail=f"Link already exists: {link_data.url}"
-            )
+            raise DuplicateError("Link", validated_url)
         
-        # Validation 2: Validate URL format
-        from urllib.parse import urlparse
-        parsed_url = urlparse(link_data.url)
-        if not parsed_url.scheme or not parsed_url.netloc:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid URL format: {link_data.url}"
-            )
+        # Validate and sanitize title
+        validated_title = validate_title(link_data.title, max_length=500)
         
-        # Validation 3: Check if URL is accessible (optional - can be slow)
-        # We'll skip this in production to avoid blocking requests
+        # Validate and sanitize description
+        validated_description = validate_description(link_data.description, max_length=5000)
         
-        # Validation 4: Sanitize and validate title
-        if not link_data.title or len(link_data.title.strip()) == 0:
-            raise HTTPException(
-                status_code=400,
-                detail="Title cannot be empty"
-            )
-        
-        # Validation 5: Check title length
-        if len(link_data.title) > 500:
-            raise HTTPException(
-                status_code=400,
-                detail="Title is too long (max 500 characters)"
-            )
-        
-        # Validation 6: Check description length
-        if link_data.description and len(link_data.description) > 5000:
-            raise HTTPException(
-                status_code=400,
-                detail="Description is too long (max 5000 characters)"
-            )
-        
-        # Validation 7: Check tags count and length
-        if len(link_data.tags) > 20:
-            raise HTTPException(
-                status_code=400,
-                detail="Too many tags (max 20)"
-            )
-        
-        for tag in link_data.tags:
-            if len(tag) > 50:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Tag '{tag}' is too long (max 50 characters)"
-                )
+        # Validate tags
+        validated_tags = validate_tags(link_data.tags, max_count=20, max_tag_length=50)
         
         # Extract content from URL (optional, can be slow)
         content_text = link_data.content
@@ -296,18 +325,18 @@ async def create_link(
         # All validations passed - create the link
         link_doc = {
             "userId": user_id,
-            "url": link_data.url,
-            "title": link_data.title.strip(),
-            "description": link_data.description.strip() if link_data.description else None,
+            "url": validated_url,
+            "title": validated_title,
+            "description": validated_description,
             "thumbnail": link_data.thumbnail,
             "favicon": link_data.favicon,
-            "category": link_data.category,
-            "tags": link_data.tags,
-            "contentType": link_data.contentType,
-            "isFavorite": link_data.isFavorite,
-            "isArchived": link_data.isArchived,
+            "category": link_data.category.lower() if link_data.category else "research",
+            "tags": validated_tags,
+            "contentType": link_data.contentType or "webpage",
+            "isFavorite": link_data.isFavorite or False,
+            "isArchived": link_data.isArchived or False,
             "collectionId": link_data.collectionId,
-            "content": content_text,  # Store extracted text content
+            "content": content_text,
             "createdAt": datetime.utcnow(),
             "updatedAt": datetime.utcnow(),
             "clickCount": 0
@@ -330,6 +359,7 @@ async def test_delete_link(
     current_user: dict = Depends(get_current_user),
     db = Depends(get_database)
 ):
+    """Test endpoint for deletion verification (debug only)"""
     if not getattr(settings, "DEBUG", False):
         raise HTTPException(status_code=404, detail="Not found")
 
@@ -358,11 +388,10 @@ async def test_delete_link(
         insert_result = await db.links.insert_one(temp_doc)
 
         # Now delete it using the real delete criteria
-        from bson import ObjectId
-        delete_result = await db.links.delete_one({
-            "_id": ObjectId(str(insert_result.inserted_id)),
-            "userId": user_id,
-        })
+        object_id = validate_object_id(str(insert_result.inserted_id), "Link")
+        delete_result = await db.links.delete_one(
+            build_user_filter(user_id, {"_id": object_id})
+        )
 
         return {
             "createdId": str(insert_result.inserted_id),
@@ -383,51 +412,46 @@ async def update_link(
 ):
     """Update a link"""
     try:
-        from bson import ObjectId
-        from bson.errors import InvalidId
-        
         user_id = current_user["sub"]
-        print(f"🔗 Updating link: {link_id} for user: {user_id}")
         
-        # Validate ObjectId format before using it
-        try:
-            object_id = ObjectId(link_id)
-        except (InvalidId, ValueError, TypeError):
-            raise HTTPException(status_code=400, detail="Invalid link id format")
+        # Validate ObjectId format
+        object_id = validate_object_id(link_id, "Link")
         
         # Build update data
         update_data = {"updatedAt": datetime.utcnow()}
         
+        # Process update fields with validation
         for field, value in link_data.dict(exclude_unset=True).items():
             if value is not None:
-                update_data[field] = value
-                if field == "collectionId":
-                    print(f"   → Setting collectionId to: {value}")
+                # Validate and sanitize fields if needed
+                if field == "title":
+                    update_data[field] = validate_title(value, max_length=500)
+                elif field == "description":
+                    update_data[field] = validate_description(value, max_length=5000)
+                elif field == "tags":
+                    update_data[field] = validate_tags(value, max_count=20, max_tag_length=50)
+                elif field == "category" and value:
+                    update_data[field] = value.lower()
+                else:
+                    update_data[field] = value
         
+        # Update the link
         result = await db.links.update_one(
-            {"_id": object_id, "userId": user_id},
+            build_user_filter(user_id, {"_id": object_id}),
             {"$set": update_data}
         )
         
         if result.matched_count == 0:
-            print(f"❌ Link not found or access denied: {link_id}")
-            raise HTTPException(status_code=404, detail="Link not found")
-        
-        print(f"✅ Link updated successfully: {link_id}")
+            raise NotFoundError("Link", link_id)
         
         # Return updated link
         link = await db.links.find_one({"_id": object_id})
-        link["id"] = str(link["_id"])
-        del link["_id"]
-        
-        return link
+        return normalize_document(link)
         
     except HTTPException:
         raise
     except Exception as e:
-        error_msg = f"❌ Error updating link {link_id}: {str(e)}"
-        print(error_msg)
-        raise HTTPException(status_code=500, detail=error_msg)
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/links/{link_id}")
 async def delete_link(
@@ -437,34 +461,28 @@ async def delete_link(
 ):
     """Delete a link"""
     try:
-        from bson import ObjectId
-        from bson.errors import InvalidId
         user_id = current_user["sub"]
         
-        # Validate ObjectId format before using it
-        try:
-            object_id = ObjectId(link_id)
-        except (InvalidId, ValueError, TypeError):
-            raise HTTPException(status_code=400, detail="Invalid link id format")
-
-        result = await db.links.delete_one({"_id": object_id, "userId": user_id})
-
+        # Validate ObjectId format
+        object_id = validate_object_id(link_id, "Link")
+        
+        # Delete the link
+        result = await db.links.delete_one(
+            build_user_filter(user_id, {"_id": object_id})
+        )
+        
         if result.deleted_count == 0:
-            # Helpful logging for troubleshooting mismatched userId vs stored doc
-            try:
-                doc = await db.links.find_one({"_id": object_id})
-                if doc:
-                    # Found by id but not user; indicate ownership issue
-                    raise HTTPException(status_code=403, detail="Not allowed to delete this link")
-            except HTTPException:
-                raise
-            except Exception:
-                # If lookup fails for any reason, fall through to 404
-                pass
-            raise HTTPException(status_code=404, detail="Link not found")
-
-        return {"message": "Link deleted successfully", "deletedCount": result.deleted_count}
-
+            # Check if link exists but belongs to different user
+            link = await db.links.find_one({"_id": object_id})
+            if link:
+                raise HTTPException(status_code=403, detail="Not allowed to delete this link")
+            raise NotFoundError("Link", link_id)
+        
+        return {
+            "message": "Link deleted successfully",
+            "deletedCount": result.deleted_count
+        }
+        
     except HTTPException:
         raise
     except Exception as e:
@@ -478,7 +496,7 @@ async def delete_all_links(
     """Delete all links for the current user"""
     try:
         user_id = current_user["sub"]
-        result = await db.links.delete_many({"userId": user_id})
+        result = await db.links.delete_many(build_user_filter(user_id))
         
         return {
             "message": f"Deleted {result.deleted_count} links successfully",
