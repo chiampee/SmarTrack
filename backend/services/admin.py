@@ -9,6 +9,10 @@ from core.config import settings
 from services.mongodb import get_database
 from datetime import datetime
 from typing import Dict, Any
+import logging
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
     """
@@ -19,23 +23,38 @@ async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends
         # Get current user from token
         current_user = await get_current_user(credentials)
         
+        user_id = current_user.get("sub")
         user_email = current_user.get("email")
+        
+        # Log extracted email and admin list for debugging
+        logger.info(f"Admin access check - User ID: {user_id}, Email extracted: {user_email or 'None'}")
+        logger.debug(f"Admin emails list: {[email.lower() for email in settings.ADMIN_EMAILS]}")
+        
         if not user_email:
-            # Log failed admin access attempt
-            await log_admin_access_attempt(current_user.get("sub"), False, "No email in token")
+            # Log failed admin access attempt with reason
+            denial_reason = "No email in token"
+            logger.warning(f"Admin access denied - User ID: {user_id}, Reason: {denial_reason}")
+            await log_admin_access_attempt(user_id, False, denial_reason)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Not found"
             )
         
+        # Normalize email for comparison
+        user_email_lower = user_email.lower()
+        admin_emails_lower = [email.lower() for email in settings.ADMIN_EMAILS]
+        
         # Check if email is in admin list
-        if user_email.lower() in [email.lower() for email in settings.ADMIN_EMAILS]:
+        if user_email_lower in admin_emails_lower:
             # Log successful admin access
-            await log_admin_access_attempt(current_user.get("sub"), True, user_email)
+            logger.info(f"Admin access granted - User ID: {user_id}, Email: {user_email}")
+            await log_admin_access_attempt(user_id, True, user_email)
             return current_user
         else:
-            # Log failed admin access attempt
-            await log_admin_access_attempt(current_user.get("sub"), False, user_email)
+            # Log failed admin access attempt with reason
+            denial_reason = f"Email '{user_email_lower}' not in admin list"
+            logger.warning(f"Admin access denied - User ID: {user_id}, Email: {user_email}, Reason: {denial_reason}, Admin list: {admin_emails_lower}")
+            await log_admin_access_attempt(user_id, False, denial_reason)
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Not found"
@@ -44,23 +63,33 @@ async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends
     except HTTPException:
         raise
     except Exception as e:
-        # Log failed admin access attempt
+        # Log failed admin access attempt with exception details
         user_id = None
+        user_email = None
         try:
             current_user = await get_current_user(credentials)
             user_id = current_user.get("sub")
-        except:
-            pass
-        await log_admin_access_attempt(user_id, False, f"Exception: {str(e)}")
+            user_email = current_user.get("email")
+        except Exception as inner_e:
+            logger.error(f"Admin access check failed - Could not get current user: {str(inner_e)}")
+        
+        denial_reason = f"Exception during admin check: {str(e)}"
+        logger.error(f"Admin access denied - User ID: {user_id}, Email: {user_email or 'Unknown'}, Error: {str(e)}")
+        await log_admin_access_attempt(user_id, False, denial_reason)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Not found"
         )
 
 
-async def log_admin_access_attempt(user_id: str = None, success: bool = False, email: str = None):
+async def log_admin_access_attempt(user_id: str = None, success: bool = False, email_or_reason: str = None):
     """
     Log admin access attempts to MongoDB for security audit
+    
+    Args:
+        user_id: User ID from Auth0 token
+        success: Whether access was granted
+        email_or_reason: Email if success=True, denial reason if success=False
     """
     try:
         db = get_database()
@@ -68,14 +97,15 @@ async def log_admin_access_attempt(user_id: str = None, success: bool = False, e
             "type": "admin_access",
             "timestamp": datetime.utcnow(),
             "userId": user_id,
-            "email": email,
+            "email": email_or_reason if success else None,
+            "denialReason": email_or_reason if not success else None,
             "success": success,
             "ip": None  # Could be added if IP is available in request
         }
         await db.system_logs.insert_one(log_entry)
     except Exception as e:
         # Don't fail the request if logging fails
-        print(f"⚠️  Failed to log admin access attempt: {e}")
+        logger.error(f"Failed to log admin access attempt: {e}")
 
 
 async def log_system_event(
