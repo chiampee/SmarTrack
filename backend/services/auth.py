@@ -152,6 +152,15 @@ async def fetch_email_from_auth0(token: str, user_id: str) -> str:
                 elif response.status_code == 403:
                     print(f"[AUTH] ❌ Auth0 userinfo returned 403 Forbidden - may need userinfo scope")
                     print(f"[AUTH] Response text: {response.text[:500]}")
+                elif response.status_code == 429:
+                    retry_after = response.headers.get('retry-after', 'unknown')
+                    rate_limit_reset = response.headers.get('x-ratelimit-reset', 'unknown')
+                    print(f"[AUTH] ❌ Auth0 userinfo returned 429 Too Many Requests")
+                    print(f"[AUTH] Rate limit info: retry-after={retry_after}s, reset={rate_limit_reset}")
+                    print(f"[AUTH] ⚠️  Auth0 rate limit exceeded. Email must be included in JWT token.")
+                    print(f"[AUTH] ⚠️  Solution: Configure Auth0 to include email in access token.")
+                    logger.warning(f"Auth0 userinfo rate limit exceeded for user {user_id}. Configure Auth0 to include email in token.")
+                    # Don't retry immediately - rate limit is per minute, wait for reset
                 else:
                     print(f"[AUTH] ❌ Auth0 userinfo endpoint returned error: {response.status_code}")
                     print(f"[AUTH] Response text: {response.text[:500]}")

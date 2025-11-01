@@ -1,5 +1,19 @@
 # Auth0 Email Configuration Guide
 
+## 🚨 CRITICAL: Rate Limit Issue
+
+**Current Problem**: The Auth0 userinfo endpoint is rate-limited to **10 requests per minute**. When the email is not in the JWT token, the backend tries to fetch it from userinfo, causing rate limit errors (429).
+
+**Error you're seeing**:
+```
+[AUTH] ❌ Auth0 userinfo returned 429 Too Many Requests
+Rate limit info: retry-after=111s, reset=1762033651
+```
+
+**Solution**: **Configure Auth0 to include email directly in the access token** (see below). This is the only reliable solution for production.
+
+---
+
 ## Problem
 The Auth0 token doesn't include the email claim, causing admin access to fail with "No email in token".
 
