@@ -34,7 +34,8 @@ export const Dashboard: React.FC = () => {
     tags: [] as string[],
     contentType: '' as Link['contentType'] | ''
   })
-  const { getLinks, isAuthenticated, makeRequest } = useBackendApi()
+  const backendApi = useBackendApi()
+  const { getLinks, isAuthenticated, makeRequest } = backendApi
   const toast = useToast()
   const { computeCategories, setCategories } = useCategories()
   const [collections, setCollections] = useState<Collection[]>([])
@@ -56,6 +57,26 @@ export const Dashboard: React.FC = () => {
       return () => clearTimeout(timer)
     }
   }, [searchParams, isAuthenticated, navigate])
+
+  // Debug: Test token on load to help diagnose admin access issues
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Auto-test token to help debug admin access
+      const testToken = async () => {
+        try {
+          const debugInfo = await makeRequest<any>('/api/debug-token')
+          console.log('🔍 [DEBUG] Token Debug Info:', JSON.stringify(debugInfo, null, 2))
+          console.log('🔍 [DEBUG] Email found:', debugInfo.tokenInfo?.emailFromToken || debugInfo.tokenInfo?.email || 'NOT FOUND')
+          console.log('🔍 [DEBUG] Admin check:', debugInfo.adminCheck)
+        } catch (error) {
+          console.error('🔍 [DEBUG] Token debug failed:', error)
+        }
+      }
+      // Only run once after a delay
+      const timer = setTimeout(testToken, 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [isAuthenticated, makeRequest])
 
   // Load links from backend
   useEffect(() => {
