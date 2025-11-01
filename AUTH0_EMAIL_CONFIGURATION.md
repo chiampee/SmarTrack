@@ -95,17 +95,21 @@ The backend now has a fallback mechanism:
 
 ## Quick Fix Options
 
-### Option 1: Always Request Email Scope (Recommended)
+### ✅ Option 1: Add /analytics to Auth0 Allowed Callback URLs (CRITICAL)
 
-Update `src/hooks/useBackendApi.ts` to always request email scope:
+**Go to Auth0 Dashboard:**
+1. Applications → **Your Application** → Settings
+2. **Allowed Callback URLs** field
+3. Add: `https://smar-track.vercel.app/analytics`
+4. Make sure it includes:
+   ```
+   https://smar-track.vercel.app/dashboard,
+   https://smar-track.vercel.app/analytics,
+   https://smar-track.vercel.app/callback
+   ```
+5. Click **Save Changes**
 
-```typescript
-const accessToken = await getAccessTokenSilently({
-  authorizationParams: {
-    scope: 'openid profile email',
-  }
-})
-```
+**This is likely why you're getting 403 Forbidden errors!**
 
 ### Option 2: Verify Auth0 API Includes Email in Token
 
@@ -113,9 +117,25 @@ In Auth0 Dashboard → APIs → Your API → **Settings**:
 - Ensure **Include Email in Access Token** is enabled (if available)
 - Or add a custom scope/claim mapping
 
-### Option 3: Use Auth0 Management API (Advanced)
+### Option 3: Verify Email Scope Exists in API
 
-If email still isn't available, the backend can fetch user details from Auth0 Management API using the user ID (`sub`).
+**Go to:** APIs → **Your API** → Scopes tab
+
+**Verify:**
+- `openid` scope exists
+- `profile` scope exists  
+- `email` scope exists (add it if missing)
+
+### Option 4: Check User Email is Verified
+
+**Go to:** User Management → Users → **Your User**
+
+**Verify:**
+- Email field shows: `chaimpeer11@gmail.com`
+- Email has green checkmark (verified)
+- If not verified, click "Verify Email" button
+
+**Note:** Auth0 may not include unverified emails in tokens.
 
 ## Testing
 

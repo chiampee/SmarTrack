@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Grid, List, Star, Download, Loader2 } from 'lucide-react'
 import { CollectionSidebar } from '../components/CollectionSidebar'
 import { LinkCard } from '../components/LinkCard'
@@ -42,6 +42,20 @@ export const Dashboard: React.FC = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const [currentCategoryName, setCurrentCategoryName] = useState<string | null>(null)
+  const [searchParams] = useSearchParams()
+
+  // Check if we should redirect to analytics after login
+  useEffect(() => {
+    const redirectTo = searchParams.get('redirect')
+    if (redirectTo === 'analytics' && isAuthenticated) {
+      // Check if user is admin and navigate to analytics
+      // This will be handled by useAdminAccess, but we can help navigate
+      const timer = setTimeout(() => {
+        navigate('/analytics')
+      }, 1000) // Small delay to ensure auth state is ready
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams, isAuthenticated, navigate])
 
   // Load links from backend
   useEffect(() => {

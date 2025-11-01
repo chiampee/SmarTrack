@@ -135,14 +135,18 @@ export const AdminAnalytics: React.FC = () => {
   // Force re-login for admin access
   const handleReLogin = useCallback(async () => {
     try {
+      // Use dashboard as redirect, then navigate to analytics after login
+      // This ensures the redirect_uri is in Auth0's allowed callbacks
       await loginWithRedirect({
         authorizationParams: {
-          redirect_uri: window.location.origin + '/analytics',
+          redirect_uri: window.location.origin + '/dashboard',
           audience: import.meta.env.VITE_AUTH0_AUDIENCE,
           scope: 'openid profile email',
           prompt: 'login', // Force login screen
         }
       })
+      // After successful login, Auth0 will redirect to /dashboard
+      // The App.tsx router will handle navigation to /analytics if user is admin
     } catch (error) {
       console.error('Failed to re-login:', error)
       toast.error('Failed to re-authenticate')
