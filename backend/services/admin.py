@@ -26,13 +26,16 @@ async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends
         user_id = current_user.get("sub")
         user_email = current_user.get("email")
         
-        # Log extracted email and admin list for debugging
+        # Log extracted email and admin list for debugging (use print for Render logs visibility)
+        print(f"[ADMIN CHECK] User ID: {user_id}, Email extracted: {user_email or 'None'}")
+        print(f"[ADMIN CHECK] Admin emails list: {settings.ADMIN_EMAILS}")
         logger.info(f"Admin access check - User ID: {user_id}, Email extracted: {user_email or 'None'}")
         logger.debug(f"Admin emails list: {[email.lower() for email in settings.ADMIN_EMAILS]}")
         
         if not user_email:
             # Log failed admin access attempt with reason
-            denial_reason = "No email in token"
+            denial_reason = "No email in token - ensure token includes 'email' scope"
+            print(f"[ADMIN DENIED] User ID: {user_id}, Reason: {denial_reason}")
             logger.warning(f"Admin access denied - User ID: {user_id}, Reason: {denial_reason}")
             await log_admin_access_attempt(user_id, False, denial_reason)
             raise HTTPException(
@@ -47,12 +50,14 @@ async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends
         # Check if email is in admin list
         if user_email_lower in admin_emails_lower:
             # Log successful admin access
+            print(f"[ADMIN GRANTED] User ID: {user_id}, Email: {user_email}")
             logger.info(f"Admin access granted - User ID: {user_id}, Email: {user_email}")
             await log_admin_access_attempt(user_id, True, user_email)
             return current_user
         else:
             # Log failed admin access attempt with reason
-            denial_reason = f"Email '{user_email_lower}' not in admin list"
+            denial_reason = f"Email '{user_email_lower}' not in admin list {admin_emails_lower}"
+            print(f"[ADMIN DENIED] User ID: {user_id}, Email: {user_email}, Reason: {denial_reason}")
             logger.warning(f"Admin access denied - User ID: {user_id}, Email: {user_email}, Reason: {denial_reason}, Admin list: {admin_emails_lower}")
             await log_admin_access_attempt(user_id, False, denial_reason)
             raise HTTPException(
