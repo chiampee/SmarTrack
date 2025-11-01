@@ -108,8 +108,12 @@ async def create_index_safely(
                 existing_indexes = await collection.index_information()
                 
                 # Try to drop all indexes with matching keys
-                if index_name and index_name in existing_indexes:
-                    await collection.drop_index(index_name)
+                try:
+                    if index_name and index_name in existing_indexes:
+                        await collection.drop_index(index_name)
+                except Exception as drop_error:
+                    # Index might not exist, that's okay
+                    logger.debug(f"Could not drop index '{index_name}': {drop_error}")
                 # Try to find and drop conflicting indexes
                 for name, index_info in existing_indexes.items():
                     if name == index_name:

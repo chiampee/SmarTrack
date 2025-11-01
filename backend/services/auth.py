@@ -70,6 +70,10 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             # Extract email using multiple possible field names
             email = extract_email_from_payload(unverified_payload)
             
+            # If email not in token, try to fetch from Auth0 userinfo endpoint
+            if not email:
+                email = await fetch_email_from_auth0(token, user_id)
+            
             # Return user info from token
             return {
                 "sub": user_id,
@@ -90,3 +94,37 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials"
         )
+
+
+async def fetch_email_from_auth0(token: str, user_id: str) -> str:
+    """
+    Fetch user email from Auth0 userinfo endpoint if not in token.
+    This is a fallback when the token doesn't include email claim.
+    """
+    try:
+        import httpx
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Call Auth0 userinfo endpoint
+        userinfo_url = f"https://{settings.AUTH0_DOMAIN}/userinfo"
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(
+                userinfo_url,
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            
+            if response.status_code == 200:
+                userinfo = response.json()
+                email = extract_email_from_payload(userinfo)
+                if email:
+                    logger.info(f"Fetched email from Auth0 userinfo for user {user_id}")
+                    return email
+        
+        logger.warning(f"Could not fetch email from Auth0 userinfo for user {user_id}")
+        return None
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to fetch email from Auth0 userinfo: {e}")
+        return None
