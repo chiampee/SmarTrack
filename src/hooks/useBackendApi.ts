@@ -84,11 +84,12 @@ export const useBackendApi = () => {
 
     const url = `${API_BASE_URL}${endpoint}`
     
-    // Log backend URL for debugging (only in development or if explicitly enabled)
-    if (import.meta.env.DEV || import.meta.env.VITE_DEBUG_API === 'true') {
+    // Always log backend URL on first request for debugging
+    if (!window.__API_DEBUG_LOGGED) {
+      console.log(`[API] Backend URL configured: ${API_BASE_URL}`)
+      console.log(`[API] Environment VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL || 'not set (using default)'}`)
       console.log(`[API] Making request to: ${url}`)
-      console.log(`[API] Backend URL: ${API_BASE_URL}`)
-      console.log(`[API] Environment VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL || 'not set'}`)
+      window.__API_DEBUG_LOGGED = true
     }
     
     try {
@@ -133,12 +134,18 @@ export const useBackendApi = () => {
         throw timeoutError
       }
       
-      // Enhanced error logging for network errors
+      // Enhanced error logging for network errors - ALWAYS show in production
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        console.error(`[API ERROR] Network error calling: ${url}`)
-        console.error(`[API ERROR] Backend URL configured as: ${API_BASE_URL}`)
-        console.error(`[API ERROR] Environment VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL || 'not set'}`)
-        console.error(`[API ERROR] Check if backend is accessible at: ${API_BASE_URL}/api/health`)
+        console.error('🚨 [API ERROR] Network error - Failed to fetch')
+        console.error(`[API ERROR] Full URL: ${url}`)
+        console.error(`[API ERROR] Backend base URL: ${API_BASE_URL}`)
+        console.error(`[API ERROR] Environment variable VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL || '❌ NOT SET (using default)'}`)
+        console.error(`[API ERROR] Test backend health: ${API_BASE_URL}/api/health`)
+        console.error(`[API ERROR] This usually means:`)
+        console.error(`  1. Backend URL is wrong`)
+        console.error(`  2. Backend is down`)
+        console.error(`  3. CORS is blocking the request`)
+        console.error(`  4. VITE_BACKEND_URL not set in Vercel environment variables`)
       }
       
       const appError = parseError(error)
