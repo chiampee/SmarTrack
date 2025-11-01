@@ -8,6 +8,9 @@ import { Link } from '../types/Link'
 // If running locally, set VITE_BACKEND_URL=http://localhost:8000 in .env
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://smartrack-back.onrender.com'
 
+// Track if we've logged the backend URL (module-level, not window)
+let apiDebugLogged = false
+
 export interface UserStats {
   linksUsed: number
   linksLimit: number
@@ -85,11 +88,11 @@ export const useBackendApi = () => {
     const url = `${API_BASE_URL}${endpoint}`
     
     // Always log backend URL on first request for debugging
-    if (!window.__API_DEBUG_LOGGED) {
+    if (!apiDebugLogged) {
       console.log(`[API] Backend URL configured: ${API_BASE_URL}`)
       console.log(`[API] Environment VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL || 'not set (using default)'}`)
       console.log(`[API] Making request to: ${url}`)
-      window.__API_DEBUG_LOGGED = true
+      apiDebugLogged = true
     }
     
     try {
