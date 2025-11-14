@@ -6,9 +6,9 @@ import { Shield, Cloud, Zap, BookOpen, Search, Tag, Link2, Brain, BarChart3, Clo
 import { DashboardPreview } from '../components/DashboardPreview'
 import { ExtensionPreview } from '../components/ExtensionPreview'
 
-// Animation variants
+// Animation variants - More visible animations
 const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 60 },
   visible: { 
     opacity: 1, 
     y: 0
@@ -16,7 +16,7 @@ const fadeInUp = {
 }
 
 const fadeInScale = {
-  hidden: { opacity: 0, scale: 0.95 },
+  hidden: { opacity: 0, scale: 0.85 },
   visible: { 
     opacity: 1, 
     scale: 1
@@ -28,14 +28,14 @@ const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2
+      staggerChildren: 0.15,
+      delayChildren: 0.1
     }
   }
 }
 
 const staggerItem = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 40 },
   visible: {
     opacity: 1,
     y: 0
@@ -53,8 +53,8 @@ const Feature: React.FC<{ icon: React.ReactNode; title: string; description: str
               whileInView="visible"
               viewport={{ once: true, margin: "-50px" }}
               variants={staggerItem}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              whileHover={{ scale: 1.02, y: -5 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              whileHover={{ scale: 1.05, y: -8 }}
               className="group p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300"
             >
     <motion.div 
@@ -197,20 +197,22 @@ export const LoginPage: React.FC = () => {
             initial="hidden"
             animate="visible"
             variants={fadeInUp}
-            transition={{ duration: 0.6, ease: "easeOut" }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20"
           >
             <div className="text-center">
               {/* Headline - Clear & Compelling */}
               <motion.h1
-                variants={fadeInUp}
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
                 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 max-w-5xl mx-auto leading-tight"
               >
                 Never Lose Research Again.
                 <motion.span
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.6 }}
+                  transition={{ delay: 0.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                   className="block mt-2 bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent"
                 >
                   Find Everything Instantly.
@@ -219,17 +221,17 @@ export const LoginPage: React.FC = () => {
               
               {/* Value Proposition - Authentic & Clear */}
               <motion.p
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.6 }}
+                transition={{ delay: 0.4, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 className="text-lg sm:text-xl md:text-2xl text-purple-200 mb-4 max-w-3xl mx-auto font-medium"
               >
                 The research tool that helps you <span className="text-white font-bold">organize, analyze, and find</span> everything you save
               </motion.p>
               <motion.p
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.6 }}
+                transition={{ delay: 0.5, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 className="text-base sm:text-lg text-purple-300 mb-10 max-w-2xl mx-auto"
               >
                 Save any webpage instantly. Get AI-powered summaries. Search your entire research library in seconds.
@@ -237,9 +239,9 @@ export const LoginPage: React.FC = () => {
           
               {/* Primary CTA - More Prominent */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.6 }}
+                transition={{ delay: 0.6, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 className="mb-10"
               >
                 <motion.button
@@ -306,9 +308,9 @@ export const LoginPage: React.FC = () => {
             <motion.div
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
+              viewport={{ once: true, margin: "-50px" }}
               variants={fadeInScale}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className="mt-16 mb-12 max-w-5xl mx-auto"
             >
               <motion.div
@@ -334,9 +336,9 @@ export const LoginPage: React.FC = () => {
             <motion.div
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
+              viewport={{ once: true, margin: "-50px" }}
               variants={fadeInUp}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className="mt-16 mb-8 max-w-6xl mx-auto"
             >
               <div className="relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm">
@@ -367,7 +369,7 @@ export const LoginPage: React.FC = () => {
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
           className="mb-20 py-12"
         >
