@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Link2, ExternalLink, CheckCircle2, ArrowRight, Sparkles, Zap, Globe, Clock, MousePointerClick, X } from 'lucide-react'
+import { Link2, ExternalLink, CheckCircle2, ArrowRight, Sparkles, Zap, Globe, Clock } from 'lucide-react'
 
 export const ExtensionPreview: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false)
