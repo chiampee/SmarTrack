@@ -145,12 +145,14 @@ export const LoginPage: React.FC = () => {
             </div>
 
             {/* Extension Preview - Save Flow */}
-            <div className="mt-16 mb-12 max-w-4xl mx-auto">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-white mb-2">Save Links Instantly</h3>
-                <p className="text-purple-200">Use our browser extension to save any webpage with one click</p>
+            <div className="mt-16 mb-12 max-w-5xl mx-auto">
+              <div className="text-center mb-10">
+                <h3 className="text-3xl font-bold text-white mb-3">How It Works: Save Links in 3 Simple Steps</h3>
+                <p className="text-lg text-purple-200 max-w-2xl mx-auto">
+                  Our browser extension makes saving research links effortless. Watch how easy it is to capture and organize any webpage.
+                </p>
               </div>
-              <div className="relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm p-6">
+              <div className="relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm p-8">
                 <ExtensionPreview />
               </div>
             </div>
