@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useNavigate } from 'react-router-dom'
-import { motion, useInView } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Shield, Cloud, Zap, BookOpen, Search, Tag, Link2, Brain, BarChart3, Clock, Lock, CheckCircle2, ArrowRight, Star, LogIn } from 'lucide-react'
 import { DashboardPreview } from '../components/DashboardPreview'
 import { ExtensionPreview } from '../components/ExtensionPreview'
