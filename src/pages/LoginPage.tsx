@@ -5,42 +5,42 @@ import { motion } from 'framer-motion'
 import { Shield, Cloud, Zap, BookOpen, Search, Tag, Link2, Brain, BarChart3, Clock, Lock, CheckCircle2, ArrowRight, Star, LogIn } from 'lucide-react'
 import { DashboardPreview } from '../components/DashboardPreview'
 import { ExtensionPreview } from '../components/ExtensionPreview'
+import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 
-// Animation variants - More visible animations
-const fadeInUp = {
-  hidden: { opacity: 0, y: 60 },
-  visible: { 
-    opacity: 1, 
-    y: 0
-  }
-}
-
-const fadeInScale = {
-  hidden: { opacity: 0, scale: 0.85 },
-  visible: { 
-    opacity: 1, 
-    scale: 1
-  }
-}
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.1
+// Animation variants - Optimized for mobile
+const createAnimationVariants = (config: { movementDistance: number; scaleAmount: number; staggerDelay: number }) => ({
+  fadeInUp: {
+    hidden: { opacity: 0, y: config.movementDistance },
+    visible: { 
+      opacity: 1, 
+      y: 0
+    }
+  },
+  fadeInScale: {
+    hidden: { opacity: 0, scale: config.scaleAmount },
+    visible: { 
+      opacity: 1, 
+      scale: 1
+    }
+  },
+  staggerContainer: {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: config.staggerDelay,
+        delayChildren: 0.05
+      }
+    }
+  },
+  staggerItem: {
+    hidden: { opacity: 0, y: config.movementDistance * 0.6 },
+    visible: {
+      opacity: 1,
+      y: 0
     }
   }
-}
-
-const staggerItem = {
-  hidden: { opacity: 0, y: 40 },
-  visible: {
-    opacity: 1,
-    y: 0
-  }
-}
+})
 
 const Feature: React.FC<{ icon: React.ReactNode; title: string; description: string; benefit?: string }> = ({
   icon,
@@ -78,6 +78,7 @@ const Feature: React.FC<{ icon: React.ReactNode; title: string; description: str
 export const LoginPage: React.FC = () => {
   const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0()
   const navigate = useNavigate()
+  const { isMobile, prefersReducedMotion, animationConfig } = useMobileOptimizations()
 
   // Validate authentication state - redirect if already authenticated
   useEffect(() => {
@@ -110,6 +111,16 @@ export const LoginPage: React.FC = () => {
   if (isAuthenticated) {
     return null
   }
+
+  // Create animation variants based on device
+  const variants = createAnimationVariants(animationConfig)
+  const fadeInUp = variants.fadeInUp
+  const fadeInScale = variants.fadeInScale
+  const staggerContainer = variants.staggerContainer
+  const staggerItem = variants.staggerItem
+
+  // Disable animations if user prefers reduced motion
+  const shouldAnimate = !prefersReducedMotion
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
@@ -194,18 +205,18 @@ export const LoginPage: React.FC = () => {
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-transparent"></div>
           <motion.div
-            initial="hidden"
+            initial={shouldAnimate ? "hidden" : "visible"}
             animate="visible"
             variants={fadeInUp}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: animationConfig.duration, ease: "easeOut" }}
             className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20"
           >
             <div className="text-center">
               {/* Headline - Clear & Compelling */}
               <motion.h1
-                initial={{ opacity: 0, y: 50 }}
+                initial={shouldAnimate ? { opacity: 0, y: 40 } : { opacity: 1, y: 0 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: animationConfig.duration, delay: shouldAnimate ? 0.1 : 0, ease: "easeOut" }}
                 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 max-w-5xl mx-auto leading-tight"
               >
                 Never Lose Research Again.
@@ -306,11 +317,11 @@ export const LoginPage: React.FC = () => {
 
             {/* Extension Preview - Save Flow */}
             <motion.div
-              initial="hidden"
+              initial={shouldAnimate ? "hidden" : "visible"}
               whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
+              viewport={{ once: true, margin: isMobile ? "-20px" : "-50px" }}
               variants={fadeInScale}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: animationConfig.duration, ease: "easeOut" }}
               className="mt-16 mb-12 max-w-5xl mx-auto"
             >
               <motion.div
@@ -334,11 +345,11 @@ export const LoginPage: React.FC = () => {
 
             {/* Product Preview - Dashboard Preview */}
             <motion.div
-              initial="hidden"
+              initial={shouldAnimate ? "hidden" : "visible"}
               whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
+              viewport={{ once: true, margin: isMobile ? "-20px" : "-50px" }}
               variants={fadeInUp}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: animationConfig.duration, ease: "easeOut" }}
               className="mt-16 mb-8 max-w-6xl mx-auto"
             >
               <div className="relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm">
@@ -367,9 +378,9 @@ export const LoginPage: React.FC = () => {
 
         {/* Key Features - Shorter, Benefit-Focused */}
         <motion.div
-          initial="hidden"
+          initial={shouldAnimate ? "hidden" : "visible"}
           whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
+          viewport={{ once: true, margin: isMobile ? "-20px" : "-50px" }}
           variants={staggerContainer}
           className="mb-20 py-12"
         >

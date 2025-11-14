@@ -20,6 +20,20 @@ html {
   }
 }
 
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  /* Reduce animation complexity on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  
+  /* Optimize scrolling on iOS */
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 @layer components {
     .card {
       @apply bg-white rounded-xl p-6 shadow-sm border border-gray-200;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Plus, Grid, List, Star, Download, Loader2 } from 'lucide-react'
+import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { CollectionSidebar } from '../components/CollectionSidebar'
 import { LinkCard } from '../components/LinkCard'
 import { SearchAutocomplete } from '../components/SearchAutocomplete'
@@ -45,6 +46,7 @@ export const Dashboard: React.FC = () => {
   const navigate = useNavigate()
   const [currentCategoryName, setCurrentCategoryName] = useState<string | null>(null)
   const [searchParams] = useSearchParams()
+  const { isMobile, prefersReducedMotion, animationConfig } = useMobileOptimizations()
 
   // Check if we should redirect to analytics after login
   useEffect(() => {
@@ -636,9 +638,9 @@ export const Dashboard: React.FC = () => {
     toast.success('Links exported successfully!')
   }
 
-  // Animation variants
+  // Animation variants - Optimized for mobile
   const fadeInUp = {
-    hidden: { opacity: 0, y: 30 },
+    hidden: { opacity: 0, y: animationConfig.movementDistance },
     visible: { 
       opacity: 1, 
       y: 0
@@ -650,29 +652,31 @@ export const Dashboard: React.FC = () => {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.08,
-        delayChildren: 0.1
+        staggerChildren: animationConfig.staggerDelay,
+        delayChildren: 0.05
       }
     }
   }
 
   const staggerItem = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: animationConfig.movementDistance * 0.6 },
     visible: {
       opacity: 1,
       y: 0
     }
   }
 
+  const shouldAnimate = !prefersReducedMotion
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
       <div className="max-w-[1600px] mx-auto px-4 py-6">
         {/* Header */}
         <motion.div
-          initial="hidden"
+          initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
           variants={fadeInUp}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          transition={{ duration: animationConfig.duration, ease: "easeOut" }}
           className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 px-6 py-4"
         >
           <div className="flex items-center justify-between">
@@ -739,10 +743,10 @@ export const Dashboard: React.FC = () => {
 
         {/* Search and Filters */}
         <motion.div
-          initial="hidden"
+          initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
           variants={fadeInUp}
-          transition={{ delay: 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ delay: shouldAnimate ? 0.1 : 0, duration: animationConfig.duration, ease: "easeOut" }}
           className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 p-6"
         >
           {/* Quick Filters */}
@@ -841,10 +845,10 @@ export const Dashboard: React.FC = () => {
 
         {/* Main Content */}
         <motion.div
-          initial="hidden"
+          initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
           variants={fadeInUp}
-          transition={{ delay: 0.2, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ delay: shouldAnimate ? 0.2 : 0, duration: animationConfig.duration, ease: "easeOut" }}
           className="grid grid-cols-1 gap-6"
         >
           {/* Content */}
@@ -955,7 +959,7 @@ export const Dashboard: React.FC = () => {
               </motion.div>
             ) : (
               <motion.div
-                initial="hidden"
+                initial={shouldAnimate ? "hidden" : "visible"}
                 animate="visible"
                 variants={staggerContainer}
               >
@@ -1101,7 +1105,11 @@ export const Dashboard: React.FC = () => {
           <motion.div
             key={link.id}
             variants={staggerItem}
-            transition={{ duration: 0.4, delay: index * 0.05, ease: "easeOut" }}
+            transition={{ 
+              duration: animationConfig.duration * 0.7, 
+              delay: shouldAnimate ? index * 0.03 : 0, 
+              ease: "easeOut" 
+            }}
           >
                                 <LinkCard
                                   link={link}
