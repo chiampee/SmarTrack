@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Link2, ExternalLink, CheckCircle2, ArrowRight, Sparkles, Zap, Globe, Clock, MousePointerClick } from 'lucide-react'
+import { Link2, ExternalLink, CheckCircle2, ArrowRight, Sparkles, Zap, Globe, Clock, MousePointerClick, X } from 'lucide-react'
 
 export const ExtensionPreview: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false)
@@ -36,8 +36,8 @@ export const ExtensionPreview: React.FC = () => {
         })
       },
       {
-        threshold: 0.2, // Trigger when 20% of component is visible
-        rootMargin: '0px 0px -50px 0px' // Start slightly before fully in view
+        threshold: 0.2,
+        rootMargin: '0px 0px -50px 0px'
       }
     )
 
@@ -85,171 +85,161 @@ export const ExtensionPreview: React.FC = () => {
         </div>
       </div>
 
-      {/* Extension Popup Preview - Actual Size (400px) */}
-      <div 
-        className={`bg-white rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden border border-slate-200/50 mx-auto mb-8 transition-all duration-1000 ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-        }`}
-        style={{
-          width: '100%',
-          maxWidth: '400px',
-          minHeight: '450px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)'
-        }}
-      >
-        {/* Step 1 Label */}
-        <div className="bg-blue-500/10 border-b border-blue-500/20 px-3 sm:px-4 py-2">
-          <div className="flex items-center gap-2 text-blue-600">
-            <MousePointerClick className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="text-xs font-semibold uppercase tracking-wide">Step 1: Browser Extension</span>
-          </div>
-        </div>
-
-        {/* Header with enhanced gradient */}
-        <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 p-5 sm:p-7 text-white text-center relative overflow-hidden">
-          {/* Animated background shimmer */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer"></div>
-          
-          {/* Subtle pattern overlay */}
-          <div className="absolute inset-0 opacity-10" style={{
-            backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
-            backgroundSize: '24px 24px'
-          }}></div>
-          
-          <div className="relative z-10">
-            {/* Logo with enhanced styling */}
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-xl transform transition-transform duration-300 hover:scale-110 hover:rotate-3">
-              <span className="text-blue-600 font-bold text-xl sm:text-2xl tracking-tight">ST</span>
-            </div>
-            
-            <h3 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2 tracking-tight">Save to SmarTrack</h3>
-            <p className="text-xs sm:text-sm opacity-95 font-medium mb-3 sm:mb-4">Smart Research Tracking</p>
-            
-            <button className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/30 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg group">
-              <span>Open Dashboard</span>
-              <ExternalLink className="w-3 h-3 sm:w-3.5 sm:h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-            </button>
-          </div>
-        </div>
-
-        {/* Content with better spacing */}
-        <div className="p-4 sm:p-6 bg-gradient-to-b from-white to-slate-50/50">
-          {/* Page Preview Card with label */}
-          <div className="mb-4">
-            <p className="text-xs text-slate-500 font-medium mb-2 flex items-center gap-1">
-              <Globe className="w-3 h-3" />
-              Page detected automatically
-            </p>
-            <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-200/80 rounded-lg sm:rounded-xl p-3 sm:p-4 flex items-start gap-3 shadow-sm hover:shadow-md transition-all duration-300 group">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-lg sm:rounded-xl flex-shrink-0 flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
-                <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-slate-900 text-sm mb-1 sm:mb-1.5 truncate group-hover:text-blue-600 transition-colors">
-                  Modern Web Development Guide
-                </div>
-                <div className="text-xs text-slate-500 truncate font-mono">
-                  example.com/web-dev-guide
-                </div>
-              </div>
+      {/* Mobile Device Frame with Dashboard Background */}
+      <div className={`relative mx-auto mb-8 transition-all duration-1000 ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+      }`} style={{ maxWidth: '375px' }}>
+        {/* Mobile Frame */}
+        <div className="relative bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-800" style={{ aspectRatio: '9/16', maxHeight: '667px' }}>
+          {/* Status Bar */}
+          <div className="bg-slate-900 px-4 py-1 flex justify-between items-center text-white text-xs">
+            <span>15:01</span>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-2 border border-white rounded-sm"></div>
+              <div className="w-3 h-3 border border-white rounded-full"></div>
+              <span>100</span>
             </div>
           </div>
 
-          {/* Enhanced Form */}
-          <form className="space-y-4 sm:space-y-5">
-            <div className="space-y-1.5 sm:space-y-2">
-              <label className="block text-xs sm:text-sm font-semibold text-slate-700 tracking-wide">
-                Title <span className="text-slate-400 font-normal text-xs">(auto-filled)</span>
-              </label>
-              <input
-                type="text"
-                value="Modern Web Development Guide"
-                readOnly
-                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border-2 border-blue-200 rounded-lg sm:rounded-xl text-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 bg-blue-50/30 transition-all duration-200"
-              />
+          {/* URL Bar */}
+          <div className="bg-slate-800 px-3 py-2 text-xs text-slate-300 text-center">
+            smar-track.vercel.app
+          </div>
+
+          {/* Dashboard Background (Blurred) */}
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden" style={{ filter: 'blur(2px)' }}>
+            <div className="p-4 space-y-4">
+              <div className="h-8 bg-slate-700/50 rounded w-3/4"></div>
+              <div className="h-24 bg-slate-700/30 rounded"></div>
+              <div className="h-32 bg-slate-700/30 rounded"></div>
+            </div>
+          </div>
+
+          {/* Extension Popup Overlay */}
+          <div 
+            className={`absolute top-16 left-0 right-0 bg-white rounded-t-3xl shadow-2xl transition-all duration-500 ${
+              isVisible ? 'translate-y-0' : 'translate-y-full'
+            }`}
+            style={{
+              maxHeight: 'calc(100% - 4rem)',
+              overflowY: 'auto'
+            }}
+          >
+            {/* Extension Header */}
+            <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 p-5 text-white text-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer"></div>
+              
+              <div className="relative z-10">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mx-auto mb-3 shadow-xl">
+                  <span className="text-blue-600 font-bold text-xl tracking-tight">ST</span>
+                </div>
+                <h3 className="text-xl font-bold mb-1 tracking-tight">Save to SmarTrack</h3>
+                <p className="text-xs opacity-95 font-medium mb-3">Smart Research Tracking</p>
+              </div>
             </div>
 
-            <div className="space-y-1.5 sm:space-y-2">
-              <label className="block text-xs sm:text-sm font-semibold text-slate-700 tracking-wide">
-                Description <span className="text-slate-400 font-normal text-xs">(optional)</span>
-              </label>
-              <textarea
-                value="A comprehensive guide to modern web development practices and frameworks."
-                readOnly
-                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-slate-300 rounded-lg sm:rounded-xl text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 resize-none leading-relaxed transition-all duration-200"
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-1.5 sm:space-y-2">
-              <label className="block text-xs sm:text-sm font-semibold text-slate-700 tracking-wide">
-                Category
-              </label>
-              <div className="relative">
-                <select
-                  value="Technology"
-                  disabled
-                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-slate-300 rounded-lg sm:rounded-xl text-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/30 bg-white cursor-not-allowed appearance-none"
-                >
-                  <option>Technology</option>
-                  <option>Business</option>
-                  <option>Research</option>
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+            {/* Extension Content */}
+            <div className="p-4 bg-white">
+              {/* Page Preview */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 flex items-start gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-lg flex-shrink-0 flex items-center justify-center">
+                  <Globe className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-slate-900 text-sm mb-1 truncate">
+                    Modern Web Development Guide
+                  </div>
+                  <div className="text-xs text-slate-500 truncate font-mono">
+                    example.com/web-dev-guide
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Step 2 Label */}
-            <div className="pt-1 sm:pt-2 pb-1">
-              <div className="flex items-center gap-2 text-purple-600 mb-2 sm:mb-3">
-                <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="text-xs font-semibold uppercase tracking-wide">Step 2: Click Save</span>
-              </div>
-            </div>
+              {/* Form */}
+              <form className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Title <span className="text-slate-400 font-normal">(auto-filled)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value="Modern Web Development Guide"
+                    readOnly
+                    className="w-full px-3 py-2 border-2 border-blue-200 rounded-lg text-slate-900 text-sm font-medium bg-blue-50/30"
+                  />
+                </div>
 
-            {/* Enhanced Save Button with Animation */}
-            <div className="flex gap-2 sm:gap-3">
-              <button
-                type="button"
-                className="flex-1 px-4 sm:px-5 py-2.5 sm:py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={`flex-1 px-4 sm:px-5 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all duration-500 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg relative overflow-hidden group ${
-                  showSuccess 
-                    ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white' 
-                    : isSaving
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white animate-pulse'
-                    : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white hover:shadow-xl'
-                }`}
-              >
-                {/* Shimmer effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                
-                <span className="relative z-10 flex items-center justify-center gap-1.5 sm:gap-2">
-                  {isSaving ? (
-                    <>
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>Saving...</span>
-                    </>
-                  ) : showSuccess ? (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 animate-bounce" />
-                      <span>Saved!</span>
-                    </>
-                  ) : (
-                    <span>Save Link</span>
-                  )}
-                </span>
-              </button>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Description <span className="text-slate-400 font-normal">(optional)</span>
+                  </label>
+                  <textarea
+                    value="A comprehensive guide to modern web development practices and frameworks."
+                    readOnly
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-700 text-sm resize-none"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">Category</label>
+                  <div className="relative">
+                    <select
+                      value="Technology"
+                      disabled
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm font-medium bg-white cursor-not-allowed appearance-none"
+                    >
+                      <option>Technology</option>
+                      <option>Business</option>
+                      <option>Research</option>
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-bold transition-all duration-500 shadow-lg relative overflow-hidden group ${
+                      showSuccess 
+                        ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white' 
+                        : isSaving
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white animate-pulse'
+                        : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white'
+                    }`}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      {isSaving ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          <span>Saving...</span>
+                        </>
+                      ) : showSuccess ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 animate-bounce" />
+                          <span>Saved!</span>
+                        </>
+                      ) : (
+                        <span>Save Link</span>
+                      )}
+                    </span>
+                  </button>
+                </div>
+              </form>
             </div>
-          </form>
+          </div>
         </div>
       </div>
 
@@ -306,10 +296,8 @@ export const ExtensionPreview: React.FC = () => {
           </div>
 
           <div className="bg-gradient-to-br from-slate-800/90 via-slate-800/80 to-slate-900/90 rounded-xl sm:rounded-2xl p-4 sm:p-6 border-2 border-emerald-500/40 shadow-2xl shadow-emerald-500/20 relative overflow-hidden backdrop-blur-sm">
-            {/* Animated border glow */}
             <div className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-500/0 via-emerald-500/20 to-emerald-500/0 animate-pulse pointer-events-none"></div>
             
-            {/* Success indicator */}
             <div className="relative z-10">
               <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-5">
                 <div className="relative">
@@ -323,13 +311,10 @@ export const ExtensionPreview: React.FC = () => {
                 </span>
               </div>
               
-              {/* Enhanced Link Card */}
               <div className="bg-gradient-to-br from-slate-700/95 via-slate-800/95 to-slate-700/95 rounded-lg sm:rounded-xl p-4 sm:p-5 border border-slate-600/50 hover:border-emerald-500/50 transition-all duration-500 transform hover:scale-[1.01] hover:shadow-2xl hover:shadow-emerald-500/10 group relative overflow-hidden">
-                {/* Hover gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 
                 <div className="relative z-10 flex items-start gap-3 sm:gap-4">
-                  {/* Enhanced favicon */}
                   <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-lg sm:rounded-xl flex-shrink-0 flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:shadow-blue-500/50 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
                     <Link2 className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                   </div>
@@ -353,7 +338,6 @@ export const ExtensionPreview: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* Success checkmark */}
                   <div className="flex items-center flex-shrink-0">
                     <div className="w-7 h-7 sm:w-8 sm:h-8 bg-emerald-500/20 rounded-full flex items-center justify-center border-2 border-emerald-500/50">
                       <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 animate-pulse" />
