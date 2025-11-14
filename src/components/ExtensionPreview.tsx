@@ -135,7 +135,7 @@ export const ExtensionPreview: React.FC = () => {
             </div>
 
             {/* Extension Content */}
-            <div className="p-4 bg-white pb-6">
+            <div className="p-4 pb-6 bg-white">
               {/* Page Preview */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 flex items-start gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-lg flex-shrink-0 flex items-center justify-center">

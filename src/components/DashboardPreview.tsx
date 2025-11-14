@@ -97,9 +97,9 @@ export const DashboardPreview: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800/50 min-w-0 overflow-auto">
+        <div className="flex-1 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800/50 min-w-0">
           {/* Header */}
-          <div className="p-6 border-b border-slate-700/50 relative overflow-hidden">
+          <div className="p-6 border-b border-slate-700/50 relative">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-purple-500/5 to-blue-500/0 opacity-0 hover:opacity-100 transition-opacity duration-500"></div>
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div>
