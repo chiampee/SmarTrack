@@ -1,5 +1,5 @@
 import React from 'react'
-import { BookOpen, Search, Star, Archive, Clock, BarChart3, Settings, TrendingUp, Link2, Tag } from 'lucide-react'
+import { BookOpen, Search, Star, Archive, Clock, BarChart3, Settings, TrendingUp, Link2 } from 'lucide-react'
 
 export const DashboardPreview: React.FC = () => {
   return (
