@@ -11,13 +11,13 @@ export const DashboardPreview: React.FC = () => {
 
   return (
     <div 
-      className="bg-slate-900 text-white rounded-lg overflow-auto shadow-2xl relative w-full"
+      className="bg-slate-900 text-white rounded-lg shadow-2xl relative w-full"
       style={{ fontFamily: 'Inter, sans-serif' }}
     >
       {/* Animated background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/5 via-purple-900/5 to-blue-900/5 animate-pulse pointer-events-none"></div>
       
-      <div className={`flex min-h-[600px] h-auto relative z-10 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div className={`flex w-full relative z-10 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         {/* Left Sidebar */}
         <div className="w-64 bg-gradient-to-b from-slate-800 to-slate-800/95 border-r border-slate-700/50 flex flex-col backdrop-blur-sm">
           {/* User Profile */}

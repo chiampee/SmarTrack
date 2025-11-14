@@ -90,7 +90,7 @@ export const ExtensionPreview: React.FC = () => {
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
       }`} style={{ maxWidth: '400px', width: '100%' }}>
         {/* Mobile Frame */}
-        <div className="relative bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-800" style={{ height: '700px' }}>
+        <div className="relative bg-slate-900 rounded-3xl shadow-2xl border-4 border-slate-800" style={{ minHeight: '700px', paddingBottom: '1rem' }}>
           {/* Status Bar */}
           <div className="bg-slate-900 px-4 py-1 flex justify-between items-center text-white text-xs">
             <span>15:01</span>
@@ -117,7 +117,7 @@ export const ExtensionPreview: React.FC = () => {
 
           {/* Extension Popup Overlay */}
           <div 
-            className={`absolute top-16 left-0 right-0 bottom-0 bg-white rounded-t-3xl shadow-2xl transition-all duration-500 overflow-y-auto ${
+            className={`absolute top-16 left-0 right-0 bg-white rounded-t-3xl shadow-2xl transition-all duration-500 pb-6 ${
               isVisible ? 'translate-y-0' : 'translate-y-full'
             }`}
           >
