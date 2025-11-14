@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link2, ExternalLink, CheckCircle2, ArrowRight, Sparkles, Zap, Globe, Clock, MousePointerClick } from 'lucide-react'
 
 export const ExtensionPreview: React.FC = () => {
@@ -6,31 +6,58 @@ export const ExtensionPreview: React.FC = () => {
   const [showInDashboard, setShowInDashboard] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
+  const [hasStarted, setHasStarted] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Initial fade-in
-    setIsVisible(true)
+    let timers: NodeJS.Timeout[] = []
     
-    // Animate the save process
-    const timer1 = setTimeout(() => {
-      setIsSaving(true)
-    }, 2000)
-    const timer2 = setTimeout(() => {
-      setIsSaving(false)
-      setShowSuccess(true)
-    }, 3500)
-    const timer3 = setTimeout(() => setShowInDashboard(true), 5000)
-    return () => {
-      clearTimeout(timer1)
-      clearTimeout(timer2)
-      clearTimeout(timer3)
+    // Intersection Observer for scroll-triggered animation
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !hasStarted) {
+            setIsVisible(true)
+            setHasStarted(true)
+            
+            // Start animation sequence when component is visible
+            const timer1 = setTimeout(() => {
+              setIsSaving(true)
+            }, 1000)
+            const timer2 = setTimeout(() => {
+              setIsSaving(false)
+              setShowSuccess(true)
+            }, 2500)
+            const timer3 = setTimeout(() => setShowInDashboard(true), 4000)
+            
+            timers = [timer1, timer2, timer3]
+          }
+        })
+      },
+      {
+        threshold: 0.2, // Trigger when 20% of component is visible
+        rootMargin: '0px 0px -50px 0px' // Start slightly before fully in view
+      }
+    )
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current)
     }
-  }, [])
+
+    return () => {
+      timers.forEach(timer => clearTimeout(timer))
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current)
+      }
+    }
+  }, [hasStarted])
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       {/* Step Indicator */}
-      <div className="flex items-center justify-center gap-2 mb-6">
+      <div className={`flex items-center justify-center gap-2 mb-6 transition-all duration-1000 ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      }`}>
         <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 border border-blue-400/30 rounded-full">
           <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">1</div>
           <span className="text-sm text-blue-200 font-medium">Click Extension</span>
@@ -224,7 +251,9 @@ export const ExtensionPreview: React.FC = () => {
 
       {/* Enhanced Flow Animation: Extension → Dashboard */}
       {showSuccess && (
-        <div className="mb-8 animate-fade-in">
+        <div className={`mb-8 transition-all duration-1000 ${
+          showSuccess ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}>
           <div className="text-center mb-6">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-400/30 rounded-full mb-3">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -261,7 +290,9 @@ export const ExtensionPreview: React.FC = () => {
 
       {/* Enhanced Dashboard Preview with New Link */}
       {showInDashboard && (
-        <div className="animate-fade-in">
+        <div className={`transition-all duration-1000 ${
+          showInDashboard ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}>
           {/* Step 3 Label */}
           <div className="text-center mb-4">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-400/30 rounded-full">
