@@ -3,6 +3,7 @@ import { useAuth0 } from '@auth0/auth0-react'
 import { useNavigate } from 'react-router-dom'
 import { Shield, Cloud, Zap, BookOpen, Search, Tag, Link2, Brain, BarChart3, Clock, Lock, CheckCircle2, ArrowRight, Star, LogIn } from 'lucide-react'
 import { DashboardPreview } from '../components/DashboardPreview'
+import { ExtensionPreview } from '../components/ExtensionPreview'
 
 const Feature: React.FC<{ icon: React.ReactNode; title: string; description: string; benefit?: string }> = ({
   icon,
@@ -140,6 +141,17 @@ export const LoginPage: React.FC = () => {
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 text-sm text-purple-200 mb-12">
                 <Zap className="w-4 h-4 text-yellow-400" />
                 <span>Start organizing your research <span className="text-white font-semibold">today</span></span>
+              </div>
+            </div>
+
+            {/* Extension Preview - Save Flow */}
+            <div className="mt-16 mb-12 max-w-4xl mx-auto">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-white mb-2">Save Links Instantly</h3>
+                <p className="text-purple-200">Use our browser extension to save any webpage with one click</p>
+              </div>
+              <div className="relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm p-6">
+                <ExtensionPreview />
               </div>
             </div>
 
