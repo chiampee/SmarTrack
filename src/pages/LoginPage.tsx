@@ -1,6 +1,6 @@
 import React from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
-import { Shield, Cloud, Zap, BookOpen, Search, Tag, Link2, Brain, BarChart3, Clock, Lock, CheckCircle2, ArrowRight, Star } from 'lucide-react'
+import { Shield, Cloud, Zap, BookOpen, Search, Tag, Link2, Brain, BarChart3, Clock, Lock, CheckCircle2, ArrowRight, Star, Sparkles, TrendingUp } from 'lucide-react'
 
 const Feature: React.FC<{ icon: React.ReactNode; title: string; description: string; benefit?: string }> = ({
   icon,
@@ -22,98 +22,212 @@ const Feature: React.FC<{ icon: React.ReactNode; title: string; description: str
 )
 
 
+const SidebarFeature: React.FC<{ icon: React.ReactNode; title: string; delay?: number }> = ({ icon, title, delay = 0 }) => (
+  <div 
+    className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-300 group"
+    style={{ animationDelay: `${delay}ms` }}
+  >
+    <div className="p-2 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg text-blue-300 group-hover:from-blue-500/30 group-hover:to-purple-500/30 transition-all">
+      {icon}
+    </div>
+    <span className="text-sm text-purple-200 group-hover:text-white font-medium transition-colors">{title}</span>
+  </div>
+)
+
 export const LoginPage: React.FC = () => {
   const { loginWithRedirect } = useAuth0()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Hero Section with Primary CTA */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-transparent"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20">
-          <div className="text-center">
-            {/* Logo */}
-            <div className="flex justify-center mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+      {/* Animated Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-0 w-72 h-72 bg-purple-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="relative z-10 flex">
+        {/* Sidebar with Features/Agenda */}
+        <aside className="hidden lg:block w-80 p-8 border-r border-white/10 bg-gradient-to-b from-slate-900/50 to-purple-900/20 backdrop-blur-sm">
+          <div className="sticky top-8">
+            {/* Logo in Sidebar */}
+            <div className="mb-8">
               <img 
                 src="/logo.svg" 
                 alt="SmarTrack" 
-                className="h-16 sm:h-20 w-auto"
+                className="h-12 w-auto mb-6"
+              />
+              <h3 className="text-xl font-bold text-white mb-2">Key Features</h3>
+              <p className="text-sm text-purple-300">Everything you need to master research</p>
+            </div>
+
+            {/* Feature List */}
+            <div className="space-y-3">
+              <SidebarFeature 
+                icon={<BookOpen className="w-4 h-4" />} 
+                title="One-Click Save" 
+                delay={0}
+              />
+              <SidebarFeature 
+                icon={<Brain className="w-4 h-4" />} 
+                title="AI Summaries" 
+                delay={100}
+              />
+              <SidebarFeature 
+                icon={<Tag className="w-4 h-4" />} 
+                title="Smart Organization" 
+                delay={200}
+              />
+              <SidebarFeature 
+                icon={<Search className="w-4 h-4" />} 
+                title="Lightning Search" 
+                delay={300}
+              />
+              <SidebarFeature 
+                icon={<Cloud className="w-4 h-4" />} 
+                title="Cloud Sync" 
+                delay={400}
+              />
+              <SidebarFeature 
+                icon={<Shield className="w-4 h-4" />} 
+                title="Privacy First" 
+                delay={500}
               />
             </div>
 
-            {/* Headline - Clear & Compelling */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 max-w-5xl mx-auto leading-tight">
-              Never Lose Research Again.
-              <span className="block mt-2 bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
-                Find Everything Instantly.
-              </span>
-            </h1>
-            
-            {/* Value Proposition - Authentic & Clear */}
-            <p className="text-lg sm:text-xl md:text-2xl text-purple-200 mb-4 max-w-3xl mx-auto font-medium">
-              The research tool that helps you <span className="text-white font-bold">organize, analyze, and find</span> everything you save
-            </p>
-            <p className="text-base sm:text-lg text-purple-300 mb-10 max-w-2xl mx-auto">
-              Save any webpage instantly. Get AI-powered summaries. Search your entire research library in seconds.
-            </p>
-            
-            {/* Primary CTA - More Prominent */}
-            <div className="mb-10">
-              <button
-                onClick={() => loginWithRedirect()}
-                className="group inline-flex items-center justify-center gap-3 px-10 py-5 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 hover:from-blue-500 hover:via-purple-500 hover:to-blue-500 text-white font-bold rounded-2xl shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 transform hover:scale-105 text-lg sm:text-xl mb-4 relative overflow-hidden"
-              >
-                <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></span>
-                <Zap className="w-6 h-6 relative z-10" />
-                <span className="relative z-10">Get Started Free — No Credit Card</span>
-                <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <div className="flex flex-wrap justify-center items-center gap-4 text-sm text-purple-300">
-                <span className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-400" />
-                  Free forever
-                </span>
-                <span className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-400" />
-                  Setup in 30 seconds
-                </span>
-                <span className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-400" />
-                  No credit card required
-                </span>
+            {/* Quick Stats */}
+            <div className="mt-8 p-6 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-white/10">
+              <h4 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" />
+                Quick Stats
+              </h4>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-purple-300">Unlimited</span>
+                  <span className="text-sm font-bold text-white">Saves</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-purple-300">&lt;2s</span>
+                  <span className="text-sm font-bold text-white">AI Analysis</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-purple-300">&lt;1s</span>
+                  <span className="text-sm font-bold text-white">Search Speed</span>
+                </div>
               </div>
             </div>
 
-            {/* Value Badge - Authentic */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 text-sm text-purple-200 mb-12">
-              <Zap className="w-4 h-4 text-yellow-400" />
-              <span>Start organizing your research <span className="text-white font-semibold">today</span></span>
-            </div>
+            {/* CTA in Sidebar */}
+            <button
+              onClick={() => loginWithRedirect()}
+              className="mt-6 w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105"
+            >
+              <Zap className="w-4 h-4" />
+              Get Started Free
+            </button>
           </div>
+        </aside>
 
-          {/* Product Preview Placeholder */}
-          <div className="mt-16 mb-8 max-w-6xl mx-auto">
-            <div className="relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm">
-              <div className="aspect-video bg-gradient-to-br from-blue-900/30 via-purple-900/30 to-blue-900/30 flex items-center justify-center p-8 relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent)]"></div>
-                <div className="text-center relative z-10">
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 mb-4 shadow-lg">
-                    <BookOpen className="w-10 h-10 text-white" />
+        {/* Main Content */}
+        <div className="flex-1">
+          {/* Hero Section with Primary CTA */}
+          <div className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-transparent"></div>
+            <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 lg:pt-16 pb-20">
+              {/* Logo - Top Left for Desktop, Centered for Mobile */}
+              <div className="flex justify-between items-center mb-12 lg:mb-16">
+                <div className="lg:hidden flex justify-center w-full">
+                  <img 
+                    src="/logo.svg" 
+                    alt="SmarTrack" 
+                    className="h-14 sm:h-16 w-auto"
+                  />
+                </div>
+                <div className="hidden lg:block">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg">
+                      <Sparkles className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <span className="text-sm text-purple-300 font-medium">New & Improved</span>
                   </div>
-                  <p className="text-purple-200 text-base font-medium mb-2">
-                    See Your Research Dashboard
-                  </p>
-                  <p className="text-purple-400 text-sm">
-                    Add a screenshot here to show users what they'll get
-                  </p>
+                </div>
+              </div>
+
+              <div className="text-center lg:text-left max-w-4xl">
+
+                {/* Headline - Clear & Compelling */}
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 leading-tight">
+                  Never Lose Research Again.
+                  <span className="block mt-2 bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent animate-gradient-x">
+                    Find Everything Instantly.
+                  </span>
+                </h1>
+                
+                {/* Value Proposition - Authentic & Clear */}
+                <p className="text-lg sm:text-xl md:text-2xl text-purple-200 mb-4 font-medium">
+                  The research tool that helps you <span className="text-white font-bold">organize, analyze, and find</span> everything you save
+                </p>
+                <p className="text-base sm:text-lg text-purple-300 mb-10">
+                  Save any webpage instantly. Get AI-powered summaries. Search your entire research library in seconds.
+                </p>
+            
+                {/* Primary CTA - More Prominent */}
+                <div className="mb-10 lg:mb-12">
+                  <button
+                    onClick={() => loginWithRedirect()}
+                    className="group inline-flex items-center justify-center gap-3 px-10 py-5 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 hover:from-blue-500 hover:via-purple-500 hover:to-blue-500 text-white font-bold rounded-2xl shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 transform hover:scale-105 text-lg sm:text-xl mb-4 relative overflow-hidden"
+                  >
+                    <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></span>
+                    <Zap className="w-6 h-6 relative z-10" />
+                    <span className="relative z-10">Get Started Free — No Credit Card</span>
+                    <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                  <div className="flex flex-wrap justify-center lg:justify-start items-center gap-4 text-sm text-purple-300">
+                    <span className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      Free forever
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      Setup in 30 seconds
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      No credit card required
+                    </span>
+                  </div>
+                </div>
+
+                {/* Value Badge - Authentic */}
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 text-sm text-purple-200 mb-12">
+                  <Zap className="w-4 h-4 text-yellow-400" />
+                  <span>Start organizing your research <span className="text-white font-semibold">today</span></span>
+                </div>
+              </div>
+
+              {/* Product Preview Placeholder */}
+              <div className="mt-12 lg:mt-16 mb-8">
+                <div className="relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm">
+                  <div className="aspect-video bg-gradient-to-br from-blue-900/30 via-purple-900/30 to-blue-900/30 flex items-center justify-center p-8 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent)]"></div>
+                    <div className="text-center relative z-10">
+                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 mb-4 shadow-lg animate-pulse">
+                        <BookOpen className="w-10 h-10 text-white" />
+                      </div>
+                      <p className="text-purple-200 text-base font-medium mb-2">
+                        See Your Research Dashboard
+                      </p>
+                      <p className="text-purple-400 text-sm">
+                        Add a screenshot here to show users what they'll get
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Key Features - Shorter, Benefit-Focused */}
         <div className="mb-20 py-12">
@@ -297,6 +411,8 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
           </div>
+          </div>
+        </div>
         </div>
       </div>
     </div>
