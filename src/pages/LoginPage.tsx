@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
-import { Shield, Cloud, Zap, BookOpen, Search, Tag, Link2, Brain, BarChart3, Clock, Lock, CheckCircle2, ArrowRight, Star } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Shield, Cloud, Zap, BookOpen, Search, Tag, Link2, Brain, BarChart3, Clock, Lock, CheckCircle2, ArrowRight, Star, LogIn } from 'lucide-react'
 
 const Feature: React.FC<{ icon: React.ReactNode; title: string; description: string; benefit?: string }> = ({
   icon,
@@ -23,7 +24,33 @@ const Feature: React.FC<{ icon: React.ReactNode; title: string; description: str
 
 
 export const LoginPage: React.FC = () => {
-  const { loginWithRedirect } = useAuth0()
+  const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0()
+  const navigate = useNavigate()
+
+  // Validate authentication state - redirect if already authenticated
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      // User is already signed in, redirect to dashboard
+      navigate('/dashboard', { replace: true })
+    }
+  }, [isAuthenticated, isLoading, navigate])
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+          <p className="text-purple-200">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render if authenticated (will redirect)
+  if (isAuthenticated) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
@@ -34,21 +61,37 @@ export const LoginPage: React.FC = () => {
         <div className="absolute top-1/2 left-0 w-72 h-72 bg-purple-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
+      {/* Top Navigation Header */}
+      <div className="relative z-20">
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <div className="flex justify-between items-center">
+            {/* Logo */}
+            <div className="flex items-center">
+              <img 
+                src="/logo.svg" 
+                alt="SmarTrack" 
+                className="h-10 sm:h-12 w-auto"
+              />
+            </div>
+            
+            {/* Sign In Button */}
+            <button
+              onClick={() => loginWithRedirect()}
+              className="group inline-flex items-center gap-2 px-6 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-white/30 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105"
+            >
+              <LogIn className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <span>Sign In</span>
+            </button>
+          </div>
+        </nav>
+      </div>
+
       <div className="relative z-10">
         {/* Hero Section with Primary CTA */}
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-transparent"></div>
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20">
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20">
             <div className="text-center">
-              {/* Logo */}
-              <div className="flex justify-center mb-8">
-                <img 
-                  src="/logo.svg" 
-                  alt="SmarTrack" 
-                  className="h-16 sm:h-20 w-auto"
-                />
-              </div>
-
               {/* Headline - Clear & Compelling */}
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 max-w-5xl mx-auto leading-tight">
                 Never Lose Research Again.
