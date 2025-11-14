@@ -42,21 +42,39 @@ const createAnimationVariants = (config: { movementDistance: number; scaleAmount
   }
 })
 
-const Feature: React.FC<{ icon: React.ReactNode; title: string; description: string; benefit?: string }> = ({
+const Feature: React.FC<{ 
+  icon: React.ReactNode; 
+  title: string; 
+  description: string; 
+  benefit?: string;
+  animationConfig: { duration: number; staggerDelay: number; movementDistance: number };
+  isMobile: boolean;
+}> = ({
   icon,
   title,
   description,
   benefit,
-}) => (
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              variants={staggerItem}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              whileHover={{ scale: 1.05, y: -8 }}
-              className="group p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300"
-            >
+  animationConfig,
+  isMobile
+}) => {
+  const staggerItem = {
+    hidden: { opacity: 0, y: animationConfig.movementDistance * 0.6 },
+    visible: {
+      opacity: 1,
+      y: 0
+    }
+  }
+  
+  return (
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: isMobile ? "-20px" : "-50px" }}
+      variants={staggerItem}
+      transition={{ duration: animationConfig.duration, ease: "easeOut" }}
+      whileHover={{ scale: 1.05, y: -8 }}
+      className="group p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300"
+    >
     <motion.div 
       className="p-3 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl text-white w-fit mb-4"
       whileHover={{ scale: 1.1, rotate: 5 }}
@@ -64,16 +82,17 @@ const Feature: React.FC<{ icon: React.ReactNode; title: string; description: str
     >
       {icon}
     </motion.div>
-    <h3 className="font-bold text-white mb-2 text-lg">{title}</h3>
-    <p className="text-sm text-purple-200 mb-2 leading-relaxed">{description}</p>
-    {benefit && (
-      <p className="text-xs text-blue-300 font-medium flex items-center gap-1 mt-3">
-        <CheckCircle2 className="w-3 h-3" />
-        {benefit}
-      </p>
-    )}
-  </motion.div>
-)
+      <h3 className="font-bold text-white mb-2 text-lg">{title}</h3>
+      <p className="text-sm text-purple-200 mb-2 leading-relaxed">{description}</p>
+      {benefit && (
+        <p className="text-xs text-blue-300 font-medium flex items-center gap-1 mt-3">
+          <CheckCircle2 className="w-3 h-3" />
+          {benefit}
+        </p>
+      )}
+    </motion.div>
+  )
+}
 
 export const LoginPage: React.FC = () => {
   const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0()
@@ -405,36 +424,48 @@ export const LoginPage: React.FC = () => {
               title="One-Click Save"
               description="Save any webpage instantly with our browser extension. Automatically extracts content, title, and metadata."
               benefit="Never lose important research again"
+              animationConfig={animationConfig}
+              isMobile={isMobile}
             />
             <Feature
               icon={<Brain className="w-6 h-6" />}
               title="AI-Powered Summaries"
               description="Get instant summaries and key insights. Understand documents at a glance without reading everything."
               benefit="Understand content faster"
+              animationConfig={animationConfig}
+              isMobile={isMobile}
             />
             <Feature
               icon={<Tag className="w-6 h-6" />}
               title="Smart Organization"
               description="AI automatically categorizes and tags your research. Create collections and stay organized effortlessly."
               benefit="Organize without the manual work"
+              animationConfig={animationConfig}
+              isMobile={isMobile}
             />
             <Feature
               icon={<Search className="w-6 h-6" />}
               title="Lightning-Fast Search"
               description="Search across titles, content, tags, and summaries. Find exactly what you need instantly."
               benefit="Find anything in seconds"
+              animationConfig={animationConfig}
+              isMobile={isMobile}
             />
             <Feature
               icon={<Cloud className="w-6 h-6" />}
               title="Cloud Sync"
               description="Access your research library from any device. All your data syncs automatically and securely."
               benefit="Access from anywhere"
+              animationConfig={animationConfig}
+              isMobile={isMobile}
             />
             <Feature
               icon={<Shield className="w-6 h-6" />}
               title="Privacy First"
               description="Your data is encrypted and secure. GDPR compliant. Your research stays private and yours."
               benefit="Your data, your control"
+              animationConfig={animationConfig}
+              isMobile={isMobile}
             />
           </motion.div>
         </motion.div>
