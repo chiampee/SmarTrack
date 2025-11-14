@@ -5,6 +5,7 @@
 /* Smooth scrolling for the entire page */
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 2rem;
 }
 
 /* Performance optimizations */
@@ -20,6 +21,19 @@ html {
   }
 }
 
+/* Enhanced scroll behavior */
+body {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+/* Better scroll momentum on iOS */
+@supports (-webkit-overflow-scrolling: touch) {
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* Mobile optimizations */
 @media (max-width: 768px) {
   /* Reduce animation complexity on mobile */
@@ -29,8 +43,18 @@ html {
   }
   
   /* Optimize scrolling on iOS */
+  html {
+    scroll-padding-top: 1rem;
+  }
+  
   body {
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+  
+  /* Better spacing on mobile */
+  section {
+    scroll-margin-top: 1rem;
   }
 }
 

@@ -670,14 +670,14 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
-      <div className="max-w-[1600px] mx-auto px-4 py-6">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Header */}
         <motion.div
           initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
           variants={fadeInUp}
           transition={{ duration: animationConfig.duration, ease: "easeOut" }}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 px-6 py-4"
+          className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 sm:mb-8 px-4 sm:px-6 py-4 sm:py-5"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -747,7 +747,7 @@ export const Dashboard: React.FC = () => {
           animate="visible"
           variants={fadeInUp}
           transition={{ delay: shouldAnimate ? 0.1 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 p-6"
+          className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 sm:mb-8 p-4 sm:p-6"
         >
           {/* Quick Filters */}
           <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200">
@@ -849,7 +849,7 @@ export const Dashboard: React.FC = () => {
           animate="visible"
           variants={fadeInUp}
           transition={{ delay: shouldAnimate ? 0.2 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-          className="grid grid-cols-1 gap-6"
+          className="grid grid-cols-1 gap-6 sm:gap-8"
         >
           {/* Content */}
           <motion.div>
@@ -1105,6 +1105,9 @@ export const Dashboard: React.FC = () => {
           <motion.div
             key={link.id}
             variants={staggerItem}
+            initial={shouldAnimate ? "hidden" : "visible"}
+            whileInView="visible"
+            viewport={{ once: true, margin: isMobile ? "0px" : "-50px", amount: 0.2 }}
             transition={{ 
               duration: animationConfig.duration * 0.7, 
               delay: shouldAnimate ? index * 0.03 : 0, 

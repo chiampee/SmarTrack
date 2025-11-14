@@ -228,7 +228,7 @@ export const LoginPage: React.FC = () => {
             animate="visible"
             variants={fadeInUp}
             transition={{ duration: animationConfig.duration, ease: "easeOut" }}
-            className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20"
+            className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-24 sm:pb-32"
           >
             <div className="text-center">
               {/* Headline - Clear & Compelling */}
@@ -236,7 +236,7 @@ export const LoginPage: React.FC = () => {
                 initial={shouldAnimate ? { opacity: 0, y: 40 } : { opacity: 1, y: 0 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: animationConfig.duration, delay: shouldAnimate ? 0.1 : 0, ease: "easeOut" }}
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 max-w-5xl mx-auto leading-tight"
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 sm:mb-8 max-w-5xl mx-auto leading-tight px-4"
               >
                 Never Lose Research Again.
                 <motion.span
@@ -254,7 +254,7 @@ export const LoginPage: React.FC = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                className="text-lg sm:text-xl md:text-2xl text-purple-200 mb-4 max-w-3xl mx-auto font-medium"
+                className="text-lg sm:text-xl md:text-2xl text-purple-200 mb-4 sm:mb-6 max-w-3xl mx-auto font-medium px-4"
               >
                 The research tool that helps you <span className="text-white font-bold">organize, analyze, and find</span> everything you save
               </motion.p>
@@ -262,7 +262,7 @@ export const LoginPage: React.FC = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                className="text-base sm:text-lg text-purple-300 mb-10 max-w-2xl mx-auto"
+                className="text-base sm:text-lg text-purple-300 mb-10 sm:mb-12 max-w-2xl mx-auto px-4"
               >
                 Save any webpage instantly. Get AI-powered summaries. Search your entire research library in seconds.
               </motion.p>
@@ -338,10 +338,10 @@ export const LoginPage: React.FC = () => {
             <motion.div
               initial={shouldAnimate ? "hidden" : "visible"}
               whileInView="visible"
-              viewport={{ once: true, margin: isMobile ? "-20px" : "-50px" }}
+              viewport={{ once: true, margin: isMobile ? "0px" : "-100px", amount: 0.3 }}
               variants={fadeInScale}
               transition={{ duration: animationConfig.duration, ease: "easeOut" }}
-              className="mt-16 mb-12 max-w-5xl mx-auto"
+              className="mt-20 sm:mt-24 mb-16 sm:mb-20 max-w-5xl mx-auto px-4"
             >
               <motion.div
                 variants={fadeInUp}
@@ -366,10 +366,10 @@ export const LoginPage: React.FC = () => {
             <motion.div
               initial={shouldAnimate ? "hidden" : "visible"}
               whileInView="visible"
-              viewport={{ once: true, margin: isMobile ? "-20px" : "-50px" }}
+              viewport={{ once: true, margin: isMobile ? "0px" : "-100px", amount: 0.3 }}
               variants={fadeInUp}
               transition={{ duration: animationConfig.duration, ease: "easeOut" }}
-              className="mt-16 mb-8 max-w-6xl mx-auto"
+              className="mt-20 sm:mt-24 mb-16 sm:mb-20 max-w-6xl mx-auto px-4"
             >
               <div className="relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm">
                 <div className="relative bg-slate-900">
@@ -399,25 +399,25 @@ export const LoginPage: React.FC = () => {
         <motion.div
           initial={shouldAnimate ? "hidden" : "visible"}
           whileInView="visible"
-          viewport={{ once: true, margin: isMobile ? "-20px" : "-50px" }}
+          viewport={{ once: true, margin: isMobile ? "0px" : "-100px", amount: 0.2 }}
           variants={staggerContainer}
-          className="mb-20 py-12"
+          className="mb-24 sm:mb-32 py-16 sm:py-20"
         >
-          <motion.div
-            variants={fadeInUp}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              <motion.div
+                variants={fadeInUp}
+                transition={{ duration: animationConfig.duration, ease: "easeOut" }}
+                className="text-center mb-12 sm:mb-16"
+              >
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6 px-4">
               Everything You Need to Master Research
             </h2>
-            <p className="text-lg text-purple-300 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-purple-300 max-w-2xl mx-auto px-4">
               Powerful features designed to make research effortless
             </p>
           </motion.div>
           <motion.div
             variants={staggerContainer}
-            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
           >
             <Feature
               icon={<BookOpen className="w-6 h-6" />}
@@ -472,25 +472,25 @@ export const LoginPage: React.FC = () => {
 
         {/* Stats - Enhanced Visual Design */}
         <motion.div
-          initial="hidden"
+          initial={shouldAnimate ? "hidden" : "visible"}
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, margin: isMobile ? "0px" : "-100px", amount: 0.2 }}
           variants={staggerContainer}
-          className="mb-20 py-12 border-t border-white/10"
+          className="mb-24 sm:mb-32 py-16 sm:py-20 border-t border-white/10"
         >
           <motion.div
             variants={fadeInUp}
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="text-center mb-10"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4 px-4">
               Built for Speed & Scale
             </h2>
-            <p className="text-purple-300">Fast, powerful, and unlimited</p>
+            <p className="text-lg sm:text-xl text-purple-300 px-4">Fast, powerful, and unlimited</p>
           </motion.div>
           <motion.div
             variants={staggerContainer}
-            className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto"
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto px-4"
           >
             {[
               { icon: <Link2 className="w-8 h-8" />, value: '∞', label: 'Unlimited Saves', bgClass: 'from-blue-500/10 to-purple-500/10', borderClass: 'border-blue-500/20', iconClass: 'text-blue-400' },
@@ -523,25 +523,25 @@ export const LoginPage: React.FC = () => {
 
         {/* Use Cases - More Scannable */}
         <motion.div
-          initial="hidden"
+          initial={shouldAnimate ? "hidden" : "visible"}
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, margin: isMobile ? "0px" : "-100px", amount: 0.2 }}
           variants={staggerContainer}
-          className="mb-20 py-12 border-t border-white/10"
+          className="mb-24 sm:mb-32 py-16 sm:py-20 border-t border-white/10"
         >
           <motion.div
             variants={fadeInUp}
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="text-center mb-10"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4 px-4">
               Built for Knowledge Workers
             </h2>
-            <p className="text-purple-300">Perfect for anyone who needs to organize and find research quickly</p>
+            <p className="text-lg sm:text-xl text-purple-300 px-4">Perfect for anyone who needs to organize and find research quickly</p>
           </motion.div>
           <motion.div
             variants={staggerContainer}
-            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto"
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto px-4"
           >
             {[
               { role: 'Academic Researchers', task: 'Papers, findings, bibliographies', icon: '🎓' },
@@ -568,25 +568,25 @@ export const LoginPage: React.FC = () => {
 
         {/* How It Works - Visual Flow */}
         <motion.div
-          initial="hidden"
+          initial={shouldAnimate ? "hidden" : "visible"}
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, margin: isMobile ? "0px" : "-100px", amount: 0.2 }}
           variants={staggerContainer}
-          className="mb-20 py-12 border-t border-white/10"
+          className="mb-24 sm:mb-32 py-16 sm:py-20 border-t border-white/10"
         >
           <motion.div
             variants={fadeInUp}
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="text-center mb-10"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4 px-4">
               Get Started in 4 Simple Steps
             </h2>
-            <p className="text-purple-300">From signup to saving your first link in under 2 minutes</p>
+            <p className="text-lg sm:text-xl text-purple-300 px-4">From signup to saving your first link in under 2 minutes</p>
           </motion.div>
           <motion.div
             variants={staggerContainer}
-            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto"
+            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto px-4"
           >
             {[
               { step: '1', title: 'Sign Up Free', desc: 'Create account in 30 seconds. No credit card needed.', icon: <Lock className="w-5 h-5" /> },
@@ -622,13 +622,13 @@ export const LoginPage: React.FC = () => {
 
         {/* Final CTA - Authentic & Compelling */}
         <motion.div
-          initial="hidden"
+          initial={shouldAnimate ? "hidden" : "visible"}
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, margin: isMobile ? "0px" : "-100px", amount: 0.3 }}
           variants={fadeInScale}
-          className="mb-12 py-16"
+          className="mb-16 sm:mb-24 py-20 sm:py-24 px-4"
         >
-          <div className="relative text-center bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-blue-600/20 backdrop-blur-sm rounded-3xl p-12 sm:p-16 border-2 border-white/20 shadow-2xl overflow-hidden">
+          <div className="relative text-center bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-blue-600/20 backdrop-blur-sm rounded-3xl p-8 sm:p-12 md:p-16 border-2 border-white/20 shadow-2xl overflow-hidden max-w-5xl mx-auto">
             <motion.div
               animate={{
                 backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
@@ -650,10 +650,10 @@ export const LoginPage: React.FC = () => {
                 <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                 <span>Start organizing your research today</span>
             </div>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6 max-w-3xl mx-auto leading-tight">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6 sm:mb-8 max-w-3xl mx-auto leading-tight px-4">
                 Ready to Transform Your Research?
               </h2>
-              <p className="text-lg sm:text-xl text-purple-200 mb-8 max-w-2xl mx-auto">
+              <p className="text-lg sm:text-xl text-purple-200 mb-8 sm:mb-10 max-w-2xl mx-auto px-4">
                 Join researchers who never lose track of their work. Get started in 30 seconds.
               </p>
               <motion.button
