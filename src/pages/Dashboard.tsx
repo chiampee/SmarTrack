@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { Plus, Grid, List, Star, Download, Loader2 } from 'lucide-react'
 import { CollectionSidebar } from '../components/CollectionSidebar'
 import { LinkCard } from '../components/LinkCard'
@@ -635,11 +636,45 @@ export const Dashboard: React.FC = () => {
     toast.success('Links exported successfully!')
   }
 
+  // Animation variants
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { 
+      opacity: 1, 
+      y: 0
+    }
+  }
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.08,
+        delayChildren: 0.1
+      }
+    }
+  }
+
+  const staggerItem = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
       <div className="max-w-[1600px] mx-auto px-4 py-6">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 px-6 py-4">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeInUp}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 px-6 py-4"
+        >
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -700,10 +735,16 @@ export const Dashboard: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 p-6">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeInUp}
+          transition={{ delay: 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 p-6"
+        >
           {/* Quick Filters */}
           <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200">
             <span className="text-sm font-medium text-gray-700 mr-2">Quick Filters:</span>
@@ -796,12 +837,18 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 gap-6">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeInUp}
+          transition={{ delay: 0.2, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="grid grid-cols-1 gap-6"
+        >
           {/* Content */}
-          <div>
+          <motion.div>
             {/* Links Section */}
             {loading ? (
               <div className="card p-6">
@@ -825,7 +872,12 @@ export const Dashboard: React.FC = () => {
                 </div>
               </div>
             ) : filteredLinks.length === 0 ? (
-              <div className="card p-12">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="card p-12"
+              >
                 <div className="flex flex-col items-center justify-center text-center">
                   {links.length === 0 ? (
                     <>
@@ -900,11 +952,20 @@ export const Dashboard: React.FC = () => {
                     </>
                   )}
                 </div>
-              </div>
+              </motion.div>
             ) : (
-              <div>
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={staggerContainer}
+              >
                 {selectedLinks.size > 0 && (
-                  <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl shadow-sm animate-in slide-in-from-top-2">
+                  <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl shadow-sm"
+                  >
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-semibold text-blue-800 flex items-center gap-2">
                         <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-bold">
@@ -986,7 +1047,7 @@ export const Dashboard: React.FC = () => {
                         🗑️ Delete
                       </button>
                     </div>
-                  </div>
+                  </motion.div>
                 )}
                 
                 {/* Group by Category */}
@@ -1002,11 +1063,23 @@ export const Dashboard: React.FC = () => {
                   }, {} as Record<string, typeof filteredLinks>)
 
                   return (
-                    <div className="space-y-6">
+                    <motion.div
+                      variants={staggerContainer}
+                      className="space-y-6"
+                    >
                       {Object.entries(groupedLinks).map(([category, links]) => (
-                        <div key={category} className="mb-6">
+                        <motion.div
+                          key={category}
+                          variants={staggerItem}
+                          className="mb-6"
+                        >
                           {/* Category Header */}
-                          <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-200">
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                            className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-200"
+                          >
                             <div className="flex items-center gap-2">
                               <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
                               <h3 className="text-xl font-bold text-gray-800">{category}</h3>
@@ -1014,20 +1087,22 @@ export const Dashboard: React.FC = () => {
                                 {links.length} {links.length === 1 ? 'link' : 'links'}
                               </span>
                             </div>
-                          </div>
+                          </motion.div>
 
                           {/* Links for this category */}
-                          <div className={viewMode === 'grid' 
-                            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4'
-                            : 'space-y-4'
-                          }>
+                          <motion.div
+                            variants={staggerContainer}
+                            className={viewMode === 'grid' 
+                              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4'
+                              : 'space-y-4'
+                            }
+                          >
                             {links.map((link, index) => (
-                              <div
-                                key={link.id}
-                                style={{
-                                  animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`
-                                }}
-                              >
+          <motion.div
+            key={link.id}
+            variants={staggerItem}
+            transition={{ duration: 0.4, delay: index * 0.05, ease: "easeOut" }}
+          >
                                 <LinkCard
                                   link={link}
                                   viewMode={viewMode}
@@ -1041,18 +1116,18 @@ export const Dashboard: React.FC = () => {
                                 onDragEnd={handleDragEnd}
                                 collections={collections}
                               />
-                              </div>
+                              </motion.div>
                             ))}
-                          </div>
-                        </div>
+                          </motion.div>
+                        </motion.div>
                       ))}
-                    </div>
+                    </motion.div>
                   )
                 })()}
-              </div>
+              </motion.div>
             )}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
 
       {/* Add Link Modal */}
