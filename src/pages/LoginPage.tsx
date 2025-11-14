@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useNavigate } from 'react-router-dom'
 import { Shield, Cloud, Zap, BookOpen, Search, Tag, Link2, Brain, BarChart3, Clock, Lock, CheckCircle2, ArrowRight, Star, LogIn } from 'lucide-react'
+import { DashboardPreview } from '../components/DashboardPreview'
 
 const Feature: React.FC<{ icon: React.ReactNode; title: string; description: string; benefit?: string }> = ({
   icon,
@@ -142,36 +143,26 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Product Preview - Dashboard Screenshot */}
+            {/* Product Preview - Dashboard Preview */}
             <div className="mt-16 mb-8 max-w-6xl mx-auto">
               <div className="relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm">
-                <div className="relative">
+                <div className="relative bg-slate-900">
+                  {/* Try to load image first, fallback to component */}
                   <img 
                     src="/dashboard-screenshot.png" 
                     alt="SmarTrack Research Dashboard - Organize your research with AI-powered tools"
                     className="w-full h-auto object-cover"
                     onError={(e) => {
-                      // Fallback if image doesn't exist yet
+                      // Hide image and show component preview
                       const target = e.target as HTMLImageElement
                       target.style.display = 'none'
-                      const fallback = target.nextElementSibling as HTMLElement
-                      if (fallback) fallback.style.display = 'flex'
+                      const fallback = document.getElementById('dashboard-preview-fallback')
+                      if (fallback) fallback.style.display = 'block'
                     }}
                   />
-                  {/* Fallback placeholder if image not found */}
-                  <div className="aspect-video bg-gradient-to-br from-blue-900/30 via-purple-900/30 to-blue-900/30 flex items-center justify-center p-8 relative overflow-hidden" style={{ display: 'none' }}>
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent)]"></div>
-                    <div className="text-center relative z-10">
-                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 mb-4 shadow-lg animate-pulse">
-                        <BookOpen className="w-10 h-10 text-white" />
-                      </div>
-                      <p className="text-purple-200 text-base font-medium mb-2">
-                        Dashboard Screenshot
-                      </p>
-                      <p className="text-purple-400 text-sm">
-                        Add dashboard-screenshot.png to /public folder
-                      </p>
-                    </div>
+                  {/* Interactive Dashboard Preview Component */}
+                  <div id="dashboard-preview-fallback" style={{ display: 'none' }}>
+                    <DashboardPreview />
                   </div>
                 </div>
               </div>
