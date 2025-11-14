@@ -56,8 +56,8 @@ export const ExtensionPreview: React.FC = () => {
   return (
     <div ref={containerRef} className="relative w-full">
       {/* Step Indicator - Mobile Responsive */}
-      <div className={`flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-6 transition-all duration-1000 ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      <div className={`flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-6 transition-all duration-700 ease-out ${
+        isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-6 scale-95'
       }`}>
         <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-500/20 border border-blue-400/30 rounded-full">
           <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">1</div>
@@ -86,9 +86,9 @@ export const ExtensionPreview: React.FC = () => {
       </div>
 
       {/* Mobile Device Frame with Dashboard Background */}
-      <div className={`relative mx-auto mb-8 transition-all duration-1000 ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-      }`} style={{ maxWidth: '400px', width: '100%' }}>
+      <div className={`relative mx-auto mb-8 transition-all duration-800 ease-out ${
+        isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-10 scale-98'
+      }`} style={{ maxWidth: '400px', width: '100%', transitionDelay: '100ms' }}>
         {/* Mobile Frame */}
         <div className="relative bg-slate-900 rounded-3xl shadow-2xl border-4 border-slate-800" style={{ minHeight: '700px', paddingBottom: '1rem' }}>
           {/* Status Bar */}
@@ -241,8 +241,8 @@ export const ExtensionPreview: React.FC = () => {
 
       {/* Enhanced Flow Animation: Extension → Dashboard */}
       {showSuccess && (
-        <div className={`mb-6 sm:mb-8 transition-all duration-1000 ${
-          showSuccess ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        <div className={`mb-6 sm:mb-8 transition-all duration-700 ease-out ${
+          showSuccess ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-6 scale-95'
         }`}>
           <div className="text-center mb-4 sm:mb-6">
             <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-emerald-500/20 border border-emerald-400/30 rounded-full mb-2 sm:mb-3">
@@ -280,8 +280,8 @@ export const ExtensionPreview: React.FC = () => {
 
       {/* Enhanced Dashboard Preview with New Link */}
       {showInDashboard && (
-        <div className={`transition-all duration-1000 ${
-          showInDashboard ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        <div className={`transition-all duration-700 ease-out ${
+          showInDashboard ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-6 scale-95'
         }`}>
           {/* Step 3 Label */}
           <div className="text-center mb-3 sm:mb-4">

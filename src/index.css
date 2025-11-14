@@ -16,8 +16,15 @@ html {
 
 /* Optimize animations */
 @media (prefers-reduced-motion: no-preference) {
-  * {
+  html {
     scroll-behavior: smooth;
+  }
+  
+  /* Smooth scroll with custom easing */
+  @supports (scroll-behavior: smooth) {
+    html {
+      scroll-snap-type: y proximity;
+    }
   }
 }
 
@@ -25,6 +32,7 @@ html {
 body {
   overflow-x: hidden;
   scroll-behavior: smooth;
+  overscroll-behavior-y: none;
 }
 
 /* Better scroll momentum on iOS */
@@ -32,6 +40,11 @@ body {
   body {
     -webkit-overflow-scrolling: touch;
   }
+}
+
+/* Smooth transitions for all elements */
+* {
+  transition-timing-function: cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
 /* Mobile optimizations */
@@ -50,6 +63,17 @@ body {
   body {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
+    /* Prevent rubber banding on iOS */
+    position: fixed;
+    overflow-y: scroll;
+    width: 100%;
+    height: 100%;
+  }
+  
+  body > #root {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   /* Better spacing on mobile */

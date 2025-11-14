@@ -5,8 +5,12 @@ export const DashboardPreview: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
-    // Animate in on mount
-    setIsVisible(true)
+    // Animate in on mount with slight delay for smoother effect
+    const timer = setTimeout(() => {
+      setIsVisible(true)
+    }, 100)
+    
+    return () => clearTimeout(timer)
   }, [])
 
   return (
@@ -17,7 +21,7 @@ export const DashboardPreview: React.FC = () => {
       {/* Animated background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/5 via-purple-900/5 to-blue-900/5 animate-pulse pointer-events-none"></div>
       
-      <div className={`flex flex-col lg:flex-row w-full relative z-10 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div className={`flex flex-col lg:flex-row w-full relative z-10 transition-all duration-700 ease-out ${isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`}>
         {/* Left Sidebar - Hidden on mobile, compact on tablet */}
         <div className="hidden lg:block lg:w-56 xl:w-64 bg-gradient-to-b from-slate-800 to-slate-800/95 border-b lg:border-r lg:border-b-0 border-slate-700/50 flex-shrink-0">
           {/* User Profile */}
@@ -150,7 +154,7 @@ export const DashboardPreview: React.FC = () => {
           {/* Content */}
           <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* Technology Category */}
-            <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <div className={`transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '200ms' }}>
               <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <h2 className="text-base sm:text-lg font-semibold text-white bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">Technology</h2>
                 <span className="text-xs sm:text-sm text-slate-400 flex items-center gap-1">
@@ -212,7 +216,7 @@ export const DashboardPreview: React.FC = () => {
             </div>
 
             {/* Business Category */}
-            <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <div className={`transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '400ms' }}>
               <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <h2 className="text-base sm:text-lg font-semibold text-white bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">Business</h2>
                 <span className="text-xs sm:text-sm text-slate-400 flex items-center gap-1">

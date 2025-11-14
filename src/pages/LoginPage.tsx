@@ -338,9 +338,9 @@ export const LoginPage: React.FC = () => {
             <motion.div
               initial={shouldAnimate ? "hidden" : "visible"}
               whileInView="visible"
-              viewport={{ once: true, margin: isMobile ? "0px" : "-100px", amount: 0.3 }}
+              viewport={{ once: false, margin: isMobile ? "0px" : "-100px", amount: 0.2 }}
               variants={fadeInScale}
-              transition={{ duration: animationConfig.duration, ease: "easeOut" }}
+              transition={{ duration: animationConfig.duration * 1.2, ease: [0.16, 1, 0.3, 1] }}
               className="mt-20 sm:mt-24 mb-16 sm:mb-20 max-w-5xl mx-auto px-4"
             >
               <motion.div
@@ -366,9 +366,9 @@ export const LoginPage: React.FC = () => {
             <motion.div
               initial={shouldAnimate ? "hidden" : "visible"}
               whileInView="visible"
-              viewport={{ once: true, margin: isMobile ? "0px" : "-100px", amount: 0.3 }}
+              viewport={{ once: false, margin: isMobile ? "0px" : "-100px", amount: 0.2 }}
               variants={fadeInUp}
-              transition={{ duration: animationConfig.duration, ease: "easeOut" }}
+              transition={{ duration: animationConfig.duration * 1.2, ease: [0.16, 1, 0.3, 1] }}
               className="mt-20 sm:mt-24 mb-16 sm:mb-20 max-w-6xl mx-auto px-4"
             >
               <div className="relative rounded-2xl border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm p-4">
