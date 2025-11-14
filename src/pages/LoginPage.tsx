@@ -1,6 +1,6 @@
 import React from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
-import { Shield, Cloud, Zap, BookOpen, Search, Tag, Link2, Brain, BarChart3, Clock, Globe, Lock, CheckCircle2, ArrowRight, Star, Users } from 'lucide-react'
+import { Shield, Cloud, Zap, BookOpen, Search, Tag, Link2, Brain, BarChart3, Clock, Lock, CheckCircle2, ArrowRight, Star } from 'lucide-react'
 
 const Feature: React.FC<{ icon: React.ReactNode; title: string; description: string; benefit?: string }> = ({
   icon,
@@ -21,17 +21,6 @@ const Feature: React.FC<{ icon: React.ReactNode; title: string; description: str
   </div>
 )
 
-const Stat: React.FC<{ icon: React.ReactNode; value: string; label: string }> = ({
-  icon,
-  value,
-  label,
-}) => (
-  <div className="text-center">
-    <div className="flex justify-center mb-2 text-blue-400">{icon}</div>
-    <div className="text-2xl font-bold text-white">{value}</div>
-    <div className="text-sm text-purple-200">{label}</div>
-  </div>
-)
 
 export const LoginPage: React.FC = () => {
   const { loginWithRedirect } = useAuth0()
@@ -52,20 +41,20 @@ export const LoginPage: React.FC = () => {
               />
             </div>
 
-            {/* Headline - Marketing Optimized */}
+            {/* Headline - Clear & Compelling */}
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 max-w-5xl mx-auto leading-tight">
-              Stop Losing Research.
-              <span className="block mt-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                Start Finding Answers.
+              Never Lose Research Again.
+              <span className="block mt-2 bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+                Find Everything Instantly.
               </span>
             </h1>
             
-            {/* Value Proposition - Shorter, Punchier */}
+            {/* Value Proposition - Authentic & Clear */}
             <p className="text-lg sm:text-xl md:text-2xl text-purple-200 mb-4 max-w-3xl mx-auto font-medium">
-              AI-powered research tool that saves you <span className="text-white font-bold">5+ hours per week</span>
+              The research tool that helps you <span className="text-white font-bold">organize, analyze, and find</span> everything you save
             </p>
             <p className="text-base sm:text-lg text-purple-300 mb-10 max-w-2xl mx-auto">
-              Save any webpage. Get instant AI summaries. Find anything in seconds.
+              Save any webpage instantly. Get AI-powered summaries. Search your entire research library in seconds.
             </p>
             
             {/* Primary CTA - More Prominent */}
@@ -90,31 +79,32 @@ export const LoginPage: React.FC = () => {
                 </span>
                 <span className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-400" />
-                  Trusted by researchers
+                  No credit card required
                 </span>
               </div>
             </div>
 
-            {/* Social Proof Badge */}
+            {/* Value Badge - Authentic */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 text-sm text-purple-200 mb-12">
-              <Users className="w-4 h-4 text-blue-400" />
-              <span>Join <span className="text-white font-semibold">5,000+</span> researchers saving time with SmarTrack</span>
+              <Zap className="w-4 h-4 text-yellow-400" />
+              <span>Start organizing your research <span className="text-white font-semibold">today</span></span>
             </div>
           </div>
 
-          {/* Product Preview Placeholder - Marketing Critical */}
+          {/* Product Preview Placeholder */}
           <div className="mt-16 mb-8 max-w-6xl mx-auto">
             <div className="relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm">
-              <div className="aspect-video bg-gradient-to-br from-blue-900/30 to-purple-900/30 flex items-center justify-center p-8">
-                <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 mb-4">
+              <div className="aspect-video bg-gradient-to-br from-blue-900/30 via-purple-900/30 to-blue-900/30 flex items-center justify-center p-8 relative overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent)]"></div>
+                <div className="text-center relative z-10">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 mb-4 shadow-lg">
                     <BookOpen className="w-10 h-10 text-white" />
                   </div>
-                  <p className="text-purple-300 text-sm">
-                    📸 Add a screenshot of your dashboard here
+                  <p className="text-purple-200 text-base font-medium mb-2">
+                    See Your Research Dashboard
                   </p>
-                  <p className="text-purple-400 text-xs mt-2">
-                    Show users what they'll get - this increases conversion by 40%+
+                  <p className="text-purple-400 text-sm">
+                    Add a screenshot here to show users what they'll get
                   </p>
                 </div>
               </div>
@@ -132,45 +122,45 @@ export const LoginPage: React.FC = () => {
               Everything You Need to Master Research
             </h2>
             <p className="text-lg text-purple-300 max-w-2xl mx-auto">
-              Powerful features that work together to save you time
+              Powerful features designed to make research effortless
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <Feature
               icon={<BookOpen className="w-6 h-6" />}
               title="One-Click Save"
-              description="Save any webpage instantly with our browser extension. Auto-extracts content and metadata."
-              benefit="Save 2+ hours/week on manual copying"
+              description="Save any webpage instantly with our browser extension. Automatically extracts content, title, and metadata."
+              benefit="Never lose important research again"
             />
             <Feature
               icon={<Brain className="w-6 h-6" />}
-              title="AI Summaries"
-              description="Get instant summaries and key points. Understand documents without reading everything."
-              benefit="Read 10x faster with AI insights"
+              title="AI-Powered Summaries"
+              description="Get instant summaries and key insights. Understand documents at a glance without reading everything."
+              benefit="Understand content faster"
             />
             <Feature
               icon={<Tag className="w-6 h-6" />}
-              title="Auto-Organize"
-              description="AI categorizes and tags your research automatically. No manual sorting needed."
-              benefit="Stay organized effortlessly"
+              title="Smart Organization"
+              description="AI automatically categorizes and tags your research. Create collections and stay organized effortlessly."
+              benefit="Organize without the manual work"
             />
             <Feature
               icon={<Search className="w-6 h-6" />}
-              title="Instant Search"
-              description="Find anything in seconds. Search across content, tags, and summaries."
-              benefit="Find research in <1 second"
+              title="Lightning-Fast Search"
+              description="Search across titles, content, tags, and summaries. Find exactly what you need instantly."
+              benefit="Find anything in seconds"
             />
             <Feature
               icon={<Cloud className="w-6 h-6" />}
               title="Cloud Sync"
-              description="Access your research library anywhere. Syncs across all devices instantly."
-              benefit="Work from any device"
+              description="Access your research library from any device. All your data syncs automatically and securely."
+              benefit="Access from anywhere"
             />
             <Feature
               icon={<Shield className="w-6 h-6" />}
-              title="100% Private"
-              description="End-to-end encryption. GDPR compliant. Your data never leaves your control."
-              benefit="Enterprise-grade security"
+              title="Privacy First"
+              description="Your data is encrypted and secure. GDPR compliant. Your research stays private and yours."
+              benefit="Your data, your control"
             />
           </div>
         </div>
@@ -181,7 +171,7 @@ export const LoginPage: React.FC = () => {
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">
               Built for Speed & Scale
             </h2>
-            <p className="text-purple-300">Numbers that matter</p>
+            <p className="text-purple-300">Fast, powerful, and unlimited</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
             <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
@@ -211,9 +201,9 @@ export const LoginPage: React.FC = () => {
         <div className="mb-20 py-12 border-t border-white/10">
           <div className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">
-              Trusted by Knowledge Workers
+              Built for Knowledge Workers
             </h2>
-            <p className="text-purple-300">See how different professionals use SmarTrack</p>
+            <p className="text-purple-300">Perfect for anyone who needs to organize and find research quickly</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
             {[
@@ -267,20 +257,20 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Final CTA - Marketing Optimized */}
+        {/* Final CTA - Authentic & Compelling */}
         <div className="mb-12 py-16">
           <div className="relative text-center bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-blue-600/20 backdrop-blur-sm rounded-3xl p-12 sm:p-16 border-2 border-white/20 shadow-2xl overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-blue-600/10 animate-pulse"></div>
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full mb-6 text-sm text-purple-200">
                 <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                <span>Join 5,000+ researchers saving 5+ hours/week</span>
+                <span>Start organizing your research today</span>
               </div>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6 max-w-3xl mx-auto leading-tight">
-                Ready to Save Hours Every Week?
+                Ready to Transform Your Research Workflow?
               </h2>
               <p className="text-lg sm:text-xl text-purple-200 mb-8 max-w-2xl mx-auto font-medium">
-                Start organizing your research with AI today. Free forever, no credit card required.
+                Join SmarTrack and start organizing your research with AI. Free forever, no credit card required.
               </p>
               <button
                 onClick={() => loginWithRedirect()}
