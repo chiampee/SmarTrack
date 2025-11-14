@@ -356,7 +356,7 @@ export const LoginPage: React.FC = () => {
               <motion.div
                 variants={fadeInScale}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="relative rounded-2xl overflow-visible border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm p-4 sm:p-8"
+                className="relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm p-4 sm:p-8"
               >
                 <ExtensionPreview />
               </motion.div>
@@ -371,13 +371,12 @@ export const LoginPage: React.FC = () => {
               transition={{ duration: animationConfig.duration, ease: "easeOut" }}
               className="mt-20 sm:mt-24 mb-16 sm:mb-20 max-w-6xl mx-auto px-4"
             >
-              <div className="relative rounded-2xl overflow-visible border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm">
-                <div className="relative bg-slate-900 rounded-2xl overflow-visible">
+              <div className="relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm">
+                <div className="relative bg-slate-900 rounded-2xl" style={{ maxHeight: '600px' }}>
                   <img 
                     src="/dashboard-screenshot.png" 
                     alt="SmarTrack Research Dashboard - Organize your research with AI-powered tools"
-                    className="w-full h-auto object-contain rounded-2xl"
-                    style={{ minHeight: '400px' }}
+                    className="w-full h-auto object-cover rounded-2xl"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
                       target.style.display = 'none'
@@ -385,7 +384,7 @@ export const LoginPage: React.FC = () => {
                       if (fallback) fallback.style.display = 'block'
                     }}
                   />
-                  <div id="dashboard-preview-fallback" style={{ display: 'none', minHeight: '600px' }}>
+                  <div id="dashboard-preview-fallback" style={{ display: 'none' }}>
                     <DashboardPreview />
                   </div>
                 </div>

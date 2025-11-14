@@ -88,9 +88,9 @@ export const ExtensionPreview: React.FC = () => {
       {/* Mobile Device Frame with Dashboard Background */}
       <div className={`relative mx-auto mb-8 transition-all duration-1000 ${
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-      }`} style={{ maxWidth: '375px', width: '100%' }}>
+      }`} style={{ maxWidth: '400px', width: '100%' }}>
         {/* Mobile Frame */}
-        <div className="relative bg-slate-900 rounded-3xl overflow-visible shadow-2xl border-4 border-slate-800" style={{ minHeight: '600px', maxHeight: '800px' }}>
+        <div className="relative bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-800" style={{ height: '700px' }}>
           {/* Status Bar */}
           <div className="bg-slate-900 px-4 py-1 flex justify-between items-center text-white text-xs">
             <span>15:01</span>
@@ -117,15 +117,9 @@ export const ExtensionPreview: React.FC = () => {
 
           {/* Extension Popup Overlay */}
           <div 
-            className={`absolute top-16 left-0 right-0 bg-white rounded-t-3xl shadow-2xl transition-all duration-500 ${
+            className={`absolute top-16 left-0 right-0 bottom-0 bg-white rounded-t-3xl shadow-2xl transition-all duration-500 overflow-y-auto ${
               isVisible ? 'translate-y-0' : 'translate-y-full'
             }`}
-            style={{
-              minHeight: '500px',
-              maxHeight: 'calc(100% - 4rem)',
-              overflowY: 'auto',
-              overflowX: 'visible'
-            }}
           >
             {/* Extension Header */}
             <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 p-5 text-white text-center relative overflow-hidden">
@@ -141,7 +135,7 @@ export const ExtensionPreview: React.FC = () => {
             </div>
 
             {/* Extension Content */}
-            <div className="p-4 bg-white overflow-visible">
+            <div className="p-4 bg-white pb-6">
               {/* Page Preview */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 flex items-start gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-lg flex-shrink-0 flex items-center justify-center">
