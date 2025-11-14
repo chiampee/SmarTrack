@@ -11,13 +11,13 @@ export const DashboardPreview: React.FC = () => {
 
   return (
     <div 
-      className="bg-slate-900 text-white rounded-lg overflow-hidden shadow-2xl relative"
-      style={{ fontFamily: 'Inter, sans-serif' }}
+      className="bg-slate-900 text-white rounded-lg overflow-visible shadow-2xl relative w-full"
+      style={{ fontFamily: 'Inter, sans-serif', minHeight: '600px' }}
     >
       {/* Animated background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/5 via-purple-900/5 to-blue-900/5 animate-pulse pointer-events-none"></div>
       
-      <div className={`flex h-full relative z-10 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div className={`flex min-h-[600px] relative z-10 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         {/* Left Sidebar */}
         <div className="w-64 bg-gradient-to-b from-slate-800 to-slate-800/95 border-r border-slate-700/50 flex flex-col backdrop-blur-sm">
           {/* User Profile */}
@@ -97,9 +97,9 @@ export const DashboardPreview: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800/50">
+        <div className="flex-1 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800/50 min-w-0">
           {/* Header */}
-          <div className="p-6 border-b border-slate-700/50 relative overflow-hidden">
+          <div className="p-6 border-b border-slate-700/50 relative overflow-visible">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-purple-500/5 to-blue-500/0 opacity-0 hover:opacity-100 transition-opacity duration-500"></div>
             <div className="flex justify-between items-start mb-4 relative z-10">
               <div>
@@ -148,7 +148,7 @@ export const DashboardPreview: React.FC = () => {
           </div>
 
           {/* Content */}
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6 overflow-visible">
             {/* Technology Category */}
             <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
               <div className="flex items-center justify-between mb-3">
