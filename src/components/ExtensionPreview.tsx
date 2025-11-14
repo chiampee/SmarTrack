@@ -11,6 +11,7 @@ export const ExtensionPreview: React.FC = () => {
 
   useEffect(() => {
     let timers: NodeJS.Timeout[] = []
+    const currentRef = containerRef.current
     
     // Intersection Observer for scroll-triggered animation
     const observer = new IntersectionObserver(
@@ -40,14 +41,14 @@ export const ExtensionPreview: React.FC = () => {
       }
     )
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current)
+    if (currentRef) {
+      observer.observe(currentRef)
     }
 
     return () => {
       timers.forEach(timer => clearTimeout(timer))
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current)
+      if (currentRef) {
+        observer.unobserve(currentRef)
       }
     }
   }, [hasStarted])
