@@ -29,8 +29,8 @@ class Settings(BaseSettings):
     MAX_LINKS_PER_USER: int = 40  # 40 links per user
     MAX_STORAGE_PER_USER_BYTES: int = 40 * 1024  # 40 KB per user
     MAX_PAGE_SIZE_BYTES: int = 524288  # 512KB
-    RATE_LIMIT_REQUESTS_PER_MINUTE: int = 120  # Increased from 60 to 120 for better UX
-    ADMIN_RATE_LIMIT_REQUESTS_PER_MINUTE: int = 300  # Higher limit for admin endpoints
+    RATE_LIMIT_REQUESTS_PER_MINUTE: int = 1000  # Temporarily set very high for testing
+    ADMIN_RATE_LIMIT_REQUESTS_PER_MINUTE: int = 1000  # Temporarily set very high for testing
     
     # Admin Access
     ADMIN_EMAILS: List[str] = ["chaimpeer11@gmail.com"]  # List of admin email addresses
