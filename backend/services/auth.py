@@ -5,7 +5,10 @@ Authentication service
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
+from jose.exceptions import ExpiredSignatureError, JWTClaimsError
 from core.config import settings
+import httpx
+import time
 
 security = HTTPBearer()
 
@@ -14,6 +17,53 @@ security = HTTPBearer()
 # Include timestamp for cache expiration (1 hour TTL)
 _user_email_cache = {}
 _CACHE_TTL_SECONDS = 3600  # 1 hour
+
+# JWKS (JSON Web Key Set) cache for JWT signature verification
+# Cache the public keys from Auth0 to verify token signatures
+_jwks_cache = None
+_jwks_cache_time = 0
+_JWKS_CACHE_TTL = 3600  # 1 hour
+
+
+async def get_auth0_jwks():
+    """
+    Fetch Auth0 JWKS (JSON Web Key Set) for JWT signature verification.
+    This is cached to avoid repeated fetches.
+    """
+    global _jwks_cache, _jwks_cache_time
+    
+    current_time = time.time()
+    
+    # Return cached JWKS if still valid
+    if _jwks_cache and (current_time - _jwks_cache_time) < _JWKS_CACHE_TTL:
+        print(f"[AUTH] Using cached JWKS (age: {int(current_time - _jwks_cache_time)}s)")
+        return _jwks_cache
+    
+    try:
+        jwks_url = f"https://{settings.AUTH0_DOMAIN}/.well-known/jwks.json"
+        print(f"[AUTH] Fetching JWKS from {jwks_url}")
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(jwks_url)
+            response.raise_for_status()
+            jwks = response.json()
+            
+            # Cache the JWKS
+            _jwks_cache = jwks
+            _jwks_cache_time = current_time
+            
+            print(f"[AUTH] ✅ JWKS fetched and cached successfully")
+            return jwks
+    except Exception as e:
+        print(f"[AUTH] ❌ Failed to fetch JWKS: {e}")
+        # If we have old cached JWKS, use it as fallback
+        if _jwks_cache:
+            print(f"[AUTH] ⚠️  Using stale JWKS cache as fallback")
+            return _jwks_cache
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to fetch authentication keys"
+        )
 
 def extract_email_from_payload(payload: dict) -> str:
     """
@@ -83,24 +133,94 @@ def extract_email_from_payload(payload: dict) -> str:
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Get current authenticated user"""
+    """Get current authenticated user with JWT signature verification"""
     try:
         token = credentials.credentials
         
-        # Decode JWT without verification (Auth0 management API or introspection endpoint)
-        # For production, use Auth0's introspection endpoint or validate signature
+        # SECURITY: Verify JWT signature, audience, and expiration
         try:
-            # Decode without verification to get user info
-            # In production, you should use Auth0's introspection endpoint or validate the signature
-            unverified_payload = jwt.decode(
+            # Fetch JWKS for signature verification
+            jwks = await get_auth0_jwks()
+            
+            # Decode JWT header to get key ID (kid)
+            unverified_header = jwt.get_unverified_header(token)
+            kid = unverified_header.get('kid')
+            
+            if not kid:
+                print("[AUTH] ❌ No 'kid' in JWT header")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token format - missing key ID"
+                )
+            
+            # Find the matching key in JWKS
+            rsa_key = None
+            for key in jwks.get('keys', []):
+                if key.get('kid') == kid:
+                    rsa_key = {
+                        'kty': key['kty'],
+                        'kid': key['kid'],
+                        'use': key.get('use'),
+                        'n': key['n'],
+                        'e': key['e']
+                    }
+                    break
+            
+            if not rsa_key:
+                print(f"[AUTH] ❌ No matching key found in JWKS for kid: {kid}")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Unable to verify token signature"
+                )
+            
+            # Verify JWT signature, audience, and expiration
+            verified_payload = jwt.decode(
                 token,
-                key="",  # Empty key since we're not verifying
+                rsa_key,
+                algorithms=['RS256'],
+                audience=settings.AUTH0_AUDIENCE,
+                issuer=f"https://{settings.AUTH0_DOMAIN}/",
                 options={
-                    "verify_signature": False,  # Skip signature verification
-                    "verify_aud": False,  # Skip audience verification
-                    "verify_exp": False,  # Skip expiration check for now
+                    "verify_signature": True,   # ✅ ENABLED
+                    "verify_aud": True,          # ✅ ENABLED
+                    "verify_exp": True,          # ✅ ENABLED
                 }
             )
+            
+            print(f"[AUTH] ✅ JWT signature verified successfully")
+            unverified_payload = verified_payload  # Use verified payload
+            
+        except ExpiredSignatureError:
+            print("[AUTH] ❌ Token has expired")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has expired"
+            )
+        except JWTClaimsError as e:
+            print(f"[AUTH] ❌ JWT claims error: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token claims"
+            )
+        except JWTError as e:
+            print(f"[AUTH] ❌ JWT verification failed: {e}")
+            # Fallback to unverified for debugging (ONLY in development)
+            if settings.DEBUG:
+                print("[AUTH] ⚠️  DEBUG MODE: Falling back to unverified token")
+                unverified_payload = jwt.decode(
+                    token,
+                    key="",
+                    options={
+                        "verify_signature": False,
+                        "verify_aud": False,
+                        "verify_exp": False,
+                    }
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Could not validate credentials"
+                )
             
             user_id = unverified_payload.get("sub")
             if user_id is None:

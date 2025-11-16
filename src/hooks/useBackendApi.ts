@@ -3,6 +3,14 @@ import { useAuth0 } from '@auth0/auth0-react'
 import { parseError, logError, withErrorHandling, ErrorType } from '../utils/errorHandler'
 import { validateApiResponse } from '../utils/validation'
 import { Link } from '../types/Link'
+import { jwtDecode } from 'jwt-decode'
+
+interface JWTPayload {
+  exp: number
+  sub: string
+  email?: string
+  aud: string | string[]
+}
 
 // Backend URL - use environment variable or default to Render backend
 // If running locally, set VITE_BACKEND_URL=http://localhost:8000 in .env
@@ -21,6 +29,33 @@ export interface UserStats {
   storageRemaining?: number
 }
 
+/**
+ * Check if JWT token is expired or expiring soon
+ * @param token - JWT token string
+ * @param bufferSeconds - Number of seconds before expiration to consider token as expired (default: 300 = 5 minutes)
+ * @returns true if token is expired or expiring soon
+ */
+const isTokenExpired = (token: string, bufferSeconds: number = 300): boolean => {
+  try {
+    const decoded = jwtDecode<JWTPayload>(token)
+    const currentTime = Math.floor(Date.now() / 1000)
+    const expiresAt = decoded.exp
+    
+    // Check if token expires in less than bufferSeconds
+    const isExpired = expiresAt < (currentTime + bufferSeconds)
+    
+    if (isExpired) {
+      const timeUntilExpiry = expiresAt - currentTime
+      console.log(`[AUTH] Token ${timeUntilExpiry > 0 ? 'expiring soon' : 'expired'} (${timeUntilExpiry}s remaining)`)
+    }
+    
+    return isExpired
+  } catch (error) {
+    console.error('[AUTH] Failed to decode token:', error)
+    return true // Treat invalid tokens as expired
+  }
+}
+
 export const useBackendApi = () => {
   const { getAccessTokenSilently, isAuthenticated } = useAuth0()
   const [token, setToken] = useState<string | null>(null)
@@ -30,14 +65,25 @@ export const useBackendApi = () => {
     const fetchToken = async () => {
       if (isAuthenticated) {
         try {
+          // Check if existing token is still valid
+          const existingToken = localStorage.getItem('authToken')
+          if (existingToken && !isTokenExpired(existingToken)) {
+            console.log('[AUTH] Using existing valid token from localStorage')
+            setToken(existingToken)
+            return
+          }
+          
           // Always request email scope to ensure email is in token
+          console.log('[AUTH] Fetching fresh token from Auth0')
           const accessToken = await getAccessTokenSilently({
             authorizationParams: {
               scope: 'openid profile email',
-            }
+            },
+            cacheMode: existingToken ? 'off' : 'on' // Force refresh if we had an expired token
           })
           setToken(accessToken)
           localStorage.setItem('authToken', accessToken) // Store for extension
+          console.log('[AUTH] ✅ Fresh token obtained and stored')
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error)
           console.error('Error fetching access token:', errorMessage, error)
@@ -51,6 +97,46 @@ export const useBackendApi = () => {
     }
     fetchToken()
   }, [isAuthenticated, getAccessTokenSilently])
+  
+  // Auto-refresh token before expiration
+  useEffect(() => {
+    if (!token || !isAuthenticated) return
+    
+    try {
+      const decoded = jwtDecode<JWTPayload>(token)
+      const expiresIn = decoded.exp - Math.floor(Date.now() / 1000)
+      // Refresh 5 minutes before expiration, or immediately if less than 5 minutes remaining
+      const refreshIn = Math.max(0, (expiresIn - 300) * 1000) // 5 min before expiration
+      
+      if (refreshIn <= 0) {
+        console.log('[AUTH] Token already expired or expiring soon, should refresh immediately')
+        return
+      }
+      
+      console.log(`[AUTH] Scheduling token refresh in ${Math.floor(refreshIn / 1000)}s`)
+      
+      const timerId = setTimeout(async () => {
+        try {
+          console.log('[AUTH] Auto-refreshing token before expiration')
+          const newToken = await getAccessTokenSilently({ 
+            cacheMode: 'off',
+            authorizationParams: {
+              scope: 'openid profile email',
+            }
+          })
+          setToken(newToken)
+          localStorage.setItem('authToken', newToken)
+          console.log('[AUTH] ✅ Token auto-refreshed successfully')
+        } catch (error) {
+          console.error('[AUTH] Token auto-refresh failed:', error)
+        }
+      }, refreshIn)
+      
+      return () => clearTimeout(timerId)
+    } catch (error) {
+      console.error('[AUTH] Failed to schedule token refresh:', error)
+    }
+  }, [token, isAuthenticated, getAccessTokenSilently])
 
   const makeAuthenticatedRequest = useCallback(async <T>(
     endpoint: string,
@@ -74,6 +160,25 @@ export const useBackendApi = () => {
         const authError = parseError(new Error('Authentication required'))
         authError.suppressLogging = true // Suppress logging for this expected error
         throw authError
+      }
+    }
+    
+    // Check if token is expired or expiring soon
+    if (requestToken && isTokenExpired(requestToken)) {
+      console.log('[AUTH] Token expired or expiring soon, refreshing before request')
+      try {
+        requestToken = await getAccessTokenSilently({
+          cacheMode: 'off',
+          authorizationParams: {
+            scope: 'openid profile email',
+          }
+        })
+        setToken(requestToken)
+        localStorage.setItem('authToken', requestToken)
+        console.log('[AUTH] ✅ Token refreshed successfully before request')
+      } catch (error) {
+        console.error('[AUTH] Failed to refresh expired token:', error)
+        // Continue with expired token - backend will reject it and we'll handle the error
       }
     }
 
