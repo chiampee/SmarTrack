@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { 
   Users, Link as LinkIcon, HardDrive, TrendingUp, 
-  RefreshCw, Calendar, BarChart3, FileText, Settings,
-  ChevronLeft, ChevronRight, Search, Filter, X, AlertCircle, Tag, LogIn
+  RefreshCw, BarChart3, FileText, Settings,
+  ChevronLeft, ChevronRight, Search, AlertCircle, Tag, LogIn
 } from 'lucide-react'
 import { useAdminAccess } from '../hooks/useAdminAccess'
 import { useAdminApi, AdminAnalytics as AdminAnalyticsType, AdminUser, SystemLog, AdminCategory, UserLimits } from '../services/adminApi'
@@ -1261,8 +1261,8 @@ const SettingsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ a
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [userLimits, setUserLimits] = useState<UserLimits | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
+  const [_error, _setError] = useState<string | null>(null)
+  const [_actionError, _setActionError] = useState<string | null>(null)
   const [linksLimit, setLinksLimit] = useState<number>(40)
   const [storageLimitKB, setStorageLimitKB] = useState<number>(40)
   const [userSearch, setUserSearch] = useState<string>('')
