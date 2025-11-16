@@ -251,93 +251,88 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Could not validate credentials"
                 )
-            
-            user_id = unverified_payload.get("sub")
-            if user_id is None:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Could not validate credentials - missing user ID"
-                )
-            
-            # Debug: Log full token payload structure
-            print(f"[AUTH] 📋 Full token payload analysis for user: {user_id}")
-            print(f"[AUTH]   All keys in payload: {list(unverified_payload.keys())}")
-            print(f"[AUTH]   Audience (aud): {unverified_payload.get('aud')}")
-            print(f"[AUTH]   Scope: {unverified_payload.get('scope')}")
-            print(f"[AUTH]   Issuer (iss): {unverified_payload.get('iss')}")
-            
-            # Check each field that might contain email
-            email_fields_to_check = [
-                'email',
-                'https://auth0.com/email',
-                'https://auth0.com/user/email',
-                f"{unverified_payload.get('aud')}/email" if unverified_payload.get('aud') else None,
-            ]
-            # Remove None values
-            email_fields_to_check = [f for f in email_fields_to_check if f]
-            
-            print(f"[AUTH]   Checking email fields: {email_fields_to_check}")
-            for field in email_fields_to_check:
-                value = unverified_payload.get(field)
-                if value:
-                    print(f"[AUTH]     '{field}': {value}")
-                else:
-                    print(f"[AUTH]     '{field}': ❌ not found")
-            
-            # Extract email using multiple possible field names
-            email = extract_email_from_payload(unverified_payload)
-            
-            # If email not in token, check cache first, then try userinfo endpoint
-            if not email:
-                import time
-                current_time = time.time()
-                
-                # Check cache first (to avoid repeated userinfo calls)
-                if user_id in _user_email_cache:
-                    cache_entry = _user_email_cache[user_id]
-                    # Handle both old format (string) and new format (dict)
-                    if isinstance(cache_entry, dict):
-                        cached_email = cache_entry.get('email')
-                        cached_at = cache_entry.get('cached_at', 0)
-                        # Check if cache is still valid (not expired)
-                        if current_time - cached_at < _CACHE_TTL_SECONDS:
-                            print(f"[AUTH] ✅ Using cached email for user {user_id}: {cached_email} (age: {int(current_time - cached_at)}s)")
-                            email = cached_email
-                        else:
-                            print(f"[AUTH] ⏰ Cached email expired for user {user_id}, will refetch")
-                            # Remove expired cache entry
-                            del _user_email_cache[user_id]
-                    else:
-                        # Old format - just use it directly
-                        cached_email = cache_entry
-                        print(f"[AUTH] ✅ Using cached email (old format) for user {user_id}: {cached_email}")
-                        email = cached_email
-                        # Update to new format
-                        _user_email_cache[user_id] = {'email': cached_email, 'cached_at': current_time}
-                
-                if not email:
-                    print(f"[AUTH] ⚠️  Email not in token or cache for user {user_id}, attempting to fetch from Auth0 userinfo endpoint...")
-                    email = await fetch_email_from_auth0(token, user_id)
-                    if email:
-                        print(f"[AUTH] ✅ Successfully fetched email from Auth0 userinfo: {email}")
-                        # Cache the email to avoid repeated userinfo calls
-                        _user_email_cache[user_id] = {'email': email, 'cached_at': current_time}
-                        print(f"[AUTH] ✅ Cached email for future requests (TTL: {_CACHE_TTL_SECONDS}s)")
-                    else:
-                        print(f"[AUTH] ❌ Failed to fetch email from Auth0 userinfo for user {user_id}")
-            
-            # Return user info from token
-            return {
-                "sub": user_id,
-                "email": email,
-                "name": unverified_payload.get("name") or unverified_payload.get("nickname"),
-            }
-            
-        except JWTError as e:
+        
+        # Extract user info from payload (either verified or unverified in DEBUG mode)
+        user_id = unverified_payload.get("sub")
+        if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials"
+                detail="Could not validate credentials - missing user ID"
             )
+        
+        # Debug: Log full token payload structure
+        print(f"[AUTH] 📋 Full token payload analysis for user: {user_id}")
+        print(f"[AUTH]   All keys in payload: {list(unverified_payload.keys())}")
+        print(f"[AUTH]   Audience (aud): {unverified_payload.get('aud')}")
+        print(f"[AUTH]   Scope: {unverified_payload.get('scope')}")
+        print(f"[AUTH]   Issuer (iss): {unverified_payload.get('iss')}")
+        
+        # Check each field that might contain email
+        email_fields_to_check = [
+            'email',
+            'https://auth0.com/email',
+            'https://auth0.com/user/email',
+            f"{unverified_payload.get('aud')}/email" if unverified_payload.get('aud') else None,
+        ]
+        # Remove None values
+        email_fields_to_check = [f for f in email_fields_to_check if f]
+        
+        print(f"[AUTH]   Checking email fields: {email_fields_to_check}")
+        for field in email_fields_to_check:
+            value = unverified_payload.get(field)
+            if value:
+                print(f"[AUTH]     '{field}': {value}")
+            else:
+                print(f"[AUTH]     '{field}': ❌ not found")
+        
+        # Extract email using multiple possible field names
+        email = extract_email_from_payload(unverified_payload)
+        
+        # If email not in token, check cache first, then try userinfo endpoint
+        if not email:
+            import time
+            current_time = time.time()
+            
+            # Check cache first (to avoid repeated userinfo calls)
+            if user_id in _user_email_cache:
+                cache_entry = _user_email_cache[user_id]
+                # Handle both old format (string) and new format (dict)
+                if isinstance(cache_entry, dict):
+                    cached_email = cache_entry.get('email')
+                    cached_at = cache_entry.get('cached_at', 0)
+                    # Check if cache is still valid (not expired)
+                    if current_time - cached_at < _CACHE_TTL_SECONDS:
+                        print(f"[AUTH] ✅ Using cached email for user {user_id}: {cached_email} (age: {int(current_time - cached_at)}s)")
+                        email = cached_email
+                    else:
+                        print(f"[AUTH] ⏰ Cached email expired for user {user_id}, will refetch")
+                        # Remove expired cache entry
+                        del _user_email_cache[user_id]
+                else:
+                    # Old format - just use it directly
+                    cached_email = cache_entry
+                    print(f"[AUTH] ✅ Using cached email (old format) for user {user_id}: {cached_email}")
+                    email = cached_email
+                    # Update to new format
+                    _user_email_cache[user_id] = {'email': cached_email, 'cached_at': current_time}
+            
+            if not email:
+                print(f"[AUTH] ⚠️  Email not in token or cache for user {user_id}, attempting to fetch from Auth0 userinfo endpoint...")
+                email = await fetch_email_from_auth0(token, user_id)
+                if email:
+                    print(f"[AUTH] ✅ Successfully fetched email from Auth0 userinfo: {email}")
+                    # Cache the email to avoid repeated userinfo calls
+                    _user_email_cache[user_id] = {'email': email, 'cached_at': current_time}
+                    print(f"[AUTH] ✅ Cached email for future requests (TTL: {_CACHE_TTL_SECONDS}s)")
+                else:
+                    print(f"[AUTH] ❌ Failed to fetch email from Auth0 userinfo for user {user_id}")
+        
+        # Return user info from token
+        return {
+            "sub": user_id,
+            "email": email,
+            "name": unverified_payload.get("name") or unverified_payload.get("nickname"),
+        }
         
     except HTTPException:
         raise
