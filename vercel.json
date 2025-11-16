@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.auth0.com https://dev-a5hqcneif6ghl018.us.auth0.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://dev-a5hqcneif6ghl018.us.auth0.com https://smartrack-back.onrender.com; img-src 'self' data: https:; font-src 'self' data:; frame-ancestors 'none';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.auth0.com https://dev-a5hqcneif6ghl018.us.auth0.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://dev-a5hqcneif6ghl018.us.auth0.com https://smartrack-back.onrender.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; frame-src https://dev-a5hqcneif6ghl018.us.auth0.com; frame-ancestors 'none';"
         },
         {
           "key": "X-Frame-Options",
