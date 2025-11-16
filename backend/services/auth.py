@@ -147,7 +147,11 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             kid = unverified_header.get('kid')
             
             if not kid:
-                print("[AUTH] ❌ No 'kid' in JWT header")
+                print("[AUTH ERROR] ❌ No 'kid' (key ID) in JWT header")
+                print(f"[AUTH ERROR] JWT header keys: {list(unverified_header.keys())}")
+                print(f"[AUTH ERROR] This indicates a malformed token")
+                import logging
+                logging.error(f"JWT missing 'kid' in header. Header: {unverified_header}")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid token format - missing key ID"
@@ -167,7 +171,14 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
                     break
             
             if not rsa_key:
-                print(f"[AUTH] ❌ No matching key found in JWKS for kid: {kid}")
+                print(f"[AUTH ERROR] ❌ No matching key found in JWKS for kid: {kid}")
+                print(f"[AUTH ERROR] Available kids in JWKS: {[k.get('kid') for k in jwks.get('keys', [])]}")
+                print(f"[AUTH ERROR] This could mean:")
+                print(f"[AUTH ERROR]   1. Token was signed with a different key")
+                print(f"[AUTH ERROR]   2. JWKS cache is stale (will auto-refresh in 1 hour)")
+                print(f"[AUTH ERROR]   3. Token is from wrong Auth0 tenant")
+                import logging
+                logging.error(f"No matching JWKS key for kid: {kid}. Available: {[k.get('kid') for k in jwks.get('keys', [])]}")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Unable to verify token signature"
@@ -190,20 +201,39 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             print(f"[AUTH] ✅ JWT signature verified successfully")
             unverified_payload = verified_payload  # Use verified payload
             
-        except ExpiredSignatureError:
-            print("[AUTH] ❌ Token has expired")
+        except ExpiredSignatureError as e:
+            print("[AUTH ERROR] ❌ Token has expired")
+            print(f"[AUTH ERROR] Expiration error details: {str(e)}")
+            print(f"[AUTH ERROR] User should re-authenticate")
+            import logging
+            logging.error(f"Expired token presented by user: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired"
             )
         except JWTClaimsError as e:
-            print(f"[AUTH] ❌ JWT claims error: {e}")
+            print(f"[AUTH ERROR] ❌ JWT claims error: {e}")
+            print(f"[AUTH ERROR] Claims might not match expected audience or issuer")
+            print(f"[AUTH ERROR] Expected audience: {settings.AUTH0_AUDIENCE}")
+            print(f"[AUTH ERROR] Expected issuer: https://{settings.AUTH0_DOMAIN}/")
+            import logging
+            logging.error(f"JWT claims validation failed: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token claims"
             )
         except JWTError as e:
-            print(f"[AUTH] ❌ JWT verification failed: {e}")
+            print(f"[AUTH ERROR] ❌ JWT verification failed: {e}")
+            print(f"[AUTH ERROR] Error type: {type(e).__name__}")
+            print(f"[AUTH ERROR] This could be due to:")
+            print(f"[AUTH ERROR]   1. Invalid signature")
+            print(f"[AUTH ERROR]   2. Malformed token")
+            print(f"[AUTH ERROR]   3. Wrong key used for signing")
+            print(f"[AUTH ERROR]   4. JWKS fetch/cache issue")
+            import logging
+            import traceback
+            logging.error(f"JWT verification failed: {str(e)}")
+            logging.error(f"Traceback: {traceback.format_exc()}")
             # Fallback to unverified for debugging (ONLY in development)
             if settings.DEBUG:
                 print("[AUTH] ⚠️  DEBUG MODE: Falling back to unverified token")

@@ -46,12 +46,26 @@ const isTokenExpired = (token: string, bufferSeconds: number = 300): boolean => 
     
     if (isExpired) {
       const timeUntilExpiry = expiresAt - currentTime
-      console.log(`[AUTH] Token ${timeUntilExpiry > 0 ? 'expiring soon' : 'expired'} (${timeUntilExpiry}s remaining)`)
+      console.warn(`[AUTH ERROR] Token ${timeUntilExpiry > 0 ? 'expiring soon' : 'expired'} (${timeUntilExpiry}s remaining)`)
+      console.warn(`[AUTH ERROR] Token details:`, {
+        expiresAt: new Date(expiresAt * 1000).toISOString(),
+        currentTime: new Date(currentTime * 1000).toISOString(),
+        secondsRemaining: timeUntilExpiry,
+        sub: decoded.sub,
+        aud: decoded.aud
+      })
     }
     
     return isExpired
   } catch (error) {
-    console.error('[AUTH] Failed to decode token:', error)
+    console.error('[AUTH ERROR] Failed to decode token:', error)
+    console.error('[AUTH ERROR] Token might be malformed or corrupted')
+    console.error('[AUTH ERROR] Error details:', {
+      errorName: error instanceof Error ? error.name : 'Unknown',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      tokenLength: token?.length || 0,
+      tokenStart: token?.substring(0, 20) || 'N/A'
+    })
     return true // Treat invalid tokens as expired
   }
 }
@@ -68,29 +82,54 @@ export const useBackendApi = () => {
           // Check if existing token is still valid
           const existingToken = localStorage.getItem('authToken')
           if (existingToken && !isTokenExpired(existingToken)) {
-            console.log('[AUTH] Using existing valid token from localStorage')
+            console.log('[AUTH] ✅ Using existing valid token from localStorage')
+            const decoded = jwtDecode<JWTPayload>(existingToken)
+            const timeRemaining = decoded.exp - Math.floor(Date.now() / 1000)
+            console.log(`[AUTH] Token valid for ${Math.floor(timeRemaining / 60)} minutes ${timeRemaining % 60} seconds`)
             setToken(existingToken)
             return
           }
           
+          if (existingToken) {
+            console.log('[AUTH] Existing token expired or expiring soon, fetching new one')
+          }
+          
           // Always request email scope to ensure email is in token
-          console.log('[AUTH] Fetching fresh token from Auth0')
+          console.log('[AUTH] 🔄 Fetching fresh token from Auth0...')
           const accessToken = await getAccessTokenSilently({
             authorizationParams: {
               scope: 'openid profile email',
             },
             cacheMode: existingToken ? 'off' : 'on' // Force refresh if we had an expired token
           })
+          
+          // Validate new token
+          const decoded = jwtDecode<JWTPayload>(accessToken)
+          console.log('[AUTH] ✅ Fresh token obtained and stored')
+          console.log('[AUTH] Token details:', {
+            sub: decoded.sub,
+            email: decoded.email || 'Not in token (will fetch from userinfo)',
+            aud: decoded.aud,
+            expiresAt: new Date(decoded.exp * 1000).toISOString(),
+            validFor: `${Math.floor((decoded.exp - Math.floor(Date.now() / 1000)) / 60)} minutes`
+          })
+          
           setToken(accessToken)
           localStorage.setItem('authToken', accessToken) // Store for extension
-          console.log('[AUTH] ✅ Fresh token obtained and stored')
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error)
-          console.error('Error fetching access token:', errorMessage, error)
+          console.error('[AUTH ERROR] ❌ Failed to fetch access token')
+          console.error('[AUTH ERROR] Error type:', error instanceof Error ? error.name : typeof error)
+          console.error('[AUTH ERROR] Error message:', errorMessage)
+          console.error('[AUTH ERROR] Full error:', error)
+          console.error('[AUTH ERROR] Action: Clearing token and requiring re-authentication')
           setToken(null)
           localStorage.removeItem('authToken')
         }
       } else {
+        if (token) {
+          console.log('[AUTH] User not authenticated, clearing tokens')
+        }
         setToken(null)
         localStorage.removeItem('authToken')
       }
@@ -109,32 +148,55 @@ export const useBackendApi = () => {
       const refreshIn = Math.max(0, (expiresIn - 300) * 1000) // 5 min before expiration
       
       if (refreshIn <= 0) {
-        console.log('[AUTH] Token already expired or expiring soon, should refresh immediately')
+        console.warn('[AUTH WARNING] Token already expired or expiring soon, should refresh immediately')
+        console.warn('[AUTH WARNING] Seconds until expiry:', expiresIn)
         return
       }
       
-      console.log(`[AUTH] Scheduling token refresh in ${Math.floor(refreshIn / 1000)}s`)
+      const refreshInMinutes = Math.floor(refreshIn / 60000)
+      const refreshInSeconds = Math.floor((refreshIn % 60000) / 1000)
+      console.log(`[AUTH] ⏰ Token auto-refresh scheduled in ${refreshInMinutes}m ${refreshInSeconds}s`)
+      console.log(`[AUTH] Token expires at: ${new Date(decoded.exp * 1000).toISOString()}`)
       
       const timerId = setTimeout(async () => {
         try {
-          console.log('[AUTH] Auto-refreshing token before expiration')
+          console.log('[AUTH] 🔄 Auto-refreshing token before expiration...')
+          const startTime = Date.now()
+          
           const newToken = await getAccessTokenSilently({ 
             cacheMode: 'off',
             authorizationParams: {
               scope: 'openid profile email',
             }
           })
+          
+          const duration = Date.now() - startTime
+          const newDecoded = jwtDecode<JWTPayload>(newToken)
+          
           setToken(newToken)
           localStorage.setItem('authToken', newToken)
+          
           console.log('[AUTH] ✅ Token auto-refreshed successfully')
+          console.log('[AUTH] Refresh duration:', `${duration}ms`)
+          console.log('[AUTH] New token expires:', new Date(newDecoded.exp * 1000).toISOString())
+          console.log('[AUTH] New token valid for:', `${Math.floor((newDecoded.exp - Math.floor(Date.now() / 1000)) / 60)} minutes`)
         } catch (error) {
-          console.error('[AUTH] Token auto-refresh failed:', error)
+          console.error('[AUTH ERROR] ❌ Token auto-refresh failed')
+          console.error('[AUTH ERROR] Error type:', error instanceof Error ? error.name : typeof error)
+          console.error('[AUTH ERROR] Error message:', error instanceof Error ? error.message : String(error))
+          console.error('[AUTH ERROR] Full error:', error)
+          console.error('[AUTH ERROR] User may need to re-authenticate manually')
         }
       }, refreshIn)
       
-      return () => clearTimeout(timerId)
+      return () => {
+        console.log('[AUTH] Clearing token refresh timer')
+        clearTimeout(timerId)
+      }
     } catch (error) {
-      console.error('[AUTH] Failed to schedule token refresh:', error)
+      console.error('[AUTH ERROR] ❌ Failed to schedule token refresh')
+      console.error('[AUTH ERROR] Error:', error)
+      console.error('[AUTH ERROR] Token might be invalid')
     }
   }, [token, isAuthenticated, getAccessTokenSilently])
 
@@ -165,19 +227,26 @@ export const useBackendApi = () => {
     
     // Check if token is expired or expiring soon
     if (requestToken && isTokenExpired(requestToken)) {
-      console.log('[AUTH] Token expired or expiring soon, refreshing before request')
+      console.warn('[AUTH WARNING] Token expired or expiring soon, refreshing before request')
+      console.warn('[AUTH WARNING] Endpoint:', endpoint)
       try {
+        const startTime = Date.now()
         requestToken = await getAccessTokenSilently({
           cacheMode: 'off',
           authorizationParams: {
             scope: 'openid profile email',
           }
         })
+        const duration = Date.now() - startTime
         setToken(requestToken)
         localStorage.setItem('authToken', requestToken)
         console.log('[AUTH] ✅ Token refreshed successfully before request')
+        console.log('[AUTH] Refresh duration:', `${duration}ms`)
       } catch (error) {
-        console.error('[AUTH] Failed to refresh expired token:', error)
+        console.error('[AUTH ERROR] ❌ Failed to refresh expired token before request')
+        console.error('[AUTH ERROR] Endpoint:', endpoint)
+        console.error('[AUTH ERROR] Error:', error)
+        console.error('[AUTH ERROR] Will attempt request with expired token (backend will reject)')
         // Continue with expired token - backend will reject it and we'll handle the error
       }
     }
@@ -227,6 +296,35 @@ export const useBackendApi = () => {
           status: response.status,
           message: errorData.detail || errorData.message || response.statusText,
         })
+        
+        // Enhanced error logging
+        console.error(`[API ERROR] ❌ Request failed: ${endpoint}`)
+        console.error(`[API ERROR] Status: ${response.status}`)
+        console.error(`[API ERROR] Message: ${errorData.detail || errorData.message || response.statusText}`)
+        
+        // Log auth-specific errors with more details
+        if (response.status === 401) {
+          console.error('[API ERROR] 🔐 Authentication failed - token might be invalid or expired')
+          console.error('[API ERROR] Token present:', !!requestToken)
+          if (requestToken) {
+            try {
+              const decoded = jwtDecode<JWTPayload>(requestToken)
+              const now = Math.floor(Date.now() / 1000)
+              console.error('[API ERROR] Token expired:', decoded.exp < now)
+              console.error('[API ERROR] Token expiry:', new Date(decoded.exp * 1000).toISOString())
+            } catch (e) {
+              console.error('[API ERROR] Could not decode token for error analysis')
+            }
+          }
+        } else if (response.status === 403) {
+          console.error('[API ERROR] 🚫 Forbidden - insufficient permissions')
+          console.error('[API ERROR] Endpoint may require admin access')
+        } else if (response.status === 404) {
+          console.error('[API ERROR] 📭 Not found - endpoint does not exist or resource not found')
+        } else if (response.status >= 500) {
+          console.error('[API ERROR] 💥 Server error - backend might be down or experiencing issues')
+        }
+        
         logError(error, `API ${endpoint}`)
         throw error
       }
