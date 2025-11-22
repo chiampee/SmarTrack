@@ -296,6 +296,16 @@ class BackendApiService {
     const url = `${this.baseUrl}${API_CONSTANTS.LINKS_ENDPOINT}`;
     
     try {
+      // Get extension version dynamically if possible
+      let version = '2.0.0';
+      try {
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest) {
+          version = chrome.runtime.getManifest().version;
+        }
+      } catch (e) {
+        // Fallback to default
+      }
+
       // Prepare request body with defaults
       const body = {
         url: linkData.url || '',
@@ -308,7 +318,9 @@ class BackendApiService {
         thumbnail: linkData.thumbnail || null,
         favicon: linkData.favicon || null,
         isFavorite: linkData.isFavorite === true,
-        isArchived: linkData.isArchived === true
+        isArchived: linkData.isArchived === true,
+        source: 'extension',
+        extensionVersion: version
       };
       
       const response = await fetch(url, {
