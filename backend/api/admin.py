@@ -256,54 +256,74 @@ async def get_admin_analytics(
         
         # Run independent queries in parallel for better performance
         async def get_total_users():
-            pipeline = [
-                {"$group": {"_id": "$userId"}},
-                {"$count": "total"}
-            ]
-            result = await db.links.aggregate(pipeline).to_list(1)
-            return result[0]["total"] if result else 0
+            try:
+                pipeline = [
+                    {"$group": {"_id": "$userId"}},
+                    {"$count": "total"}
+                ]
+                result = await db.links.aggregate(pipeline).to_list(1)
+                return result[0]["total"] if result and result[0].get("total") is not None else 0
+            except Exception as e:
+                print(f"[ANALYTICS ERROR] get_total_users failed: {e}")
+                return 0
         
         async def get_extension_users():
-            pipeline = [
-                {"$match": {"source": "extension"}},
-                {"$group": {"_id": "$userId"}},
-                {"$count": "total"}
-            ]
-            result = await db.links.aggregate(pipeline).to_list(1)
-            return result[0]["total"] if result else 0
+            try:
+                pipeline = [
+                    {"$match": {"source": "extension"}},
+                    {"$group": {"_id": "$userId"}},
+                    {"$count": "total"}
+                ]
+                result = await db.links.aggregate(pipeline).to_list(1)
+                return result[0]["total"] if result and result[0].get("total") is not None else 0
+            except Exception as e:
+                print(f"[ANALYTICS ERROR] get_extension_users failed: {e}")
+                return 0
         
         async def get_total_links():
-            return await db.links.count_documents({
-                "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
-            })
+            try:
+                return await db.links.count_documents({
+                    "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+                })
+            except Exception as e:
+                print(f"[ANALYTICS ERROR] get_total_links failed: {e}")
+                return 0
         
         async def get_extension_links():
-            return await db.links.count_documents({
-                "source": "extension",
-                "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
-            })
+            try:
+                return await db.links.count_documents({
+                    "source": "extension",
+                    "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+                })
+            except Exception as e:
+                print(f"[ANALYTICS ERROR] get_extension_links failed: {e}")
+                return 0
         
         async def get_storage():
-            pipeline = [
-                {"$match": {
-                    "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
-                }},
-                {"$project": {
-                    "size": {
-                        "$add": [
-                            {"$strLenCP": {"$ifNull": ["$title", ""]}},
-                            {"$strLenCP": {"$ifNull": ["$url", ""]}},
-                            {"$strLenCP": {"$ifNull": ["$description", ""]}},
-                            {"$strLenCP": {"$ifNull": ["$content", ""]}},
-                            {"$multiply": [{"$size": {"$ifNull": ["$tags", []]}}, 50]},
-                            300  # MongoDB overhead
-                        ]
-                    }
-                }},
-                {"$group": {"_id": None, "total": {"$sum": "$size"}}}
-            ]
-            result = await db.links.aggregate(pipeline).to_list(1)
-            return result[0]["total"] if result else 0
+            try:
+                pipeline = [
+                    {"$match": {
+                        "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+                    }},
+                    {"$project": {
+                        "size": {
+                            "$add": [
+                                {"$strLenCP": {"$ifNull": ["$title", ""]}},
+                                {"$strLenCP": {"$ifNull": ["$url", ""]}},
+                                {"$strLenCP": {"$ifNull": ["$description", ""]}},
+                                {"$strLenCP": {"$ifNull": ["$content", ""]}},
+                                {"$multiply": [{"$size": {"$ifNull": ["$tags", []]}}, 50]},
+                                300  # MongoDB overhead
+                            ]
+                        }
+                    }},
+                    {"$group": {"_id": None, "total": {"$sum": "$size"}}}
+                ]
+                result = await db.links.aggregate(pipeline).to_list(1)
+                return result[0]["total"] if result and result[0].get("total") is not None else 0
+            except Exception as e:
+                print(f"[ANALYTICS ERROR] get_storage failed: {e}")
+                return 0
         
         # Execute independent queries in parallel
         total_users, extension_users, total_links, extension_links, total_storage_bytes = await asyncio.gather(
@@ -318,184 +338,216 @@ async def get_admin_analytics(
         
         # Run remaining queries in parallel for better performance
         async def get_user_growth():
-            pipeline = [
-                {"$group": {
-                    "_id": "$userId",
-                    "firstSeen": {"$min": "$createdAt"}
-                }},
-                {"$match": {
-                    "firstSeen": {"$gte": start_date_obj, "$lte": end_date_obj}
-                }},
-                {"$group": {
-                    "_id": {
-                        "year": {"$year": "$firstSeen"},
-                        "month": {"$month": "$firstSeen"},
-                        "day": {"$dayOfMonth": "$firstSeen"}
-                    },
-                    "newUsers": {"$sum": 1}
-                }},
-                {"$project": {
-                    "date": {
-                        "$dateFromParts": {
-                            "year": "$_id.year",
-                            "month": "$_id.month",
-                            "day": "$_id.day"
-                        }
-                    },
-                    "newUsers": 1
-                }},
-                {"$sort": {"date": 1}}
-            ]
-            return await db.links.aggregate(pipeline).to_list(1000)
+            try:
+                pipeline = [
+                    {"$group": {
+                        "_id": "$userId",
+                        "firstSeen": {"$min": "$createdAt"}
+                    }},
+                    {"$match": {
+                        "firstSeen": {"$gte": start_date_obj, "$lte": end_date_obj}
+                    }},
+                    {"$group": {
+                        "_id": {
+                            "year": {"$year": "$firstSeen"},
+                            "month": {"$month": "$firstSeen"},
+                            "day": {"$dayOfMonth": "$firstSeen"}
+                        },
+                        "newUsers": {"$sum": 1}
+                    }},
+                    {"$project": {
+                        "date": {
+                            "$dateFromParts": {
+                                "year": "$_id.year",
+                                "month": "$_id.month",
+                                "day": "$_id.day"
+                            }
+                        },
+                        "newUsers": 1
+                    }},
+                    {"$sort": {"date": 1}}
+                ]
+                return await db.links.aggregate(pipeline).to_list(1000)
+            except Exception as e:
+                print(f"[ANALYTICS ERROR] get_user_growth failed: {e}")
+                return []
         
         async def get_links_growth():
-            pipeline = [
-                {"$match": {
-                    "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
-                }},
-                {"$group": {
-                    "_id": {
-                        "year": {"$year": "$createdAt"},
-                        "month": {"$month": "$createdAt"},
-                        "day": {"$dayOfMonth": "$createdAt"}
-                    },
-                    "count": {"$sum": 1},
-                    "extensionCount": {
-                        "$sum": {"$cond": [{"$eq": ["$source", "extension"]}, 1, 0]}
-                    }
-                }},
-                {"$project": {
-                    "date": {
-                        "$dateFromParts": {
-                            "year": "$_id.year",
-                            "month": "$_id.month",
-                            "day": "$_id.day"
+            try:
+                pipeline = [
+                    {"$match": {
+                        "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+                    }},
+                    {"$group": {
+                        "_id": {
+                            "year": {"$year": "$createdAt"},
+                            "month": {"$month": "$createdAt"},
+                            "day": {"$dayOfMonth": "$createdAt"}
+                        },
+                        "count": {"$sum": 1},
+                        "extensionCount": {
+                            "$sum": {"$cond": [{"$eq": ["$source", "extension"]}, 1, 0]}
                         }
-                    },
-                    "count": 1,
-                    "extensionCount": 1,
-                    "webCount": {"$subtract": ["$count", "$extensionCount"]}
-                }},
-                {"$sort": {"date": 1}}
-            ]
-            return await db.links.aggregate(pipeline).to_list(1000)
+                    }},
+                    {"$project": {
+                        "date": {
+                            "$dateFromParts": {
+                                "year": "$_id.year",
+                                "month": "$_id.month",
+                                "day": "$_id.day"
+                            }
+                        },
+                        "count": 1,
+                        "extensionCount": 1,
+                        "webCount": {"$subtract": ["$count", "$extensionCount"]}
+                    }},
+                    {"$sort": {"date": 1}}
+                ]
+                return await db.links.aggregate(pipeline).to_list(1000)
+            except Exception as e:
+                print(f"[ANALYTICS ERROR] get_links_growth failed: {e}")
+                return []
         
         async def get_top_categories():
-            pipeline = [
-                {"$match": {
-                    "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
-                }},
-                {"$group": {
-                    "_id": "$category",
-                    "count": {"$sum": 1},
-                    "users": {"$addToSet": "$userId"}
-                }},
-                {"$project": {
-                    "category": "$_id",
-                    "linkCount": "$count",
-                    "userCount": {"$size": "$users"}
-                }},
-                {"$sort": {"linkCount": -1}},
-                {"$limit": 20}
-            ]
-            return await db.links.aggregate(pipeline).to_list(20)
+            try:
+                pipeline = [
+                    {"$match": {
+                        "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+                    }},
+                    {"$group": {
+                        "_id": "$category",
+                        "count": {"$sum": 1},
+                        "users": {"$addToSet": "$userId"}
+                    }},
+                    {"$project": {
+                        "category": "$_id",
+                        "linkCount": "$count",
+                        "userCount": {"$size": "$users"}
+                    }},
+                    {"$sort": {"linkCount": -1}},
+                    {"$limit": 20}
+                ]
+                return await db.links.aggregate(pipeline).to_list(20)
+            except Exception as e:
+                print(f"[ANALYTICS ERROR] get_top_categories failed: {e}")
+                return []
         
         async def get_content_types():
-            pipeline = [
-                {"$match": {
-                    "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
-                }},
-                {"$group": {
-                    "_id": "$contentType",
-                    "count": {"$sum": 1}
-                }},
-                {"$project": {
-                    "contentType": "$_id",
-                    "count": 1
-                }},
-                {"$sort": {"count": -1}}
-            ]
-            return await db.links.aggregate(pipeline).to_list(100)
+            try:
+                pipeline = [
+                    {"$match": {
+                        "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+                    }},
+                    {"$group": {
+                        "_id": "$contentType",
+                        "count": {"$sum": 1}
+                    }},
+                    {"$project": {
+                        "contentType": "$_id",
+                        "count": 1
+                    }},
+                    {"$sort": {"count": -1}}
+                ]
+                return await db.links.aggregate(pipeline).to_list(100)
+            except Exception as e:
+                print(f"[ANALYTICS ERROR] get_content_types failed: {e}")
+                return []
         
         async def get_avg_links_per_user():
-            pipeline = [
-                {"$match": {
-                    "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
-                }},
-                {"$group": {
-                    "_id": "$userId",
-                    "linkCount": {"$sum": 1}
-                }},
-                {"$group": {
-                    "_id": None,
-                    "avg": {"$avg": "$linkCount"},
-                    "max": {"$max": "$linkCount"},
-                    "min": {"$min": "$linkCount"}
-                }}
-            ]
-            result = await db.links.aggregate(pipeline).to_list(1)
-            return result[0]["avg"] if result and result[0].get("avg") else 0
+            try:
+                pipeline = [
+                    {"$match": {
+                        "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+                    }},
+                    {"$group": {
+                        "_id": "$userId",
+                        "linkCount": {"$sum": 1}
+                    }},
+                    {"$group": {
+                        "_id": None,
+                        "avg": {"$avg": "$linkCount"},
+                        "max": {"$max": "$linkCount"},
+                        "min": {"$min": "$linkCount"}
+                    }}
+                ]
+                result = await db.links.aggregate(pipeline).to_list(1)
+                return result[0]["avg"] if result and result[0].get("avg") else 0
+            except Exception as e:
+                print(f"[ANALYTICS ERROR] get_avg_links_per_user failed: {e}")
+                return 0
         
         async def get_active_users():
-            pipeline = [
-                {"$match": {
-                    "$or": [
-                        {"createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}},
-                        {"updatedAt": {"$gte": start_date_obj, "$lte": end_date_obj}}
-                    ]
-                }},
-                {"$group": {"_id": "$userId"}},
-                {"$count": "total"}
-            ]
-            result = await db.links.aggregate(pipeline).to_list(1)
-            return result[0]["total"] if result else 0
+            try:
+                pipeline = [
+                    {"$match": {
+                        "$or": [
+                            {"createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}},
+                            {"updatedAt": {"$gte": start_date_obj, "$lte": end_date_obj}}
+                        ]
+                    }},
+                    {"$group": {"_id": "$userId"}},
+                    {"$count": "total"}
+                ]
+                result = await db.links.aggregate(pipeline).to_list(1)
+                return result[0]["total"] if result and result[0].get("total") is not None else 0
+            except Exception as e:
+                print(f"[ANALYTICS ERROR] get_active_users failed: {e}")
+                return 0
         
         async def get_users_approaching():
-            pipeline = [
-                {"$group": {
-                    "_id": "$userId",
-                    "linkCount": {"$sum": 1},
-                    "storage": {
-                        "$sum": {
-                            "$add": [
-                                {"$strLenCP": {"$ifNull": ["$title", ""]}},
-                                {"$strLenCP": {"$ifNull": ["$url", ""]}},
-                                {"$strLenCP": {"$ifNull": ["$description", ""]}},
-                                {"$strLenCP": {"$ifNull": ["$content", ""]}},
-                                300
-                            ]
+            try:
+                pipeline = [
+                    {"$group": {
+                        "_id": "$userId",
+                        "linkCount": {"$sum": 1},
+                        "storage": {
+                            "$sum": {
+                                "$add": [
+                                    {"$strLenCP": {"$ifNull": ["$title", ""]}},
+                                    {"$strLenCP": {"$ifNull": ["$url", ""]}},
+                                    {"$strLenCP": {"$ifNull": ["$description", ""]}},
+                                    {"$strLenCP": {"$ifNull": ["$content", ""]}},
+                                    300
+                                ]
+                            }
                         }
-                    }
-                }},
-                {"$match": {
-                    "$or": [
-                        {"linkCount": {"$gte": 35}},
-                        {"storage": {"$gte": 35 * 1024}}  # 35KB
-                    ]
-                }}
-            ]
-            return await db.links.aggregate(pipeline).to_list(100)
+                    }},
+                    {"$match": {
+                        "$or": [
+                            {"linkCount": {"$gte": 35}},
+                            {"storage": {"$gte": 35 * 1024}}  # 35KB
+                        ]
+                    }}
+                ]
+                return await db.links.aggregate(pipeline).to_list(100)
+            except Exception as e:
+                print(f"[ANALYTICS ERROR] get_users_approaching failed: {e}")
+                return []
         
         async def get_extension_versions():
-            pipeline = [
-                {"$match": {
-                    "source": "extension", 
-                    "extensionVersion": {"$exists": True, "$ne": None},
-                    "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
-                }},
-                {"$group": {
-                    "_id": "$extensionVersion",
-                    "count": {"$sum": 1},
-                    "users": {"$addToSet": "$userId"}
-                }},
-                {"$project": {
-                    "version": "$_id",
-                    "linkCount": "$count",
-                    "userCount": {"$size": "$users"}
-                }},
-                {"$sort": {"linkCount": -1}}
-            ]
-            return await db.links.aggregate(pipeline).to_list(50)
+            try:
+                pipeline = [
+                    {"$match": {
+                        "source": "extension", 
+                        "extensionVersion": {"$exists": True, "$ne": None},
+                        "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+                    }},
+                    {"$group": {
+                        "_id": "$extensionVersion",
+                        "count": {"$sum": 1},
+                        "users": {"$addToSet": "$userId"}
+                    }},
+                    {"$project": {
+                        "version": "$_id",
+                        "linkCount": "$count",
+                        "userCount": {"$size": "$users"}
+                    }},
+                    {"$sort": {"linkCount": -1}}
+                ]
+                return await db.links.aggregate(pipeline).to_list(50)
+            except Exception as e:
+                print(f"[ANALYTICS ERROR] get_extension_versions failed: {e}")
+                return []
         
         # Execute all remaining queries in parallel
         user_growth, links_growth, top_categories, content_types, avg_links_per_user, active_users, users_approaching, extension_versions = await asyncio.gather(
@@ -553,8 +605,14 @@ async def get_admin_analytics(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        error_msg = f"{str(e)}\n\nTraceback:\n{error_trace}"
+        print(f"[ANALYTICS ERROR] {error_msg}")
         await log_system_event("admin_analytics_error", {
-            "error": str(e)
+            "error": str(e),
+            "traceback": error_trace,
+            "dateRange": f"{start_date if start_date else 'default'} to {end_date if end_date else 'default'}"
         }, current_user.get("sub") if current_user else None, "error")
         raise HTTPException(status_code=500, detail=f"Failed to fetch analytics: {str(e)}")
 
