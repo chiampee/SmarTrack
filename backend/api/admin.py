@@ -678,10 +678,20 @@ async def get_admin_users(
         if match_filters:
             pipeline.insert(0, {"$match": {"$and": match_filters}})
         
+        # Apply search filter BEFORE grouping if provided
+        if search:
+            search_lower = search.lower()
+            # Add a $match stage to filter by userId before grouping
+            pipeline.insert(0, {
+                "$match": {
+                    "userId": {"$regex": search, "$options": "i"}
+                }
+            })
+        
         # Add sorting
         pipeline.append({"$sort": {"linkCount": -1}})
         
-        # Get total count
+        # Get total count (before pagination)
         count_pipeline = pipeline + [{"$count": "total"}]
         count_result = await db.links.aggregate(count_pipeline).to_list(1)
         total_count = count_result[0]["total"] if count_result else 0
@@ -714,14 +724,6 @@ async def get_admin_users(
                 "approachingLimit": user["linkCount"] >= 35 or user["storage"] >= 35 * 1024
             })
         
-        # Filter by search if provided
-        if search:
-            search_lower = search.lower()
-            user_list = [
-                u for u in user_list
-                if search_lower in u["userId"].lower()
-            ]
-        
         return {
             "users": user_list,
             "pagination": {
@@ -735,8 +737,17 @@ async def get_admin_users(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        error_msg = f"{str(e)}\n\nTraceback:\n{error_trace}"
+        print(f"[ADMIN USERS ERROR] {error_msg}")
         await log_system_event("admin_users_error", {
-            "error": str(e)
+            "error": str(e),
+            "traceback": error_trace,
+            "page": page,
+            "limit": limit,
+            "search": search,
+            "active_only": active_only
         }, current_user.get("sub") if current_user else None, "error")
         raise HTTPException(status_code=500, detail=f"Failed to fetch users: {str(e)}")
 
