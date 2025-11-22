@@ -664,9 +664,15 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
   const [search, setSearch] = useState('')
   const [activeOnly, setActiveOnly] = useState<boolean | undefined>(undefined)
   const toast = useToast()
+  
+  // Use ref to prevent concurrent requests
+  const loadingRef = React.useRef(false)
 
-  const loadUsers = useCallback(async () => {
+  const loadUsers = async (retryCount = 0) => {
+    if (loadingRef.current) return
+    
     try {
+      loadingRef.current = true
       setLoading(true)
       setError(null)
       const data = await adminApi.getUsers(page, 25, search || undefined, activeOnly)
@@ -681,13 +687,15 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
       toast.error(errorMessage)
       console.error('Failed to load users:', error)
     } finally {
+      loadingRef.current = false
       setLoading(false)
     }
-  }, [adminApi, page, search, activeOnly, toast])
+  }
 
   useEffect(() => {
     loadUsers()
-  }, [loadUsers])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search, activeOnly]) // Only reload when filters change
 
   if (error && users.length === 0 && !loading) {
     return (
@@ -1043,9 +1051,14 @@ const CategoriesTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({
   const [mergeTarget, setMergeTarget] = useState('')
   const [deleteReassign, setDeleteReassign] = useState('other')
   const toast = useToast()
+  
+  const loadingRef = React.useRef(false)
 
-  const loadCategories = useCallback(async () => {
+  const loadCategories = async () => {
+    if (loadingRef.current) return
+
     try {
+      loadingRef.current = true
       setLoading(true)
       setError(null)
       const data = await adminApi.getCategories()
@@ -1059,13 +1072,15 @@ const CategoriesTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({
       toast.error(errorMessage)
       console.error('Failed to load categories:', error)
     } finally {
+      loadingRef.current = false
       setLoading(false)
     }
-  }, [adminApi, toast])
+  }
 
   useEffect(() => {
     loadCategories()
-  }, [loadCategories])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (error && categories.length === 0 && !loading) {
     return (
