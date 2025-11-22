@@ -24,6 +24,10 @@ export const AdminAnalytics: React.FC = () => {
   const [refreshingToken, setRefreshingToken] = useState(false)
   const [error, setError] = useState<{ message: string; type?: string; retryable?: boolean } | null>(null)
   
+  // Use a ref to track if a request is in progress (to prevent race conditions)
+  const loadingRef = React.useRef(false)
+  const hasLoadedOnceRef = React.useRef(false)
+  
   // Date range for analytics
   const [startDate, setStartDate] = useState<string>(() => {
     const date = new Date()
@@ -39,8 +43,16 @@ export const AdminAnalytics: React.FC = () => {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
 
   // Load analytics data with comprehensive error handling
-  const loadAnalytics = useCallback(async (retryCount = 0) => {
+  // NOT a useCallback - we don't want this to trigger effects when dependencies change
+  const loadAnalytics = async (retryCount = 0) => {
+    // Prevent concurrent requests
+    if (loadingRef.current) {
+      console.log('[Analytics] Request already in progress, skipping...')
+      return
+    }
+
     try {
+      loadingRef.current = true
       setLoading(true)
       setError(null)
       
@@ -77,17 +89,22 @@ export const AdminAnalytics: React.FC = () => {
       } else if (error?.message?.includes('timeout') || error?.message?.includes('Timeout')) {
         errorMessage = 'Request timed out. The analytics query is taking too long. Please try again or use a smaller date range.'
         errorType = 'TIMEOUT'
-        retryable = true
+        retryable = false // Don't auto-retry timeouts
       } else if (error?.message?.includes('Network') || error?.message?.includes('fetch')) {
         errorMessage = 'Network error. Please check your internet connection and try again.'
         errorType = 'NETWORK'
-        retryable = true
+        retryable = false // Don't auto-retry network errors
       } else if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) {
         errorMessage = 'Authentication failed. Please click "Re-Login" to re-authenticate.'
         errorType = 'AUTH'
         retryable = false
+      } else if (error?.message?.includes('429') || error?.message?.includes('Too many requests')) {
+        errorMessage = 'Rate limit exceeded. Please wait a moment before trying again.'
+        errorType = 'RATE_LIMIT'
+        retryable = false
       } else if (error?.message) {
         errorMessage = error.message
+        retryable = false
       }
       
       setError({
@@ -98,19 +115,15 @@ export const AdminAnalytics: React.FC = () => {
       
       toast.error(errorMessage)
       
-      // Auto-retry for retryable errors (network, timeout) up to 2 times
-      if (retryable && retryCount < 2) {
-        setTimeout(() => {
-          loadAnalytics(retryCount + 1)
-        }, 2000 * (retryCount + 1)) // Exponential backoff: 2s, 4s
-      }
+      // REMOVED: No auto-retry - user must explicitly retry via button
     } finally {
+      loadingRef.current = false
       setLoading(false)
     }
-  }, [adminApi, startDate, endDate, toast, getAccessTokenSilently])
+  }
 
   // Force refresh token to get fresh token with email
-  const refreshAuthToken = useCallback(async () => {
+  const refreshAuthToken = async () => {
     try {
       setRefreshingToken(true)
       // Get a fresh token with cache disabled
@@ -130,7 +143,7 @@ export const AdminAnalytics: React.FC = () => {
     } finally {
       setRefreshingToken(false)
     }
-  }, [getAccessTokenSilently, toast, loadAnalytics])
+  }
 
   // Force re-login for admin access
   const handleReLogin = useCallback(async () => {
@@ -153,12 +166,15 @@ export const AdminAnalytics: React.FC = () => {
     }
   }, [loginWithRedirect, toast])
 
-  // Initial load
+  // Initial load - only load once when admin access is confirmed
   useEffect(() => {
-    if (isAdmin && !isChecking) {
-      loadAnalytics()
+    if (isAdmin && !isChecking && !hasLoadedOnceRef.current) {
+      console.log('[Analytics] Initial load triggered')
+      hasLoadedOnceRef.current = true
+      loadAnalytics().catch(console.error)
     }
-  }, [isAdmin, isChecking, loadAnalytics])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, isChecking]) // Only depend on admin state, NOT on loadAnalytics
 
   // Auto-refresh every 10 minutes
   useEffect(() => {
@@ -167,12 +183,14 @@ export const AdminAnalytics: React.FC = () => {
     const interval = setInterval(() => {
       // Check if tab is visible
       if (!document.hidden) {
-        loadAnalytics()
+        console.log('[Analytics] Auto-refresh triggered')
+        loadAnalytics().catch(console.error)
       }
     }, 10 * 60 * 1000) // 10 minutes
 
     return () => clearInterval(interval)
-  }, [autoRefreshEnabled, isAdmin, isChecking, loadAnalytics])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRefreshEnabled, isAdmin, isChecking]) // Only depend on settings, NOT on loadAnalytics
 
   if (isChecking) {
     return <LoadingSpinner />
@@ -207,6 +225,16 @@ export const AdminAnalytics: React.FC = () => {
                   onChange={(e) => setEndDate(e.target.value)}
                   className="input-field text-sm"
                 />
+                <button
+                  onClick={() => {
+                    hasLoadedOnceRef.current = false // Allow reload with new date range
+                    loadAnalytics(0).catch(console.error)
+                  }}
+                  disabled={loading}
+                  className="px-3 py-1.5 text-xs bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors"
+                >
+                  Apply
+                </button>
               </div>
               <button
                 onClick={refreshAuthToken}

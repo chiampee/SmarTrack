@@ -273,13 +273,21 @@ async def get_admin_analytics(
             return result[0]["total"] if result else 0
         
         async def get_total_links():
-            return await db.links.count_documents({})
+            return await db.links.count_documents({
+                "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+            })
         
         async def get_extension_links():
-            return await db.links.count_documents({"source": "extension"})
+            return await db.links.count_documents({
+                "source": "extension",
+                "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+            })
         
         async def get_storage():
             pipeline = [
+                {"$match": {
+                    "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+                }},
                 {"$project": {
                     "size": {
                         "$add": [
@@ -314,11 +322,19 @@ async def get_admin_analytics(
         async def get_user_growth():
             pipeline = [
                 {"$group": {
+                    "_id": "$userId",
+                    "firstSeen": {"$min": "$createdAt"}
+                }},
+                {"$match": {
+                    "firstSeen": {"$gte": start_date_obj, "$lte": end_date_obj}
+                }},
+                {"$group": {
                     "_id": {
-                        "year": {"$year": "$createdAt"},
-                        "month": {"$month": "$createdAt"},
-                        "day": {"$dayOfMonth": "$createdAt"}},
-                    "users": {"$addToSet": "$userId"}
+                        "year": {"$year": "$firstSeen"},
+                        "month": {"$month": "$firstSeen"},
+                        "day": {"$dayOfMonth": "$firstSeen"}
+                    },
+                    "newUsers": {"$sum": 1}
                 }},
                 {"$project": {
                     "date": {
@@ -328,10 +344,7 @@ async def get_admin_analytics(
                             "day": "$_id.day"
                         }
                     },
-                    "newUsers": {"$size": "$users"}
-                }},
-                {"$match": {
-                    "date": {"$gte": start_date_obj, "$lte": end_date_obj}
+                    "newUsers": 1
                 }},
                 {"$sort": {"date": 1}}
             ]
@@ -371,6 +384,9 @@ async def get_admin_analytics(
         
         async def get_top_categories():
             pipeline = [
+                {"$match": {
+                    "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+                }},
                 {"$group": {
                     "_id": "$category",
                     "count": {"$sum": 1},
@@ -388,6 +404,9 @@ async def get_admin_analytics(
         
         async def get_content_types():
             pipeline = [
+                {"$match": {
+                    "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+                }},
                 {"$group": {
                     "_id": "$contentType",
                     "count": {"$sum": 1}
@@ -402,6 +421,9 @@ async def get_admin_analytics(
         
         async def get_avg_links_per_user():
             pipeline = [
+                {"$match": {
+                    "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+                }},
                 {"$group": {
                     "_id": "$userId",
                     "linkCount": {"$sum": 1}
@@ -420,8 +442,8 @@ async def get_admin_analytics(
             pipeline = [
                 {"$match": {
                     "$or": [
-                        {"createdAt": {"$gte": thirty_days_ago}},
-                        {"updatedAt": {"$gte": thirty_days_ago}}
+                        {"createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}},
+                        {"updatedAt": {"$gte": start_date_obj, "$lte": end_date_obj}}
                     ]
                 }},
                 {"$group": {"_id": "$userId"}},
@@ -458,7 +480,11 @@ async def get_admin_analytics(
         
         async def get_extension_versions():
             pipeline = [
-                {"$match": {"source": "extension", "extensionVersion": {"$exists": True, "$ne": None}}},
+                {"$match": {
+                    "source": "extension", 
+                    "extensionVersion": {"$exists": True, "$ne": None},
+                    "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+                }},
                 {"$group": {
                     "_id": "$extensionVersion",
                     "count": {"$sum": 1},

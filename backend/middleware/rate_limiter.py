@@ -29,7 +29,7 @@ class RateLimiter:
             if now - timestamp < 86400  # 24 hours in seconds
         ]
     
-    def _check_limit(self, key: str, limit: int, window_seconds: int) -> bool:
+    def _check_limit(self, key: str, limit: int, window_seconds: int, add_request: bool = False) -> bool:
         """Check if request is within limit for given time window"""
         now = time.time()
         cutoff = now - window_seconds
@@ -43,9 +43,10 @@ class RateLimiter:
         if len(recent_requests) >= limit:
             return False
         
-        # Add current request
-        recent_requests.append(now)
-        _rate_limit_store[key] = recent_requests
+        # Add current request only if requested (to avoid counting multiple times)
+        if add_request:
+            recent_requests.append(now)
+            _rate_limit_store[key] = recent_requests
         
         return True
     
@@ -56,17 +57,21 @@ class RateLimiter:
         """
         self._cleanup_old_requests(client_id)
         
-        # Check per-minute limit
-        if not self._check_limit(client_id, self.requests_per_minute, 60):
-            return False, "Too many requests (limit: 60 per minute). Please slow down."
+        # Check per-minute limit (don't add request yet)
+        if not self._check_limit(client_id, self.requests_per_minute, 60, add_request=False):
+            return False, f"Too many requests (limit: {self.requests_per_minute} per minute). Please slow down."
         
-        # Check per-hour limit
-        if not self._check_limit(client_id, self.requests_per_hour, 3600):
-            return False, "Too many requests (limit: 1000 per hour). Please try again later."
+        # Check per-hour limit (don't add request yet)
+        if not self._check_limit(client_id, self.requests_per_hour, 3600, add_request=False):
+            return False, f"Too many requests (limit: {self.requests_per_hour} per hour). Please try again later."
         
-        # Check per-day limit
-        if not self._check_limit(client_id, self.requests_per_day, 86400):
-            return False, "Daily request limit exceeded (5000 per day). Please try again tomorrow."
+        # Check per-day limit (don't add request yet)
+        if not self._check_limit(client_id, self.requests_per_day, 86400, add_request=False):
+            return False, f"Daily request limit exceeded ({self.requests_per_day} per day). Please try again tomorrow."
+        
+        # All checks passed, now add the request timestamp ONCE
+        now = time.time()
+        _rate_limit_store[client_id].append(now)
         
         return True, ""
     
