@@ -317,8 +317,6 @@ async def get_admin_analytics(
         web_links = total_links - extension_links
         
         # Run remaining queries in parallel for better performance
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-        
         async def get_user_growth():
             pipeline = [
                 {"$group": {
