@@ -79,21 +79,35 @@ async def global_exception_handler(request: Request, exc: Exception):
     """
     import traceback
     from fastapi.responses import JSONResponse
+    from starlette.exceptions import HTTPException as StarletteHTTPException
+    from fastapi.exceptions import RequestValidationError
     
+    # Default to 500
+    status_code = 500
     error_detail = str(exc)
     error_type = type(exc).__name__
     
-    # Log the error
-    print(f"❌ [GLOBAL ERROR HANDLER] {error_type}: {error_detail}")
-    print(f"❌ [GLOBAL ERROR HANDLER] Path: {request.url.path}")
-    print(f"❌ [GLOBAL ERROR HANDLER] Traceback: {traceback.format_exc()}")
+    # Handle HTTP exceptions (including 429, 404, etc.)
+    if isinstance(exc, StarletteHTTPException):
+        status_code = exc.status_code
+        error_detail = exc.detail
+    # Handle validation errors
+    elif isinstance(exc, RequestValidationError):
+        status_code = 422
+        error_detail = str(exc.errors())
     
-    # Return 500 for unexpected errors, but with proper CORS headers
+    # Log the error (only for 500s or unexpected errors)
+    if status_code == 500:
+        print(f"❌ [GLOBAL ERROR HANDLER] {error_type}: {error_detail}")
+        print(f"❌ [GLOBAL ERROR HANDLER] Path: {request.url.path}")
+        print(f"❌ [GLOBAL ERROR HANDLER] Traceback: {traceback.format_exc()}")
+    
+    # Return response with proper status code and CORS headers
     return JSONResponse(
-        status_code=500,
+        status_code=status_code,
         content={
-            "error": "Internal server error",
-            "detail": error_detail if settings.DEBUG else "An unexpected error occurred"
+            "error": "Internal server error" if status_code == 500 else "Request failed",
+            "detail": error_detail if (status_code != 500 or settings.DEBUG) else "An unexpected error occurred"
         },
         headers={
             "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
@@ -133,6 +147,10 @@ async def rate_limit_middleware(request: Request, call_next):
         check_rate_limit(request, client_id, is_admin=is_admin_endpoint)
     except Exception as e:
         from fastapi import HTTPException
+        # If it's already an HTTPException, re-raise it properly
+        if hasattr(e, "status_code"):
+            raise e
+        # Otherwise wrap it
         raise HTTPException(status_code=429, detail=str(e))
     
     response = await call_next(request)
