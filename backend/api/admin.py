@@ -634,17 +634,6 @@ async def get_admin_users(
         # Build match filters
         match_filters = []
         
-        # Filter by activity (30 days threshold)
-        if active_only is not None:
-            thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-            if active_only:
-                match_filters.append({
-                    "$or": [
-                        {"createdAt": {"$gte": thirty_days_ago}},
-                        {"updatedAt": {"$gte": thirty_days_ago}}
-                    ]
-                })
-        
         # Get all unique users with their stats
         pipeline = [
             {"$group": {
@@ -675,18 +664,65 @@ async def get_admin_users(
             }}
         ]
         
+        # Filter by activity (30 days threshold) - APPLIED AFTER GROUPING
+        if active_only is not None:
+            thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+            if active_only:
+                # Active: Has activity in last 30 days
+                pipeline.append({
+                    "$match": {
+                        "lastLinkDate": {"$gte": thirty_days_ago}
+                    }
+                })
+            else:
+                # Inactive: No activity in last 30 days
+                pipeline.append({
+                    "$match": {
+                        "$or": [
+                            {"lastLinkDate": {"$lt": thirty_days_ago}},
+                            {"lastLinkDate": None}
+                        ]
+                    }
+                })
+        
         if match_filters:
             pipeline.insert(0, {"$match": {"$and": match_filters}})
+
         
         # Apply search filter BEFORE grouping if provided
         if search:
-            search_lower = search.lower()
-            # Add a $match stage to filter by userId before grouping
-            pipeline.insert(0, {
-                "$match": {
-                    "userId": {"$regex": search, "$options": "i"}
-                }
-            })
+            search_regex = {"$regex": search, "$options": "i"}
+            
+            # 1. Search for matching userIds directly
+            user_match_query = {"userId": search_regex}
+            
+            # 2. Search for matching emails in system_logs to find associated userIds
+            try:
+                email_search_pipeline = [
+                    {"$match": {"email": search_regex, "userId": {"$ne": None}}},
+                    {"$group": {"_id": "$userId"}}
+                ]
+                email_matches = await db.system_logs.aggregate(email_search_pipeline).to_list(1000)
+                found_user_ids = [doc["_id"] for doc in email_matches]
+                
+                if found_user_ids:
+                    # If we found users by email, match either ID regex OR exact ID from email lookup
+                    pipeline.insert(0, {
+                        "$match": {
+                            "$or": [
+                                {"userId": search_regex},
+                                {"userId": {"$in": found_user_ids}}
+                            ]
+                        }
+                    })
+                else:
+                    # Only match ID regex
+                    pipeline.insert(0, {"$match": {"userId": search_regex}})
+                    
+            except Exception as e:
+                print(f"[ADMIN SEARCH ERROR] Failed to search emails: {e}")
+                # Fallback to just ID search
+                pipeline.insert(0, {"$match": {"userId": search_regex}})
         
         # Add sorting
         pipeline.append({"$sort": {"linkCount": -1}})
