@@ -967,6 +967,20 @@ async def get_admin_logs(
         pipeline = []
         if match_filters:
             pipeline.append({"$match": match_filters})
+            
+        # Apply search filter in DB if provided
+        if search:
+            search_regex = {"$regex": search, "$options": "i"}
+            pipeline.append({
+                "$match": {
+                    "$or": [
+                        {"type": search_regex},
+                        {"severity": search_regex},
+                        {"userId": search_regex},
+                        {"email": search_regex}
+                    ]
+                }
+            })
         
         # Get total count
         count_pipeline = pipeline + [{"$count": "total"}]
@@ -981,7 +995,7 @@ async def get_admin_logs(
         # Execute
         logs = await db.system_logs.aggregate(pipeline).to_list(limit)
         
-        # Transform and filter by search if needed
+        # Transform
         log_list = []
         for log in logs:
             log_entry = {
@@ -993,17 +1007,6 @@ async def get_admin_logs(
                 "severity": log.get("severity", "info"),
                 "details": log.get("details", {})
             }
-            
-            # Apply search filter
-            if search:
-                search_lower = search.lower()
-                if not any(
-                    search_lower in str(v).lower()
-                    for v in log_entry.values()
-                    if v is not None
-                ):
-                    continue
-            
             log_list.append(log_entry)
         
         return {
