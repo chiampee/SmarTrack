@@ -848,8 +848,13 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
   const [logEndDate, setLogEndDate] = useState<string>('')
   const toast = useToast()
 
-  const loadLogs = useCallback(async () => {
+  const loadingRef = React.useRef(false)
+
+  const loadLogs = async () => {
+    if (loadingRef.current) return
+
     try {
+      loadingRef.current = true
       setLoading(true)
       setError(null)
       const data = await adminApi.getLogs(
@@ -872,13 +877,15 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
       toast.error(errorMessage)
       console.error('Failed to load logs:', error)
     } finally {
+      loadingRef.current = false
       setLoading(false)
     }
-  }, [adminApi, page, search, logType, severity, logStartDate, logEndDate, toast])
+  }
 
   useEffect(() => {
     loadLogs()
-  }, [loadLogs])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search, logType, severity, logStartDate, logEndDate])
 
   if (error && logs.length === 0 && !loading) {
     return (
