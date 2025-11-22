@@ -736,6 +736,32 @@ class SmarTrackPopup {
     this.setupButtonListeners();
     this.setupCategoryListeners();
     this.setupKeyboardShortcuts();
+    this.setupStorageListener();
+  }
+
+  /**
+   * Sets up storage change listener to detect token updates
+   * @returns {void}
+   */
+  setupStorageListener() {
+    const handleStorageChange = (changes, namespace) => {
+      if (namespace === 'local' && changes[CONSTANTS.STORAGE_KEYS.AUTH_TOKEN]) {
+        const newToken = changes[CONSTANTS.STORAGE_KEYS.AUTH_TOKEN].newValue;
+        if (newToken) {
+          console.log('[SRT] Token detected in storage, reloading popup...');
+          // If we're showing login view and token appears, reload to show main view
+          const loginView = getElement(CONSTANTS.SELECTORS.LOGIN_VIEW);
+          if (loginView && !loginView.classList.contains('hidden')) {
+            location.reload();
+          }
+        }
+      }
+    };
+    
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    this.cleanupFunctions.push(() => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    });
   }
 
   /**
@@ -1235,16 +1261,20 @@ class SmarTrackPopup {
    */
   async getAuthToken() {
     try {
-      // Try Chrome storage first
+      // Try Chrome storage first (most reliable)
       const result = await chrome.storage.local.get([
         CONSTANTS.STORAGE_KEYS.AUTH_TOKEN,
         CONSTANTS.STORAGE_KEYS.TOKEN_EXPIRY
       ]);
       
-      if (result[CONSTANTS.STORAGE_KEYS.AUTH_TOKEN]) {
-        if (this.isTokenValid(result[CONSTANTS.STORAGE_KEYS.TOKEN_EXPIRY])) {
-          return result[CONSTANTS.STORAGE_KEYS.AUTH_TOKEN];
+      const storedToken = result[CONSTANTS.STORAGE_KEYS.AUTH_TOKEN];
+      if (storedToken) {
+        // Check if token is still valid (with 5 minute buffer)
+        if (this.isTokenValid(result[CONSTANTS.STORAGE_KEYS.TOKEN_EXPIRY], storedToken)) {
+          console.log('[SRT] Using stored token from chrome.storage.local');
+          return storedToken;
         } else {
+          console.log('[SRT] Stored token expired, clearing...');
           // Token expired, clear it
           await chrome.storage.local.remove([
             CONSTANTS.STORAGE_KEYS.AUTH_TOKEN,
@@ -1253,7 +1283,7 @@ class SmarTrackPopup {
         }
       }
       
-      // Try to get from page localStorage
+      // Try to get from current page localStorage (if on SmarTrack dashboard)
       if (this.currentTab?.id) {
         try {
           const [injectionResult] = await chrome.scripting.executeScript({
@@ -1270,6 +1300,7 @@ class SmarTrackPopup {
           const token = injectionResult?.result;
           
           if (token && this.isTokenValid(null, token)) {
+            console.log('[SRT] Found token in page localStorage, saving to chrome.storage...');
             const expiry = this.getTokenExpiry(token);
             await chrome.storage.local.set({
               [CONSTANTS.STORAGE_KEYS.AUTH_TOKEN]: token,
@@ -1279,15 +1310,72 @@ class SmarTrackPopup {
           }
         } catch (error) {
           // Not a problem - page might not allow script injection
-          console.error('[SRT] Failed to get token from page:', error);
+          console.debug('[SRT] Could not get token from page (not on SmarTrack dashboard?):', error.message);
         }
       }
       
+      // Try message passing via content script (works on any page)
+      try {
+        const token = await this.requestTokenViaMessage();
+        if (token && this.isTokenValid(null, token)) {
+          console.log('[SRT] Found token via message passing, saving to chrome.storage...');
+          const expiry = this.getTokenExpiry(token);
+          await chrome.storage.local.set({
+            [CONSTANTS.STORAGE_KEYS.AUTH_TOKEN]: token,
+            [CONSTANTS.STORAGE_KEYS.TOKEN_EXPIRY]: expiry
+          });
+          return token;
+        }
+      } catch (error) {
+        console.debug('[SRT] Message passing failed:', error.message);
+      }
+      
+      console.log('[SRT] No valid token found');
       return null;
     } catch (error) {
       console.error('[SRT] Failed to get auth token:', error);
       return null;
     }
+  }
+
+  /**
+   * Requests token via message passing (content script)
+   * @async
+   * @returns {Promise<string|null>}
+   */
+  async requestTokenViaMessage() {
+    return new Promise((resolve) => {
+      const messageId = `get-token-${Date.now()}-${Math.random()}`;
+      
+      const handleResponse = (event) => {
+        if (!event.data) return;
+        
+        const { type, messageId: responseId, token } = event.data;
+        
+        if (type === 'SRT_AUTH_TOKEN_RESPONSE' && responseId === messageId) {
+          cleanup();
+          resolve(token && typeof token === 'string' ? token : null);
+        }
+      };
+      
+      const timeout = setTimeout(() => {
+        cleanup();
+        resolve(null);
+      }, 2000);
+      
+      const cleanup = () => {
+        window.removeEventListener('message', handleResponse);
+        clearTimeout(timeout);
+      };
+      
+      window.addEventListener('message', handleResponse);
+      
+      // Request token from content script
+      window.postMessage({
+        type: 'SRT_REQUEST_AUTH_TOKEN',
+        messageId: messageId
+      }, '*');
+    });
   }
 
   /**
@@ -1297,12 +1385,17 @@ class SmarTrackPopup {
    * @returns {boolean}
    */
   isTokenValid(expiry, token = null) {
-    // Check stored expiry
-    if (expiry && typeof expiry === 'number' && expiry > Date.now()) {
-      return true;
+    // Buffer time: consider token valid if it expires within 5 minutes (gives time for refresh)
+    const bufferTime = 5 * 60 * 1000; // 5 minutes in milliseconds
+    
+    // Check stored expiry (with buffer)
+    if (expiry && typeof expiry === 'number') {
+      if (expiry > (Date.now() + bufferTime)) {
+        return true;
+      }
     }
     
-    // Decode token to check expiry
+    // Decode token to check expiry (with buffer)
     if (token && typeof token === 'string') {
       try {
         const parts = token.split('.');
@@ -1310,7 +1403,8 @@ class SmarTrackPopup {
         
         const payload = JSON.parse(atob(parts[1]));
         const expiryTime = payload.exp * 1000; // Convert to milliseconds
-        return expiryTime > Date.now();
+        // Token is valid if it expires more than 5 minutes from now
+        return expiryTime > (Date.now() + bufferTime);
       } catch {
         return false; // Invalid token format
       }
@@ -1413,3 +1507,4 @@ if (document.readyState === 'loading') {
   // DOM already loaded
   new SmarTrackPopup();
 }
+
