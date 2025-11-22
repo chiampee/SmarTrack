@@ -703,6 +703,29 @@ async def get_admin_users(
         # Execute aggregation
         users = await db.links.aggregate(pipeline).to_list(limit)
         
+        # Collect user IDs for email lookup
+        user_ids = [u["_id"] for u in users]
+        
+        # Lookup emails from system_logs (most recent log entry with email for each user)
+        user_emails = {}
+        if user_ids:
+            try:
+                email_pipeline = [
+                    {"$match": {
+                        "userId": {"$in": user_ids},
+                        "email": {"$exists": True, "$ne": None}
+                    }},
+                    {"$sort": {"timestamp": -1}},
+                    {"$group": {
+                        "_id": "$userId",
+                        "email": {"$first": "$email"}
+                    }}
+                ]
+                email_results = await db.system_logs.aggregate(email_pipeline).to_list(len(user_ids))
+                user_emails = {r["_id"]: r["email"] for r in email_results}
+            except Exception as e:
+                print(f"[ADMIN USERS WARNING] Failed to fetch user emails: {e}")
+        
         # Transform results
         user_list = []
         for user in users:
@@ -711,6 +734,7 @@ async def get_admin_users(
             
             user_list.append({
                 "userId": user_id,
+                "email": user_emails.get(user_id),
                 "linkCount": user["linkCount"],
                 "storageBytes": user["storage"],
                 "storageKB": round(user["storage"] / 1024, 2),

@@ -49,6 +49,7 @@ export interface AdminAnalytics {
 
 export interface AdminUser {
   userId: string
+  email?: string // Added email field
   linkCount: number
   storageBytes: number
   storageKB: number

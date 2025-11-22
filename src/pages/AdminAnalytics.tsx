@@ -761,7 +761,7 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Links</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Storage</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Extension</th>
@@ -772,7 +772,16 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
               <tbody className="divide-y divide-gray-200">
                 {users.map((user) => (
                   <tr key={user.userId} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-mono text-gray-900">{user.userId.slice(0, 20)}...</td>
+                    <td className="px-4 py-3">
+                      {user.email ? (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-gray-900">{user.email}</span>
+                          <span className="text-xs text-gray-500 font-mono">{user.userId.slice(0, 15)}...</span>
+                        </div>
+                      ) : (
+                        <span className="text-sm font-mono text-gray-900">{user.userId.slice(0, 20)}...</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-700">{user.linkCount}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{user.storageKB.toFixed(2)} KB</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{user.extensionLinks}</td>
