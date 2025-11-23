@@ -63,6 +63,8 @@ export const Dashboard: React.FC = () => {
   }, [searchParams, isAuthenticated, navigate])
 
   // Debug: Test token on load to help diagnose admin access issues
+  // Removed for production cleanup
+  /*
   useEffect(() => {
     if (isAuthenticated) {
       // Auto-test token to help debug admin access
@@ -81,6 +83,7 @@ export const Dashboard: React.FC = () => {
       return () => clearTimeout(timer)
     }
   }, [isAuthenticated, makeRequest])
+  */
 
   // Load links from backend
   useEffect(() => {
