@@ -46,7 +46,7 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
               Open in Drive
             </a>
           </div>,
-          { duration: 6000 }
+          6000
         )
         if (onSuccess) onSuccess()
       }

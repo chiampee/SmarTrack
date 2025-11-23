@@ -6,16 +6,16 @@ export type ToastType = 'success' | 'error' | 'warning' | 'info'
 interface Toast {
   id: string
   type: ToastType
-  message: string
+  message: string | ReactNode
   duration?: number
 }
 
 interface ToastContextType {
-  showToast: (type: ToastType, message: string, duration?: number) => void
-  success: (message: string, duration?: number) => void
-  error: (message: string, duration?: number) => void
-  warning: (message: string, duration?: number) => void
-  info: (message: string, duration?: number) => void
+  showToast: (type: ToastType, message: string | ReactNode, duration?: number) => void
+  success: (message: string | ReactNode, duration?: number) => void
+  error: (message: string | ReactNode, duration?: number) => void
+  warning: (message: string | ReactNode, duration?: number) => void
+  info: (message: string | ReactNode, duration?: number) => void
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined)
@@ -40,7 +40,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   }, [])
 
   const showToast = useCallback(
-    (type: ToastType, message: string, duration: number = 5000) => {
+    (type: ToastType, message: string | ReactNode, duration: number = 5000) => {
       const id = `toast-${Date.now()}-${Math.random()}`
       const toast: Toast = { id, type, message, duration }
       
@@ -56,22 +56,22 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   )
 
   const success = useCallback(
-    (message: string, duration?: number) => showToast('success', message, duration),
+    (message: string | ReactNode, duration?: number) => showToast('success', message, duration),
     [showToast]
   )
 
   const error = useCallback(
-    (message: string, duration?: number) => showToast('error', message, duration),
+    (message: string | ReactNode, duration?: number) => showToast('error', message, duration),
     [showToast]
   )
 
   const warning = useCallback(
-    (message: string, duration?: number) => showToast('warning', message, duration),
+    (message: string | ReactNode, duration?: number) => showToast('warning', message, duration),
     [showToast]
   )
 
   const info = useCallback(
-    (message: string, duration?: number) => showToast('info', message, duration),
+    (message: string | ReactNode, duration?: number) => showToast('info', message, duration),
     [showToast]
   )
 
@@ -116,7 +116,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
             )}`}
           >
             <div className="flex-shrink-0 mt-0.5">{getToastIcon(toast.type)}</div>
-            <p className="flex-1 text-sm font-medium">{toast.message}</p>
+            <div className="flex-1 text-sm font-medium">{toast.message}</div>
             <button
               onClick={() => removeToast(toast.id)}
               className="flex-shrink-0 hover:opacity-70 transition-opacity"
