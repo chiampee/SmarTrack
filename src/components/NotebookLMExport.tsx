@@ -58,16 +58,23 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
       // Assuming makeRequest throws an error with status or response property
       
       const errorMessage = error.message || '';
+      // Log for debugging
+      console.log('NotebookLM Export Error Check:', { status: error.status, message: errorMessage });
+      
       const isAuthError = error.status === 401 || 
                           errorMessage.includes('401') || 
                           errorMessage.includes('Access Token is missing') ||
                           errorMessage.includes('expired or invalid')
 
+      // IMPORTANT: If we just logged in and got a token, DON'T try to login again if it fails immediately.
+      // This prevents infinite loops if the token itself is rejected by Google API.
       if (isAuthError && !accessToken) {
+         console.log('Triggering Google Login Popup...');
          toast.error('Google Drive permission needed. Please sign in with Google again to grant access.')
          // Trigger the explicit login flow
          login() 
       } else {
+         console.error('Export failed permanently:', error);
          toast.error('Failed to export links to Google Drive.')
       }
     } finally {
