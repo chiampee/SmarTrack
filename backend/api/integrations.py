@@ -123,7 +123,11 @@ async def export_to_notebooklm(request: ExportRequest, req: Request):
 
     except Exception as e:
         print(f"Export failed: {str(e)}")
-        # If it's a 401 from Google, we should let the frontend know to ask for permission
-        if "401" in str(e) or "invalid_grant" in str(e):
+        
+        # Check specifically for Token Expired vs Invalid Grant
+        error_str = str(e)
+        if "401" in error_str or "invalid_grant" in error_str:
+             print(f"Auth Error detected. Details: {error_str}")
              raise HTTPException(status_code=401, detail="Google Access Token expired or invalid.")
+        
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
