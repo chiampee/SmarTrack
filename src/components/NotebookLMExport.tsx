@@ -81,7 +81,8 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
          }
          
          // Trigger the explicit login flow
-         login() 
+         // Use a small timeout to ensure React state updates don't conflict
+         setTimeout(() => login(), 100);
       } else {
          console.error('Export failed permanently:', error);
          toast.error('Failed to export links to Google Drive.')
