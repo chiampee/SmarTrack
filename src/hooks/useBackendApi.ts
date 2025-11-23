@@ -289,7 +289,6 @@ export const useBackendApi = () => {
       })
       clearTimeout(timeoutId)
 
-      // Handle different HTTP status codes
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: response.statusText }))
         // Preserve the status code in the error object
