@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends, Body, Request
 from typing import List, Optional
 from pydantic import BaseModel
-from backend.services.google_drive import GoogleDriveService
-from backend.services.auth0_management import Auth0ManagementService
-from backend.services.mongodb import get_database
+from services.google_drive import GoogleDriveService
+from services.auth0_management import Auth0ManagementService
+from services.mongodb import get_database
 from bson import ObjectId
 
 router = APIRouter()

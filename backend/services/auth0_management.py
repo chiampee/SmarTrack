@@ -1,5 +1,5 @@
 import requests
-from backend.core.config import settings
+from core.config import settings
 import time
 
 class Auth0ManagementService:
