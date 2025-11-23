@@ -64,13 +64,22 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
       const isAuthError = error.status === 401 || 
                           errorMessage.includes('401') || 
                           errorMessage.includes('Access Token is missing') ||
-                          errorMessage.includes('expired or invalid')
+                          errorMessage.includes('expired or invalid') ||
+                          errorMessage.includes('auth') // Broaden check for AUTH_ERROR type
 
       // IMPORTANT: If we just logged in and got a token, DON'T try to login again if it fails immediately.
       // This prevents infinite loops if the token itself is rejected by Google API.
       if (isAuthError && !accessToken) {
          console.log('Triggering Google Login Popup...');
-         toast.error('Google Drive permission needed. Please sign in with Google again to grant access.')
+         
+         // Only show toast if we haven't shown it recently to avoid spam
+         const lastToast = sessionStorage.getItem('google_auth_toast');
+         const now = Date.now();
+         if (!lastToast || now - parseInt(lastToast) > 5000) {
+             toast.error('Google Drive permission needed. Please sign in with Google again to grant access.');
+             sessionStorage.setItem('google_auth_toast', now.toString());
+         }
+         
          // Trigger the explicit login flow
          login() 
       } else {
