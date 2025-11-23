@@ -57,10 +57,11 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
       // The error object from makeRequest might be structured differently depending on implementation
       // Assuming makeRequest throws an error with status or response property
       
+      const errorMessage = error.message || '';
       const isAuthError = error.status === 401 || 
-                          error.message?.includes('401') || 
-                          error.message?.includes('Access Token is missing') ||
-                          error.message?.includes('expired or invalid')
+                          errorMessage.includes('401') || 
+                          errorMessage.includes('Access Token is missing') ||
+                          errorMessage.includes('expired or invalid')
 
       if (isAuthError && !accessToken) {
          toast.error('Google Drive permission needed. Please sign in with Google again to grant access.')

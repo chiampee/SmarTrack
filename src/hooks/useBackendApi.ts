@@ -292,10 +292,14 @@ export const useBackendApi = () => {
       // Handle different HTTP status codes
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: response.statusText }))
+        // Preserve the status code in the error object
         const error = parseError({
           status: response.status,
           message: errorData.detail || errorData.message || response.statusText,
         })
+        // Attach status to the error object so downstream handlers can check it
+        // @ts-expect-error - dynamically adding property to error
+        error.status = response.status;
         
         // Enhanced error logging
         console.error(`[API ERROR] ❌ Request failed: ${endpoint}`)
