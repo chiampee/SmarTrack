@@ -52,7 +52,8 @@ const CONSTANTS = {
     SELECTED_TEXT_INFO: 'selectedTextInfo',
     PAGE_TITLE: 'pageTitle',
     PAGE_URL: 'pageUrl',
-    FAVICON: 'favicon'
+    FAVICON: 'favicon',
+    THUMBNAIL: 'thumbnail'
   },
   
   // Error Messages
@@ -230,6 +231,8 @@ class SmarTrackPopup {
       } else {
         await this.extractPageMetadata();
         await this.captureSelectedText();
+        // Debug: Log pageData before populating UI
+        console.log('[SRT] Page data before populateUI:', JSON.stringify(this.pageData, null, 2));
         this.populateUI();
         this.showMainView();
       }
@@ -454,7 +457,31 @@ class SmarTrackPopup {
         func: this.extractMetadataFromPage
       });
       
+      console.log('[SRT] Script execution result:', result);
+      console.log('[SRT] Result data:', result?.result);
+      
       this.pageData = result?.result || this.getFallbackPageData();
+      
+      // Debug: Log extracted image
+      if (this.pageData.image) {
+        console.log('[SRT] ✅ Extracted image URL:', this.pageData.image);
+      } else {
+        console.log('[SRT] ❌ No image found in page data, trying content script fallback...');
+        console.log('[SRT] Full pageData:', JSON.stringify(this.pageData, null, 2));
+        
+        // Try to extract image from content script as fallback
+        try {
+          const fallbackData = await this.extractDataFromContentScript();
+          if (fallbackData && fallbackData.image) {
+            console.log('[SRT] ✅ Content script fallback found image:', fallbackData.image);
+            this.pageData = { ...this.pageData, ...fallbackData };
+          } else {
+            console.log('[SRT] ❌ Content script fallback also failed to find image');
+          }
+        } catch (err) {
+          console.debug('[SRT] Content script image extraction failed:', err);
+        }
+      }
       
       // Fetch potential duplicates (best-effort, non-blocking)
       this.fetchDuplicates().catch(() => {
@@ -473,6 +500,35 @@ class SmarTrackPopup {
         this.pageData = this.getFallbackPageData();
       }
     }
+  }
+
+  /**
+   * Extracts data using the content script (fallback method)
+   * @async
+   * @returns {Promise<Object|null>}
+   */
+  async extractDataFromContentScript() {
+    if (!this.currentTab?.id) return null;
+    
+    return new Promise((resolve) => {
+      try {
+        chrome.tabs.sendMessage(
+          this.currentTab.id,
+          { type: 'EXTRACT_PAGE_DATA' },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              // Content script might not be loaded yet
+              resolve(null);
+              return;
+            }
+            resolve(response && response.success ? response.data : null);
+          }
+        );
+      } catch (error) {
+        console.debug('[SRT] Failed to send message to content script:', error);
+        resolve(null);
+      }
+    });
   }
 
   /**
@@ -517,8 +573,84 @@ class SmarTrackPopup {
       getMetaContent('twitter:description') ||
       (document.querySelector('p')?.textContent?.substring(0, 200) || '');
     
-    const image = getMetaContent('og:image') || getMetaContent('twitter:image');
+    // Extract image and convert to absolute URL
+    const getImageUrl = () => {
+      // Try meta tags first (og:image, twitter:image)
+      let imageMeta = getMetaContent('og:image') || 
+                      getMetaContent('twitter:image') ||
+                      getMetaContent('og:image:secure_url');
+      
+      // If no meta tag, try to find first large image on page
+      if (!imageMeta) {
+        try {
+          const images = Array.from(document.querySelectorAll('img[src]'));
+          
+          // Sort by size (prefer larger images)
+          const imageCandidates = images.map(img => {
+            const src = img.getAttribute('src');
+            if (!src) return null;
+            
+            // Try to get actual dimensions
+            const width = img.naturalWidth || img.width || img.offsetWidth || 0;
+            const height = img.naturalHeight || img.height || img.offsetHeight || 0;
+            const area = width * height;
+            
+            return { src, width, height, area };
+          }).filter(img => img && img.src);
+          
+          // Sort by area (largest first)
+          imageCandidates.sort((a, b) => b.area - a.area);
+          
+          // Prefer images that are at least 200x200 pixels
+          const largeImage = imageCandidates.find(img => img.width >= 200 && img.height >= 200);
+          if (largeImage) {
+            imageMeta = largeImage.src;
+          } else if (imageCandidates.length > 0) {
+            // Use largest available image
+            imageMeta = imageCandidates[0].src;
+          }
+        } catch (e) {
+          console.error('[SRT] Error finding images on page:', e);
+        }
+      }
+      
+      if (!imageMeta) return null;
+      
+      // Convert relative URLs to absolute
+      try {
+        // If already absolute URL, return as is
+        if (imageMeta.startsWith('http://') || imageMeta.startsWith('https://')) {
+          return imageMeta;
+        }
+        // Handle protocol-relative URLs (//example.com/image.jpg)
+        if (imageMeta.startsWith('//')) {
+          return window.location.protocol + imageMeta;
+        }
+        // Handle data URLs
+        if (imageMeta.startsWith('data:')) {
+          return imageMeta;
+        }
+        // Convert relative URL to absolute
+        return new URL(imageMeta, window.location.origin).href;
+      } catch (e) {
+        // If URL construction fails, try to prepend origin
+        if (imageMeta.startsWith('//')) {
+          return window.location.protocol + imageMeta;
+        }
+        console.error('[SRT] Failed to convert image URL:', imageMeta, e);
+        return imageMeta; // Return as-is if conversion fails
+      }
+    };
+    
+    const image = getImageUrl();
     const favicon = getFaviconUrl();
+
+    // Debug logging (will be visible in page console, not popup console)
+    if (image) {
+      console.log('[SRT] Extracted image from page:', image);
+    } else {
+      console.log('[SRT] No image found on page');
+    }
 
     return {
       title: title || 'Untitled',
@@ -668,6 +800,7 @@ class SmarTrackPopup {
     const titleEl = getElement(CONSTANTS.SELECTORS.PAGE_TITLE);
     const urlEl = getElement(CONSTANTS.SELECTORS.PAGE_URL);
     const faviconEl = getElement(CONSTANTS.SELECTORS.FAVICON);
+    const thumbnailEl = getElement(CONSTANTS.SELECTORS.THUMBNAIL);
     const titleInput = getElement(CONSTANTS.SELECTORS.TITLE_INPUT);
     const descriptionInput = getElement(CONSTANTS.SELECTORS.DESCRIPTION_INPUT);
     
@@ -678,6 +811,91 @@ class SmarTrackPopup {
     if (urlEl) {
       urlEl.textContent = url;
       urlEl.setAttribute('title', url); // Tooltip for long URLs
+    }
+    
+    // Set thumbnail image (if available)
+    if (thumbnailEl) {
+      console.log('[SRT] populateUI - pageData:', this.pageData);
+      console.log('[SRT] populateUI - pageData.image:', this.pageData.image);
+      
+      if (this.pageData.image) {
+        try {
+          let imageUrl = this.pageData.image;
+          
+          // Ensure absolute URL
+          if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://') && !imageUrl.startsWith('data:')) {
+            try {
+              imageUrl = new URL(imageUrl, url).href;
+            } catch (e) {
+              console.error('[SRT] Failed to convert image URL to absolute:', e);
+            }
+          }
+          
+          console.log('[SRT] Setting thumbnail image:', imageUrl);
+          
+          // Clear any existing content
+          thumbnailEl.innerHTML = '';
+          
+          // Show thumbnail immediately (don't wait for image to load)
+          thumbnailEl.classList.add('has-image');
+          
+          // Set thumbnail container styles first
+          thumbnailEl.style.cssText = `
+            width: 60px;
+            height: 60px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            display: block;
+            flex-shrink: 0;
+          `;
+          
+          // Create and configure image element
+          const img = document.createElement('img');
+          img.src = imageUrl;
+          img.alt = 'Page thumbnail';
+          img.referrerPolicy = 'no-referrer';
+          img.style.cssText = `
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+          `;
+          
+          img.onerror = (e) => {
+            console.error('[SRT] Failed to load thumbnail image:', imageUrl, e);
+            thumbnailEl.classList.remove('has-image');
+            thumbnailEl.style.display = 'none';
+            thumbnailEl.innerHTML = '';
+          };
+          
+          img.onload = () => {
+            console.log('[SRT] Thumbnail image loaded successfully');
+            // Image loaded, ensure it's visible
+            thumbnailEl.classList.add('has-image');
+            thumbnailEl.style.display = 'block';
+            
+            // Hide favicon when thumbnail is present
+            if (faviconEl) {
+              faviconEl.style.display = 'none';
+            }
+          };
+          
+          thumbnailEl.appendChild(img);
+          
+        } catch (error) {
+          console.error('[SRT] Failed to set thumbnail:', error, error.stack);
+          thumbnailEl.classList.remove('has-image');
+          thumbnailEl.style.display = 'none';
+        }
+      } else {
+        console.log('[SRT] No image data available for thumbnail');
+        thumbnailEl.classList.remove('has-image');
+        thumbnailEl.style.display = 'none';
+        thumbnailEl.innerHTML = '';
+      }
+    } else {
+      console.error('[SRT] Thumbnail element not found!');
     }
     
     // Set favicon

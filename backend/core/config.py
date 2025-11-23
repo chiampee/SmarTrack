@@ -3,7 +3,7 @@ Configuration settings for SmarTrack Backend
 """
 
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Optional
 
 class Settings(BaseSettings):
     # Database
@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     # Auth0
     AUTH0_DOMAIN: str = "dev-a5hqcneif6ghl018.us.auth0.com"
     AUTH0_AUDIENCE: str = "https://api.smartrack.com"
+    # Required for Management API access to fetch Google Tokens
+    AUTH0_CLIENT_SECRET: Optional[str] = None
+    AUTH0_CLIENT_ID: Optional[str] = None
     
     # CORS - Allow all origins for production
     CORS_ORIGINS: List[str] = [

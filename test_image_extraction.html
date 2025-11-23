@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Page for Image Extraction</title>
+  
+  <!-- Open Graph meta tags for testing -->
+  <meta property="og:title" content="Test Article Title">
+  <meta property="og:description" content="This is a test page to verify image extraction in SmarTrack extension">
+  <meta property="og:image" content="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop">
+  <meta property="og:url" content="https://example.com/test">
+  
+  <!-- Twitter Card meta tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop">
+  
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+    .large-image {
+      width: 400px;
+      height: 300px;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+  <h1>Test Page for SmarTrack Image Extraction</h1>
+  
+  <div class="test-section">
+    <h2>Meta Tags</h2>
+    <p>This page has og:image and twitter:image meta tags pointing to an Unsplash image.</p>
+    <p><strong>Expected og:image:</strong> https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop</p>
+  </div>
+  
+  <div class="test-section">
+    <h2>Large Image on Page</h2>
+    <p>This is a large image (400x300) that should be found if meta tags are not available:</p>
+    <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop" 
+         alt="Large test image" 
+         class="large-image"
+         width="400" 
+         height="300">
+  </div>
+  
+  <div class="test-section">
+    <h2>Small Image</h2>
+    <p>This is a small image that should NOT be selected (too small):</p>
+    <img src="https://via.placeholder.com/100x100" alt="Small image" width="100" height="100">
+  </div>
+  
+  <div class="test-section">
+    <h2>Instructions</h2>
+    <ol>
+      <li>Open this page in Chrome</li>
+      <li>Click the SmarTrack extension icon</li>
+      <li>Check the popup - it should show the Unsplash image as thumbnail</li>
+      <li>Open browser console (F12) and check for [SRT] logs</li>
+      <li>Verify the image URL matches the og:image meta tag</li>
+    </ol>
+  </div>
+  
+  <script>
+    // Log meta tags for debugging
+    console.log('=== SmarTrack Test Page ===');
+    const ogImage = document.querySelector('meta[property="og:image"]');
+    const twitterImage = document.querySelector('meta[name="twitter:image"]');
+    console.log('og:image:', ogImage ? ogImage.getAttribute('content') : 'NOT FOUND');
+    console.log('twitter:image:', twitterImage ? twitterImage.getAttribute('content') : 'NOT FOUND');
+    
+    // Count images
+    const images = document.querySelectorAll('img');
+    console.log('Total images on page:', images.length);
+    images.forEach((img, index) => {
+      console.log(`Image ${index + 1}:`, {
+        src: img.src,
+        width: img.naturalWidth || img.width,
+        height: img.naturalHeight || img.height
+      });
+    });
+  </script>
+</body>
+</html>
+

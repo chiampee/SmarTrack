@@ -42,9 +42,17 @@ const BACKGROUND_CONSTANTS = {
     'opera://'
   ],
   
+  // Restricted domains that cannot be scripted (excluding Chrome Web Store for user request)
+  RESTRICTED_DOMAINS: [
+    'addons.mozilla.org',
+    'microsoftedge.microsoft.com'
+  ],
+  
   // Context Menu IDs
   CONTEXT_MENU_IDS: {
-    OPEN_DASHBOARD: 'smartrack-open-dashboard'
+    OPEN_DASHBOARD: 'smartrack-open-dashboard',
+    SAVE_LINK: 'smartrack-save-link',
+    SAVE_LINK_PAGE: 'smartrack-save-link-page'
   },
   
   // Default Settings
@@ -62,7 +70,8 @@ const BACKGROUND_CONSTANTS = {
     GET_SETTINGS: 'GET_SETTINGS',
     UPDATE_SETTINGS: 'UPDATE_SETTINGS',
     GET_LINKS: 'GET_LINKS',
-    ENQUEUE_SAVE: 'ENQUEUE_SAVE'
+    ENQUEUE_SAVE: 'ENQUEUE_SAVE',
+    SAVE_CURRENT_PAGE: 'SAVE_CURRENT_PAGE'
   }
 };
 
@@ -127,8 +136,14 @@ class SmarTrackBackground {
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       if (changeInfo.status === 'complete' && tab.url) {
         this.injectContentScript(tabId).catch((error) => {
-          // Silently fail for system pages
-          if (!this.isSystemUrl(tab.url)) {
+          // Log errors for Chrome Web Store attempts (user wants to support it)
+          // but gracefully handle browser restrictions
+          if (this.isScriptingError(error) && tab.url?.includes('chrome.google.com')) {
+            console.debug('[SRT] Chrome Web Store page cannot be scripted (browser restriction):', tab.url);
+            return;
+          }
+          // Silently fail for other system/restricted pages
+          if (!this.isSystemUrl(tab.url) && !this.isScriptingError(error)) {
             console.error('[SRT] Content script injection failed:', error);
           }
         });
@@ -163,7 +178,8 @@ class SmarTrackBackground {
    */
   setupAlarms() {
     if (!chrome.alarms) {
-      console.warn('[SRT] Alarms API not available');
+      // Alarms API might be missing in some contexts or strict environments
+      console.debug('[SRT] Alarms API not available - skipping periodic tasks');
       return;
     }
     
@@ -297,24 +313,48 @@ class SmarTrackBackground {
     }
     
     try {
-      // Remove existing menu item if it exists
-      chrome.contextMenus.remove(
-        BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.OPEN_DASHBOARD,
-        () => {
-          // Ignore errors if item doesn't exist
-        }
-      );
+      // Remove all existing menu items
+      chrome.contextMenus.removeAll(() => {
+        // Ignore errors if items don't exist
+      });
       
-      // Create context menu item
+      // Create "Save Link" menu item for links
+      chrome.contextMenus.create({
+        id: BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.SAVE_LINK,
+        title: 'Save Link to SmarTrack',
+        contexts: ['link']
+      });
+      
+      // Create "Save Page" menu item for pages
+      chrome.contextMenus.create({
+        id: BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.SAVE_LINK_PAGE,
+        title: 'Save Page to SmarTrack',
+        contexts: ['page', 'frame']
+      });
+      
+      // Create "Open Dashboard" menu item
       chrome.contextMenus.create({
         id: BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.OPEN_DASHBOARD,
         title: 'Open SmarTrack Dashboard',
-        contexts: ['action']
+        contexts: ['action', 'page']
       });
       
-      chrome.contextMenus.onClicked.addListener((info) => {
+      // Handle context menu clicks
+      chrome.contextMenus.onClicked.addListener((info, tab) => {
         if (info.menuItemId === BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.OPEN_DASHBOARD) {
           chrome.tabs.create({ url: `${BACKGROUND_CONSTANTS.DASHBOARD_URL}/dashboard` });
+        } else if (info.menuItemId === BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.SAVE_LINK) {
+          // Save the clicked link
+          this.handleSaveLinkFromContextMenu(info.linkUrl, info.linkText, tab).catch((error) => {
+            console.error('[SRT] Failed to save link from context menu:', error);
+            this.showNotification('Save Failed', 'Could not save link. Please try again.');
+          });
+        } else if (info.menuItemId === BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.SAVE_LINK_PAGE) {
+          // Save the current page
+          this.handleSavePageFromContextMenu(tab).catch((error) => {
+            console.error('[SRT] Failed to save page from context menu:', error);
+            this.showNotification('Save Failed', 'Could not save page. Please try again.');
+          });
         }
       });
     } catch (error) {
@@ -347,7 +387,7 @@ class SmarTrackBackground {
         return;
       }
       
-      // Skip system pages
+      // Skip system pages and restricted domains
       if (this.isSystemUrl(tab.url)) {
         return;
       }
@@ -364,7 +404,12 @@ class SmarTrackBackground {
           return;
         }
       } catch (error) {
-        // Script injection check failed, try to inject anyway
+        // Script injection check failed - page might be restricted
+        // Check for common error messages indicating restricted pages
+        if (this.isScriptingError(error)) {
+          return; // Silently skip restricted pages
+        }
+        // Other errors, try to inject anyway
         console.debug('[SRT] Could not check for existing script:', error);
       }
       
@@ -374,16 +419,40 @@ class SmarTrackBackground {
         files: ['contentScript.js']
       });
     } catch (error) {
-      // Silently ignore errors for system pages
-      if (error.message && error.message.includes('Cannot access')) {
+      // Silently ignore errors for restricted/system pages
+      if (this.isScriptingError(error)) {
         return;
       }
       throw error;
     }
   }
+  
+  /**
+   * Checks if an error indicates the page cannot be scripted
+   * @param {Error} error - Error to check
+   * @returns {boolean}
+   */
+  isScriptingError(error) {
+    if (!error || !error.message) {
+      return false;
+    }
+    
+    const errorMessage = error.message.toLowerCase();
+    const restrictedErrors = [
+      'cannot access',
+      'cannot be scripted',
+      'extensions gallery',
+      'restricted page',
+      'cannot access a chrome://',
+      'cannot access a chrome-extension://'
+    ];
+    
+    return restrictedErrors.some(phrase => errorMessage.includes(phrase));
+  }
 
   /**
    * Checks if a URL is a system URL that should be skipped
+   * Note: Chrome Web Store is allowed (user request) but may still fail due to browser restrictions
    * @param {string} url - URL to check
    * @returns {boolean}
    */
@@ -392,9 +461,27 @@ class SmarTrackBackground {
       return true;
     }
     
-    return BACKGROUND_CONSTANTS.SKIP_URL_PREFIXES.some(prefix => 
+    // Check for protocol-based system URLs
+    if (BACKGROUND_CONSTANTS.SKIP_URL_PREFIXES.some(prefix => 
       url.startsWith(prefix)
-    );
+    )) {
+      return true;
+    }
+    
+    // Check for restricted domains (excluding Chrome Web Store per user request)
+    try {
+      const urlObj = new URL(url);
+      if (BACKGROUND_CONSTANTS.RESTRICTED_DOMAINS.some(domain => 
+        urlObj.hostname === domain || urlObj.hostname.endsWith('.' + domain)
+      )) {
+        return true;
+      }
+    } catch (e) {
+      // Invalid URL, treat as system URL
+      return true;
+    }
+    
+    return false;
   }
 
   /**
@@ -631,6 +718,283 @@ class SmarTrackBackground {
     }
   }
 
+  /**
+   * Handles saving a link from context menu
+   * @async
+   * @param {string} linkUrl - URL of the link to save
+   * @param {string} linkText - Text of the link
+   * @param {chrome.tabs.Tab} tab - Tab where the link was clicked
+   * @returns {Promise<void>}
+   */
+  async handleSaveLinkFromContextMenu(linkUrl, linkText, tab) {
+    if (!linkUrl) {
+      throw new Error('No link URL provided');
+    }
+    
+    // Get auth token
+    const tokenResult = await chrome.storage.local.get([
+      BACKGROUND_CONSTANTS.STORAGE_KEYS.AUTH_TOKEN
+    ]);
+    const token = tokenResult[BACKGROUND_CONSTANTS.STORAGE_KEYS.AUTH_TOKEN];
+    
+    if (!token || typeof token !== 'string') {
+      this.showNotification('Login Required', 'Please log in to SmarTrack first');
+      chrome.tabs.create({ url: `${BACKGROUND_CONSTANTS.DASHBOARD_URL}/login` });
+      return;
+    }
+    
+    // Prepare link data
+    const linkData = {
+      url: linkUrl,
+      title: linkText || this.extractTitleFromUrl(linkUrl),
+      description: '',
+      category: 'research',
+      contentType: 'webpage',
+      source: 'extension',
+      tags: []
+    };
+    
+    // Try to save to backend
+    try {
+      await this.saveLinkToBackend(linkData, token);
+      this.showNotification('Link Saved', `"${linkData.title}" saved to SmarTrack`);
+    } catch (error) {
+      // If backend save fails, enqueue for retry
+      console.error('[SRT] Backend save failed, enqueueing:', error);
+      await this.enqueueSave(linkData);
+      this.showNotification('Link Queued', 'Link will be saved when online');
+    }
+  }
+  
+  /**
+   * Handles saving the current page from context menu
+   * @async
+   * @param {chrome.tabs.Tab} tab - Tab to save
+   * @returns {Promise<void>}
+   */
+  async handleSavePageFromContextMenu(tab) {
+    if (!tab || !tab.url) {
+      throw new Error('No tab or URL provided');
+    }
+    
+    // Skip system URLs
+    if (this.isSystemUrl(tab.url)) {
+      this.showNotification('Cannot Save', 'System pages cannot be saved');
+      return;
+    }
+    
+    // Get auth token
+    const tokenResult = await chrome.storage.local.get([
+      BACKGROUND_CONSTANTS.STORAGE_KEYS.AUTH_TOKEN
+    ]);
+    const token = tokenResult[BACKGROUND_CONSTANTS.STORAGE_KEYS.AUTH_TOKEN];
+    
+    if (!token || typeof token !== 'string') {
+      this.showNotification('Login Required', 'Please log in to SmarTrack first');
+      chrome.tabs.create({ url: `${BACKGROUND_CONSTANTS.DASHBOARD_URL}/login` });
+      return;
+    }
+    
+    // Extract page data
+    const pageData = await this.extractPageDataFromTab(tab);
+    
+    // Prepare link data
+    const linkData = {
+      url: pageData.url,
+      title: pageData.title,
+      description: pageData.description || '',
+      category: 'research',
+      contentType: 'webpage',
+      source: 'extension',
+      tags: [],
+      thumbnail: pageData.image || null,
+      favicon: pageData.favicon || null
+    };
+    
+    // Try to save to backend
+    try {
+      await this.saveLinkToBackend(linkData, token);
+      this.showNotification('Page Saved', `"${linkData.title}" saved to SmarTrack`);
+    } catch (error) {
+      // If backend save fails, enqueue for retry
+      console.error('[SRT] Backend save failed, enqueueing:', error);
+      await this.enqueueSave(linkData);
+      this.showNotification('Page Queued', 'Page will be saved when online');
+    }
+  }
+  
+  /**
+   * Extracts page data from a tab (works even for restricted pages like Chrome Web Store)
+   * @async
+   * @param {chrome.tabs.Tab} tab - Tab to extract data from
+   * @returns {Promise<Object>}
+   */
+  async extractPageDataFromTab(tab) {
+    const pageData = {
+      url: tab.url || '',
+      title: tab.title || 'Untitled',
+      description: '',
+      image: null,
+      favicon: null
+    };
+    
+    // Try to extract more data if we can inject scripts
+    if (tab.id && !this.isSystemUrl(tab.url)) {
+      try {
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            return {
+              title: document.title || '',
+              description: (() => {
+                const meta = document.querySelector('meta[name="description"], meta[property="og:description"]');
+                return meta ? meta.getAttribute('content') || '' : '';
+              })(),
+              image: (() => {
+                const meta = document.querySelector('meta[property="og:image"]') ||
+                  document.querySelector('meta[name="twitter:image"]');
+                if (!meta) return null;
+                
+                const imageUrl = meta.getAttribute('content');
+                if (!imageUrl) return null;
+                
+                // Convert relative URLs to absolute
+                try {
+                  // If already absolute URL, return as is
+                  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                    return imageUrl;
+                  }
+                  // Handle protocol-relative URLs (//example.com/image.jpg)
+                  if (imageUrl.startsWith('//')) {
+                    return window.location.protocol + imageUrl;
+                  }
+                  // Convert relative URL to absolute
+                  return new URL(imageUrl, window.location.origin).href;
+                } catch {
+                  return imageUrl;
+                }
+              })(),
+              favicon: (() => {
+                const favicon = document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
+                if (favicon) {
+                  const href = favicon.getAttribute('href');
+                  if (href) {
+                    try {
+                      return new URL(href, window.location.origin).href;
+                    } catch {
+                      return href;
+                    }
+                  }
+                }
+                try {
+                  return new URL('/favicon.ico', window.location.origin).href;
+                } catch {
+                  return null;
+                }
+              })()
+            };
+          }
+        });
+        
+        if (result?.result) {
+          pageData.title = result.result.title || pageData.title;
+          pageData.description = result.result.description || '';
+          pageData.image = result.result.image || null;
+          pageData.favicon = result.result.favicon || null;
+        }
+      } catch (error) {
+        // Script injection failed (e.g., Chrome Web Store), use tab data only
+        console.debug('[SRT] Could not extract page metadata, using tab data:', error.message);
+      }
+    }
+    
+    // For Chrome Web Store and other restricted pages, use tab data
+    // Try to get favicon from tab
+    if (tab.favIconUrl) {
+      pageData.favicon = tab.favIconUrl;
+    }
+    
+    return pageData;
+  }
+  
+  /**
+   * Extracts a title from a URL
+   * @param {string} url - URL to extract title from
+   * @returns {string}
+   */
+  extractTitleFromUrl(url) {
+    if (!url || typeof url !== 'string') {
+      return 'Untitled';
+    }
+    
+    try {
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname.replace('www.', '');
+      const pathname = urlObj.pathname.split('/').filter(p => p).pop();
+      
+      if (pathname) {
+        return decodeURIComponent(pathname).replace(/[-_]/g, ' ').trim();
+      }
+      
+      return hostname;
+    } catch {
+      return 'Untitled';
+    }
+  }
+  
+  /**
+   * Saves a link to the backend
+   * @async
+   * @param {Object} linkData - Link data to save
+   * @param {string} token - Auth token
+   * @returns {Promise<Object>}
+   */
+  async saveLinkToBackend(linkData, token) {
+    const url = `${BACKGROUND_CONSTANTS.API_BASE_URL}${BACKGROUND_CONSTANTS.LINKS_ENDPOINT}`;
+    
+    // Get extension version
+    let version = '1.0.0';
+    try {
+      if (chrome.runtime?.getManifest) {
+        version = chrome.runtime.getManifest().version;
+      }
+    } catch (e) {
+      // Use default
+    }
+    
+    const body = {
+      url: linkData.url || '',
+      title: linkData.title || 'Untitled',
+      description: linkData.description || '',
+      content: linkData.content || '',
+      category: linkData.category || 'research',
+      tags: Array.isArray(linkData.tags) ? linkData.tags : [],
+      contentType: linkData.contentType || 'webpage',
+      thumbnail: linkData.thumbnail || null,
+      favicon: linkData.favicon || null,
+      isFavorite: linkData.isFavorite === true,
+      isArchived: linkData.isArchived === true,
+      source: 'extension',
+      extensionVersion: version
+    };
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+    }
+    
+    return await response.json();
+  }
+  
   /**
    * Handles storage change events
    * @param {Object} changes - Changed storage values

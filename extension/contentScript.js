@@ -96,6 +96,68 @@ const getFaviconUrl = () => {
 };
 
 /**
+ * Converts image URL to absolute URL
+ * @param {string|null} imageUrl - Image URL (may be relative)
+ * @returns {string|null}
+ */
+const getAbsoluteImageUrl = (imageUrl) => {
+  if (!imageUrl || typeof imageUrl !== 'string') {
+    return null;
+  }
+  
+  // If already absolute URL, return as is
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  
+  // Convert relative URL to absolute
+  try {
+    // Handle protocol-relative URLs (//example.com/image.jpg)
+    if (imageUrl.startsWith('//')) {
+      return window.location.protocol + imageUrl;
+    }
+    // Convert relative URL to absolute
+    return new URL(imageUrl, window.location.origin).href;
+  } catch (error) {
+    // If URL construction fails, return original
+    console.debug('[SRT] Failed to convert image URL to absolute:', error);
+    return imageUrl;
+  }
+};
+
+/**
+ * Finds the first large image on the page as fallback
+ * @returns {string|null}
+ */
+const findFirstLargeImage = () => {
+  try {
+    const images = document.querySelectorAll('img[src]');
+    for (const img of images) {
+      const src = img.getAttribute('src');
+      if (!src) continue;
+      
+      const width = img.naturalWidth || img.width || 0;
+      const height = img.naturalHeight || img.height || 0;
+      
+      // Prefer images that are at least 200x200 pixels
+      if (width >= 200 && height >= 200) {
+        return getAbsoluteImageUrl(src);
+      }
+    }
+    
+    // If no large image found, use first image
+    if (images.length > 0) {
+      const firstSrc = images[0].getAttribute('src');
+      return firstSrc ? getAbsoluteImageUrl(firstSrc) : null;
+    }
+  } catch (error) {
+    console.debug('[SRT] Failed to find image on page:', error);
+  }
+  
+  return null;
+};
+
+/**
  * Extracts text content from page
  * @param {number} maxLength - Maximum text length
  * @returns {string}
@@ -283,11 +345,20 @@ class SmarTrackContentScript {
    */
   extractPageData() {
     try {
+      // Extract image URL from meta tags and convert to absolute
+      const imageMeta = getMetaContent(CONTENT_SCRIPT_CONSTANTS.META_TAGS.IMAGE);
+      let image = getAbsoluteImageUrl(imageMeta);
+      
+      // If no meta image, try to find first large image on page
+      if (!image) {
+        image = findFirstLargeImage();
+      }
+      
       return {
         title: document.title || 'Untitled',
         url: window.location.href || '',
         description: getMetaContent(CONTENT_SCRIPT_CONSTANTS.META_TAGS.DESCRIPTION) || '',
-        image: getMetaContent(CONTENT_SCRIPT_CONSTANTS.META_TAGS.IMAGE) || null,
+        image: image || null,
         siteName: getMetaContent(CONTENT_SCRIPT_CONSTANTS.META_TAGS.SITE_NAME) || null,
         author: getMetaContent(CONTENT_SCRIPT_CONSTANTS.META_TAGS.AUTHOR) || null,
         publishedDate: getMetaContent(CONTENT_SCRIPT_CONSTANTS.META_TAGS.PUBLISHED_DATE) || null,
