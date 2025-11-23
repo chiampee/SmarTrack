@@ -95,6 +95,8 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
   const login = useGoogleLogin({
     onSuccess: (tokenResponse) => {
       console.log('Google Login Success. Token received:', tokenResponse.access_token ? 'Yes (starts with ' + tokenResponse.access_token.substring(0, 5) + '...)' : 'No');
+      // Mark that user has granted Drive permission
+      localStorage.setItem('google_drive_granted', 'true')
       // CRITICAL FIX: Call exportToDrive with the FRESH token
       exportToDrive(tokenResponse.access_token)
     },
@@ -110,8 +112,18 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
       toast.error('Please select links to export.')
       return
     }
-    // Try to export without explicit token first (hoping backend can fetch it from Auth0)
-    exportToDrive()
+    
+    // Check if user has already granted Drive permissions (stored in localStorage)
+    const hasDrivePermission = localStorage.getItem('google_drive_granted')
+    
+    if (!hasDrivePermission) {
+      // First time: explain what will happen
+      toast.info('Requesting Google Drive permission...')
+      setTimeout(() => login(), 300)
+    } else {
+      // Try Auth0 token first, fallback to popup if it fails
+      exportToDrive()
+    }
   }
 
   return (
