@@ -35,6 +35,9 @@ async def export_to_notebooklm(request: ExportRequest, req: Request):
         # Determine which token to use
         access_token = request.google_access_token
         
+        if access_token:
+            print(f"Received explicit Google Access Token from frontend (starts with {access_token[:5]}...)")
+        
         # If no token provided, try to fetch from Auth0
         if not access_token and user_id:
             print(f"Attempting to fetch Google Token for user {user_id} from Auth0...")

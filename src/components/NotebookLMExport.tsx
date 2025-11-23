@@ -84,6 +84,7 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
 
   const login = useGoogleLogin({
     onSuccess: (tokenResponse) => {
+      console.log('Google Login Success. Token received:', tokenResponse.access_token ? 'Yes (starts with ' + tokenResponse.access_token.substring(0, 5) + '...)' : 'No');
       exportToDrive(tokenResponse.access_token)
     },
     onError: (errorResponse) => {
