@@ -43,6 +43,8 @@ class Auth0ManagementService:
     def get_google_access_token(cls, user_id: str) -> str:
         """
         Fetch the Google Access Token for a specific user from their Auth0 profile.
+        If the token is expired, this will NOT automatically refresh it.
+        The frontend should handle re-authentication in that case.
         """
         token = cls._get_management_token()
         if not token:
@@ -64,12 +66,20 @@ class Auth0ManagementService:
             # Look for Google identity
             for identity in user_profile.get("identities", []):
                 if identity.get("provider") == "google-oauth2":
-                    return identity.get("access_token")
+                    access_token = identity.get("access_token")
+                    if access_token:
+                        print(f"✓ Found Google access token for user {user_id}")
+                        return access_token
+                    else:
+                        print(f"⚠ Google identity exists but no access_token present for user {user_id}")
             
-            print(f"No Google identity found for user {user_id}")
+            print(f"⚠ No Google identity found for user {user_id}")
+            print(f"Available identities: {[i.get('provider') for i in user_profile.get('identities', [])]}")
             return None
             
         except Exception as e:
-            print(f"Failed to fetch user profile from Auth0: {e}")
+            print(f"❌ Failed to fetch user profile from Auth0: {e}")
+            if hasattr(e, 'response') and hasattr(e.response, 'text'):
+                print(f"Response: {e.response.text}")
             return None
 

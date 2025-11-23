@@ -16,7 +16,7 @@ class ExportRequest(BaseModel):
 async def export_to_notebooklm(request: ExportRequest, req: Request):
     """
     Export selected links to a Google Doc in the user's Drive.
-    Uses either the provided google_access_token OR fetches one from Auth0 profile if available.
+    Prioritizes frontend-provided token, falls back to Auth0-stored token.
     """
     try:
         # Extract user ID from the request (set by auth middleware usually)
@@ -29,22 +29,32 @@ async def export_to_notebooklm(request: ExportRequest, req: Request):
                 token = auth_header.split(" ")[1]
                 decoded = jwt.decode(token, options={"verify_signature": False})
                 user_id = decoded.get("sub")
-            except Exception:
+                print(f"[Export] User ID from token: {user_id}")
+            except Exception as e:
+                print(f"[Export] Failed to decode Auth0 token: {e}")
                 pass
 
         # Determine which token to use
         access_token = request.google_access_token
         
         if access_token:
-            print(f"Received explicit Google Access Token from frontend (starts with {access_token[:5]}...)")
-        
-        # If no token provided, try to fetch from Auth0
-        if not access_token and user_id:
-            print(f"Attempting to fetch Google Token for user {user_id} from Auth0...")
-            access_token = Auth0ManagementService.get_google_access_token(user_id)
+            print(f"[Export] ✓ Using explicit Google Access Token from frontend (starts with {access_token[:10]}...)")
+        else:
+            # If no token provided, try to fetch from Auth0
+            if user_id:
+                print(f"[Export] Attempting to fetch Google Token from Auth0 for user {user_id}...")
+                access_token = Auth0ManagementService.get_google_access_token(user_id)
+                if access_token:
+                    print(f"[Export] ✓ Retrieved token from Auth0 (starts with {access_token[:10]}...)")
+                else:
+                    print(f"[Export] ✗ Could not retrieve token from Auth0")
             
         if not access_token:
-            raise HTTPException(status_code=401, detail="Google Access Token is missing and could not be retrieved.")
+            print("[Export] ✗ No Google Access Token available")
+            raise HTTPException(
+                status_code=401, 
+                detail="Google Drive access required. Please sign in with Google to grant permissions."
+            )
 
         db = await get_database()
         
