@@ -20,16 +20,9 @@ async def export_to_notebooklm(request: ExportRequest, req: Request):
     """
     try:
         # Extract user ID from the request (set by auth middleware usually)
-        # Assuming the auth middleware sets request.state.user_id or similar
-        # For now, we will rely on the token passed in headers if we had auth middleware
-        # But since we don't have strict auth middleware on this specific route in the router definition yet...
-        # We should parse the Bearer token to get the 'sub' (User ID).
-        
         auth_header = req.headers.get("Authorization")
         user_id = None
         if auth_header and auth_header.startswith("Bearer "):
-            # We are trusting the token is valid because usually middleware checks it
-            # But here we just need the ID to look up the profile
             try:
                 # Quick decode without verify (verification happened in middleware)
                 import jwt
@@ -65,14 +58,53 @@ async def export_to_notebooklm(request: ExportRequest, req: Request):
         if not links:
             raise HTTPException(status_code=404, detail="No links found for the provided IDs")
 
+        # Fetch collections referenced by links to get Project Names
+        collection_ids = {link.get("collectionId") for link in links if link.get("collectionId")}
+        collections_map = {}
+        if collection_ids:
+            try:
+                obj_ids = [ObjectId(cid) for cid in collection_ids]
+                cols_cursor = db.collections.find({"_id": {"$in": obj_ids}})
+                cols = await cols_cursor.to_list(length=len(collection_ids))
+                for col in cols:
+                    collections_map[str(col["_id"])] = col.get("name", "Unknown Project")
+            except Exception as e:
+                print(f"Error fetching collections: {e}")
+
         # Normalize link data for the service
         normalized_links = []
         for link in links:
+            # Resolve Project Name
+            col_id = link.get("collectionId")
+            project_name = collections_map.get(col_id, "Unassigned") if col_id else "Unassigned"
+            
+            # Format Date
+            created_at = link.get("createdAt")
+            created_at_str = ""
+            if created_at:
+                if hasattr(created_at, 'strftime'):
+                    created_at_str = created_at.strftime("%Y-%m-%d %H:%M")
+                else:
+                    # Handle string ISO dates if stored as string
+                    try:
+                        from datetime import datetime
+                        if isinstance(created_at, str):
+                            # basic iso parsing
+                            dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                            created_at_str = dt.strftime("%Y-%m-%d %H:%M")
+                        else:
+                            created_at_str = str(created_at)
+                    except:
+                        created_at_str = str(created_at)
+
             normalized_links.append({
                 "title": link.get("title", "Untitled"),
                 "url": link.get("url", ""),
-                "summary": link.get("summary", ""),
-                "tags": link.get("tags", [])
+                "summary": link.get("summary") or link.get("description", "No description available."),
+                "tags": link.get("tags", []),
+                "category": link.get("category", "Uncategorized"),
+                "project": project_name,
+                "created_at": created_at_str
             })
 
         # Initialize service and export

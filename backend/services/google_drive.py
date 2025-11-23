@@ -60,20 +60,28 @@ class GoogleDriveService:
         <html>
         <head>
             <style>
-                body { font-family: Arial, sans-serif; }
-                h1 { color: #2c3e50; }
-                .link-item { margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
-                .link-title { font-size: 18px; font-weight: bold; color: #1a73e8; text-decoration: none; }
-                .link-meta { color: #666; font-size: 12px; margin-top: 5px; }
-                .link-summary { margin-top: 10px; line-height: 1.5; }
-                .tags { margin-top: 10px; }
-                .tag { background: #f1f3f4; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-right: 5px; display: inline-block; }
+                body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; }
+                h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+                .link-item { margin-bottom: 40px; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; background-color: #fff; }
+                .link-title { font-size: 20px; font-weight: bold; color: #1a73e8; text-decoration: none; display: block; margin-bottom: 5px; }
+                .link-url { color: #006621; font-size: 14px; margin-bottom: 15px; word-break: break-all; }
+                
+                .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 13px; }
+                .meta-table td { padding: 4px 8px; border: 1px solid #eee; }
+                .meta-label { font-weight: bold; background-color: #f8f9fa; width: 100px; color: #555; }
+                .meta-value { color: #333; }
+                
+                .link-summary-container { background-color: #f9f9f9; padding: 15px; border-radius: 4px; border-left: 4px solid #1a73e8; }
+                .summary-label { font-weight: bold; font-size: 12px; text-transform: uppercase; color: #777; margin-bottom: 5px; }
+                
+                .tags { margin-top: 15px; }
+                .tag { background: #e8f0fe; color: #1a73e8; padding: 3px 10px; border-radius: 15px; font-size: 12px; margin-right: 5px; display: inline-block; }
             </style>
         </head>
         <body>
-            <h1>SmarTrack Export</h1>
-            <p>Exported on: """ + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + """</p>
-            <hr>
+            <h1>SmarTrack Research Export</h1>
+            <p style="color: #666; font-size: 14px;">Generated on """ + datetime.now().strftime("%B %d, %Y at %I:%M %p") + """</p>
+            <br>
         """
 
         for link in links:
@@ -81,6 +89,9 @@ class GoogleDriveService:
             url = link.get('url', '#')
             summary = link.get('summary', 'No summary available.')
             tags = link.get('tags', [])
+            category = link.get('category', 'Uncategorized')
+            project = link.get('project', 'Unassigned')
+            created_at = link.get('created_at', '')
             
             # Format tags
             tags_html = ""
@@ -90,9 +101,27 @@ class GoogleDriveService:
             html += f"""
             <div class="link-item">
                 <a href="{url}" class="link-title" target="_blank">{title}</a>
-                <div class="link-meta">{url}</div>
-                <div class="link-summary">{summary}</div>
-                {tags_html}
+                <div class="link-url">{url}</div>
+                
+                <table class="meta-table">
+                    <tr>
+                        <td class="meta-label">Category</td>
+                        <td class="meta-value">{category}</td>
+                        <td class="meta-label">Project</td>
+                        <td class="meta-value">{project}</td>
+                    </tr>
+                    <tr>
+                        <td class="meta-label">Saved On</td>
+                        <td class="meta-value">{created_at}</td>
+                        <td class="meta-label">Tags</td>
+                        <td class="meta-value">{", ".join(tags) if tags else "-"}</td>
+                    </tr>
+                </table>
+
+                <div class="link-summary-container">
+                    <div class="summary-label">Description / Summary</div>
+                    {summary}
+                </div>
             </div>
             """
 
@@ -101,4 +130,3 @@ class GoogleDriveService:
         </html>
         """
         return html
-
