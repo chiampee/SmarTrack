@@ -59,7 +59,8 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
       
       const isAuthError = error.status === 401 || 
                           error.message?.includes('401') || 
-                          error.message?.includes('Access Token is missing')
+                          error.message?.includes('Access Token is missing') ||
+                          error.message?.includes('expired or invalid')
 
       if (isAuthError && !accessToken) {
          toast.error('Google Drive permission needed. Please sign in with Google again to grant access.')
