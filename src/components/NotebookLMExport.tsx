@@ -80,9 +80,8 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
              sessionStorage.setItem('google_auth_toast', now.toString());
          }
          
-         // Trigger the explicit login flow
-         // Use a small timeout to ensure React state updates don't conflict
-         setTimeout(() => login(), 100);
+         // Trigger the explicit login flow immediately
+         login();
       } else {
          console.error('Export failed permanently:', error);
          toast.error('Failed to export links to Google Drive.')
@@ -117,9 +116,9 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
     const hasDrivePermission = localStorage.getItem('google_drive_granted')
     
     if (!hasDrivePermission) {
-      // First time: explain what will happen
+      // First time: trigger login immediately (must be synchronous to avoid popup blocking)
       toast.info('Requesting Google Drive permission...')
-      setTimeout(() => login(), 300)
+      login()
     } else {
       // Try Auth0 token first, fallback to popup if it fails
       exportToDrive()
