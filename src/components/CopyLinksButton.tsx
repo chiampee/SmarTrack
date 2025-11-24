@@ -71,17 +71,34 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
       })
 
       // Copy to clipboard
-      await navigator.clipboard.writeText(formattedText)
+      try {
+        await navigator.clipboard.writeText(formattedText)
+        console.log('✅ Clipboard write successful')
+      } catch (clipboardError) {
+        console.error('Clipboard API failed, using fallback:', clipboardError)
+        // Fallback: create temporary textarea
+        const textarea = document.createElement('textarea')
+        textarea.value = formattedText
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+        console.log('✅ Fallback copy successful')
+      }
       
+      console.log('Setting modal state: true, count:', selectedLinks.length)
       setCopied(true)
       setCopiedCount(selectedLinks.length)
       setShowModal(true)
+      toast.success(`Copied ${selectedLinks.length} link${selectedLinks.length > 1 ? 's' : ''} to clipboard!`)
       
       setTimeout(() => setCopied(false), 2000)
       
       if (onSuccess) onSuccess()
     } catch (error: any) {
-      console.error('Copy failed:', error)
+      console.error('Copy operation failed:', error)
       toast.error('Failed to copy links. Please try again.')
     } finally {
       setLoading(false)
