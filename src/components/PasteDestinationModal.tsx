@@ -1,4 +1,5 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
 import { X, ExternalLink } from 'lucide-react'
 
 interface PasteDestinationModalProps {
@@ -12,8 +13,6 @@ export const PasteDestinationModal: React.FC<PasteDestinationModalProps> = ({
   onClose,
   linkCount
 }) => {
-  console.log('PasteDestinationModal render:', { isOpen, linkCount })
-  
   if (!isOpen) return null
 
   const destinations = [
@@ -47,8 +46,8 @@ export const PasteDestinationModal: React.FC<PasteDestinationModalProps> = ({
     }
   ]
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-2xl relative">
@@ -134,5 +133,7 @@ export const PasteDestinationModal: React.FC<PasteDestinationModalProps> = ({
       </div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }
 
