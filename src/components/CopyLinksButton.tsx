@@ -73,9 +73,11 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
       // Copy to clipboard
       await navigator.clipboard.writeText(formattedText)
       
+      console.log('✅ Copied to clipboard, showing modal...')
       setCopied(true)
       setCopiedCount(selectedLinks.length)
       setShowModal(true)
+      console.log('Modal state set to:', true)
       
       setTimeout(() => setCopied(false), 2000)
       

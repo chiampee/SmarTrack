@@ -12,6 +12,8 @@ export const PasteDestinationModal: React.FC<PasteDestinationModalProps> = ({
   onClose,
   linkCount
 }) => {
+  console.log('PasteDestinationModal render:', { isOpen, linkCount })
+  
   if (!isOpen) return null
 
   const destinations = [
