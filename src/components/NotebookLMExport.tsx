@@ -93,7 +93,16 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
   const login = useGoogleLogin({
     onSuccess: (tokenResponse) => {
       console.log('✅ Google Login Success!')
+      console.log('Full token response:', tokenResponse)
       console.log('Token received:', tokenResponse.access_token ? `Yes (${tokenResponse.access_token.substring(0, 10)}...)` : 'No')
+      
+      if (!tokenResponse.access_token) {
+        console.error('❌ No access token in response!')
+        toast.error('Failed to get Google access token. Please try again.')
+        setLoading(false)
+        return
+      }
+      
       console.log('Token type:', tokenResponse.token_type)
       console.log('Expires in:', tokenResponse.expires_in, 'seconds')
       console.log('Scope granted:', tokenResponse.scope)
@@ -106,11 +115,10 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
     onError: (errorResponse) => {
       console.error('❌ Google Login Failed:', errorResponse)
       console.error('Error details:', JSON.stringify(errorResponse, null, 2))
-      toast.error('Google authentication failed. Please try again.')
+      toast.error(`Google authentication failed: ${errorResponse.error || 'Unknown error'}`)
       setLoading(false)
     },
     scope: 'https://www.googleapis.com/auth/drive.file',
-    flow: 'implicit', // Force popup-based OAuth flow instead of redirect
   })
 
   const handleClick = () => {
