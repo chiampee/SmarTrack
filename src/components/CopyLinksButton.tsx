@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { useToast } from './Toast'
 import { useBackendApi } from '../hooks/useBackendApi'
+import { PasteDestinationModal } from './PasteDestinationModal'
 
 interface CopyLinksButtonProps {
   selectedLinkIds: string[]
@@ -16,6 +17,8 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
 }) => {
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [copiedCount, setCopiedCount] = useState(0)
   const toast = useToast()
   const { makeRequest } = useBackendApi()
 
@@ -71,7 +74,8 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
       await navigator.clipboard.writeText(formattedText)
       
       setCopied(true)
-      toast.success(`Copied ${selectedLinks.length} link${selectedLinks.length !== 1 ? 's' : ''} to clipboard!`, 3000)
+      setCopiedCount(selectedLinks.length)
+      setShowModal(true)
       
       setTimeout(() => setCopied(false), 2000)
       
@@ -85,19 +89,27 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
   }
 
   return (
-    <button
-      onClick={handleCopy}
-      disabled={loading || selectedLinkIds.length === 0}
-      className={`flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-green-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow ${className}`}
-      title="Copy selected links with descriptions"
-    >
-      {copied ? (
-        <Check className="w-4 h-4 text-green-600" />
-      ) : (
-        <Copy className="w-4 h-4" />
-      )}
-      {copied ? 'Copied!' : 'Copy'}
-    </button>
+    <>
+      <button
+        onClick={handleCopy}
+        disabled={loading || selectedLinkIds.length === 0}
+        className={`flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-green-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow ${className}`}
+        title="Copy selected links with descriptions"
+      >
+        {copied ? (
+          <Check className="w-4 h-4 text-green-600" />
+        ) : (
+          <Copy className="w-4 h-4" />
+        )}
+        {copied ? 'Copied!' : 'Copy'}
+      </button>
+
+      <PasteDestinationModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        linkCount={copiedCount}
+      />
+    </>
   )
 }
 
