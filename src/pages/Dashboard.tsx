@@ -13,6 +13,7 @@ import { FiltersDropdown } from '../components/FiltersDropdown'
 import { useBackendApi } from '../hooks/useBackendApi'
 import { useBulkOperations } from '../hooks/useBulkOperations'
 import { useToast } from '../components/Toast'
+import { CopyLinksButton } from '../components/CopyLinksButton'
 import { useCategories } from '../context/CategoriesContext'
 import { Link, Collection, Category } from '../types/Link'
 import { logger } from '../utils/logger'
@@ -725,6 +726,10 @@ export const Dashboard: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-3">
+              <CopyLinksButton 
+                selectedLinkIds={Array.from(selectedLinks)} 
+                onSuccess={clearSelection}
+              />
               <button 
                 onClick={handleExport}
                 disabled={filteredLinksCount === 0}
@@ -990,6 +995,11 @@ export const Dashboard: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap">
+                      <CopyLinksButton 
+                        selectedLinkIds={Array.from(selectedLinks)} 
+                        onSuccess={clearSelection}
+                        className="px-4 py-2"
+                      />
                       <button 
                         onClick={handleBulkArchive}
                         disabled={isLoading}
