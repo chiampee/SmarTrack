@@ -50,7 +50,7 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
       // Format links for NotebookLM
       let formattedText = '=== SmarTrack Links Export ===\n\n'
       
-      selectedLinks.forEach((link, index) => {
+      selectedLinks.forEach((link: any, index: number) => {
         formattedText += `${index + 1}. ${link.title || 'Untitled'}\n`
         formattedText += `   URL: ${link.url}\n`
         
