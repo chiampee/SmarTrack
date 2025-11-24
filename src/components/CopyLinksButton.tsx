@@ -57,24 +57,10 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
         return
       }
 
-      // Format links for NotebookLM - clean format with only essential data
-      let formattedText = ''
-      
-      selectedLinks.forEach((link: any, index: number) => {
-        // Title and URL
-        formattedText += `${link.title || 'Untitled'}\n`
-        formattedText += `${link.url}\n`
-        
-        // Description/Summary
-        if (link.summary || link.description) {
-          formattedText += `${link.summary || link.description}\n`
-        }
-        
-        // Add separator between links
-        if (index < selectedLinks.length - 1) {
-          formattedText += '\n---\n\n'
-        }
-      })
+      // Format: Copy only URLs (one per line)
+      const formattedText = selectedLinks
+        .map((link: any) => link.url)
+        .join('\n')
 
       // Copy to clipboard
       try {
