@@ -100,7 +100,7 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
       ) : (
         <Copy className="w-4 h-4" />
       )}
-      {copied ? 'Copied!' : 'Copy for NotebookLM'}
+      {copied ? 'Copied!' : 'Copy'}
     </button>
   )
 }
