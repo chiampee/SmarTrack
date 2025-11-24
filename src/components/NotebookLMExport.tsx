@@ -111,6 +111,7 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
       setLoading(false)
     },
     scope: 'https://www.googleapis.com/auth/drive.file',
+    flow: 'implicit', // Force popup-based OAuth flow instead of redirect
   })
 
   const handleClick = () => {
