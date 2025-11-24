@@ -96,12 +96,21 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
       
       setTimeout(() => setCopied(false), 2000)
       
-      if (onSuccess) onSuccess()
+      // Don't call onSuccess immediately - let the modal display first
+      // onSuccess will be called when the modal is closed
     } catch (error: any) {
       console.error('Copy operation failed:', error)
       toast.error('Failed to copy links. Please try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleModalClose = () => {
+    setShowModal(false)
+    // Call onSuccess after modal is closed (clears selection)
+    if (onSuccess) {
+      onSuccess()
     }
   }
 
@@ -123,7 +132,7 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
 
       <PasteDestinationModal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={handleModalClose}
         linkCount={copiedCount}
       />
     </>
