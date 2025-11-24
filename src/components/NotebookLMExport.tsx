@@ -136,7 +136,6 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
       setLoading(false)
     },
     scope: 'https://www.googleapis.com/auth/drive.file',
-    ux_mode: 'popup', // Explicitly use popup mode
   })
 
   const handleClick = () => {
