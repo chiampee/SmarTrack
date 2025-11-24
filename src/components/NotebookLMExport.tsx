@@ -3,6 +3,7 @@ import { useGoogleLogin } from '@react-oauth/google'
 import { FileText, Loader2 } from 'lucide-react'
 import { useToast } from './Toast'
 import { useBackendApi } from '../hooks/useBackendApi'
+import { NotebookLMSuccessModal } from './NotebookLMSuccessModal'
 
 interface NotebookLMExportProps {
   selectedLinkIds: string[]
@@ -16,6 +17,8 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
   className = ""
 }) => {
   const [loading, setLoading] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [exportResult, setExportResult] = useState<{ fileId: string; webViewLink: string } | null>(null)
   const toast = useToast()
   const { makeRequest } = useBackendApi()
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -34,20 +37,16 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
       })
 
       if (response.status === 'success') {
-        toast.success(
-          <div>
-            Export successful!{' '}
-            <a 
-              href={response.webViewLink} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="underline font-bold"
-            >
-              Open in Drive
-            </a>
-          </div>,
-          6000
-        )
+        // Store the result and show the modal
+        setExportResult({
+          fileId: response.fileId,
+          webViewLink: response.webViewLink
+        })
+        setShowSuccessModal(true)
+        
+        // Also show a quick toast
+        toast.success('Export successful! Opening guide...', 3000)
+        
         if (onSuccess) onSuccess()
       }
     } catch (error: any) {
@@ -134,18 +133,30 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
   }
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={loading || selectedLinkIds.length === 0}
-      className={`flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow ${className}`}
-      title="Export selected links to Google Drive for NotebookLM"
-    >
-      {loading ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
-      ) : (
-        <FileText className="w-4 h-4" />
+    <>
+      <button
+        onClick={handleClick}
+        disabled={loading || selectedLinkIds.length === 0}
+        className={`flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow ${className}`}
+        title="Export selected links to Google Drive for NotebookLM"
+      >
+        {loading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <FileText className="w-4 h-4" />
+        )}
+        Export to NotebookLM
+      </button>
+
+      {/* Success Modal with Guide */}
+      {exportResult && (
+        <NotebookLMSuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          driveLink={exportResult.webViewLink}
+          docId={exportResult.fileId}
+        />
       )}
-      Export to NotebookLM
-    </button>
+    </>
   )
 }
