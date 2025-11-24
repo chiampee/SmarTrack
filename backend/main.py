@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from api import health, links, collections, categories, users, admin, integrations
+from api import health, links, collections, categories, users, admin
 from services.mongodb import connect_to_mongo, close_mongo_connection
 from middleware.security_headers import SecurityHeadersMiddleware
 from middleware.rate_limiter import check_rate_limit
@@ -163,7 +163,6 @@ app.include_router(collections.router, prefix="/api", tags=["Collections"])
 app.include_router(categories.router, prefix="/api", tags=["Categories"])
 app.include_router(users.router, prefix="/api", tags=["Users"])
 app.include_router(admin.router, prefix="/api", tags=["Admin"])
-app.include_router(integrations.router, prefix="/api", tags=["Integrations"])
 
 @app.get("/")
 async def root():

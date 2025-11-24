@@ -12,7 +12,6 @@ import { CreateCollectionModal } from '../components/CreateCollectionModal'
 import { FiltersDropdown } from '../components/FiltersDropdown'
 import { useBackendApi } from '../hooks/useBackendApi'
 import { useBulkOperations } from '../hooks/useBulkOperations'
-import { NotebookLMExport } from '../components/NotebookLMExport'
 import { useToast } from '../components/Toast'
 import { useCategories } from '../context/CategoriesContext'
 import { Link, Collection, Category } from '../types/Link'
@@ -726,10 +725,6 @@ export const Dashboard: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-3">
-              <NotebookLMExport 
-                selectedLinkIds={Array.from(selectedLinks)} 
-                onSuccess={clearSelection}
-              />
               <button 
                 onClick={handleExport}
                 disabled={filteredLinksCount === 0}
@@ -995,11 +990,6 @@ export const Dashboard: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      <NotebookLMExport 
-                        selectedLinkIds={Array.from(selectedLinks)} 
-                        onSuccess={clearSelection}
-                        className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg text-sm font-medium hover:bg-green-50 hover:border-green-300 hover:text-green-700 shadow-sm hover:shadow"
-                      />
                       <button 
                         onClick={handleBulkArchive}
                         disabled={isLoading}
