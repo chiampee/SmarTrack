@@ -29,12 +29,15 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
       setLoading(true)
 
       // Fetch the full link data from the backend
-      const links = await makeRequest<any[]>('/api/links', {
+      const response = await makeRequest<any>('/api/links', {
         method: 'GET'
       })
 
+      // Handle both array and object responses (API might return {links: [...]} or just [...])
+      const links = Array.isArray(response) ? response : (response.links || [])
+
       // Filter to only selected links
-      const selectedLinks = links.filter(link => 
+      const selectedLinks = links.filter((link: any) => 
         selectedLinkIds.includes(link._id || link.id)
       )
 
