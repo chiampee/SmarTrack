@@ -24,9 +24,12 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
   const exportToDrive = async (accessToken?: string) => {
+    console.log('============ EXPORT TO DRIVE CALLED ============')
+    console.log('Access token provided:', accessToken ? 'Yes' : 'No')
     try {
       setLoading(true)
       toast.info('Starting export to Google Drive...')
+      console.log('🔄 Making API request to backend...')
 
       const response = await makeRequest<{ status: string, fileId: string, webViewLink: string }>('/api/notebooklm/export', {
         method: 'POST',
@@ -36,21 +39,32 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
         })
       })
 
+      console.log('✅ Backend response:', response)
+      
       if (response.status === 'success') {
+        console.log('🎉 Export successful! File ID:', response.fileId)
+        console.log('📄 Drive link:', response.webViewLink)
+        
         // Store the result and show the modal
         setExportResult({
           fileId: response.fileId,
           webViewLink: response.webViewLink
         })
+        console.log('📋 Opening success modal...')
         setShowSuccessModal(true)
         
         // Also show a quick toast
         toast.success('Export successful! Opening guide...', 3000)
         
         if (onSuccess) onSuccess()
+      } else {
+        console.error('❌ Unexpected response status:', response.status)
       }
     } catch (error: any) {
-      console.error('Export failed:', error)
+      console.log('============ EXPORT ERROR ============')
+      console.error('❌ Export failed:', error)
+      console.error('Error status:', error.status)
+      console.error('Error message:', error.message)
       
       // Check if the error indicates missing permissions (401)
       // The error object from makeRequest might be structured differently depending on implementation
@@ -92,6 +106,7 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
 
   const login = useGoogleLogin({
     onSuccess: (tokenResponse) => {
+      console.log('============ GOOGLE OAUTH SUCCESS ============')
       console.log('✅ Google Login Success!')
       console.log('Full token response:', tokenResponse)
       console.log('Token received:', tokenResponse.access_token ? `Yes (${tokenResponse.access_token.substring(0, 10)}...)` : 'No')
@@ -109,10 +124,12 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
       
       // Mark that user has granted Drive permission
       localStorage.setItem('google_drive_granted', 'true')
+      console.log('🚀 Calling exportToDrive with token...')
       // Call exportToDrive with the FRESH token
       exportToDrive(tokenResponse.access_token)
     },
     onError: (errorResponse) => {
+      console.log('============ GOOGLE OAUTH ERROR ============')
       console.error('❌ Google Login Failed:', errorResponse)
       console.error('Error details:', JSON.stringify(errorResponse, null, 2))
       toast.error(`Google authentication failed: ${errorResponse.error || 'Unknown error'}`)
