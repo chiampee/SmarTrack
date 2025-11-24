@@ -93,15 +93,22 @@ export const NotebookLMExport: React.FC<NotebookLMExportProps> = ({
 
   const login = useGoogleLogin({
     onSuccess: (tokenResponse) => {
-      console.log('Google Login Success. Token received:', tokenResponse.access_token ? 'Yes (starts with ' + tokenResponse.access_token.substring(0, 5) + '...)' : 'No');
+      console.log('✅ Google Login Success!')
+      console.log('Token received:', tokenResponse.access_token ? `Yes (${tokenResponse.access_token.substring(0, 10)}...)` : 'No')
+      console.log('Token type:', tokenResponse.token_type)
+      console.log('Expires in:', tokenResponse.expires_in, 'seconds')
+      console.log('Scope granted:', tokenResponse.scope)
+      
       // Mark that user has granted Drive permission
       localStorage.setItem('google_drive_granted', 'true')
-      // CRITICAL FIX: Call exportToDrive with the FRESH token
+      // Call exportToDrive with the FRESH token
       exportToDrive(tokenResponse.access_token)
     },
     onError: (errorResponse) => {
-      console.error('Google Login Failed:', errorResponse)
-      toast.error('Google authentication failed.')
+      console.error('❌ Google Login Failed:', errorResponse)
+      console.error('Error details:', JSON.stringify(errorResponse, null, 2))
+      toast.error('Google authentication failed. Please try again.')
+      setLoading(false)
     },
     scope: 'https://www.googleapis.com/auth/drive.file',
   })
