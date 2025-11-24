@@ -48,29 +48,24 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
         return
       }
 
-      // Format links for NotebookLM
-      let formattedText = '=== SmarTrack Links Export ===\n\n'
+      // Format links for NotebookLM - clean format with only essential data
+      let formattedText = ''
       
       selectedLinks.forEach((link: any, index: number) => {
-        formattedText += `${index + 1}. ${link.title || 'Untitled'}\n`
-        formattedText += `   URL: ${link.url}\n`
+        // Title and URL
+        formattedText += `${link.title || 'Untitled'}\n`
+        formattedText += `${link.url}\n`
         
+        // Description/Summary
         if (link.summary || link.description) {
-          formattedText += `   Description: ${link.summary || link.description}\n`
+          formattedText += `${link.summary || link.description}\n`
         }
         
-        if (link.category) {
-          formattedText += `   Category: ${link.category}\n`
+        // Add separator between links
+        if (index < selectedLinks.length - 1) {
+          formattedText += '\n---\n\n'
         }
-        
-        if (link.tags && link.tags.length > 0) {
-          formattedText += `   Tags: ${link.tags.join(', ')}\n`
-        }
-        
-        formattedText += '\n'
       })
-
-      formattedText += `\nTotal: ${selectedLinks.length} link${selectedLinks.length !== 1 ? 's' : ''}`
 
       // Copy to clipboard
       await navigator.clipboard.writeText(formattedText)
