@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { useToast } from './Toast'
 import { useBackendApi } from '../hooks/useBackendApi'
@@ -19,8 +19,14 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [copiedCount, setCopiedCount] = useState(0)
+  const modalDataRef = useRef<{ show: boolean; count: number }>({ show: false, count: 0 })
   const toast = useToast()
   const { makeRequest } = useBackendApi()
+
+  // Debug: Log whenever showModal or copiedCount changes
+  useEffect(() => {
+    console.log('🔄 State changed - showModal:', showModal, 'copiedCount:', copiedCount)
+  }, [showModal, copiedCount])
 
   const handleCopy = async () => {
     if (selectedLinkIds.length === 0) {
@@ -89,10 +95,22 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
       }
       
       console.log('Setting modal state: true, count:', selectedLinks.length)
+      
+      // Batch state updates using React.startTransition or direct batching
+      const count = selectedLinks.length
+      modalDataRef.current = { show: true, count }
+      
+      // Set states in batched update
       setCopied(true)
-      setCopiedCount(selectedLinks.length)
-      setShowModal(true)
-      toast.success(`Copied ${selectedLinks.length} link${selectedLinks.length > 1 ? 's' : ''} to clipboard!`)
+      setCopiedCount(count)
+      
+      // Use setTimeout to ensure state update completes before showing modal
+      setTimeout(() => {
+        console.log('🚀 Triggering modal display')
+        setShowModal(true)
+      }, 0)
+      
+      toast.success(`Copied ${count} link${count > 1 ? 's' : ''} to clipboard!`)
       
       setTimeout(() => setCopied(false), 2000)
       
