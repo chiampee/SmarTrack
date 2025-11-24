@@ -13,8 +13,10 @@ const auth0ClientId = import.meta.env.VITE_AUTH0_CLIENT_ID
 const auth0Audience = import.meta.env.VITE_AUTH0_AUDIENCE
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
-// Debug: Log Google Client ID to verify it's loaded
-console.log('[ENV] Google Client ID loaded:', googleClientId ? `${googleClientId.substring(0, 15)}...` : 'MISSING')
+// Only log if missing
+if (!googleClientId) {
+  console.error('[ENV] ❌ Google Client ID is MISSING')
+}
 
 if (!auth0Domain || !auth0ClientId || !auth0Audience) {
   console.error('Auth0 environment variables are not set.')

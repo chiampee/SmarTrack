@@ -96,3 +96,4 @@ const result = testImageExtraction();
 console.log('\n=== Test Result ===');
 console.log('Extracted image URL:', result);
 
+

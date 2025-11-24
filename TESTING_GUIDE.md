@@ -91,3 +91,4 @@ If images are not showing, check the browser console (F12) for:
 4. Check if image URLs are being blocked by CORS
 5. Verify thumbnail element CSS is correct (should show when `has-image` class is present)
 
+

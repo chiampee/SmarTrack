@@ -17,7 +17,7 @@ interface JWTPayload {
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://smartrack-back.onrender.com'
 
 // Track if we've logged the backend URL (module-level, not window)
-let apiDebugLogged = false
+const apiDebugLogged = false
 
 export interface UserStats {
   linksUsed: number
@@ -82,36 +82,16 @@ export const useBackendApi = () => {
           // Check if existing token is still valid
           const existingToken = localStorage.getItem('authToken')
           if (existingToken && !isTokenExpired(existingToken)) {
-            console.log('[AUTH] ✅ Using existing valid token from localStorage')
-            const decoded = jwtDecode<JWTPayload>(existingToken)
-            const timeRemaining = decoded.exp - Math.floor(Date.now() / 1000)
-            console.log(`[AUTH] Token valid for ${Math.floor(timeRemaining / 60)} minutes ${timeRemaining % 60} seconds`)
             setToken(existingToken)
             return
           }
           
-          if (existingToken) {
-            console.log('[AUTH] Existing token expired or expiring soon, fetching new one')
-          }
-          
           // Always request email scope to ensure email is in token
-          console.log('[AUTH] 🔄 Fetching fresh token from Auth0...')
           const accessToken = await getAccessTokenSilently({
             authorizationParams: {
               scope: 'openid profile email',
             },
             cacheMode: existingToken ? 'off' : 'on' // Force refresh if we had an expired token
-          })
-          
-          // Validate new token
-          const decoded = jwtDecode<JWTPayload>(accessToken)
-          console.log('[AUTH] ✅ Fresh token obtained and stored')
-          console.log('[AUTH] Token details:', {
-            sub: decoded.sub,
-            email: decoded.email || 'Not in token (will fetch from userinfo)',
-            aud: decoded.aud,
-            expiresAt: new Date(decoded.exp * 1000).toISOString(),
-            validFor: `${Math.floor((decoded.exp - Math.floor(Date.now() / 1000)) / 60)} minutes`
           })
           
           setToken(accessToken)
@@ -152,11 +132,6 @@ export const useBackendApi = () => {
         console.warn('[AUTH WARNING] Seconds until expiry:', expiresIn)
         return
       }
-      
-      const refreshInMinutes = Math.floor(refreshIn / 60000)
-      const refreshInSeconds = Math.floor((refreshIn % 60000) / 1000)
-      console.log(`[AUTH] ⏰ Token auto-refresh scheduled in ${refreshInMinutes}m ${refreshInSeconds}s`)
-      console.log(`[AUTH] Token expires at: ${new Date(decoded.exp * 1000).toISOString()}`)
       
       const timerId = setTimeout(async () => {
         try {
@@ -260,14 +235,6 @@ export const useBackendApi = () => {
     }
 
     const url = `${API_BASE_URL}${endpoint}`
-    
-    // Always log backend URL on first request for debugging
-    if (!apiDebugLogged) {
-      console.log(`[API] Backend URL configured: ${API_BASE_URL}`)
-      console.log(`[API] Environment VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL || 'not set (using default)'}`)
-      console.log(`[API] Making request to: ${url}`)
-      apiDebugLogged = true
-    }
     
     try {
       setIsLoading(true)
