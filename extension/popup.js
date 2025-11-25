@@ -1175,6 +1175,15 @@ class SmarTrackPopup {
       if (loginView && !loginView.classList.contains('hidden')) {
         const token = await this.getAuthToken();
         if (token) {
+          console.log('[SRT] Token found during background check, ensuring persistence...');
+          // Ensure token is saved to chrome.storage.local
+          const expiry = this.getTokenExpiry(token);
+          await chrome.storage.local.set({
+            [CONSTANTS.STORAGE_KEYS.AUTH_TOKEN]: token,
+            [CONSTANTS.STORAGE_KEYS.TOKEN_EXPIRY]: expiry
+          });
+          console.log('[SRT] Token persisted to chrome.storage.local');
+          
           // Stop checking once token is found
           this.stopBackgroundTokenCheck();
           location.reload();

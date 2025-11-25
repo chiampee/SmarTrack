@@ -13,14 +13,16 @@ export const PasteDestinationModal: React.FC<PasteDestinationModalProps> = ({
   onClose,
   linkCount
 }) => {
-  console.log('🎯 PasteDestinationModal render - isOpen:', isOpen, 'linkCount:', linkCount)
+  if (import.meta.env.DEV) {
+    console.log('🎯 PasteDestinationModal render - isOpen:', isOpen, 'linkCount:', linkCount)
+  }
   
   if (!isOpen) {
-    console.log('❌ Modal NOT rendering (isOpen is false)')
+    if (import.meta.env.DEV) console.log('❌ Modal NOT rendering (isOpen is false)')
     return null
   }
   
-  console.log('✅ Modal RENDERING with Portal')
+  if (import.meta.env.DEV) console.log('✅ Modal RENDERING with Portal')
 
   const destinations = [
     {

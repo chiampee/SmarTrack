@@ -23,9 +23,11 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
   const toast = useToast()
   const { makeRequest } = useBackendApi()
 
-  // Debug: Log whenever showModal or copiedCount changes
+  // Monitor state changes for debugging in development only
   useEffect(() => {
-    console.log('🔄 State changed - showModal:', showModal, 'copiedCount:', copiedCount)
+    if (import.meta.env.DEV) {
+      console.log('🔄 State changed - showModal:', showModal, 'copiedCount:', copiedCount)
+    }
   }, [showModal, copiedCount])
 
   const handleCopy = async () => {
@@ -65,7 +67,7 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
       // Copy to clipboard
       try {
         await navigator.clipboard.writeText(formattedText)
-        console.log('✅ Clipboard write successful')
+        if (import.meta.env.DEV) console.log('✅ Clipboard write successful')
       } catch (clipboardError) {
         console.error('Clipboard API failed, using fallback:', clipboardError)
         // Fallback: create temporary textarea
@@ -77,10 +79,12 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
         textarea.select()
         document.execCommand('copy')
         document.body.removeChild(textarea)
-        console.log('✅ Fallback copy successful')
+        if (import.meta.env.DEV) console.log('✅ Fallback copy successful')
       }
       
-      console.log('Setting modal state: true, count:', selectedLinks.length)
+      if (import.meta.env.DEV) {
+        console.log('Setting modal state: true, count:', selectedLinks.length)
+      }
       
       // Batch state updates using React.startTransition or direct batching
       const count = selectedLinks.length
@@ -92,7 +96,7 @@ export const CopyLinksButton: React.FC<CopyLinksButtonProps> = ({
       
       // Use setTimeout to ensure state update completes before showing modal
       setTimeout(() => {
-        console.log('🚀 Triggering modal display')
+        if (import.meta.env.DEV) console.log('🚀 Triggering modal display')
         setShowModal(true)
       }, 0)
       
