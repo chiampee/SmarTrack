@@ -33,6 +33,9 @@ export const Settings: React.FC = () => {
       setIsDeleting(true)
       const response = await makeRequest<{ message: string; deletedCount: number }>('/api/links', {
         method: 'DELETE',
+        headers: {
+          'X-Confirm-Delete-All': 'yes'
+        }
       })
       toast.success(`${response.deletedCount} links deleted successfully`)
       setShowDeleteConfirm(false)
