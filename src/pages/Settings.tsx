@@ -31,8 +31,12 @@ export const Settings: React.FC = () => {
 
     try {
       setIsDeleting(true)
+      // ✅ Phase 2 P2-1: Delete all links requires confirmation header for safety
       const response = await makeRequest<{ message: string; deletedCount: number }>('/api/links', {
         method: 'DELETE',
+        headers: {
+          'X-Confirm-Delete-All': 'yes'  // Required confirmation header
+        }
       })
       toast.success(`${response.deletedCount} links deleted successfully`)
       setShowDeleteConfirm(false)
