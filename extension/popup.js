@@ -26,8 +26,8 @@ const CONSTANTS = {
     LAST_CATEGORY: 'lastCategory'
   },
   
-  // Default Categories (note: "other" is always added separately to trigger custom category input)
-  DEFAULT_CATEGORIES: ['research', 'articles', 'tools', 'references', 'other'],
+  // Default Categories
+  DEFAULT_CATEGORIES: ['research', 'articles', 'tools', 'references'],
   
   // DOM Selectors
   SELECTORS: {
@@ -303,11 +303,20 @@ class SmarTrackPopup {
       ]);
       
       const stored = result?.[CONSTANTS.STORAGE_KEYS.SETTINGS]?.categories;
-      this.categories = Array.isArray(stored) && stored.length > 0
+      let categories = Array.isArray(stored) && stored.length > 0
         ? stored
         : [...CONSTANTS.DEFAULT_CATEGORIES];
       
+      // Filter out "other" if it exists (legacy cleanup)
+      categories = categories.filter(cat => cat !== 'other');
+      
+      this.categories = categories.length > 0 ? categories : [...CONSTANTS.DEFAULT_CATEGORIES];
       this.lastCategory = result?.[CONSTANTS.STORAGE_KEYS.LAST_CATEGORY] || null;
+      
+      // If last category was "other", reset it
+      if (this.lastCategory === 'other') {
+        this.lastCategory = null;
+      }
     } catch (error) {
       console.error('[SRT] Failed to load categories:', error);
       this.categories = [...CONSTANTS.DEFAULT_CATEGORIES];
@@ -1636,17 +1645,9 @@ class SmarTrackPopup {
     let category = CONSTANTS.DEFAULT_CATEGORIES[0];
     try {
       const select = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
-      const customInput = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_INPUT);
       
-      // If "other" is selected and there's a custom category input, use that
-      if (select?.value === 'other' && customInput?.value.trim()) {
-        category = sanitizeString(customInput.value.trim().toLowerCase(), 50);
-      } else if (select?.value && select.value !== 'other') {
-        // Use selected category (not "other")
+      if (select?.value) {
         category = select.value;
-      } else if (select?.value === 'other' && !customInput?.value.trim()) {
-        // If "other" is selected but no custom value, default to "other"
-        category = 'other';
       }
     } catch (error) {
       console.error('[SRT] Failed to get category:', error);
