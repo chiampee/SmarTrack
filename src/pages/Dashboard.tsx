@@ -715,7 +715,7 @@ export const Dashboard: React.FC = () => {
   const shouldAnimate = !prefersReducedMotion
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 pb-4 sm:pb-0">
       <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-8">
         {/* Header */}
         <motion.div

@@ -64,17 +64,12 @@ body {
   body {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
-    /* Prevent rubber banding on iOS */
-    position: fixed;
-    overflow-y: scroll;
-    width: 100%;
-    height: 100%;
     font-size: 16px; /* Prevent zoom on input focus */
+    /* Remove fixed positioning that causes scroll illusion */
   }
   
   body > #root {
-    height: 100%;
-    overflow-y: auto;
+    min-height: 100vh;
     -webkit-overflow-scrolling: touch;
   }
   
