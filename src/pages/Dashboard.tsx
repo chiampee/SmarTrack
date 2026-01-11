@@ -726,17 +726,36 @@ export const Dashboard: React.FC = () => {
           className="bg-white rounded-lg shadow-sm border border-gray-200 mb-3 sm:mb-6 p-2.5 sm:p-3"
         >
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-            {/* Left: Search */}
-            <div className="flex-1 min-w-0 order-1">
-              <SearchAutocomplete
-                value={searchQuery}
-                onChange={setSearchQuery}
-                links={links}
-                placeholder="Search..."
-              />
+            {/* Left: Search with integrated Filter */}
+            <div className="flex-1 min-w-0 order-1 relative">
+              <div className="relative flex items-center">
+                <SearchAutocomplete
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  links={links}
+                  placeholder="Search..."
+                />
+                {/* Filter Button inside Search */}
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10">
+                  <FiltersDropdown
+                    filters={{
+                      category: filters.category,
+                      dateRange: filters.dateRange,
+                      tags: filters.tags,
+                      contentType: filters.contentType,
+                    }}
+                    onFiltersChange={(newFilters) => {
+                      setFilters(prev => ({
+                        ...prev,
+                        ...newFilters
+                      }))
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Right: All Controls */}
+            {/* Right: Action Buttons and View Controls */}
             <div className="flex items-center gap-2 flex-shrink-0 order-2 flex-wrap sm:flex-nowrap">
               {/* Action Buttons */}
               <button 
@@ -758,25 +777,6 @@ export const Dashboard: React.FC = () => {
                 <Download className="w-4 h-4 flex-shrink-0" />
                 <span className="hidden lg:inline">Export</span>
               </button>
-
-              {/* Divider */}
-              <div className="hidden sm:block w-px h-8 bg-gray-200"></div>
-
-              {/* Filter Button */}
-              <FiltersDropdown
-                filters={{
-                  category: filters.category,
-                  dateRange: filters.dateRange,
-                  tags: filters.tags,
-                  contentType: filters.contentType,
-                }}
-                onFiltersChange={(newFilters) => {
-                  setFilters(prev => ({
-                    ...prev,
-                    ...newFilters
-                  }))
-                }}
-              />
               
               {/* View Toggle */}
               <div className="flex items-center gap-0.5 border-l border-gray-200 pl-2">
