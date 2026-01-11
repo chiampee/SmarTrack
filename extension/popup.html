@@ -379,6 +379,11 @@
       color: #1e293b;
       font-family: inherit;
       font-weight: 500;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 44px;
     }
 
     .select:hover {
@@ -390,6 +395,107 @@
       outline: none;
       border-color: #3b82f6;
       box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+    }
+
+    .category-wrapper {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .category-select {
+      flex: 1;
+    }
+
+    .btn-icon {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      background: white;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 0;
+    }
+
+    .btn-icon:hover {
+      border-color: #3b82f6;
+      background: #eff6ff;
+      color: #3b82f6;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .btn-icon:active {
+      transform: translateY(0) scale(0.95);
+    }
+
+    .custom-category-row {
+      margin-top: 12px;
+      padding: 14px;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      animation: slideDown 0.25s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .custom-category-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .btn-small {
+      flex: 1;
+      padding: 9px 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .btn-primary-small {
+      background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-primary-small:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary-small {
+      background: white;
+      color: #64748b;
+      border: 2px solid #e2e8f0;
+      box-shadow: none;
+    }
+
+    .btn-secondary-small:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #475569;
     }
 
 
@@ -676,13 +782,22 @@
 
         <div class="form-group">
           <label class="label" for="category">Category</label>
-          <select id="category" class="select"></select>
-          <div id="customCategoryRow" class="hidden" style="margin-top:8px; display:flex; gap:8px;">
-            <input id="customCategoryInput" class="input" placeholder="Type a new category" style="flex:1;" />
-            <button id="saveCustomCategoryBtn" class="btn btn-secondary" type="button" style="flex:0 0 auto;">Add</button>
+          <div class="category-wrapper">
+            <select id="category" class="select category-select">
+              <option value="" disabled>Select a category...</option>
+            </select>
+            <button id="addCategoryBtn" type="button" class="btn-icon" title="Add custom category">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 3.5a.5.5 0 0 1 .5.5v3.5H12a.5.5 0 0 1 0 1H8.5V12a.5.5 0 0 1-1 0V8.5H4a.5.5 0 0 1 0-1h3.5V4a.5.5 0 0 1 .5-.5z"/>
+              </svg>
+            </button>
           </div>
-          <div style="margin-top:6px; display:none;">
-            <button id="addCategoryBtn" type="button" class="btn btn-secondary" style="padding:8px 10px; font-size:12px;">+ Add custom category</button>
+          <div id="customCategoryRow" class="custom-category-row hidden">
+            <input id="customCategoryInput" class="input" placeholder="Enter category name..." maxlength="30" />
+            <div class="custom-category-actions">
+              <button id="saveCustomCategoryBtn" type="button" class="btn-small btn-primary-small">Save</button>
+              <button id="cancelCustomCategoryBtn" type="button" class="btn-small btn-secondary-small">Cancel</button>
+            </div>
           </div>
         </div>
 
