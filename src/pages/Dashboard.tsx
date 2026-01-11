@@ -774,16 +774,19 @@ export const Dashboard: React.FC = () => {
               <button 
                 onClick={handleExport}
                 disabled={filteredLinksCount === 0}
-                className="btn btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                aria-label="Export links"
+                title={filteredLinksCount === 0 ? 'No links to export' : 'Export filtered links'}
               >
-                <Download className="w-4 h-4 mr-1" />
+                <Download className="w-4 h-4 inline mr-1.5" />
                 Export
               </button>
               <button 
                 onClick={() => setShowAddModal(true)}
-                className="btn btn-primary"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                aria-label="Add new link"
               >
-                <Plus className="w-4 h-4 mr-1" />
+                <Plus className="w-4 h-4 inline mr-1.5" />
                 Add Link
               </button>
             </div>
@@ -804,31 +807,37 @@ export const Dashboard: React.FC = () => {
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setFilters({ ...filters, dateRange: 'today' })}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
                   filters.dateRange === 'today'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 hover:border-gray-300'
                 }`}
+                aria-pressed={filters.dateRange === 'today'}
+                aria-label="Filter by today"
               >
                 Today
               </button>
               <button
                 onClick={() => setFilters({ ...filters, dateRange: 'last_week' })}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
                   filters.dateRange === 'last_week'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 hover:border-gray-300'
                 }`}
+                aria-pressed={filters.dateRange === 'last_week'}
+                aria-label="Filter by this week"
               >
                 This Week
               </button>
               <button
                 onClick={() => setFilters({ ...filters, dateRange: 'last_month' })}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
                   filters.dateRange === 'last_month'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 hover:border-gray-300'
                 }`}
+                aria-pressed={filters.dateRange === 'last_month'}
+                aria-label="Filter by this month"
               >
                 This Month
               </button>
@@ -836,10 +845,17 @@ export const Dashboard: React.FC = () => {
                 onClick={() => {
                   const favoritesFilter = links.filter(l => l.isFavorite)
                   setFilteredLinks(favoritesFilter)
+                  setActiveFilterId('favorites')
                 }}
-                className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all flex items-center gap-1"
+                className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-all flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+                  activeFilterId === 'favorites'
+                    ? 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200 hover:border-gray-300'
+                }`}
+                aria-pressed={activeFilterId === 'favorites'}
+                aria-label="Show favorites"
               >
-                <Star className="w-3 h-3" />
+                <Star className={`w-3 h-3 ${activeFilterId === 'favorites' ? 'fill-current' : ''}`} />
                 Favorites
               </button>
               {(filters.dateRange !== 'all_time' || filters.category || filters.tags.length > 0) && (
@@ -847,10 +863,12 @@ export const Dashboard: React.FC = () => {
                   onClick={() => {
                     setFilters({ category: '', dateRange: 'all_time', tags: [], contentType: '' })
                     setFilteredLinks(links)
+                    setActiveFilterId(null)
                   }}
-                  className="px-3 py-1.5 text-xs font-medium rounded-md bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-all"
+                  className="px-3 py-1.5 text-xs font-medium rounded-md bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+                  aria-label="Clear all filters"
                 >
-                  Clear
+                  Clear Filters
                 </button>
               )}
             </div>
@@ -977,41 +995,70 @@ export const Dashboard: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <div className="text-6xl mb-4">🔍</div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">No links match your search</h3>
-                      <p className="text-gray-600 mb-6">
+                      {/* ✅ SENIOR UX: Better empty state with actionable guidance */}
+                      <div className="text-6xl mb-4 animate-pulse">🔍</div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        {searchQuery 
+                          ? 'No links match your search' 
+                          : activeFilterId === 'archived' 
+                            ? 'No archived links yet'
+                            : activeFilterId === 'favorites'
+                              ? 'No favorites yet'
+                              : 'No links found'
+                        }
+                      </h3>
+                      <p className="text-gray-600 mb-6 max-w-md">
                         {searchQuery ? (
-                          <>Try adjusting your search terms or filters</>
+                          <>Try different keywords or check your spelling. You can search by title, description, URL, or tags.</>
                         ) : activeFilterId === 'archived' ? (
-                          <>You haven't archived any links yet</>
+                          <>Archived links are hidden from your main view. Unarchive them to see them again.</>
+                        ) : activeFilterId === 'favorites' ? (
+                          <>Mark links as favorites by clicking the star icon. Your favorites will appear here.</>
+                        ) : filters.category || filters.tags.length > 0 || filters.dateRange !== 'all_time' ? (
+                          <>Your current filters are too restrictive. Try adjusting them to see more results.</>
                         ) : (
-                          <>Clear your filters to see all links</>
+                          <>No links match your current view. Try changing your filters or search terms.</>
                         )}
                       </p>
-                      <div className="flex gap-3">
+                      <div className="flex flex-wrap items-center justify-center gap-3">
                         {searchQuery && (
                           <button
                             onClick={() => setSearchQuery('')}
-                            className="btn btn-secondary"
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            aria-label="Clear search"
                           >
                             Clear Search
                           </button>
                         )}
-                        <button 
-                          onClick={() => {
-                            setSearchQuery('')
-                            handleCollectionSelect('all')
-                            setFilters({
-                              category: '',
-                              dateRange: 'all_time',
-                              tags: [],
-                              contentType: ''
-                            })
-                          }}
-                          className="btn btn-primary"
-                        >
-                          Show All Links
-                        </button>
+                        {(filters.category || filters.tags.length > 0 || filters.dateRange !== 'all_time' || searchQuery) && (
+                          <button 
+                            onClick={() => {
+                              setSearchQuery('')
+                              handleCollectionSelect('all')
+                              setFilters({
+                                category: '',
+                                dateRange: 'all_time',
+                                tags: [],
+                                contentType: ''
+                              })
+                              setActiveFilterId(null)
+                            }}
+                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            aria-label="Clear all filters"
+                          >
+                            Clear All Filters
+                          </button>
+                        )}
+                        {links.length > 0 && (
+                          <button 
+                            onClick={() => setShowAddModal(true)}
+                            className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            aria-label="Add new link"
+                          >
+                            <Plus className="w-4 h-4 inline mr-1.5" />
+                            Add New Link
+                          </button>
+                        )}
                       </div>
                     </>
                   )}
