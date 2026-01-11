@@ -716,161 +716,41 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 pb-4 sm:pb-0">
       <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-8">
-        {/* Header */}
+        
+        {/* ✅ UNIFIED TOOLBAR: Single bar with all controls */}
         <motion.div
           initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
           variants={fadeInUp}
           transition={{ duration: animationConfig.duration, ease: "easeOut" }}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 sm:mb-8 px-3 sm:px-6 py-2.5 sm:py-5"
+          className="bg-white rounded-lg shadow-sm border border-gray-200 mb-3 sm:mb-6 p-2.5 sm:p-3"
         >
-          {/* ✅ MOBILE RESPONSIVE: Stack on mobile, horizontal on desktop */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2 flex-wrap">
-                <button
-                  onClick={() => handleCollectionSelect('all')}
-                  className="text-lg sm:text-3xl font-bold text-gray-900 hover:text-blue-600 hover:underline cursor-pointer transition-all duration-200 break-words"
-                >
-                  {currentCategoryName 
-                    ? currentCategoryName 
-                    : selectedCollectionId 
-                      ? collections.find(c => c.id === selectedCollectionId)?.name || 'Collection'
-                      : activeFilterId === 'favorites'
-                        ? 'Favorites'
-                        : activeFilterId === 'recent'
-                          ? 'Recent'
-                          : activeFilterId === 'archived'
-                            ? 'Archived'
-                            : 'Research Dashboard'}
-                </button>
-                {selectedCollectionId && (
-                  <>
-                    <span className="text-gray-400 select-none hidden sm:inline">/</span>
-                    <span className="text-base sm:text-2xl font-semibold text-blue-600 break-words">
-                      {collections.find(c => c.id === selectedCollectionId)?.name || 'Collection'}
-                    </span>
-                  </>
-                )}
-              </div>
-              {/* ✅ MOBILE RESPONSIVE: Stats cards - wrap on mobile, smaller on mobile */}
-              <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap">
-                <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-50 rounded-lg border border-blue-100">
-                  <span className="text-xs sm:text-base font-semibold text-blue-700">{filteredLinksCount}</span>
-                  <span className="text-xs text-blue-600 hidden sm:inline">links</span>
-                </div>
-                <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-yellow-50 rounded-lg border border-yellow-100">
-                  <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-600 fill-current" />
-                  <span className="text-xs sm:text-base font-semibold text-yellow-700">{favoritesCount}</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* ✅ IMPROVED: Action buttons - better design, removed Copy button */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            {/* Left: Action Buttons */}
+            <div className="flex items-center gap-2 flex-shrink-0 order-1 sm:order-1">
+              <button 
+                onClick={() => setShowAddModal(true)}
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-1.5"
+                aria-label="Add new link"
+              >
+                <Plus className="w-4 h-4 flex-shrink-0" />
+                <span className="hidden sm:inline">New Link</span>
+              </button>
+              
               <button 
                 onClick={handleExport}
                 disabled={filteredLinksCount === 0}
-                className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-gray-700 bg-white border-2 border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm hover:shadow-md min-h-[40px] sm:min-h-0 flex items-center justify-center gap-1.5"
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm flex items-center justify-center gap-1.5"
                 aria-label="Export links"
                 title={filteredLinksCount === 0 ? 'No links to export' : 'Export filtered links'}
               >
-                <Download className="w-4 h-4 sm:w-4 sm:h-4 flex-shrink-0" />
+                <Download className="w-4 h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Export</span>
               </button>
-              <button 
-                onClick={() => setShowAddModal(true)}
-                className="px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 active:from-blue-800 active:to-blue-900 transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 min-h-[40px] sm:min-h-0 flex items-center justify-center gap-1.5"
-                aria-label="Add new link"
-              >
-                <Plus className="w-4 h-4 sm:w-4 sm:h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Add Link</span>
-                <span className="sm:hidden">Add</span>
-              </button>
             </div>
-          </div>
-        </motion.div>
 
-        {/* ✅ MINIMALISTIC: Search and Filters - compact, clean design */}
-        <motion.div
-          initial={shouldAnimate ? "hidden" : "visible"}
-          animate="visible"
-          variants={fadeInUp}
-          transition={{ delay: shouldAnimate ? 0.1 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-          className="bg-white rounded-lg shadow-sm border border-gray-200 mb-3 sm:mb-8 p-2.5 sm:p-4"
-        >
-          {/* Minimalistic Quick Filters - no heading, inline with search */}
-          <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 flex-wrap">
-            <button
-              onClick={() => setFilters({ ...filters, dateRange: 'today' })}
-              className={`px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium rounded transition-all focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                filters.dateRange === 'today'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-              aria-pressed={filters.dateRange === 'today'}
-              aria-label="Filter by today"
-            >
-              Today
-            </button>
-            <button
-              onClick={() => setFilters({ ...filters, dateRange: 'last_week' })}
-              className={`px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium rounded transition-all focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                filters.dateRange === 'last_week'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-              aria-pressed={filters.dateRange === 'last_week'}
-              aria-label="Filter by this week"
-            >
-              Week
-            </button>
-            <button
-              onClick={() => setFilters({ ...filters, dateRange: 'last_month' })}
-              className={`px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium rounded transition-all focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                filters.dateRange === 'last_month'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-              aria-pressed={filters.dateRange === 'last_month'}
-              aria-label="Filter by this month"
-            >
-              Month
-            </button>
-            <button
-              onClick={() => {
-                const favoritesFilter = links.filter(l => l.isFavorite)
-                setFilteredLinks(favoritesFilter)
-                setActiveFilterId('favorites')
-              }}
-              className={`px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium rounded transition-all flex items-center gap-1 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                activeFilterId === 'favorites'
-                  ? 'bg-yellow-100 text-yellow-700'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-              aria-pressed={activeFilterId === 'favorites'}
-              aria-label="Show favorites"
-            >
-              <Star className={`w-3 h-3 ${activeFilterId === 'favorites' ? 'fill-current' : ''}`} />
-            </button>
-            {(filters.dateRange !== 'all_time' || filters.category || filters.tags.length > 0) && (
-              <button
-                onClick={() => {
-                  setFilters({ category: '', dateRange: 'all_time', tags: [], contentType: '' })
-                  setFilteredLinks(links)
-                  setActiveFilterId(null)
-                }}
-                className="px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium rounded text-red-600 hover:bg-red-50 transition-all focus:outline-none focus:ring-1 focus:ring-red-500"
-                aria-label="Clear all filters"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-
-          {/* Minimalistic Search and Controls - single row, compact */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 min-w-0">
+            {/* Center: Search */}
+            <div className="flex-1 min-w-0 order-3 sm:order-2">
               <SearchAutocomplete
                 value={searchQuery}
                 onChange={setSearchQuery}
@@ -878,8 +758,9 @@ export const Dashboard: React.FC = () => {
                 placeholder="Search..."
               />
             </div>
-            
-            <div className="flex items-center gap-1 flex-shrink-0">
+
+            {/* Right: Filter and View Controls */}
+            <div className="flex items-center gap-2 flex-shrink-0 order-2 sm:order-3">
               <FiltersDropdown
                 filters={{
                   category: filters.category,
@@ -898,23 +779,25 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-center gap-0.5 border-l border-gray-200 pl-2">
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                  className={`p-2 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                   }`}
                   aria-label="List view"
                   aria-pressed={viewMode === 'list'}
+                  title="List view"
                 >
-                  <List className="w-4 h-4" />
+                  <List className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-1.5 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                  className={`p-2 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                   }`}
                   aria-label="Grid view"
                   aria-pressed={viewMode === 'grid'}
+                  title="Grid view"
                 >
-                  <Grid className="w-4 h-4" />
+                  <Grid className="w-5 h-5" />
                 </button>
               </div>
             </div>
