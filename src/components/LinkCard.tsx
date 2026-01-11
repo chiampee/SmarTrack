@@ -88,7 +88,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       if (viewMode === 'grid') {
         return (
           <div 
-            className={`card p-4 sm:p-5 transition-all duration-300 hover:shadow-xl sm:hover:-translate-y-1 hover:border-blue-300 cursor-move group relative overflow-hidden touch-manipulation ${
+            className={`card p-3 sm:p-5 transition-all duration-300 hover:shadow-xl sm:hover:-translate-y-1 hover:border-blue-300 cursor-move group relative overflow-hidden touch-manipulation ${
               isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-br from-blue-50 to-purple-50 sm:scale-[1.02] border-blue-300' : 'border-gray-200'
             }`}
             draggable
@@ -209,90 +209,90 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
           </div>
         </div>
 
-        {/* ✅ MOBILE RESPONSIVE: Thumbnail with better mobile sizing */}
+        {/* ✅ MOBILE RESPONSIVE: Thumbnail with better mobile sizing, smaller on mobile */}
         {link.thumbnail && (
-          <div className="mb-3">
+          <div className="mb-2 sm:mb-3">
             <img
               src={link.thumbnail}
               alt={link.title}
-              className="w-full h-28 sm:h-32 object-cover rounded-lg"
+              className="w-full h-20 sm:h-32 object-cover rounded-lg"
               loading="lazy"
             />
           </div>
         )}
 
         {/* Content */}
-        <div className="space-y-2">
-          <div className="flex items-start gap-2">
-            <span className="text-lg">{getContentTypeIcon(link.contentType)}</span>
+        <div className="space-y-1.5 sm:space-y-2">
+          <div className="flex items-start gap-1.5 sm:gap-2">
+            <span className="text-base sm:text-lg">{getContentTypeIcon(link.contentType)}</span>
             <div className="flex-1 min-w-0">
               <a
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-700 hover:underline font-medium text-sm line-clamp-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
+                className="text-blue-600 hover:text-blue-700 hover:underline font-medium text-xs sm:text-sm line-clamp-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
                 title={link.title}
                 aria-label={`Open ${link.title} in new tab`}
               >
                 {link.title}
               </a>
-              <p className="text-gray-500 text-xs truncate mt-1" title={link.url}>
+              <p className="text-gray-500 text-xs truncate mt-0.5 sm:mt-1" title={link.url}>
                 {link.url}
               </p>
             </div>
           </div>
 
-          {/* ✅ UX IMPROVED: Description - only show if exists (progressive disclosure) */}
+          {/* ✅ UX IMPROVED: Description - only show if exists (progressive disclosure), smaller on mobile */}
           {link.description && (
-            <p className="text-gray-600 text-xs line-clamp-2 mt-1.5" title={link.description}>
+            <p className="text-gray-600 text-xs line-clamp-2 mt-1 sm:mt-1.5" title={link.description}>
               {link.description}
             </p>
           )}
 
-          {/* ✅ UX IMPROVED: Metadata badges - cleaner grouping */}
-          <div className="flex items-center gap-2 flex-wrap mt-3">
+          {/* ✅ UX IMPROVED: Metadata badges - cleaner grouping, smaller on mobile */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mt-2 sm:mt-3">
             {/* Category Badge */}
             {link.category && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 text-xs font-medium rounded-md border border-purple-200/50">
-                <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+              <span className="inline-flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 text-xs font-medium rounded-md border border-purple-200/50">
+                <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-purple-500 rounded-full"></span>
                 {link.category}
               </span>
             )}
             
             {/* Collection/Project Badge */}
             {link.collectionId && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 text-xs font-medium rounded-md border border-green-200/50">
-                <Folder className="w-3 h-3" />
+              <span className="inline-flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 text-xs font-medium rounded-md border border-green-200/50">
+                <Folder className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 {getCollectionName(link.collectionId) || 'Project'}
               </span>
             )}
           </div>
 
-          {/* ✅ UX IMPROVED: Tags - only show if they exist (no "No tags" text) */}
+          {/* ✅ UX IMPROVED: Tags - only show if they exist (no "No tags" text), smaller on mobile */}
           {link.tags && link.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-1.5 sm:mt-2">
               {link.tags.map((tag, index) => (
                 <span
                   key={index}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-md border border-blue-200/50 hover:bg-blue-100 transition-colors"
+                  className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-md border border-blue-200/50 hover:bg-blue-100 transition-colors"
                   title={tag}
                 >
-                  <Tag className="w-3 h-3" />
+                  <Tag className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                   {tag}
                 </span>
               ))}
             </div>
           )}
 
-          {/* ✅ UX IMPROVED: Footer with better date and favorite display */}
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+          {/* ✅ UX IMPROVED: Footer with better date and favorite display, smaller on mobile */}
+          <div className="flex items-center justify-between mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
             <span className="text-xs text-gray-500 font-medium">{formatDate(link.createdAt)}</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {link.isFavorite && (
-                <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
+                <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-500 fill-current" />
               )}
               {link.isArchived && (
-                <Archive className="w-3.5 h-3.5 text-gray-400" />
+                <Archive className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-400" />
               )}
             </div>
           </div>
@@ -301,10 +301,10 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     )
   }
 
-      // ✅ MOBILE RESPONSIVE: List view with better touch interactions
+      // ✅ MOBILE RESPONSIVE: List view with better touch interactions, more compact on mobile
       return (
         <div 
-          className={`card p-4 sm:p-5 transition-all duration-300 hover:shadow-xl hover:border-blue-300 hover:bg-blue-50/30 cursor-move group relative touch-manipulation ${
+          className={`card p-3 sm:p-5 transition-all duration-300 hover:shadow-xl hover:border-blue-300 hover:bg-blue-50/30 cursor-move group relative touch-manipulation ${
             isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300' : 'border-gray-200'
           }`}
           draggable
@@ -316,35 +316,35 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         >
           {/* ✅ MOBILE RESPONSIVE: Selection indicator */}
           {isSelected && (
-            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 w-2.5 h-2.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full animate-pulse" aria-hidden="true" />
+            <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 w-2 h-2 sm:w-2 sm:h-2 bg-blue-500 rounded-full animate-pulse" aria-hidden="true" />
           )}
-      <div className="flex items-start gap-3 sm:gap-4">
+      <div className="flex items-start gap-2.5 sm:gap-4">
         {/* ✅ MOBILE RESPONSIVE: Selection checkbox with better touch targets */}
-        <label className="flex items-center cursor-pointer group mt-1 touch-manipulation">
+        <label className="flex items-center cursor-pointer group mt-0.5 sm:mt-1 touch-manipulation">
           <input
             type="checkbox"
             checked={isSelected}
             onChange={onSelect}
-            className="w-5 h-5 sm:w-4 sm:h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all cursor-pointer"
+            className="w-4 h-4 sm:w-4 sm:h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all cursor-pointer"
             aria-label={`Select ${link.title}`}
           />
           <span className="sr-only">Select link</span>
         </label>
 
-        {/* ✅ MOBILE RESPONSIVE: Favicon/Thumbnail with better sizing */}
+        {/* ✅ MOBILE RESPONSIVE: Favicon/Thumbnail with better sizing, smaller on mobile */}
         <div className="flex-shrink-0">
           {link.thumbnail ? (
             <img
               src={link.thumbnail}
               alt={link.title}
-              className="w-14 h-14 sm:w-12 sm:h-12 object-cover rounded-lg"
+              className="w-12 h-12 sm:w-12 sm:h-12 object-cover rounded-lg"
               loading="lazy"
             />
           ) : link.favicon ? (
             <img
               src={link.favicon}
               alt={link.title}
-              className="w-10 h-10 sm:w-8 sm:h-8"
+              className="w-8 h-8 sm:w-8 sm:h-8"
               loading="lazy"
             />
           ) : (
@@ -362,67 +362,67 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-700 hover:underline font-medium text-base sm:text-lg flex items-start sm:items-center gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded py-1 -my-1"
+                className="text-blue-600 hover:text-blue-700 hover:underline font-medium text-sm sm:text-lg flex items-start sm:items-center gap-1.5 sm:gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded py-0.5 -my-0.5 sm:py-1 sm:-my-1"
                 title={link.title}
                 aria-label={`Open ${link.title} in new tab`}
               >
                 <span className="line-clamp-2 flex-1">{link.title}</span>
-                <ExternalLink className="w-4 h-4 flex-shrink-0 opacity-70 group-hover:opacity-100 transition-opacity mt-0.5 sm:mt-0" />
+                <ExternalLink className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 opacity-70 group-hover:opacity-100 transition-opacity mt-0.5 sm:mt-0" />
               </a>
-              <p className="text-gray-500 text-xs sm:text-sm truncate mt-1" title={link.url}>
+              <p className="text-gray-500 text-xs truncate mt-0.5 sm:mt-1" title={link.url}>
                 {link.url}
               </p>
               
-              {/* ✅ UX IMPROVED: Description - only show if exists */}
+              {/* ✅ UX IMPROVED: Description - only show if exists, smaller on mobile */}
               {link.description && (
-                <p className="text-gray-600 text-sm line-clamp-2 mt-2" title={link.description}>
+                <p className="text-gray-600 text-xs sm:text-sm line-clamp-2 mt-1 sm:mt-2" title={link.description}>
                   {link.description}
                 </p>
               )}
 
-              {/* ✅ UX IMPROVED: Metadata badges - cleaner grouping */}
-              <div className="flex items-center gap-2 flex-wrap mt-3">
+              {/* ✅ UX IMPROVED: Metadata badges - cleaner grouping, smaller on mobile */}
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mt-2 sm:mt-3">
                 {/* Category Badge */}
                 {link.category && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 text-xs font-medium rounded-md border border-purple-200/50">
-                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                  <span className="inline-flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 text-xs font-medium rounded-md border border-purple-200/50">
+                    <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-purple-500 rounded-full"></span>
                     {link.category}
                   </span>
                 )}
                 
                 {/* Collection/Project Badge */}
                 {link.collectionId && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 text-xs font-medium rounded-md border border-green-200/50">
-                    <Folder className="w-3 h-3" />
+                  <span className="inline-flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 text-xs font-medium rounded-md border border-green-200/50">
+                    <Folder className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                     {getCollectionName(link.collectionId) || 'Project'}
                   </span>
                 )}
               </div>
 
-              {/* ✅ UX IMPROVED: Tags - only show if they exist */}
+              {/* ✅ UX IMPROVED: Tags - only show if they exist, smaller on mobile */}
               {link.tags && link.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
+                <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-1.5 sm:mt-2">
                   {link.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-md border border-blue-200/50 hover:bg-blue-100 transition-colors"
+                      className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-md border border-blue-200/50 hover:bg-blue-100 transition-colors"
                       title={tag}
                     >
-                      <Tag className="w-3 h-3" />
+                      <Tag className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                       {tag}
                     </span>
                   ))}
                 </div>
               )}
 
-              <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+              <div className="flex items-center gap-3 sm:gap-4 mt-2 sm:mt-3 text-xs text-gray-500">
                 <span className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
+                  <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                   {formatDate(link.createdAt)}
                 </span>
                 {link.clickCount > 0 && (
                   <span className="flex items-center gap-1">
-                    <Eye className="w-3 h-3" />
+                    <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                     {link.clickCount} views
                   </span>
                 )}
