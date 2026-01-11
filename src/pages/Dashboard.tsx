@@ -432,10 +432,10 @@ export const Dashboard: React.FC = () => {
     }
   }
 
-  // Handle edit link save
+  // ✅ ENHANCED: Handle edit link save with proper data consistency
   const handleEditLink = async (linkId: string, updates: Partial<Link>) => {
     try {
-      await makeRequest(`/api/links/${linkId}`, {
+      const response = await makeRequest<Link>(`/api/links/${linkId}`, {
         method: 'PUT',
         body: JSON.stringify({
           title: updates.title,
@@ -445,11 +445,20 @@ export const Dashboard: React.FC = () => {
           contentType: updates.contentType,
           isFavorite: updates.isFavorite,
           isArchived: updates.isArchived,
+          ...(updates.collectionId !== undefined && { collectionId: updates.collectionId }),
         }),
       })
+      
+      // ✅ FIXED: Use response from server to ensure data consistency
       setLinks(links.map(l => 
-        l.id === linkId ? { ...l, ...updates, updatedAt: new Date() } : l
+        l.id === linkId ? { ...l, ...response, updatedAt: new Date(response.updatedAt) } : l
       ))
+      
+      // ✅ Refresh filtered links to reflect changes
+      setFilteredLinks(filteredLinks.map(l => 
+        l.id === linkId ? { ...l, ...response, updatedAt: new Date(response.updatedAt) } : l
+      ))
+      
       toast.success('Link updated successfully!')
     } catch (error) {
       logger.error('Failed to update link', { component: 'Dashboard', action: 'updateLink', metadata: { linkId } }, error as Error)
@@ -1205,6 +1214,7 @@ export const Dashboard: React.FC = () => {
         onSave={handleEditLink}
         link={editingLink}
         collections={collections}
+        existingCategories={Array.from(new Set(links.map(l => l.category).filter(Boolean)))}
       />
 
       {/* Create Collection Modal */}

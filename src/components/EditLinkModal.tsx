@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { X, Link as LinkIcon, Tag, FileText, Globe, Folder } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { X, Link as LinkIcon, Tag, FileText, Globe, Folder, ChevronDown } from 'lucide-react'
 import { Link, Collection } from '../types/Link'
 
 interface EditLinkModalProps {
@@ -8,36 +8,54 @@ interface EditLinkModalProps {
   onSave: (linkId: string, updates: Partial<Link>) => void
   link: Link | null
   collections?: Collection[]
+  existingCategories?: string[] // ✅ NEW: Pass existing categories for suggestions
 }
 
-export const EditLinkModal: React.FC<EditLinkModalProps> = ({ isOpen, onClose, onSave, link, collections = [] }) => {
+export const EditLinkModal: React.FC<EditLinkModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  link, 
+  collections = [],
+  existingCategories = []
+}) => {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('')
-  const [customCategory, setCustomCategory] = useState('')
+  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false)
   const [collectionId, setCollectionId] = useState<string>('')
   const [tags, setTags] = useState('')
   const [contentType, setContentType] = useState<Link['contentType']>('webpage')
   const [isFavorite, setIsFavorite] = useState(false)
   const [isArchived, setIsArchived] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const categoryInputRef = useRef<HTMLInputElement>(null)
+  const categoryDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Predefined categories
+  const predefinedCategories = ['Research', 'Articles', 'Tools', 'References', 'Tutorials']
+  
+  // ✅ ENHANCED: Combine predefined and existing categories, remove duplicates
+  const allCategories = Array.from(new Set([
+    ...predefinedCategories,
+    ...existingCategories.filter(cat => cat && !predefinedCategories.includes(cat))
+  ])).sort()
+
+  // ✅ ENHANCED: Filter suggestions based on input
+  const categorySuggestions = category
+    ? allCategories.filter(cat => 
+        cat.toLowerCase().includes(category.toLowerCase()) && 
+        cat !== category
+      )
+    : allCategories
 
   // Update form when link changes
   useEffect(() => {
     if (link) {
       setTitle(link.title)
       setDescription(link.description || '')
-      
-      // Check if category is in predefined list, otherwise set to "Other"
-      const predefinedCategories = ['Research', 'Articles', 'Tools', 'References', 'Tutorials']
-      if (predefinedCategories.includes(link.category)) {
-        setCategory(link.category)
-        setCustomCategory('')
-      } else {
-        setCategory('Other')
-        setCustomCategory(link.category)
-      }
-      
+      // ✅ FIXED: Set category directly (no "Other" workaround)
+      setCategory(link.category || '')
       setCollectionId(link.collectionId || '')
       setTags(link.tags.join(', '))
       setContentType(link.contentType)
@@ -46,6 +64,25 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({ isOpen, onClose, o
       setErrors({})
     }
   }, [link])
+
+  // ✅ NEW: Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        categoryDropdownRef.current &&
+        !categoryDropdownRef.current.contains(event.target as Node) &&
+        categoryInputRef.current &&
+        !categoryInputRef.current.contains(event.target as Node)
+      ) {
+        setShowCategorySuggestions(false)
+      }
+    }
+
+    if (showCategorySuggestions) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showCategorySuggestions])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,8 +105,8 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({ isOpen, onClose, o
       .map(t => t.trim())
       .filter(t => t.length > 0)
 
-    // Use custom category if "Other" is selected
-    const finalCategory = category === 'Other' ? customCategory.trim() : category
+    // ✅ FIXED: Use category directly (trimmed)
+    const finalCategory = category.trim()
 
     // Create updates object
     const updates: Partial<Link> = {
@@ -90,6 +127,19 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({ isOpen, onClose, o
     onClose()
   }
 
+  // ✅ NEW: Handle category selection from suggestions
+  const handleCategorySelect = (selectedCategory: string) => {
+    setCategory(selectedCategory)
+    setShowCategorySuggestions(false)
+    categoryInputRef.current?.focus()
+  }
+
+  // ✅ NEW: Handle category input change
+  const handleCategoryChange = (value: string) => {
+    setCategory(value)
+    setShowCategorySuggestions(true)
+  }
+
   const handleClose = () => {
     setErrors({})
     onClose()
@@ -108,22 +158,26 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({ isOpen, onClose, o
   if (!isOpen || !link) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">Edit Link</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        {/* ✅ ENHANCED: Header with better styling */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Edit Link</h2>
+            <p className="text-sm text-gray-500 mt-1">Update link details and metadata</p>
+          </div>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 hover:bg-white rounded-full p-1 transition-colors"
+            aria-label="Close"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-          <div className="space-y-4">
+        {/* ✅ ENHANCED: Form with better spacing */}
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1">
+          <div className="space-y-5">
             {/* URL (read-only) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -170,42 +224,58 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({ isOpen, onClose, o
               />
             </div>
 
-            {/* Category and Content Type */}
+            {/* ✅ ENHANCED: Category and Content Type */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Globe className="w-4 h-4 inline mr-1" />
                   Category
                 </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="input-field w-full"
-                >
-                  <option value="">Select a category</option>
-                  <option value="Research">Research</option>
-                  <option value="Articles">Articles</option>
-                  <option value="Tools">Tools</option>
-                  <option value="References">References</option>
-                  <option value="Tutorials">Tutorials</option>
-                  <option value="Other">Other</option>
-                </select>
-                
-                {/* Custom Category Input */}
-                {category === 'Other' && (
-                  <div className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Custom Category Name
-                    </label>
-                    <input
-                      type="text"
-                      value={customCategory}
-                      onChange={(e) => setCustomCategory(e.target.value)}
-                      placeholder="Enter your category name"
-                      className="input-field w-full"
-                    />
-                  </div>
-                )}
+                <div className="relative">
+                  <input
+                    ref={categoryInputRef}
+                    type="text"
+                    value={category}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    onFocus={() => setShowCategorySuggestions(true)}
+                    placeholder="Type or select a category"
+                    className="input-field w-full pr-10"
+                    list="category-suggestions"
+                  />
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  
+                  {/* ✅ NEW: Category Suggestions Dropdown */}
+                  {showCategorySuggestions && categorySuggestions.length > 0 && (
+                    <div
+                      ref={categoryDropdownRef}
+                      className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                    >
+                      {categorySuggestions.map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => handleCategorySelect(suggestion)}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                        >
+                          {suggestion}
+                          {predefinedCategories.includes(suggestion) && (
+                            <span className="ml-2 text-xs text-gray-400">(predefined)</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* ✅ NEW: Show message when no suggestions match */}
+                  {showCategorySuggestions && category && categorySuggestions.length === 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm text-gray-500">
+                      Press Enter to create "{category}"
+                    </div>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Type to search or create a new category
+                </p>
               </div>
 
               <div>
@@ -227,7 +297,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({ isOpen, onClose, o
               </div>
             </div>
 
-            {/* Tags */}
+            {/* ✅ ENHANCED: Tags with better UX */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Tag className="w-4 h-4 inline mr-1" />
@@ -240,8 +310,9 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({ isOpen, onClose, o
                 placeholder="research, article, example"
                 className="input-field w-full"
               />
-              <p className="mt-1 text-sm text-gray-500">
-                Separate tags with commas
+              <p className="mt-1.5 text-xs text-gray-500 flex items-center gap-1">
+                <span>💡</span>
+                <span>Separate tags with commas. Tags help organize and find your links.</span>
               </p>
             </div>
 
@@ -291,18 +362,18 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({ isOpen, onClose, o
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
+          {/* ✅ ENHANCED: Actions with better styling */}
+          <div className="flex items-center justify-end gap-3 mt-6 pt-6 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 pb-6">
             <button
               type="button"
               onClick={handleClose}
-              className="btn btn-secondary"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="btn btn-primary"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
             >
               Save Changes
             </button>
