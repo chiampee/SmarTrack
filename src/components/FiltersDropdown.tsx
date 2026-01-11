@@ -10,9 +10,10 @@ interface FiltersDropdownProps {
     contentType: Link['contentType'] | ''
   }
   onFiltersChange: (filters: any) => void
+  iconOnly?: boolean
 }
 
-export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFiltersChange }) => {
+export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFiltersChange, iconOnly = false }) => {
   const [isOpen, setIsOpen] = React.useState(false)
 
   const contentTypes: { value: Link['contentType']; label: string }[] = [
@@ -59,16 +60,30 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`btn btn-secondary flex items-center gap-2 ${
-          hasActiveFilters ? 'bg-blue-100 text-blue-700 border-blue-300' : ''
-        }`}
+        className={iconOnly 
+          ? `p-1.5 rounded-md transition-colors hover:bg-gray-100 ${
+              hasActiveFilters ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-gray-600'
+            }`
+          : `btn btn-secondary flex items-center gap-2 ${
+              hasActiveFilters ? 'bg-blue-100 text-blue-700 border-blue-300' : ''
+            }`
+        }
+        aria-label="Filter links"
+        title="Filters"
       >
         <Filter className="w-4 h-4" />
-        Filters
-        {hasActiveFilters && (
-          <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5">
-            Active
-          </span>
+        {!iconOnly && (
+          <>
+            Filters
+            {hasActiveFilters && (
+              <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5">
+                Active
+              </span>
+            )}
+          </>
+        )}
+        {iconOnly && hasActiveFilters && (
+          <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-600 rounded-full"></span>
         )}
       </button>
 

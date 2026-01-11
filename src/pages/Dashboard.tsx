@@ -750,6 +750,7 @@ export const Dashboard: React.FC = () => {
                         ...newFilters
                       }))
                     }}
+                    iconOnly={true}
                   />
                 </div>
               </div>
