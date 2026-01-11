@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List, Star, Download, Loader2, Archive, Calendar } from 'lucide-react'
+import { Plus, Grid, List, Star, Download, Loader2, Archive } from 'lucide-react'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { CollectionSidebar } from '../components/CollectionSidebar'
 import { LinkCard } from '../components/LinkCard'
@@ -814,12 +814,6 @@ export const Dashboard: React.FC = () => {
 
           {/* Right: View Controls - mobile optimized */}
           <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto justify-between md:justify-end">
-            {/* Sort Indicator - hidden on mobile, visible on tablet+ */}
-            <div className="hidden md:flex items-center gap-2 text-sm text-gray-600">
-              <Calendar className="w-4 h-4" />
-              <span className="hidden lg:inline">By Added Date</span>
-            </div>
-            
             {/* View Toggle - optimized for touch */}
             <div className="flex items-center gap-0.5 bg-gray-50 rounded-lg p-0.5 border border-gray-200">
               <button
