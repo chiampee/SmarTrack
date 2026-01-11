@@ -3,13 +3,16 @@ Links API endpoints
 Refactored to use utility functions for better maintainability
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
 from services.mongodb import get_database
 from services.auth import get_current_user
 from core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Import utility functions
 from utils.mongodb_utils import (
@@ -325,6 +328,27 @@ async def create_link(
         # Validate tags
         validated_tags = validate_tags(link_data.tags, max_count=20, max_tag_length=50)
         
+        # ✅ FIX: Validate collectionId if provided (prevent orphaned links)
+        if link_data.collectionId:
+            try:
+                collection_object_id = validate_object_id(link_data.collectionId, "Collection")
+                # Verify collection exists and belongs to user
+                collection = await db.collections.find_one(
+                    build_user_filter(user_id, {"_id": collection_object_id})
+                )
+                if not collection:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Collection '{link_data.collectionId}' not found or does not belong to you"
+                    )
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid collection ID format: {str(e)}"
+                )
+        
         # Extract content from URL (optional, can be slow)
         content_text = link_data.content
         if not content_text and link_data.contentType == "webpage":
@@ -502,10 +526,29 @@ async def delete_link(
 
 @router.delete("/links")
 async def delete_all_links(
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db = Depends(get_database)
 ):
-    """Delete all links for the current user"""
+    """
+    Delete all links for the current user
+    
+    ⚠️ DESTRUCTIVE OPERATION - Requires confirmation header
+    Add header: X-Confirm-Delete-All: yes
+    """
+    # ✅ Safety check: Require explicit confirmation header for this destructive operation
+    confirmation = request.headers.get("X-Confirm-Delete-All", "").lower()
+    if confirmation != "yes":
+        raise HTTPException(
+            status_code=428,  # 428 Precondition Required
+            detail={
+                "error": "ConfirmationRequired",
+                "message": "This destructive operation requires confirmation",
+                "requiredHeader": "X-Confirm-Delete-All: yes",
+                "hint": "Add the confirmation header to proceed with deleting all links"
+            }
+        )
+    
     try:
         user_id = current_user["sub"]
         result = await db.links.delete_many(build_user_filter(user_id))
@@ -515,5 +558,288 @@ async def delete_all_links(
             "deletedCount": result.deleted_count
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ✅ NEW: Bulk operations for multi-select functionality
+class BulkUpdateRequest(BaseModel):
+    linkIds: List[str]
+    updates: LinkUpdate
+
+class BulkDeleteRequest(BaseModel):
+    linkIds: List[str]
+
+
+@router.put("/links/bulk")
+async def bulk_update_links(
+    request: BulkUpdateRequest,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Bulk update multiple links at once (for multi-select operations)"""
+    try:
+        user_id = current_user["sub"]
+        
+        if not request.linkIds:
+            raise HTTPException(status_code=400, detail="No link IDs provided")
+        
+        if len(request.linkIds) > 100:
+            raise HTTPException(status_code=400, detail="Cannot update more than 100 links at once")
+        
+        # Validate all ObjectIds
+        object_ids = []
+        for link_id in request.linkIds:
+            try:
+                obj_id = validate_object_id(link_id, "Link")
+                object_ids.append(obj_id)
+            except Exception:
+                raise HTTPException(status_code=400, detail=f"Invalid link ID: {link_id}")
+        
+        # Build update data (same validation as single update)
+        update_data = {"updatedAt": datetime.utcnow()}
+        for field, value in request.updates.dict(exclude_unset=True).items():
+            if value is not None:
+                if field == "title":
+                    update_data[field] = validate_title(value, max_length=500)
+                elif field == "description":
+                    update_data[field] = validate_description(value, max_length=5000)
+                elif field == "tags":
+                    update_data[field] = validate_tags(value, max_count=20, max_tag_length=50)
+                elif field == "category" and value:
+                    update_data[field] = value.lower()
+                else:
+                    update_data[field] = value
+        
+        # Update all links (ensure they belong to user)
+        result = await db.links.update_many(
+            build_user_filter(user_id, {"_id": {"$in": object_ids}}),
+            {"$set": update_data}
+        )
+        
+        return {
+            "message": f"Updated {result.modified_count} links successfully",
+            "matchedCount": result.matched_count,
+            "modifiedCount": result.modified_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/links/bulk")
+async def bulk_delete_links(
+    request: BulkDeleteRequest,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Bulk delete multiple links at once (for multi-select operations)"""
+    try:
+        user_id = current_user["sub"]
+        
+        if not request.linkIds:
+            raise HTTPException(status_code=400, detail="No link IDs provided")
+        
+        if len(request.linkIds) > 100:
+            raise HTTPException(status_code=400, detail="Cannot delete more than 100 links at once")
+        
+        # Validate all ObjectIds
+        object_ids = []
+        for link_id in request.linkIds:
+            try:
+                obj_id = validate_object_id(link_id, "Link")
+                object_ids.append(obj_id)
+            except Exception:
+                raise HTTPException(status_code=400, detail=f"Invalid link ID: {link_id}")
+        
+        # Delete all links (ensure they belong to user)
+        result = await db.links.delete_many(
+            build_user_filter(user_id, {"_id": {"$in": object_ids}})
+        )
+        
+        return {
+            "message": f"Deleted {result.deleted_count} links successfully",
+            "deletedCount": result.deleted_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/links/stats")
+async def get_link_stats(
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """
+    Get link statistics (redirects to /api/users/stats for consistency)
+    Note: This endpoint provides the same data as /api/users/stats
+    """
+    # Reuse the users stats logic for consistency
+    from api.users import get_user_stats as _get_user_stats
+    
+    # Call the existing endpoint
+    stats = await _get_user_stats(current_user, db)
+    
+    # Return in LinkStats format (compatible with frontend expectations)
+    return {
+        "totalLinks": stats.get("totalLinks", 0),
+        "favoriteLinks": stats.get("favoriteLinks", 0),
+        "archivedLinks": stats.get("archivedLinks", 0),
+        "linksThisMonth": stats.get("linksThisMonth", 0),
+        "storageUsed": stats.get("storageUsed", 0),
+        "storageLimit": stats.get("storageLimit", 0),
+        "averagePerLink": stats.get("averagePerLink", 0),
+    }
+
+
+@router.get("/links/export")
+async def export_links(
+    format: str = Query(..., regex="^(csv|json|markdown)$", description="Export format"),
+    q: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+    tags: Optional[str] = Query(None),
+    contentType: Optional[str] = Query(None),
+    dateFrom: Optional[str] = Query(None),
+    dateTo: Optional[str] = Query(None),
+    isFavorite: Optional[bool] = Query(None),
+    isArchived: Optional[bool] = Query(None),
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """
+    Export user's links in various formats (CSV, JSON, Markdown)
+    Important for GDPR compliance - users have right to export their data
+    """
+    from fastapi.responses import Response
+    import csv
+    import json
+    from io import StringIO
+    
+    try:
+        user_id = current_user["sub"]
+        
+        # Build filter query (same as get_links endpoint)
+        filter_query = build_user_filter(user_id)
+        
+        if q:
+            search_filter = build_search_filter(q, ["title", "description", "url"])
+            filter_query.update(search_filter)
+        
+        if category:
+            filter_query["category"] = category.lower()
+        
+        if tags:
+            tag_list = [tag.strip().lower() for tag in tags.split(",")]
+            filter_query["tags"] = {"$in": tag_list}
+        
+        if contentType:
+            filter_query["contentType"] = contentType
+        
+        if dateFrom:
+            filter_query["createdAt"] = {"$gte": validate_and_convert_date(dateFrom, "dateFrom")}
+        
+        if dateTo:
+            date_to_obj = validate_and_convert_date(dateTo, "dateTo")
+            if "createdAt" in filter_query:
+                if isinstance(filter_query["createdAt"], dict):
+                    filter_query["createdAt"]["$lte"] = date_to_obj
+                else:
+                    filter_query["createdAt"] = {
+                        "$gte": filter_query["createdAt"],
+                        "$lte": date_to_obj
+                    }
+            else:
+                filter_query["createdAt"] = {"$lte": date_to_obj}
+        
+        if isFavorite is not None:
+            filter_query["isFavorite"] = isFavorite
+        
+        if isArchived is not None:
+            filter_query["isArchived"] = isArchived
+        
+        # Fetch links (limit to 1000 for performance)
+        links = await db.links.find(filter_query).sort("createdAt", -1).limit(1000).to_list(1000)
+        normalized_links = normalize_documents(links)
+        
+        # Generate export based on format
+        if format == "csv":
+            output = StringIO()
+            if normalized_links:
+                fieldnames = ["id", "title", "url", "description", "category", "tags", "contentType", 
+                             "isFavorite", "isArchived", "createdAt", "updatedAt"]
+                writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
+                writer.writeheader()
+                for link in normalized_links:
+                    # Convert tags array to comma-separated string
+                    link_copy = link.copy()
+                    link_copy["tags"] = ",".join(link.get("tags", []))
+                    link_copy["createdAt"] = link.get("createdAt", "").isoformat() if hasattr(link.get("createdAt", ""), "isoformat") else str(link.get("createdAt", ""))
+                    link_copy["updatedAt"] = link.get("updatedAt", "").isoformat() if hasattr(link.get("updatedAt", ""), "isoformat") else str(link.get("updatedAt", ""))
+                    writer.writerow(link_copy)
+            
+            return Response(
+                content=output.getvalue(),
+                media_type="text/csv",
+                headers={"Content-Disposition": f"attachment; filename=smartrack-links-{datetime.utcnow().strftime('%Y%m%d')}.csv"}
+            )
+        
+        elif format == "json":
+            # Clean datetime objects for JSON serialization
+            for link in normalized_links:
+                if hasattr(link.get("createdAt"), "isoformat"):
+                    link["createdAt"] = link["createdAt"].isoformat()
+                if hasattr(link.get("updatedAt"), "isoformat"):
+                    link["updatedAt"] = link["updatedAt"].isoformat()
+                if hasattr(link.get("lastAccessedAt"), "isoformat"):
+                    link["lastAccessedAt"] = link["lastAccessedAt"].isoformat()
+            
+            return Response(
+                content=json.dumps({"links": normalized_links, "exportedAt": datetime.utcnow().isoformat(), "count": len(normalized_links)}, indent=2),
+                media_type="application/json",
+                headers={"Content-Disposition": f"attachment; filename=smartrack-links-{datetime.utcnow().strftime('%Y%m%d')}.json"}
+            )
+        
+        elif format == "markdown":
+            output = StringIO()
+            output.write(f"# SmarTrack Links Export\n\n")
+            output.write(f"**Exported**: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC\n")
+            output.write(f"**Total Links**: {len(normalized_links)}\n\n")
+            output.write("---\n\n")
+            
+            for link in normalized_links:
+                output.write(f"## {link.get('title', 'Untitled')}\n\n")
+                output.write(f"**URL**: {link.get('url', '')}\n\n")
+                if link.get('description'):
+                    output.write(f"**Description**: {link['description']}\n\n")
+                output.write(f"**Category**: {link.get('category', 'uncategorized')}\n\n")
+                if link.get('tags'):
+                    output.write(f"**Tags**: {', '.join(link['tags'])}\n\n")
+                output.write(f"**Type**: {link.get('contentType', 'webpage')}\n\n")
+                if link.get('isFavorite'):
+                    output.write("⭐ **Favorite**\n\n")
+                created_at = link.get('createdAt', '')
+                if hasattr(created_at, 'strftime'):
+                    created_at = created_at.strftime('%Y-%m-%d')
+                output.write(f"**Created**: {created_at}\n\n")
+                output.write("---\n\n")
+            
+            return Response(
+                content=output.getvalue(),
+                media_type="text/markdown",
+                headers={"Content-Disposition": f"attachment; filename=smartrack-links-{datetime.utcnow().strftime('%Y%m%d')}.md"}
+            )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        logger.error(f"Export error: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")

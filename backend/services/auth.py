@@ -74,66 +74,57 @@ def extract_email_from_payload(payload: dict) -> str:
     - 'https://auth0.com/user/email' (alternative namespaced)
     - Custom namespaced claims with audience
     """
-    # Log all payload keys for debugging
-    all_keys = list(payload.keys())
-    print(f"[AUTH] Token payload keys: {all_keys}")
+    # ✅ REDUCED LOGGING: Only log in DEBUG mode to avoid PII exposure
+    import logging
+    logger = logging.getLogger(__name__)
     
     # Check standard email field first
     email = payload.get("email")
     if email:
-        print(f"[AUTH] ✅ Found email in standard 'email' field: {email}")
         return email
     
     # Check Auth0 namespaced fields
     auth0_email = payload.get("https://auth0.com/email")
     if auth0_email:
-        print(f"[AUTH] ✅ Found email in 'https://auth0.com/email': {auth0_email}")
         return auth0_email
     
     auth0_user_email = payload.get("https://auth0.com/user/email")
     if auth0_user_email:
-        print(f"[AUTH] ✅ Found email in 'https://auth0.com/user/email': {auth0_user_email}")
         return auth0_user_email
     
-    # Check for custom namespaced claims with audience (e.g., https://api.smartrack.com/email)
+    # Check for custom namespaced claims with audience
     audience = payload.get("aud")
     if audience:
-        # Handle both string and list audiences
         if isinstance(audience, list):
             for aud in audience:
                 custom_email = payload.get(f"{aud}/email")
                 if custom_email:
-                    print(f"[AUTH] ✅ Found email in custom claim '{aud}/email': {custom_email}")
                     return custom_email
         elif isinstance(audience, str):
             custom_email = payload.get(f"{audience}/email")
             if custom_email:
-                print(f"[AUTH] ✅ Found email in custom claim '{audience}/email': {custom_email}")
                 return custom_email
     
     # Check if email is in any namespaced field (fallback)
-    print(f"[AUTH] 🔍 Searching for email in all payload fields...")
     for key, value in payload.items():
         if isinstance(value, str) and "@" in value and "." in value:
-            # Check if it looks like an email
             if key.endswith("/email") or key.endswith("/user_email") or "email" in key.lower():
-                print(f"[AUTH] ✅ Found potential email in field '{key}': {value}")
                 # Verify it's actually an email format
                 if "@" in value and "." in value.split("@")[1]:
                     return value
     
-    # Log all string values that contain @ (potential emails)
-    print(f"[AUTH] ⚠️  Email not found. Checking for email-like values in payload...")
-    for key, value in payload.items():
-        if isinstance(value, str) and "@" in value:
-            print(f"[AUTH]   Found '@' in '{key}': {value}")
+    # Only log failure in DEBUG mode
+    if getattr(settings, "DEBUG", False):
+        logger.warning(f"[AUTH] Email not found in token payload. Keys: {list(payload.keys())}")
     
-    print(f"[AUTH] ❌ Email not found in token payload")
     return None
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Get current authenticated user with JWT signature verification"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
         token = credentials.credentials
         
@@ -147,11 +138,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             kid = unverified_header.get('kid')
             
             if not kid:
-                print("[AUTH ERROR] ❌ No 'kid' (key ID) in JWT header")
-                print(f"[AUTH ERROR] JWT header keys: {list(unverified_header.keys())}")
-                print(f"[AUTH ERROR] This indicates a malformed token")
-                import logging
-                logging.error(f"JWT missing 'kid' in header. Header: {unverified_header}")
+                logger.error(f"JWT missing 'kid' in header. Header: {unverified_header}")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid token format - missing key ID"
@@ -171,14 +158,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
                     break
             
             if not rsa_key:
-                print(f"[AUTH ERROR] ❌ No matching key found in JWKS for kid: {kid}")
-                print(f"[AUTH ERROR] Available kids in JWKS: {[k.get('kid') for k in jwks.get('keys', [])]}")
-                print(f"[AUTH ERROR] This could mean:")
-                print(f"[AUTH ERROR]   1. Token was signed with a different key")
-                print(f"[AUTH ERROR]   2. JWKS cache is stale (will auto-refresh in 1 hour)")
-                print(f"[AUTH ERROR]   3. Token is from wrong Auth0 tenant")
-                import logging
-                logging.error(f"No matching JWKS key for kid: {kid}. Available: {[k.get('kid') for k in jwks.get('keys', [])]}")
+                logger.error(f"No matching JWKS key for kid: {kid}")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Unable to verify token signature"
@@ -192,51 +172,31 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
                 audience=settings.AUTH0_AUDIENCE,
                 issuer=f"https://{settings.AUTH0_DOMAIN}/",
                 options={
-                    "verify_signature": True,   # ✅ ENABLED
-                    "verify_aud": True,          # ✅ ENABLED
-                    "verify_exp": True,          # ✅ ENABLED
+                    "verify_signature": True,
+                    "verify_aud": True,
+                    "verify_exp": True,
                 }
             )
             
-            print(f"[AUTH] ✅ JWT signature verified successfully")
             unverified_payload = verified_payload  # Use verified payload
             
         except ExpiredSignatureError as e:
-            print("[AUTH ERROR] ❌ Token has expired")
-            print(f"[AUTH ERROR] Expiration error details: {str(e)}")
-            print(f"[AUTH ERROR] User should re-authenticate")
-            import logging
-            logging.error(f"Expired token presented by user: {str(e)}")
+            logger.error(f"Expired token presented by user: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired"
             )
         except JWTClaimsError as e:
-            print(f"[AUTH ERROR] ❌ JWT claims error: {e}")
-            print(f"[AUTH ERROR] Claims might not match expected audience or issuer")
-            print(f"[AUTH ERROR] Expected audience: {settings.AUTH0_AUDIENCE}")
-            print(f"[AUTH ERROR] Expected issuer: https://{settings.AUTH0_DOMAIN}/")
-            import logging
-            logging.error(f"JWT claims validation failed: {str(e)}")
+            logger.error(f"JWT claims validation failed: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token claims"
             )
         except JWTError as e:
-            print(f"[AUTH ERROR] ❌ JWT verification failed: {e}")
-            print(f"[AUTH ERROR] Error type: {type(e).__name__}")
-            print(f"[AUTH ERROR] This could be due to:")
-            print(f"[AUTH ERROR]   1. Invalid signature")
-            print(f"[AUTH ERROR]   2. Malformed token")
-            print(f"[AUTH ERROR]   3. Wrong key used for signing")
-            print(f"[AUTH ERROR]   4. JWKS fetch/cache issue")
-            import logging
-            import traceback
-            logging.error(f"JWT verification failed: {str(e)}")
-            logging.error(f"Traceback: {traceback.format_exc()}")
+            logger.error(f"JWT verification failed: {str(e)}")
             # Fallback to unverified for debugging (ONLY in development)
             if settings.DEBUG:
-                print("[AUTH] ⚠️  DEBUG MODE: Falling back to unverified token")
+                logger.warning("[AUTH] DEBUG MODE: Falling back to unverified token")
                 unverified_payload = jwt.decode(
                     token,
                     key="",
@@ -252,38 +212,13 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
                     detail="Could not validate credentials"
                 )
         
-        # Extract user info from payload (either verified or unverified in DEBUG mode)
+        # Extract user info from payload
         user_id = unverified_payload.get("sub")
         if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials - missing user ID"
             )
-        
-        # Debug: Log full token payload structure
-        print(f"[AUTH] 📋 Full token payload analysis for user: {user_id}")
-        print(f"[AUTH]   All keys in payload: {list(unverified_payload.keys())}")
-        print(f"[AUTH]   Audience (aud): {unverified_payload.get('aud')}")
-        print(f"[AUTH]   Scope: {unverified_payload.get('scope')}")
-        print(f"[AUTH]   Issuer (iss): {unverified_payload.get('iss')}")
-        
-        # Check each field that might contain email
-        email_fields_to_check = [
-            'email',
-            'https://auth0.com/email',
-            'https://auth0.com/user/email',
-            f"{unverified_payload.get('aud')}/email" if unverified_payload.get('aud') else None,
-        ]
-        # Remove None values
-        email_fields_to_check = [f for f in email_fields_to_check if f]
-        
-        print(f"[AUTH]   Checking email fields: {email_fields_to_check}")
-        for field in email_fields_to_check:
-            value = unverified_payload.get(field)
-            if value:
-                print(f"[AUTH]     '{field}': {value}")
-            else:
-                print(f"[AUTH]     '{field}': ❌ not found")
         
         # Extract email using multiple possible field names
         email = extract_email_from_payload(unverified_payload)
@@ -293,39 +228,24 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             import time
             current_time = time.time()
             
-            # Check cache first (to avoid repeated userinfo calls)
+            # Check cache first
             if user_id in _user_email_cache:
                 cache_entry = _user_email_cache[user_id]
-                # Handle both old format (string) and new format (dict)
                 if isinstance(cache_entry, dict):
                     cached_email = cache_entry.get('email')
                     cached_at = cache_entry.get('cached_at', 0)
-                    # Check if cache is still valid (not expired)
                     if current_time - cached_at < _CACHE_TTL_SECONDS:
-                        print(f"[AUTH] ✅ Using cached email for user {user_id}: {cached_email} (age: {int(current_time - cached_at)}s)")
                         email = cached_email
                     else:
-                        print(f"[AUTH] ⏰ Cached email expired for user {user_id}, will refetch")
-                        # Remove expired cache entry
                         del _user_email_cache[user_id]
                 else:
-                    # Old format - just use it directly
-                    cached_email = cache_entry
-                    print(f"[AUTH] ✅ Using cached email (old format) for user {user_id}: {cached_email}")
-                    email = cached_email
-                    # Update to new format
+                    email = cache_entry
                     _user_email_cache[user_id] = {'email': cached_email, 'cached_at': current_time}
             
             if not email:
-                print(f"[AUTH] ⚠️  Email not in token or cache for user {user_id}, attempting to fetch from Auth0 userinfo endpoint...")
                 email = await fetch_email_from_auth0(token, user_id)
                 if email:
-                    print(f"[AUTH] ✅ Successfully fetched email from Auth0 userinfo: {email}")
-                    # Cache the email to avoid repeated userinfo calls
                     _user_email_cache[user_id] = {'email': email, 'cached_at': current_time}
-                    print(f"[AUTH] ✅ Cached email for future requests (TTL: {_CACHE_TTL_SECONDS}s)")
-                else:
-                    print(f"[AUTH] ❌ Failed to fetch email from Auth0 userinfo for user {user_id}")
         
         # Return user info from token
         return {

@@ -8,6 +8,9 @@ from services.auth import get_current_user, security
 from core.config import settings
 from services.mongodb import get_database
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 from typing import Dict, Any
 import logging
 
@@ -43,37 +46,39 @@ async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends
                     cached_at = cache_entry.get('cached_at', 0)
                     # Check if cache is still valid
                     if cached_email and (current_time - cached_at < _CACHE_TTL_SECONDS):
-                        print(f"[ADMIN CHECK] ✅ Found email in cache for user {user_id}: {cached_email}")
+                        logger.debug(f"[ADMIN CHECK] ✅ Found email in cache for user {user_id}: {cached_email}")
                         user_email = cached_email
                         # Update current_user with cached email
                         if current_user:
                             current_user["email"] = cached_email
                 else:
                     # Old format
-                    print(f"[ADMIN CHECK] ✅ Found email in cache (old format) for user {user_id}: {cache_entry}")
+                    logger.debug(f"[ADMIN CHECK] ✅ Found email in cache (old format) for user {user_id}: {cache_entry}")
                     user_email = cache_entry
                     if current_user:
                         current_user["email"] = cache_entry
         
         # Log extracted email and admin list for debugging (use print for Render logs visibility)
-        print(f"[ADMIN CHECK] User ID: {user_id}, Email extracted: {user_email or 'None'}")
-        print(f"[ADMIN CHECK] Admin emails list: {settings.ADMIN_EMAILS}")
+        logger.debug(f"[ADMIN CHECK] User ID: {user_id}, Email extracted: {user_email or 'None'}")
+        logger.debug(f"[ADMIN CHECK] Admin emails list: {settings.ADMIN_EMAILS}")
         logger.info(f"Admin access check - User ID: {user_id}, Email extracted: {user_email or 'None'}")
         logger.debug(f"Admin emails list: {[email.lower() for email in settings.ADMIN_EMAILS]}")
         
         if not user_email:
             # Log failed admin access attempt with reason
             denial_reason = "No email in token or cache - ensure token includes 'email' scope"
-            print(f"[ADMIN DENIED] User ID: {user_id}, Reason: {denial_reason}")
+            logger.debug(f"[ADMIN DENIED] User ID: {user_id}, Reason: {denial_reason}")
             logger.warning(f"Admin access denied - User ID: {user_id}, Reason: {denial_reason}")
             # Don't let logging failure crash the request
             try:
                 await log_admin_access_attempt(user_id, False, denial_reason)
             except Exception as log_error:
                 logger.error(f"Failed to log admin access attempt: {log_error}")
+            # ✅ FIX: Return 403 Forbidden (not 404) for clarity
+            # Users should know they lack permission, not that the endpoint doesn't exist
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Not found"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required"
             )
         
         # Normalize email for comparison
@@ -83,7 +88,7 @@ async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends
         # Check if email is in admin list
         if user_email_lower in admin_emails_lower:
             # Log successful admin access
-            print(f"[ADMIN GRANTED] User ID: {user_id}, Email: {user_email}")
+            logger.debug(f"[ADMIN GRANTED] User ID: {user_id}, Email: {user_email}")
             logger.info(f"Admin access granted - User ID: {user_id}, Email: {user_email}")
             # Don't let logging failure crash the request
             try:
@@ -94,16 +99,18 @@ async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends
         else:
             # Log failed admin access attempt with reason
             denial_reason = f"Email '{user_email_lower}' not in admin list {admin_emails_lower}"
-            print(f"[ADMIN DENIED] User ID: {user_id}, Email: {user_email}, Reason: {denial_reason}")
+            logger.debug(f"[ADMIN DENIED] User ID: {user_id}, Email: {user_email}, Reason: {denial_reason}")
             logger.warning(f"Admin access denied - User ID: {user_id}, Email: {user_email}, Reason: {denial_reason}, Admin list: {admin_emails_lower}")
             # Don't let logging failure crash the request
             try:
                 await log_admin_access_attempt(user_id, False, denial_reason)
             except Exception as log_error:
                 logger.error(f"Failed to log admin access attempt: {log_error}")
+            # ✅ FIX: Return 403 Forbidden (not 404) for clarity
+            # Users should know they lack permission, not that the endpoint doesn't exist
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Not found"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required"
             )
     
     except HTTPException:
@@ -136,7 +143,7 @@ async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends
                 logger.error(f"Admin access check failed - Could not get current user: {str(inner_e)}")
         
         denial_reason = f"Exception during admin check: {str(e)}"
-        print(f"[ADMIN CHECK] ❌ Exception: {denial_reason}")
+        logger.debug(f"[ADMIN CHECK] ❌ Exception: {denial_reason}")
         logger.error(f"Admin access denied - User ID: {user_id}, Email: {user_email or 'Unknown'}, Error: {str(e)}")
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
@@ -204,5 +211,5 @@ async def log_system_event(
         await db.system_logs.insert_one(log_entry)
     except Exception as e:
         # Don't fail the request if logging fails
-        print(f"⚠️  Failed to log system event: {e}")
+        logger.warning(f"⚠️  Failed to log system event: {e}")
 

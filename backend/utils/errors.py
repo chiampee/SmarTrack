@@ -6,6 +6,9 @@ from typing import Optional
 from fastapi import HTTPException
 from bson.errors import InvalidId
 from pymongo.errors import DuplicateKeyError, OperationFailure
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class NotFoundError(HTTPException):
@@ -82,8 +85,8 @@ def handle_db_errors(func):
         except Exception as e:
             # Log unexpected errors (in production, use proper logging)
             import traceback
-            print(f"Unexpected error in {func.__name__}: {e}")
-            print(traceback.format_exc())
+            logger.error(f"Unexpected error in {func.__name__}: {e}")
+            logger.error(traceback.format_exc())
             raise HTTPException(
                 status_code=500,
                 detail=f"An unexpected error occurred: {str(e)}"

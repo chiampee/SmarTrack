@@ -15,6 +15,9 @@ from core.config import settings
 from pymongo import DESCENDING
 import time
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -22,129 +25,9 @@ router = APIRouter()
 _analytics_cache = {}
 _cache_timestamps = {}
 
-# Public debug endpoint that only requires authentication (not admin)
-# This helps diagnose admin access issues
-@router.get("/debug-token")
-async def debug_token_public(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-):
-    """
-    Public debug endpoint to inspect token contents
-    Only requires authentication (not admin) - helps diagnose authentication issues
-    """
-    from jose import jwt
-    from services.auth import extract_email_from_payload, get_current_user
-    from core.config import settings
-    import traceback
-    
-    try:
-        # Try to get current user (may fail if token is invalid)
-        try:
-            current_user = await get_current_user(credentials)
-        except Exception as user_error:
-            current_user = {"error": str(user_error)}
-        
-        token = credentials.credentials
-        
-        # Decode token to show contents
-        payload = jwt.decode(
-            token,
-            key="",
-            options={
-                "verify_signature": False,
-                "verify_aud": False,
-                "verify_exp": False,
-            }
-        )
-        
-        # Extract email using the same function
-        extracted_email = extract_email_from_payload(payload)
-        
-        # Test Auth0 userinfo endpoint
-        userinfo_email = None
-        userinfo_result = None
-        userinfo_error = None
-        try:
-            from services.auth import fetch_email_from_auth0
-            import httpx
-            user_id = payload.get("sub")
-            if user_id:
-                print(f"[DEBUG-TOKEN] Testing userinfo for user {user_id}")
-                userinfo_email = await fetch_email_from_auth0(token, user_id)
-                # Also try direct call to show full response
-                userinfo_url = f"https://{settings.AUTH0_DOMAIN}/userinfo"
-                async with httpx.AsyncClient(timeout=5.0) as client:
-                    userinfo_response = await client.get(
-                        userinfo_url,
-                        headers={"Authorization": f"Bearer {token}"}
-                    )
-                    if userinfo_response.status_code == 200:
-                        userinfo_result = userinfo_response.json()
-                    else:
-                        userinfo_error = {
-                            "status": userinfo_response.status_code,
-                            "text": userinfo_response.text[:500],
-                            "headers": dict(userinfo_response.headers)
-                        }
-        except Exception as e:
-            userinfo_error = {"error": str(e), "type": type(e).__name__}
-        
-        # Check admin status - use email from token, userinfo, or current_user
-        final_email = extracted_email or userinfo_email or current_user.get("email")
-        is_admin = False
-        if final_email:
-            is_admin = final_email.lower() in [email.lower() for email in settings.ADMIN_EMAILS]
-        
-        return {
-            "status": "success",
-            "currentUser": current_user,
-            "tokenInfo": {
-                "sub": payload.get("sub"),
-                "email": extracted_email,
-                "emailFromToken": extracted_email,
-                "emailFromUserinfo": userinfo_email,
-                "finalEmail": final_email,
-                "emailFields": {
-                    "email": payload.get("email"),
-                    "https://auth0.com/email": payload.get("https://auth0.com/email"),
-                    "https://auth0.com/user/email": payload.get("https://auth0.com/user/email"),
-                },
-                "name": payload.get("name"),
-                "nickname": payload.get("nickname"),
-                "aud": payload.get("aud"),
-                "iss": payload.get("iss"),
-                "exp": payload.get("exp"),
-                "iat": payload.get("iat"),
-                "scope": payload.get("scope"),
-            },
-            "userinfoTest": {
-                "success": userinfo_result is not None,
-                "error": userinfo_error,
-                "fullResponse": userinfo_result,
-                "emailExtracted": userinfo_email,
-            },
-            "adminCheck": {
-                "extractedEmail": final_email,
-                "emailFromToken": extracted_email,
-                "emailFromUserinfo": userinfo_email,
-                "adminEmails": settings.ADMIN_EMAILS,
-                "isAdmin": is_admin,
-                "reason": "admin" if is_admin else f"Email '{final_email}' not in admin list {settings.ADMIN_EMAILS}" if final_email else "No email found in token or userinfo"
-            },
-            "allPayloadKeys": list(payload.keys())
-        }
-    except Exception as e:
-        import traceback
-        return {
-            "status": "error",
-            "error": str(e),
-            "errorType": type(e).__name__,
-            "traceback": traceback.format_exc()
-        }
-
-# Simple in-memory cache for analytics (in production, use Redis)
-_analytics_cache = {}
-_cache_timestamps = {}
+# ⚠️ REMOVED: Public debug endpoint was a security vulnerability
+# It exposed sensitive token information and admin email lists
+# For debugging, use the admin-protected endpoint below instead
 
 def get_cached_analytics(cache_key: str):
     """Get cached analytics if still valid"""
@@ -264,7 +147,7 @@ async def get_admin_analytics(
                 result = await db.links.aggregate(pipeline).to_list(1)
                 return result[0]["total"] if result and result[0].get("total") is not None else 0
             except Exception as e:
-                print(f"[ANALYTICS ERROR] get_total_users failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_total_users failed: {e}")
                 return 0
         
         async def get_extension_users():
@@ -277,7 +160,7 @@ async def get_admin_analytics(
                 result = await db.links.aggregate(pipeline).to_list(1)
                 return result[0]["total"] if result and result[0].get("total") is not None else 0
             except Exception as e:
-                print(f"[ANALYTICS ERROR] get_extension_users failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_extension_users failed: {e}")
                 return 0
         
         async def get_total_links():
@@ -286,7 +169,7 @@ async def get_admin_analytics(
                     "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
                 })
             except Exception as e:
-                print(f"[ANALYTICS ERROR] get_total_links failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_total_links failed: {e}")
                 return 0
         
         async def get_extension_links():
@@ -296,7 +179,7 @@ async def get_admin_analytics(
                     "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
                 })
             except Exception as e:
-                print(f"[ANALYTICS ERROR] get_extension_links failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_extension_links failed: {e}")
                 return 0
         
         async def get_storage():
@@ -322,7 +205,7 @@ async def get_admin_analytics(
                 result = await db.links.aggregate(pipeline).to_list(1)
                 return result[0]["total"] if result and result[0].get("total") is not None else 0
             except Exception as e:
-                print(f"[ANALYTICS ERROR] get_storage failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_storage failed: {e}")
                 return 0
         
         # Execute independent queries in parallel
@@ -369,7 +252,7 @@ async def get_admin_analytics(
                 ]
                 return await db.links.aggregate(pipeline).to_list(1000)
             except Exception as e:
-                print(f"[ANALYTICS ERROR] get_user_growth failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_user_growth failed: {e}")
                 return []
         
         async def get_links_growth():
@@ -405,7 +288,7 @@ async def get_admin_analytics(
                 ]
                 return await db.links.aggregate(pipeline).to_list(1000)
             except Exception as e:
-                print(f"[ANALYTICS ERROR] get_links_growth failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_links_growth failed: {e}")
                 return []
         
         async def get_top_categories():
@@ -429,7 +312,7 @@ async def get_admin_analytics(
                 ]
                 return await db.links.aggregate(pipeline).to_list(20)
             except Exception as e:
-                print(f"[ANALYTICS ERROR] get_top_categories failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_top_categories failed: {e}")
                 return []
         
         async def get_content_types():
@@ -450,7 +333,7 @@ async def get_admin_analytics(
                 ]
                 return await db.links.aggregate(pipeline).to_list(100)
             except Exception as e:
-                print(f"[ANALYTICS ERROR] get_content_types failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_content_types failed: {e}")
                 return []
         
         async def get_avg_links_per_user():
@@ -473,7 +356,7 @@ async def get_admin_analytics(
                 result = await db.links.aggregate(pipeline).to_list(1)
                 return result[0]["avg"] if result and result[0].get("avg") else 0
             except Exception as e:
-                print(f"[ANALYTICS ERROR] get_avg_links_per_user failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_avg_links_per_user failed: {e}")
                 return 0
         
         async def get_active_users():
@@ -491,11 +374,20 @@ async def get_admin_analytics(
                 result = await db.links.aggregate(pipeline).to_list(1)
                 return result[0]["total"] if result and result[0].get("total") is not None else 0
             except Exception as e:
-                print(f"[ANALYTICS ERROR] get_active_users failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_active_users failed: {e}")
                 return 0
         
         async def get_users_approaching():
             try:
+                # ✅ FIX: Use actual user limits (not hardcoded 35)
+                # Get all user limits (including custom overrides)
+                user_limits_map = {}
+                try:
+                    user_limits_docs = await db.user_limits.find({}).to_list(1000)
+                    user_limits_map = {doc["userId"]: doc for doc in user_limits_docs}
+                except Exception as e:
+                    logger.warning(f"[ANALYTICS WARNING] Could not fetch user_limits: {e}")
+                
                 pipeline = [
                     {"$group": {
                         "_id": "$userId",
@@ -511,17 +403,32 @@ async def get_admin_analytics(
                                 ]
                             }
                         }
-                    }},
-                    {"$match": {
-                        "$or": [
-                            {"linkCount": {"$gte": 35}},
-                            {"storage": {"$gte": 35 * 1024}}  # 35KB
-                        ]
                     }}
                 ]
-                return await db.links.aggregate(pipeline).to_list(100)
+                user_usage = await db.links.aggregate(pipeline).to_list(10000)
+                
+                # Filter users approaching their specific limits (85% threshold)
+                approaching = []
+                for user in user_usage:
+                    user_id = user["_id"]
+                    link_count = user["linkCount"]
+                    storage = user["storage"]
+                    
+                    # Get user-specific limits or use defaults
+                    if user_id in user_limits_map:
+                        links_limit = user_limits_map[user_id].get("linksLimit", settings.MAX_LINKS_PER_USER)
+                        storage_limit = user_limits_map[user_id].get("storageLimitBytes", settings.MAX_STORAGE_PER_USER_BYTES)
+                    else:
+                        links_limit = settings.MAX_LINKS_PER_USER
+                        storage_limit = settings.MAX_STORAGE_PER_USER_BYTES
+                    
+                    # Check if approaching limits (85% threshold)
+                    if link_count >= (links_limit * 0.85) or storage >= (storage_limit * 0.85):
+                        approaching.append(user)
+                
+                return approaching
             except Exception as e:
-                print(f"[ANALYTICS ERROR] get_users_approaching failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_users_approaching failed: {e}")
                 return []
         
         async def get_extension_versions():
@@ -546,7 +453,7 @@ async def get_admin_analytics(
                 ]
                 return await db.links.aggregate(pipeline).to_list(50)
             except Exception as e:
-                print(f"[ANALYTICS ERROR] get_extension_versions failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_extension_versions failed: {e}")
                 return []
         
         # Execute all remaining queries in parallel
@@ -608,7 +515,7 @@ async def get_admin_analytics(
         import traceback
         error_trace = traceback.format_exc()
         error_msg = f"{str(e)}\n\nTraceback:\n{error_trace}"
-        print(f"[ANALYTICS ERROR] {error_msg}")
+        logger.error(f"[ANALYTICS ERROR] {error_msg}")
         await log_system_event("admin_analytics_error", {
             "error": str(e),
             "traceback": error_trace,
@@ -720,7 +627,7 @@ async def get_admin_users(
                     pipeline.insert(0, {"$match": {"userId": search_regex}})
                     
             except Exception as e:
-                print(f"[ADMIN SEARCH ERROR] Failed to search emails: {e}")
+                logger.info(f"[ADMIN SEARCH ERROR] Failed to search emails: {e}")
                 # Fallback to just ID search
                 pipeline.insert(0, {"$match": {"userId": search_regex}})
         
@@ -760,7 +667,7 @@ async def get_admin_users(
                 email_results = await db.system_logs.aggregate(email_pipeline).to_list(len(user_ids))
                 user_emails = {r["_id"]: r["email"] for r in email_results}
             except Exception as e:
-                print(f"[ADMIN USERS WARNING] Failed to fetch user emails: {e}")
+                logger.info(f"[ADMIN USERS WARNING] Failed to fetch user emails: {e}")
         
         # Transform results
         user_list = []
@@ -800,7 +707,7 @@ async def get_admin_users(
         import traceback
         error_trace = traceback.format_exc()
         error_msg = f"{str(e)}\n\nTraceback:\n{error_trace}"
-        print(f"[ADMIN USERS ERROR] {error_msg}")
+        logger.info(f"[ADMIN USERS ERROR] {error_msg}")
         await log_system_event("admin_users_error", {
             "error": str(e),
             "traceback": error_trace,

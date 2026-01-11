@@ -7,6 +7,9 @@ from typing import Dict, Any
 from services.mongodb import get_database
 from services.auth import get_current_user
 from core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 # User limits constants
 MAX_LINKS_PER_USER = 40
@@ -22,7 +25,7 @@ async def get_user_stats(
     """Get user statistics"""
     try:
         user_id = current_user["sub"]
-        print(f"📊 Fetching stats for user: {user_id}")
+        logger.info(f"📊 Fetching stats for user: {user_id}")
         
         # Optimize: Get all counts in one aggregation pipeline
         from datetime import datetime
@@ -85,8 +88,15 @@ async def get_user_stats(
             storage_used = 0
             average_per_link = 0
         
-        storage_limit = MAX_STORAGE_PER_USER_BYTES  # 40 KB limit
-        links_limit = MAX_LINKS_PER_USER  # 40 links limit
+        # ✅ FIX: Check for user-specific limit overrides (consistent with link creation logic)
+        # This fixes the bug where custom limits set by admin were ignored
+        user_limits_doc = await db.user_limits.find_one({"userId": user_id})
+        if user_limits_doc:
+            storage_limit = user_limits_doc.get("storageLimitBytes", MAX_STORAGE_PER_USER_BYTES)
+            links_limit = user_limits_doc.get("linksLimit", MAX_LINKS_PER_USER)
+        else:
+            storage_limit = MAX_STORAGE_PER_USER_BYTES  # 40 KB default
+            links_limit = MAX_LINKS_PER_USER  # 40 links default
         
         result = {
             "totalLinks": total_links,
@@ -101,7 +111,7 @@ async def get_user_stats(
             "storageRemaining": storage_limit - storage_used
         }
         
-        print(f"✅ Stats calculated: {total_links} links, {storage_used / 1024:.1f} KB storage")
+        logger.info(f"✅ Stats calculated: {total_links} links, {storage_used / 1024:.1f} KB storage")
         return result
         
     except HTTPException:
@@ -109,7 +119,7 @@ async def get_user_stats(
     except Exception as e:
         import traceback
         error_msg = f"Failed to calculate user stats: {str(e)}"
-        print(f"❌ {error_msg}")
+        logger.error(f"❌ {error_msg}")
         if getattr(settings, "DEBUG", False):
             traceback.print_exc()
             # In development, gracefully degrade to zeroed stats so the UI remains usable

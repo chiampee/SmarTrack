@@ -54,7 +54,7 @@ async def get_collections(
     current_user: dict = Depends(get_current_user),
     db = Depends(get_database)
 ):
-    """Get user's collections"""
+    """Get user's collections with accurate link counts"""
     try:
         user_id = current_user["sub"]
         
@@ -64,13 +64,26 @@ async def get_collections(
         # Normalize documents
         normalized = normalize_documents(raw)
         
-        # Set default values and ensure proper types
+        # ✅ FIX: Calculate actual link counts using aggregation (single query for all collections)
+        # This fixes the bug where linkCount was always 0
+        link_counts_pipeline = [
+            {"$match": {"userId": user_id, "collectionId": {"$ne": None, "$exists": True}}},
+            {"$group": {
+                "_id": "$collectionId",
+                "count": {"$sum": 1}
+            }}
+        ]
+        link_counts_result = await db.links.aggregate(link_counts_pipeline).to_list(100)
+        link_counts_map = {str(item["_id"]): item["count"] for item in link_counts_result}
+        
+        # Set default values and apply actual link counts
         for item in normalized:
             item.setdefault("name", "")
             item.setdefault("color", "#3B82F6")
             item.setdefault("icon", "book")
             item.setdefault("isDefault", False)
-            item.setdefault("linkCount", 0)
+            # ✅ Use actual count from database (not hardcoded 0)
+            item["linkCount"] = link_counts_map.get(item.get("id"), 0)
             
             # Ensure datetime fields exist
             if "createdAt" not in item:

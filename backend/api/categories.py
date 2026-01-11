@@ -108,10 +108,13 @@ async def rename_category(
         # Build user filter with category filter
         filter_query = build_user_filter(user_id, {"category": category_name_normalized})
         
-        # Bulk update all links with the old category name
+        # ✅ FIX: Update timestamp when modifying category (audit trail + cache invalidation)
         result = await db.links.update_many(
             filter_query,
-            {"$set": {"category": new_name_normalized}}
+            {"$set": {
+                "category": new_name_normalized,
+                "updatedAt": datetime.utcnow()
+            }}
         )
         
         return {
@@ -149,10 +152,13 @@ async def delete_category(
         # Build user filter with category filter
         filter_query = build_user_filter(user_id, {"category": category_name_normalized})
         
-        # Move all links with this category to 'other'
+        # ✅ FIX: Update timestamp when moving links to 'other' category
         result = await db.links.update_many(
             filter_query,
-            {"$set": {"category": "other"}}
+            {"$set": {
+                "category": "other",
+                "updatedAt": datetime.utcnow()
+            }}
         )
         
         return {

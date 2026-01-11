@@ -16,19 +16,25 @@ class Settings(BaseSettings):
     AUTH0_CLIENT_SECRET: Optional[str] = None
     AUTH0_CLIENT_ID: Optional[str] = None
     
-    # CORS - Allow all origins for production
+    # CORS - Whitelist only (NEVER use wildcards with credentials!)
     CORS_ORIGINS: List[str] = [
+        # Development
         "http://localhost:3001",
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:5554",
         "http://localhost:8000",
+        # Production - Frontend
         "https://smar-track.vercel.app",
         "https://smartracker.vercel.app",
         "https://smartrack.vercel.app",
         "https://smartrack.top",
-        # Add your production Chrome Extension ID here:
-        # "chrome-extension://hbgpbeonpmmbiomclclhpgephdboabao", 
+        # Production - Chrome Extension
+        # ⚠️ IMPORTANT: Add your ACTUAL extension ID here after publishing
+        # Example: "chrome-extension://abcdefghijklmnopqrstuvwxyz123456"
+        # TODO: Replace with real extension ID before production deployment
+        # NEVER USE: "chrome-extension://*" - this is a security vulnerability!
+        # "chrome-extension://hbgpbeonpmmbiomclclhpgephdboabao",  # Uncomment and update with real ID
     ]
     
     # Usage Limits
@@ -50,4 +56,19 @@ class Settings(BaseSettings):
     # Debug - MUST be False in production
     DEBUG: bool = False
 
+# Create settings instance
 settings = Settings()
+
+# ✅ Validate CORS configuration on startup (prevent wildcard accidents)
+def validate_cors_config():
+    """Ensure no wildcard CORS origins - this would be a security vulnerability"""
+    for origin in settings.CORS_ORIGINS:
+        if "*" in origin:
+            raise ValueError(
+                f"⚠️ SECURITY ERROR: CORS wildcard detected: '{origin}'\n"
+                f"Wildcards in CORS_ORIGINS are a security vulnerability.\n"
+                f"Please specify exact origins instead."
+            )
+
+# Run validation on module import
+validate_cors_config()

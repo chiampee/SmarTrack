@@ -6,12 +6,15 @@ Research Management System
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+import logging
 
 from api import health, links, collections, categories, users, admin
 from services.mongodb import connect_to_mongo, close_mongo_connection
 from middleware.security_headers import SecurityHeadersMiddleware
 from middleware.rate_limiter import check_rate_limit
 from core.config import settings
+
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,6 +37,7 @@ async def lifespan(app: FastAPI):
         # Explicitly set unique=False for userId + url to avoid conflicts with existing unique index
         await create_index_safely(db.links, [("userId", 1), ("url", 1)], unique=False)
         await create_index_safely(db.links, [("userId", 1), ("category", 1)])
+        # ✅ FIX: Add missing index for collection filtering (improves query performance)
         await create_index_safely(db.links, [("userId", 1), ("collectionId", 1)])
         
         # Create indexes for collections collection
@@ -56,7 +60,7 @@ async def lifespan(app: FastAPI):
         
         print("✅ Database indexes initialized")
     except Exception as e:
-        print(f"⚠️  Warning: Could not initialize indexes: {e}")
+        logger.warning(f"⚠️  Warning: Could not initialize indexes: {e}")
         # Don't fail startup if index creation fails
     
     yield
@@ -76,33 +80,65 @@ app = FastAPI(
 async def global_exception_handler(request: Request, exc: Exception):
     """
     Catch all unhandled exceptions and return proper error response with CORS headers
+    ✅ Improved: Now returns structured, helpful error messages
     """
     import traceback
     from fastapi.responses import JSONResponse
     from starlette.exceptions import HTTPException as StarletteHTTPException
     from fastapi.exceptions import RequestValidationError
+    from utils.api_errors import format_validation_errors
     
     # Default to 500
     status_code = 500
-    error_detail = str(exc)
+    error_detail = {
+        "error": "InternalServerError",
+        "message": "An unexpected error occurred",
+        "hint": "Please try again or contact support if the issue persists"
+    }
     error_type = type(exc).__name__
     
     # Handle HTTP exceptions (including 429, 404, etc.)
     if isinstance(exc, StarletteHTTPException):
         status_code = exc.status_code
-        error_detail = exc.detail
-    # Handle validation errors
+        # If detail is already a dict (from APIError), use it; otherwise wrap it
+        if isinstance(exc.detail, dict):
+            error_detail = exc.detail
+        else:
+            error_detail = {
+                "error": error_type,
+                "message": str(exc.detail)
+            }
+    # Handle validation errors with helpful formatting
     elif isinstance(exc, RequestValidationError):
         status_code = 422
-        error_detail = str(exc.errors())
+        error_detail = format_validation_errors(exc.errors())
+    else:
+        # Unexpected exception - keep generic message for security
+        error_detail = {
+            "error": error_type,
+            "message": "An unexpected error occurred",
+            "hint": "Please try again. If this continues, contact support"
+        }
     
     # Log the error (only for 500s or unexpected errors)
-    if status_code == 500:
-        print(f"❌ [GLOBAL ERROR HANDLER] {error_type}: {error_detail}")
-        print(f"❌ [GLOBAL ERROR HANDLER] Path: {request.url.path}")
-        print(f"❌ [GLOBAL ERROR HANDLER] Traceback: {traceback.format_exc()}")
+    if status_code >= 500:
+        logger.error(f"❌ [GLOBAL ERROR HANDLER] {error_type}: {str(exc)}")
+        logger.error(f"❌ [GLOBAL ERROR HANDLER] Path: {request.url.path}")
+        logger.error(f"❌ [GLOBAL ERROR HANDLER] Traceback: {traceback.format_exc()}")
     
-    # Return response with proper status code and CORS headers
+    # ✅ FIX: Validate origin against whitelist (never blindly reflect)
+    # This prevents malicious sites from making authenticated requests
+    def validate_origin(origin: str) -> str:
+        """Validate origin against CORS whitelist"""
+        if origin and origin in settings.CORS_ORIGINS:
+            return origin
+        # Return first allowed origin as safe fallback (never wildcard with credentials)
+        return settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "https://smar-track.vercel.app"
+    
+    origin_header = request.headers.get("origin", "")
+    allowed_origin = validate_origin(origin_header)
+    
+    # Return response with proper status code and validated CORS headers
     return JSONResponse(
         status_code=status_code,
         content={
@@ -110,7 +146,7 @@ async def global_exception_handler(request: Request, exc: Exception):
             "detail": error_detail if (status_code != 500 or settings.DEBUG) else "An unexpected error occurred"
         },
         headers={
-            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Origin": allowed_origin,
             "Access-Control-Allow-Credentials": "true",
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
             "Access-Control-Allow-Headers": "*",
@@ -140,8 +176,27 @@ async def rate_limit_middleware(request: Request, call_next):
     # Check if this is an admin endpoint (admin auth happens later, but use admin rate limits for admin paths)
     is_admin_endpoint = request.url.path.startswith("/api/admin")
     
-    # Get client identifier (use IP or user ID)
-    client_id = request.client.host if request.client else "unknown"
+    # ✅ FIX: Get client identifier - prefer user ID over IP for better rate limiting
+    # IP-based rate limiting is easily bypassed with proxies/VPNs
+    def get_rate_limit_key(request: Request) -> str:
+        """Get rate limit key - prefer authenticated user ID over IP address"""
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            try:
+                from jose import jwt
+                token = auth_header.split(" ")[1]
+                # Decode without verification (just to get user ID for rate limiting)
+                payload = jwt.decode(token, options={"verify_signature": False})
+                user_id = payload.get("sub")
+                if user_id:
+                    return f"user:{user_id}"
+            except Exception:
+                # If token decode fails, fall back to IP
+                pass
+        # Fallback to IP for unauthenticated endpoints
+        return f"ip:{request.client.host if request.client else 'unknown'}"
+    
+    client_id = get_rate_limit_key(request)
     
     try:
         check_rate_limit(request, client_id, is_admin=is_admin_endpoint)
