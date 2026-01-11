@@ -753,16 +753,15 @@ export const Dashboard: React.FC = () => {
                   </>
                 )}
               </div>
-              <div className="flex items-center gap-4 text-sm text-gray-600">
-                <div className="flex items-center gap-1">
-                  <span className="font-medium text-gray-900">{filteredLinksCount}</span>
-                  <span className="text-gray-500">links</span>
+              {/* ✅ UX IMPROVED: Better stats display with visual cards */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-100">
+                  <span className="text-sm font-semibold text-blue-700">{filteredLinksCount}</span>
+                  <span className="text-xs text-blue-600">links</span>
                 </div>
-                <span className="text-gray-300">•</span>
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-yellow-500" />
-                  <span className="font-medium text-gray-900">{favoritesCount}</span>
-                  <span className="text-gray-500">favorites</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-50 rounded-lg border border-yellow-100">
+                  <Star className="w-3.5 h-3.5 text-yellow-600 fill-current" />
+                  <span className="text-sm font-semibold text-yellow-700">{favoritesCount}</span>
                 </div>
               </div>
             </div>
@@ -799,54 +798,62 @@ export const Dashboard: React.FC = () => {
           transition={{ delay: shouldAnimate ? 0.1 : 0, duration: animationConfig.duration, ease: "easeOut" }}
           className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 sm:mb-8 p-4 sm:p-6"
         >
-          {/* Quick Filters */}
-          <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200">
-            <span className="text-sm font-medium text-gray-700 mr-2">Quick Filters:</span>
-            <button
-              onClick={() => setFilters({ ...filters, dateRange: 'today' })}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
-                filters.dateRange === 'today'
-                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Today
-            </button>
-            <button
-              onClick={() => setFilters({ ...filters, dateRange: 'last_week' })}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
-                filters.dateRange === 'last_week'
-                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              This Week
-            </button>
-            <button
-              onClick={() => setFilters({ ...filters, dateRange: 'last_month' })}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
-                filters.dateRange === 'last_month'
-                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              This Month
-            </button>
-            <button
-              onClick={() => {
-                const favoritesFilter = links.filter(l => l.isFavorite)
-                setFilteredLinks(favoritesFilter)
-              }}
-              className="px-3 py-1.5 text-sm rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all"
-            >
-              ⭐ Favorites
-            </button>
-            <button
-              onClick={() => setFilters({ ...filters, dateRange: 'all_time' })}
-              className="px-3 py-1.5 text-sm rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 transition-all"
-            >
-              Clear Filters
-            </button>
+          {/* ✅ UX IMPROVED: Quick Filters with better visual design */}
+          <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-100">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-1">Quick Filters</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => setFilters({ ...filters, dateRange: 'today' })}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  filters.dateRange === 'today'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                Today
+              </button>
+              <button
+                onClick={() => setFilters({ ...filters, dateRange: 'last_week' })}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  filters.dateRange === 'last_week'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                This Week
+              </button>
+              <button
+                onClick={() => setFilters({ ...filters, dateRange: 'last_month' })}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  filters.dateRange === 'last_month'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                This Month
+              </button>
+              <button
+                onClick={() => {
+                  const favoritesFilter = links.filter(l => l.isFavorite)
+                  setFilteredLinks(favoritesFilter)
+                }}
+                className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 transition-all flex items-center gap-1"
+              >
+                <Star className="w-3 h-3" />
+                Favorites
+              </button>
+              {(filters.dateRange !== 'all_time' || filters.category || filters.tags.length > 0) && (
+                <button
+                  onClick={() => {
+                    setFilters({ category: '', dateRange: 'all_time', tags: [], contentType: '' })
+                    setFilteredLinks(links)
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium rounded-md bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-all"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-4">

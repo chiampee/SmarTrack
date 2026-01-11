@@ -10,7 +10,8 @@ import {
   Trash2, 
   Copy,
   Calendar,
-  Eye
+  Eye,
+  Folder
 } from 'lucide-react'
 import { Link, Collection } from '../types/Link'
 
@@ -194,55 +195,59 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             </div>
           </div>
 
-          {/* ✅ ENHANCED: Always show description field (even if empty) */}
-          <div className="min-h-[2.5rem]">
-            {link.description ? (
-              <p className="text-gray-700 text-xs line-clamp-2" title={link.description}>
-                {link.description}
-              </p>
-            ) : (
-              <p className="text-gray-400 text-xs italic">No description</p>
+          {/* ✅ UX IMPROVED: Description - only show if exists (progressive disclosure) */}
+          {link.description && (
+            <p className="text-gray-600 text-xs line-clamp-2 mt-1.5" title={link.description}>
+              {link.description}
+            </p>
+          )}
+
+          {/* ✅ UX IMPROVED: Metadata badges - cleaner grouping */}
+          <div className="flex items-center gap-2 flex-wrap mt-3">
+            {/* Category Badge */}
+            {link.category && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 text-xs font-medium rounded-md border border-purple-200/50">
+                <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                {link.category}
+              </span>
+            )}
+            
+            {/* Collection/Project Badge */}
+            {link.collectionId && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 text-xs font-medium rounded-md border border-green-200/50">
+                <Folder className="w-3 h-3" />
+                {getCollectionName(link.collectionId) || 'Project'}
+              </span>
             )}
           </div>
 
-          {/* ✅ ENHANCED: Category, Collection/Project, and Tags */}
-          <div className="space-y-2">
-            {/* Category and Collection/Project Badges */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {link.category && (
-                <span className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-full font-medium">
-                  {link.category}
+          {/* ✅ UX IMPROVED: Tags - only show if they exist (no "No tags" text) */}
+          {link.tags && link.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {link.tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-md border border-blue-200/50 hover:bg-blue-100 transition-colors"
+                  title={tag}
+                >
+                  <Tag className="w-3 h-3" />
+                  {tag}
                 </span>
+              ))}
+            </div>
+          )}
+
+          {/* ✅ UX IMPROVED: Footer with better date and favorite display */}
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+            <span className="text-xs text-gray-500 font-medium">{formatDate(link.createdAt)}</span>
+            <div className="flex items-center gap-2">
+              {link.isFavorite && (
+                <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
               )}
-              {link.collectionId && (
-                <span className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full font-medium flex items-center gap-1">
-                  <span>📁</span>
-                  <span>{getCollectionName(link.collectionId) || 'Project'}</span>
-                </span>
+              {link.isArchived && (
+                <Archive className="w-3.5 h-3.5 text-gray-400" />
               )}
             </div>
-
-            {/* ✅ ENHANCED: Show all tags with better visibility */}
-            {link.tags && link.tags.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {link.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200"
-                    title={tag}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <div className="text-xs text-gray-400 italic">No tags</div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>{formatDate(link.createdAt)}</span>
-            {link.isFavorite && <Star className="w-3 h-3 text-yellow-500 fill-current" />}
           </div>
         </div>
       </div>
@@ -305,52 +310,47 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               </a>
               <p className="text-gray-500 text-sm truncate mt-1">{link.url}</p>
               
-              {/* ✅ ENHANCED: Always show description field */}
-              <div className="mt-2 min-h-[1.5rem]">
-                {link.description ? (
-                  <p className="text-gray-700 text-sm line-clamp-2" title={link.description}>
-                    {link.description}
-                  </p>
-                ) : (
-                  <p className="text-gray-400 text-sm italic">No description</p>
+              {/* ✅ UX IMPROVED: Description - only show if exists */}
+              {link.description && (
+                <p className="text-gray-600 text-sm line-clamp-2 mt-2" title={link.description}>
+                  {link.description}
+                </p>
+              )}
+
+              {/* ✅ UX IMPROVED: Metadata badges - cleaner grouping */}
+              <div className="flex items-center gap-2 flex-wrap mt-3">
+                {/* Category Badge */}
+                {link.category && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 text-xs font-medium rounded-md border border-purple-200/50">
+                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                    {link.category}
+                  </span>
+                )}
+                
+                {/* Collection/Project Badge */}
+                {link.collectionId && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 text-xs font-medium rounded-md border border-green-200/50">
+                    <Folder className="w-3 h-3" />
+                    {getCollectionName(link.collectionId) || 'Project'}
+                  </span>
                 )}
               </div>
 
-              {/* ✅ ENHANCED: Category, Collection/Project, and Tags */}
-              <div className="space-y-2 mt-3">
-                {/* Category and Collection/Project Badges */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  {link.category && (
-                    <span className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-full font-medium">
-                      {link.category}
+              {/* ✅ UX IMPROVED: Tags - only show if they exist */}
+              {link.tags && link.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {link.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-md border border-blue-200/50 hover:bg-blue-100 transition-colors"
+                      title={tag}
+                    >
+                      <Tag className="w-3 h-3" />
+                      {tag}
                     </span>
-                  )}
-                  {link.collectionId && (
-                    <span className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full font-medium flex items-center gap-1">
-                      <span>📁</span>
-                      <span>{getCollectionName(link.collectionId) || 'Project'}</span>
-                    </span>
-                  )}
+                  ))}
                 </div>
-
-                {/* ✅ ENHANCED: Show all tags with better visibility */}
-                {link.tags && link.tags.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {link.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-200"
-                        title={tag}
-                      >
-                        <Tag className="w-3 h-3" />
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-xs text-gray-400 italic">No tags</div>
-                )}
-              </div>
+              )}
 
               <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
                 <span className="flex items-center gap-1">

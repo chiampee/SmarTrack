@@ -170,41 +170,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               <span className="font-medium">Dashboard</span>
             </Link>
 
-            {/* Projects Quick Filters */}
+            {/* ✅ UX IMPROVED: Projects Quick Filters with better styling */}
             <div className="mt-6 pt-4 border-t border-gray-200">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Projects</h3>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">Projects</h3>
               <div className="space-y-1">
                 <Link
                   to="/?"
                   onClick={onClose}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
                     isActivePath('/?')
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 shadow-sm'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
                   <Library className="w-4 h-4" />
-                  <span>Show All Links</span>
+                  <span className="font-medium">Show All Links</span>
                 </Link>
                 <Link
                   to="/?filter=favorites"
                   onClick={onClose}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
                     isActivePath('/?filter=favorites')
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 shadow-sm'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
                   <Star className="w-4 h-4" />
-                  <span>Favorites</span>
+                  <span className="font-medium">Favorites</span>
                 </Link>
                 <Link
                   to="/?filter=recent"
                   onClick={onClose}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
                     isActivePath('/?filter=recent')
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 shadow-sm'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
                   <Clock className="w-4 h-4" />
