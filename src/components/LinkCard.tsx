@@ -88,13 +88,10 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       if (viewMode === 'grid') {
         return (
           <div 
-            className={`card p-3 sm:p-5 transition-all duration-300 hover:shadow-xl sm:hover:-translate-y-1 hover:border-blue-300 cursor-move group relative overflow-hidden touch-manipulation ${
+            className={`card p-3 sm:p-5 transition-all duration-300 hover:shadow-xl sm:hover:-translate-y-1 hover:border-blue-300 cursor-grab active:cursor-grabbing group relative overflow-hidden touch-manipulation ${
               isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-br from-blue-50 to-purple-50 sm:scale-[1.02] border-blue-300' : 'border-gray-200'
             }`}
-            draggable
-            onDragStart={onDragStart}
-            onDragEnd={onDragEnd}
-            title="Drag to add to a collection"
+            title="Drag to reorder"
             role="article"
             aria-label={`Link: ${link.title}`}
           >
@@ -304,13 +301,10 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       // ✅ MOBILE RESPONSIVE: List view with better touch interactions, more compact on mobile
       return (
         <div 
-          className={`card p-3 sm:p-5 transition-all duration-300 hover:shadow-xl hover:border-blue-300 hover:bg-blue-50/30 cursor-move group relative touch-manipulation ${
+          className={`card p-3 sm:p-5 transition-all duration-300 hover:shadow-xl hover:border-blue-300 hover:bg-blue-50/30 cursor-grab active:cursor-grabbing group relative touch-manipulation ${
             isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300' : 'border-gray-200'
           }`}
-          draggable
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          title="Drag to add to a collection"
+          title="Drag to reorder"
           role="article"
           aria-label={`Link: ${link.title}`}
         >

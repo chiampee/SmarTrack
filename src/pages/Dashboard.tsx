@@ -1184,16 +1184,19 @@ export const Dashboard: React.FC = () => {
                           </motion.div>
 
                           {/* Links for this category - Droppable */}
-                          <Droppable droppableId={category}>
+                          <Droppable droppableId={category} direction={viewMode === 'grid' ? 'horizontal' : 'vertical'}>
                             {(provided, snapshot) => (
-                              <motion.div
+                              <div
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
-                                variants={staggerContainer}
-                                className={`${viewMode === 'grid'
-                                  ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-4'
-                                  : 'space-y-2 sm:space-y-4'
-                                } ${snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2' : ''}`}
+                                className={`${
+                                  viewMode === 'grid'
+                                    ? 'flex flex-wrap gap-2 sm:gap-4'
+                                    : 'flex flex-col gap-2 sm:gap-4'
+                                } ${snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2 border-2 border-blue-300' : ''}`}
+                                style={{
+                                  minHeight: categoryLinks.length === 0 ? '100px' : 'auto',
+                                }}
                               >
                                 {categoryLinks.map((link, index) => (
                                   <Draggable key={link.id} draggableId={link.id} index={index}>
@@ -1202,13 +1205,19 @@ export const Dashboard: React.FC = () => {
                                         ref={provided.innerRef}
                                         {...provided.draggableProps}
                                         {...provided.dragHandleProps}
+                                        className={viewMode === 'grid' 
+                                          ? 'w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)] xl:w-[calc(25%-0.75rem)] 2xl:w-[calc(20%-0.8rem)]'
+                                          : 'w-full'
+                                        }
                                         style={{
                                           ...provided.draggableProps.style,
                                           opacity: snapshot.isDragging ? 0.8 : 1,
                                           transform: snapshot.isDragging
-                                            ? `${provided.draggableProps.style?.transform} scale(1.02)`
+                                            ? `${provided.draggableProps.style?.transform} rotate(2deg)`
                                             : provided.draggableProps.style?.transform,
-                                          transition: snapshot.isDragging ? 'none' : 'opacity 0.2s ease',
+                                          transition: snapshot.isDragging ? 'none' : 'transform 0.2s ease, opacity 0.2s ease',
+                                          cursor: snapshot.isDragging ? 'grabbing' : 'grab',
+                                          boxShadow: snapshot.isDragging ? '0 8px 16px rgba(0,0,0,0.2)' : 'none',
                                         }}
                                       >
                                         <LinkCard
@@ -1219,12 +1228,17 @@ export const Dashboard: React.FC = () => {
                                           onAction={handleLinkAction}
                                           collections={collections}
                                         />
+                                        {snapshot.isDragging && (
+                                          <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                            Moving...
+                                          </div>
+                                        )}
                                       </div>
                                     )}
                                   </Draggable>
                                 ))}
                                 {provided.placeholder}
-                              </motion.div>
+                              </div>
                             )}
                           </Droppable>
                         </motion.div>
