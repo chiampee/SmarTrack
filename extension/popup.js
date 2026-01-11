@@ -349,65 +349,29 @@ class SmarTrackPopup {
   }
 
   /**
-   * Renders category options as interactive pills
+   * Renders category options in the select dropdown
    * @param {string|null} selectedValue - Value to pre-select
    * @returns {void}
    */
   renderCategories(selectedValue = null) {
-    const container = document.getElementById('categoryPillsContainer');
-    const hiddenInput = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
-    if (!container || !hiddenInput) return;
+    const select = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
+    if (!select) return;
 
-    // Clear existing pills
-    container.innerHTML = '';
+    // Clear existing options
+    select.innerHTML = '';
 
-    // Get selected category
-    const selected = selectedValue || this.lastCategory || this.categories[0] || CONSTANTS.DEFAULT_CATEGORIES[0];
-    hiddenInput.value = selected;
-
-    // Render category pills
+    // Add stored categories
     this.categories.forEach((category) => {
-      const pill = document.createElement('button');
-      pill.type = 'button';
-      pill.className = 'category-pill';
-      pill.textContent = capitalize(category);
-      pill.dataset.category = category;
-      
-      if (category === selected) {
-        pill.classList.add('active');
-      }
-      
-      pill.addEventListener('click', () => {
-        // Remove active from all pills
-        container.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
-        // Add active to clicked pill
-        pill.classList.add('active');
-        // Update hidden input
-        hiddenInput.value = category;
-        // Save as last category
-        this.saveLastCategory(category);
-      });
-      
-      container.appendChild(pill);
+      const option = document.createElement('option');
+      option.value = category;
+      option.textContent = capitalize(category);
+      select.appendChild(option);
     });
 
-    // Add "+" pill for custom category
-    const addPill = document.createElement('button');
-    addPill.type = 'button';
-    addPill.className = 'category-pill category-pill-add';
-    addPill.innerHTML = '+ New';
-    addPill.addEventListener('click', () => {
-      const customRow = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_ROW);
-      const customInput = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_INPUT);
-      if (customRow) {
-        customRow.classList.toggle('hidden');
-        if (!customRow.classList.contains('hidden') && customInput) {
-          customInput.focus();
-        }
-      }
-    });
-    
-    container.appendChild(addPill);
+    // Determine selection: explicit > lastCategory > default
+    const fallback = this.categories[0] || CONSTANTS.DEFAULT_CATEGORIES[0];
+    const toSelect = selectedValue || this.lastCategory || fallback;
+    select.value = this.categories.includes(toSelect) ? toSelect : fallback;
   }
 
   /**
@@ -1280,11 +1244,41 @@ class SmarTrackPopup {
    * @returns {void}
    */
   setupCategoryListeners() {
+    const addCategoryBtn = getElement(CONSTANTS.SELECTORS.ADD_CATEGORY_BTN);
+    const categorySelect = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
     const saveCustomCategoryBtn = getElement(CONSTANTS.SELECTORS.SAVE_CUSTOM_CATEGORY_BTN);
     const cancelCustomCategoryBtn = document.getElementById('cancelCustomCategoryBtn');
     const customCategoryInput = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_INPUT);
     const customCategoryRow = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_ROW);
+
+    // Handle add button click
+    if (addCategoryBtn && customCategoryRow && customCategoryInput) {
+      const handleAddClick = () => {
+        customCategoryRow.classList.toggle('hidden');
+        if (!customCategoryRow.classList.contains('hidden')) {
+          customCategoryInput.focus();
+        }
+      };
+      addCategoryBtn.addEventListener('click', handleAddClick);
+      this.cleanupFunctions.push(() => {
+        addCategoryBtn.removeEventListener('click', handleAddClick);
+      });
+    }
+
+    // Handle category select change
+    if (categorySelect) {
+      const handleCategoryChange = () => {
+        if (categorySelect.value) {
+          this.saveLastCategory(categorySelect.value);
+        }
+      };
+      categorySelect.addEventListener('change', handleCategoryChange);
+      this.cleanupFunctions.push(() => {
+        categorySelect.removeEventListener('change', handleCategoryChange);
+      });
+    }
     
+    // Handle save custom category
     if (saveCustomCategoryBtn && customCategoryInput) {
       const handleSaveCustomCategory = async () => {
         await this.handleSaveCustomCategory();

@@ -392,68 +392,43 @@
       box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
     }
 
-    /* Category Pills Design */
-    .category-pills-container {
+    /* Compact Category Dropdown with Add Button */
+    .category-select-wrapper {
       display: flex;
-      flex-wrap: wrap;
       gap: 8px;
-      padding: 12px;
-      background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+      align-items: center;
+    }
+
+    .category-select {
+      flex: 1;
+    }
+
+    .btn-add-category {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       border: 2px solid #e2e8f0;
       border-radius: 12px;
-      min-height: 52px;
-      align-items: center;
-    }
-
-    .category-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
       background: white;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 500;
-      color: #475569;
+      color: #64748b;
       cursor: pointer;
-      transition: all 0.2s;
-      user-select: none;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 0;
     }
 
-    .category-pill:hover {
+    .btn-add-category:hover {
       border-color: #3b82f6;
       background: #eff6ff;
       color: #3b82f6;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
       transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
     }
 
-    .category-pill.active {
-      background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-      border-color: #3b82f6;
-      color: white;
-      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
-    }
-
-    .category-pill.active:hover {
-      background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
-    }
-
-    .category-pill-add {
-      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-      border: 2px dashed #cbd5e1;
-      color: #64748b;
-      font-weight: 600;
-    }
-
-    .category-pill-add:hover {
-      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-      border-color: #3b82f6;
-      border-style: solid;
-      color: #3b82f6;
+    .btn-add-category:active {
+      transform: translateY(0) scale(0.95);
     }
 
     .custom-category-input {
@@ -798,8 +773,15 @@
 
         <div class="form-group">
           <label class="label" for="category">Category</label>
-          <div class="category-pills-container" id="categoryPillsContainer">
-            <!-- Pills will be populated by JavaScript -->
+          <div class="category-select-wrapper">
+            <select id="category" class="select category-select">
+              <!-- Options populated by JavaScript -->
+            </select>
+            <button id="addCategoryBtn" type="button" class="btn-add-category" title="Add custom category">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 3.5a.5.5 0 0 1 .5.5v3.5H12a.5.5 0 0 1 0 1H8.5V12a.5.5 0 0 1-1 0V8.5H4a.5.5 0 0 1 0-1h3.5V4a.5.5 0 0 1 .5-.5z"/>
+              </svg>
+            </button>
           </div>
           <div id="customCategoryRow" class="custom-category-input hidden">
             <input id="customCategoryInput" class="input input-small" placeholder="New category name..." maxlength="30" />
@@ -808,7 +790,6 @@
               <button id="cancelCustomCategoryBtn" type="button" class="btn-mini btn-cancel">✕</button>
             </div>
           </div>
-          <input type="hidden" id="category" name="category" />
         </div>
 
         <div class="actions">
