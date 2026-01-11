@@ -37,14 +37,16 @@ export const AdminAnalytics: React.FC = () => {
   const [endDate, setEndDate] = useState<string>(() => {
     return new Date().toISOString().split('T')[0]
   })
+  const [appliedStartDate, setAppliedStartDate] = useState<string>(startDate)
+  const [appliedEndDate, setAppliedEndDate] = useState<string>(endDate)
 
   // Auto-refresh state
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
 
   // Load analytics data with comprehensive error handling
-  // NOT a useCallback - we don't want this to trigger effects when dependencies change
-  const loadAnalytics = async (retryCount = 0) => {
+  // Accepts optional date parameters to use latest values when dates change
+  const loadAnalytics = async (retryCount = 0, customStartDate?: string, customEndDate?: string) => {
     // Prevent concurrent requests
     if (loadingRef.current) {
       console.log('[Analytics] Request already in progress, skipping...')
@@ -55,6 +57,21 @@ export const AdminAnalytics: React.FC = () => {
       loadingRef.current = true
       setLoading(true)
       setError(null)
+      
+      // Use provided dates or current state dates (always use latest)
+      const effectiveStartDate = customStartDate ?? startDate
+      const effectiveEndDate = customEndDate ?? endDate
+      
+      // Validate dates
+      if (!effectiveStartDate || !effectiveEndDate) {
+        throw new Error('Start date and end date are required')
+      }
+      
+      if (new Date(effectiveStartDate) > new Date(effectiveEndDate)) {
+        throw new Error('Start date must be before end date')
+      }
+      
+      console.log('[Analytics] Loading with date range:', effectiveStartDate, 'to', effectiveEndDate)
       
       // Ensure we have a fresh token with email scope
       try {
@@ -70,7 +87,7 @@ export const AdminAnalytics: React.FC = () => {
         // Don't fail the request if token refresh fails, might still work with cached token
       }
       
-      const data = await adminApi.getAnalytics(startDate, endDate)
+      const data = await adminApi.getAnalytics(effectiveStartDate, effectiveEndDate)
       setAnalytics(data)
       setLastRefresh(new Date())
       setError(null) // Clear any previous errors
@@ -135,8 +152,8 @@ export const AdminAnalytics: React.FC = () => {
       })
       localStorage.setItem('authToken', token)
       toast.success('Token refreshed successfully')
-      // Retry loading analytics after token refresh
-      await loadAnalytics()
+      // Retry loading analytics after token refresh (use applied dates)
+      await loadAnalytics(0, appliedStartDate, appliedEndDate)
     } catch (error) {
       console.error('Failed to refresh token:', error)
       toast.error('Failed to refresh token. Please try logging in again.')
@@ -171,7 +188,8 @@ export const AdminAnalytics: React.FC = () => {
     if (isAdmin && !isChecking && !hasLoadedOnceRef.current) {
       console.log('[Analytics] Initial load triggered')
       hasLoadedOnceRef.current = true
-      loadAnalytics().catch(console.error)
+      // Use applied dates (which start as initial dates)
+      loadAnalytics(0, appliedStartDate, appliedEndDate).catch(console.error)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, isChecking]) // Only depend on admin state, NOT on loadAnalytics
@@ -184,13 +202,14 @@ export const AdminAnalytics: React.FC = () => {
       // Check if tab is visible
       if (!document.hidden) {
         console.log('[Analytics] Auto-refresh triggered')
-        loadAnalytics().catch(console.error)
+        // Use applied dates (currently active date range)
+        loadAnalytics(0, appliedStartDate, appliedEndDate).catch(console.error)
       }
     }, 10 * 60 * 1000) // 10 minutes
 
     return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRefreshEnabled, isAdmin, isChecking]) // Only depend on settings, NOT on loadAnalytics
+  }, [autoRefreshEnabled, isAdmin, isChecking, appliedStartDate, appliedEndDate]) // Include applied dates
 
   if (isChecking) {
     return <LoadingSpinner />
@@ -216,6 +235,18 @@ export const AdminAnalytics: React.FC = () => {
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      // Trigger apply on Enter
+                      if (startDate && endDate && new Date(startDate) <= new Date(endDate)) {
+                        hasLoadedOnceRef.current = false
+                        setAppliedStartDate(startDate)
+                        setAppliedEndDate(endDate)
+                        loadAnalytics(0, startDate, endDate).catch(console.error)
+                      }
+                    }
+                  }}
                   className="input-field text-sm"
                 />
                 <span className="text-gray-500">to</span>
@@ -223,17 +254,44 @@ export const AdminAnalytics: React.FC = () => {
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      // Trigger apply on Enter
+                      if (startDate && endDate && new Date(startDate) <= new Date(endDate)) {
+                        hasLoadedOnceRef.current = false
+                        setAppliedStartDate(startDate)
+                        setAppliedEndDate(endDate)
+                        loadAnalytics(0, startDate, endDate).catch(console.error)
+                      }
+                    }
+                  }}
                   className="input-field text-sm"
                 />
+                {(startDate !== appliedStartDate || endDate !== appliedEndDate) && (
+                  <span className="text-xs text-amber-600 font-medium">Dates changed</span>
+                )}
                 <button
                   onClick={() => {
+                    // Validate dates before applying
+                    if (!startDate || !endDate) {
+                      toast.error('Please select both start and end dates')
+                      return
+                    }
+                    if (new Date(startDate) > new Date(endDate)) {
+                      toast.error('Start date must be before end date')
+                      return
+                    }
                     hasLoadedOnceRef.current = false // Allow reload with new date range
-                    loadAnalytics(0).catch(console.error)
+                    setAppliedStartDate(startDate)
+                    setAppliedEndDate(endDate)
+                    // Pass current date values directly to ensure latest values are used
+                    loadAnalytics(0, startDate, endDate).catch(console.error)
                   }}
                   disabled={loading}
-                  className="px-3 py-1.5 text-xs bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
-                  Apply
+                  {loading ? 'Loading...' : 'Apply'}
                 </button>
               </div>
               <button
@@ -255,7 +313,8 @@ export const AdminAnalytics: React.FC = () => {
               </button>
               <button
                 onClick={() => {
-                  loadAnalytics(0).catch(console.error)
+                  // Use applied dates when manually refreshing
+                  loadAnalytics(0, appliedStartDate, appliedEndDate).catch(console.error)
                 }}
                 disabled={loading}
                 className="btn btn-secondary flex items-center gap-2"
@@ -338,7 +397,7 @@ export const AdminAnalytics: React.FC = () => {
                     {error.retryable && (
                       <button
                         onClick={() => {
-                          loadAnalytics(0).catch(console.error)
+                          loadAnalytics(0, appliedStartDate, appliedEndDate).catch(console.error)
                         }}
                         className="px-3 py-1.5 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
                       >
@@ -368,7 +427,7 @@ export const AdminAnalytics: React.FC = () => {
           {/* Tab Content */}
           <div className="p-6">
             {activeTab === 'analytics' && (
-              <AnalyticsTab analytics={analytics} loading={loading} error={error} onRetry={() => loadAnalytics(0)} />
+              <AnalyticsTab analytics={analytics} loading={loading} error={error} onRetry={() => loadAnalytics(0, appliedStartDate, appliedEndDate)} />
             )}
             {activeTab === 'users' && (
               <UsersTab adminApi={adminApi} />
@@ -389,7 +448,7 @@ export const AdminAnalytics: React.FC = () => {
   )
 }
 
-// Analytics Tab Component
+// Analytics Tab Component - PM-Focused Improvements
 const AnalyticsTab: React.FC<{ 
   analytics: AdminAnalyticsType | null; 
   loading: boolean;
@@ -449,90 +508,462 @@ const AnalyticsTab: React.FC<{
     return null
   }
 
+  // Calculate PM-focused metrics
+  const userGrowthData = analytics.growth.userGrowth
+  const linksGrowthData = analytics.growth.linksGrowth
+  
+  // Calculate growth rates
+  const recentUserGrowth = userGrowthData.length >= 2 
+    ? userGrowthData.slice(-7).reduce((sum, d) => sum + d.newUsers, 0)
+    : 0
+  const previousUserGrowth = userGrowthData.length >= 14
+    ? userGrowthData.slice(-14, -7).reduce((sum, d) => sum + d.newUsers, 0)
+    : recentUserGrowth
+  const userGrowthRate = previousUserGrowth > 0 
+    ? ((recentUserGrowth - previousUserGrowth) / previousUserGrowth * 100).toFixed(1)
+    : recentUserGrowth > 0 ? '100+' : '0'
+
+  const recentLinksGrowth = linksGrowthData.length >= 2
+    ? linksGrowthData.slice(-7).reduce((sum, d) => sum + d.count, 0)
+    : 0
+  const previousLinksGrowth = linksGrowthData.length >= 14
+    ? linksGrowthData.slice(-14, -7).reduce((sum, d) => sum + d.count, 0)
+    : recentLinksGrowth
+  const linksGrowthRate = previousLinksGrowth > 0
+    ? ((recentLinksGrowth - previousLinksGrowth) / previousLinksGrowth * 100).toFixed(1)
+    : recentLinksGrowth > 0 ? '100+' : '0'
+
+  // Calculate engagement metrics
+  const activeUserRate = analytics.summary.totalUsers > 0
+    ? ((analytics.summary.activeUsers / analytics.summary.totalUsers) * 100).toFixed(1)
+    : '0'
+  
+  const extensionAdoptionRate = analytics.summary.totalUsers > 0
+    ? ((analytics.summary.extensionUsers / analytics.summary.totalUsers) * 100).toFixed(1)
+    : '0'
+
+  // Calculate health indicators
+  const usersAtLimit = analytics.usersApproachingLimits
+  const limitHealth = analytics.summary.totalUsers > 0
+    ? ((usersAtLimit / analytics.summary.totalUsers) * 100).toFixed(1)
+    : '0'
+
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Users"
-          value={analytics.summary.totalUsers}
-          subtitle={`${analytics.summary.extensionUsers} via extension`}
-          icon={Users}
-          color="blue"
+      {/* Executive Summary - PM Focus */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Executive Summary</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              {new Date(analytics.dateRange.startDate).toLocaleDateString()} - {new Date(analytics.dateRange.endDate).toLocaleDateString()}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+              parseFloat(userGrowthRate) >= 0 
+                ? 'bg-green-100 text-green-700' 
+                : 'bg-red-100 text-red-700'
+            }`}>
+              {parseFloat(userGrowthRate) >= 0 ? '↑' : '↓'} {Math.abs(parseFloat(userGrowthRate))}% User Growth
+            </div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <EnhancedStatCard
+            title="Total Users"
+            value={analytics.summary.totalUsers}
+            change={userGrowthRate}
+            changeLabel="vs last week"
+            subtitle={`${analytics.summary.activeUsers} active (${activeUserRate}%)`}
+            icon={Users}
+            color="blue"
+            trend={parseFloat(userGrowthRate) >= 0 ? 'up' : 'down'}
+          />
+          <EnhancedStatCard
+            title="Total Links"
+            value={analytics.summary.totalLinks}
+            change={linksGrowthRate}
+            changeLabel="vs last week"
+            subtitle={`${analytics.summary.extensionLinks} extension, ${analytics.summary.webLinks} web`}
+            icon={LinkIcon}
+            color="green"
+            trend={parseFloat(linksGrowthRate) >= 0 ? 'up' : 'down'}
+          />
+          <EnhancedStatCard
+            title="Extension Adoption"
+            value={`${extensionAdoptionRate}%`}
+            change={analytics.summary.extensionUsers}
+            changeLabel="users"
+            subtitle={`${analytics.summary.extensionLinks} links via extension`}
+            icon={TrendingUp}
+            color="purple"
+            trend="up"
+          />
+          <EnhancedStatCard
+            title="Avg Links/User"
+            value={analytics.summary.averageLinksPerUser.toFixed(1)}
+            change={analytics.summary.activeUsers}
+            changeLabel="active users"
+            subtitle={`${analytics.summary.inactiveUsers} inactive`}
+            icon={BarChart3}
+            color="orange"
+            trend="neutral"
+          />
+        </div>
+      </div>
+
+      {/* Health Indicators - PM Focus */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <HealthIndicator
+          title="User Limit Health"
+          value={limitHealth}
+          unit="%"
+          status={parseFloat(limitHealth) < 10 ? 'healthy' : parseFloat(limitHealth) < 25 ? 'warning' : 'critical'}
+          description={`${usersAtLimit} users approaching limits`}
+          action={usersAtLimit > 0 ? `Review ${usersAtLimit} users` : undefined}
         />
-        <StatCard
-          title="Total Links"
-          value={analytics.summary.totalLinks}
-          subtitle={`${analytics.summary.extensionLinks} extension, ${analytics.summary.webLinks} web`}
-          icon={LinkIcon}
-          color="green"
+        <HealthIndicator
+          title="User Engagement"
+          value={activeUserRate}
+          unit="%"
+          status={parseFloat(activeUserRate) > 50 ? 'healthy' : parseFloat(activeUserRate) > 25 ? 'warning' : 'critical'}
+          description={`${analytics.summary.activeUsers} of ${analytics.summary.totalUsers} users active`}
         />
-        <StatCard
-          title="Storage Used"
-          value={`${analytics.summary.totalStorageMB.toFixed(2)} MB`}
-          subtitle={`${analytics.summary.totalStorageKB.toFixed(2)} KB`}
-          icon={HardDrive}
-          color="purple"
-        />
-        <StatCard
-          title="Avg Links/User"
-          value={analytics.summary.averageLinksPerUser.toFixed(1)}
-          subtitle={`${analytics.summary.activeUsers} active, ${analytics.summary.inactiveUsers} inactive`}
-          icon={TrendingUp}
-          color="orange"
+        <HealthIndicator
+          title="Storage Usage"
+          value={analytics.summary.totalStorageMB.toFixed(1)}
+          unit="MB"
+          status="healthy"
+          description={`${analytics.summary.totalStorageKB.toFixed(0)} KB total`}
         />
       </div>
 
-      {/* Growth Charts */}
+      {/* Growth Trends with Better Visualization */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GrowthChart
-          title="User Growth"
+        <EnhancedGrowthChart
+          title="User Growth Trend"
           data={analytics.growth.userGrowth}
           dataKey="newUsers"
+          showTrend={true}
+          periodLabel="Last 7 days"
         />
-        <GrowthChart
-          title="Links Created"
+        <EnhancedGrowthChart
+          title="Links Created Trend"
           data={analytics.growth.linksGrowth}
           dataKey="count"
           extensionKey="extensionCount"
           webKey="webCount"
+          showTrend={true}
+          periodLabel="Last 7 days"
         />
       </div>
 
-      {/* Top Categories */}
+      {/* Actionable Insights - PM Focus */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 text-amber-600" />
+          Actionable Insights
+        </h3>
+        <div className="space-y-3">
+          {usersAtLimit > 0 && (
+            <InsightCard
+              type="warning"
+              title={`${usersAtLimit} Users Approaching Limits`}
+              description="Consider increasing limits or reaching out to power users"
+              action="View Users"
+            />
+          )}
+          {parseFloat(extensionAdoptionRate) < 30 && (
+            <InsightCard
+              type="info"
+              title="Low Extension Adoption"
+              description={`Only ${extensionAdoptionRate}% of users use the extension. Consider promoting it.`}
+            />
+          )}
+          {parseFloat(activeUserRate) < 40 && (
+            <InsightCard
+              type="warning"
+              title="Low User Engagement"
+              description={`Only ${activeUserRate}% of users are active. Consider re-engagement campaigns.`}
+            />
+          )}
+          {analytics.summary.extensionLinks > analytics.summary.webLinks && (
+            <InsightCard
+              type="success"
+              title="Extension is Primary Channel"
+              description="Users prefer the extension over web. Great product-market fit!"
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Top Categories with Better Context */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Categories</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Top Categories</h3>
+          <span className="text-sm text-gray-500">{analytics.topCategories.length} categories total</span>
+        </div>
         <div className="space-y-2">
           {analytics.topCategories.slice(0, 10).map((cat, index) => (
-            <CategoryBar
+            <EnhancedCategoryBar
               key={cat.category}
               category={cat.category}
               linkCount={cat.linkCount}
               userCount={cat.userCount}
               maxCount={analytics.topCategories[0]?.linkCount || 1}
               rank={index + 1}
+              percentage={analytics.summary.totalLinks > 0 
+                ? ((cat.linkCount / analytics.summary.totalLinks) * 100).toFixed(1)
+                : '0'}
             />
           ))}
         </div>
       </div>
 
-      {/* Content Types Distribution */}
+      {/* Content Types with Distribution Chart */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Content Type Distribution</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {analytics.contentTypes.map((ct) => (
-            <div key={ct.contentType} className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-900">{ct.count}</div>
-              <div className="text-sm text-gray-600 mt-1">{ct.contentType}</div>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {analytics.contentTypes.map((ct) => {
+              const percentage = analytics.summary.totalLinks > 0
+                ? ((ct.count / analytics.summary.totalLinks) * 100).toFixed(1)
+                : '0'
+              return (
+                <div key={ct.contentType} className="text-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="text-2xl font-bold text-gray-900">{ct.count}</div>
+                  <div className="text-sm text-gray-600 mt-1 capitalize">{ct.contentType}</div>
+                  <div className="text-xs text-gray-500 mt-1">{percentage}%</div>
+                </div>
+              )
+            })}
+          </div>
+          <div className="flex items-center justify-center">
+            <ContentTypeChart data={analytics.contentTypes} total={analytics.summary.totalLinks} />
+          </div>
         </div>
       </div>
+
+      {/* Extension Version Adoption */}
+      {analytics.extensionVersions && analytics.extensionVersions.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Extension Version Adoption</h3>
+          <div className="space-y-2">
+            {analytics.extensionVersions.map((version, index) => {
+              const totalExtensionUsers = analytics.extensionVersions.reduce((sum, v) => sum + v.userCount, 0)
+              const userPercentage = totalExtensionUsers > 0
+                ? ((version.userCount / totalExtensionUsers) * 100).toFixed(1)
+                : '0'
+              return (
+                <div key={version.version} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-gray-600 w-8">v{version.version}</span>
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900">{version.userCount} users</div>
+                      <div className="text-xs text-gray-500">{version.linkCount} links</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{ width: `${userPercentage}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-gray-600 w-12 text-right">{userPercentage}%</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ✅ NEW: User Segmentation - PM Focus */}
+      {analytics.userSegmentation && (
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Users className="w-5 h-5 text-purple-600" />
+            User Segmentation
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <SegmentCard
+              title="New Users"
+              value={analytics.userSegmentation.newUsers}
+              description="First link in period"
+              color="blue"
+              percentage={analytics.summary.totalUsers > 0 
+                ? ((analytics.userSegmentation.newUsers / analytics.summary.totalUsers) * 100).toFixed(1)
+                : '0'}
+            />
+            <SegmentCard
+              title="Returning Users"
+              value={analytics.userSegmentation.returningUsers}
+              description="Active in period"
+              color="green"
+              percentage={analytics.summary.totalUsers > 0
+                ? ((analytics.userSegmentation.returningUsers / analytics.summary.totalUsers) * 100).toFixed(1)
+                : '0'}
+            />
+            <SegmentCard
+              title="Power Users"
+              value={analytics.userSegmentation.powerUsers}
+              description="20+ links total"
+              color="purple"
+              percentage={analytics.summary.totalUsers > 0
+                ? ((analytics.userSegmentation.powerUsers / analytics.summary.totalUsers) * 100).toFixed(1)
+                : '0'}
+            />
+            <SegmentCard
+              title="Moderate Users"
+              value={analytics.userSegmentation.moderateUsers}
+              description="6-19 links"
+              color="orange"
+              percentage={analytics.summary.totalUsers > 0
+                ? ((analytics.userSegmentation.moderateUsers / analytics.summary.totalUsers) * 100).toFixed(1)
+                : '0'}
+            />
+            <SegmentCard
+              title="Casual Users"
+              value={analytics.userSegmentation.casualUsers}
+              description="1-5 links"
+              color="gray"
+              percentage={analytics.summary.totalUsers > 0
+                ? ((analytics.userSegmentation.casualUsers / analytics.summary.totalUsers) * 100).toFixed(1)
+                : '0'}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ✅ NEW: Engagement Metrics - PM Focus */}
+      {analytics.engagement && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-blue-600" />
+            Engagement Depth
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <EngagementMetric
+              title="Links per Active User"
+              value={analytics.engagement.avgLinksPerActiveUser.toFixed(1)}
+              description="Average links created per active user"
+              icon={LinkIcon}
+            />
+            <EngagementMetric
+              title="Categories per User"
+              value={analytics.engagement.avgCategoriesPerUser.toFixed(1)}
+              description="Average categories used"
+              icon={Tag}
+            />
+            <EngagementMetric
+              title="Collections per User"
+              value={analytics.engagement.avgCollectionsPerUser.toFixed(1)}
+              description="Average collections created"
+              icon={FileText}
+            />
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <div className="text-sm font-medium text-gray-700 mb-1">Collection Adoption</div>
+              <div className="text-2xl font-bold text-blue-600">{analytics.engagement.collectionAdoptionRate}%</div>
+              <div className="text-xs text-gray-600 mt-1">{analytics.engagement.usersWithCollections} users using collections</div>
+            </div>
+            <div className="p-3 bg-green-50 rounded-lg">
+              <div className="text-sm font-medium text-gray-700 mb-1">Multi-Category Users</div>
+              <div className="text-2xl font-bold text-green-600">{analytics.engagement.usersWithMultipleCategories}</div>
+              <div className="text-xs text-gray-600 mt-1">Users organizing with multiple categories</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ NEW: Retention & Churn - PM Focus */}
+      {analytics.retention && analytics.retention.previousPeriodActive > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-indigo-600" />
+            Retention & Churn Analysis
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <RetentionCard
+              title="Retention Rate"
+              value={`${analytics.retention.retentionRate}%`}
+              description={`${analytics.retention.retainedUsers} of ${analytics.retention.previousPeriodActive} users retained`}
+              status={analytics.retention.retentionRate >= 60 ? 'excellent' : analytics.retention.retentionRate >= 40 ? 'good' : 'poor'}
+              trend="up"
+            />
+            <RetentionCard
+              title="Churn Rate"
+              value={`${analytics.retention.churnRate}%`}
+              description={`${analytics.retention.churnedUsers} users churned`}
+              status={analytics.retention.churnRate <= 20 ? 'excellent' : analytics.retention.churnRate <= 40 ? 'good' : 'poor'}
+              trend="down"
+            />
+            <RetentionCard
+              title="Retained Users"
+              value={analytics.retention.retainedUsers}
+              description="Active in both periods"
+              status="neutral"
+              trend="neutral"
+            />
+            <RetentionCard
+              title="Previous Period Active"
+              value={analytics.retention.previousPeriodActive}
+              description="Baseline for comparison"
+              status="neutral"
+              trend="neutral"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ✅ NEW: Feature Adoption - PM Focus */}
+      {analytics.featureAdoption && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Settings className="w-5 h-5 text-green-600" />
+            Feature Adoption Rates
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <FeatureAdoptionCard
+              title="Collections"
+              adoptionRate={analytics.featureAdoption.collectionAdoption}
+              userCount={analytics.featureAdoption.collectionUsers}
+              totalUsers={analytics.summary.totalUsers}
+              color="blue"
+            />
+            <FeatureAdoptionCard
+              title="Favorites"
+              adoptionRate={analytics.featureAdoption.favoriteAdoption}
+              userCount={analytics.featureAdoption.favoriteUsers}
+              totalUsers={analytics.summary.totalUsers}
+              color="yellow"
+            />
+            <FeatureAdoptionCard
+              title="Archive"
+              adoptionRate={analytics.featureAdoption.archiveAdoption}
+              userCount={analytics.featureAdoption.archiveUsers}
+              totalUsers={analytics.summary.totalUsers}
+              color="gray"
+            />
+            <FeatureAdoptionCard
+              title="Tags"
+              adoptionRate={analytics.featureAdoption.tagsAdoption}
+              userCount={analytics.featureAdoption.tagsUsers}
+              totalUsers={analytics.summary.totalUsers}
+              color="green"
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-// Stat Card Component
+// Stat Card Component (Legacy - kept for compatibility)
 const StatCard: React.FC<{
   title: string
   value: string | number
@@ -561,7 +992,120 @@ const StatCard: React.FC<{
   )
 }
 
-// Growth Chart Component (Simple CSS-based)
+// Enhanced Stat Card with Trends - PM Focus
+const EnhancedStatCard: React.FC<{
+  title: string
+  value: string | number
+  change?: string | number
+  changeLabel?: string
+  subtitle: string
+  icon: React.ElementType
+  color: 'blue' | 'green' | 'purple' | 'orange'
+  trend: 'up' | 'down' | 'neutral'
+}> = ({ title, value, change, changeLabel, subtitle, icon: Icon, color, trend }) => {
+  const colorClasses = {
+    blue: 'bg-blue-100 text-blue-600',
+    green: 'bg-green-100 text-green-600',
+    purple: 'bg-purple-100 text-purple-600',
+    orange: 'bg-orange-100 text-orange-600',
+  }
+
+  const trendColors = {
+    up: 'text-green-600 bg-green-50',
+    down: 'text-red-600 bg-red-50',
+    neutral: 'text-gray-600 bg-gray-50',
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between mb-3">
+        <div className={`p-2.5 rounded-lg ${colorClasses[color]}`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        {change !== undefined && (
+          <div className={`px-2 py-1 rounded text-xs font-medium ${trendColors[trend]}`}>
+            {trend === 'up' && '↑'} {trend === 'down' && '↓'} {change}{changeLabel && ` ${changeLabel}`}
+          </div>
+        )}
+      </div>
+      <h3 className="text-xs font-medium text-gray-600 mb-1">{title}</h3>
+      <div className="text-2xl font-bold text-gray-900 mb-1">{value}</div>
+      <p className="text-xs text-gray-500">{subtitle}</p>
+    </div>
+  )
+}
+
+// Health Indicator Component - PM Focus
+const HealthIndicator: React.FC<{
+  title: string
+  value: string
+  unit: string
+  status: 'healthy' | 'warning' | 'critical'
+  description: string
+  action?: string
+}> = ({ title, value, unit, status, description, action }) => {
+  const statusColors = {
+    healthy: 'bg-green-100 text-green-700 border-green-300',
+    warning: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+    critical: 'bg-red-100 text-red-700 border-red-300',
+  }
+
+  const statusIcons = {
+    healthy: '✓',
+    warning: '⚠',
+    critical: '✗',
+  }
+
+  return (
+    <div className={`bg-white rounded-lg border-2 p-4 ${statusColors[status]}`}>
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-sm font-semibold">{title}</h4>
+        <span className="text-lg font-bold">{statusIcons[status]}</span>
+      </div>
+      <div className="text-2xl font-bold mb-1">
+        {value} <span className="text-sm font-normal">{unit}</span>
+      </div>
+      <p className="text-xs opacity-90 mb-2">{description}</p>
+      {action && (
+        <button className="text-xs font-medium underline opacity-80 hover:opacity-100">
+          {action} →
+        </button>
+      )}
+    </div>
+  )
+}
+
+// Insight Card Component - PM Focus
+const InsightCard: React.FC<{
+  type: 'info' | 'warning' | 'success'
+  title: string
+  description: string
+  action?: string
+}> = ({ type, title, description, action }) => {
+  const typeColors = {
+    info: 'bg-blue-50 border-blue-200 text-blue-900',
+    warning: 'bg-amber-50 border-amber-200 text-amber-900',
+    success: 'bg-green-50 border-green-200 text-green-900',
+  }
+
+  return (
+    <div className={`p-4 rounded-lg border ${typeColors[type]}`}>
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <h4 className="font-semibold text-sm mb-1">{title}</h4>
+          <p className="text-xs opacity-90">{description}</p>
+        </div>
+        {action && (
+          <button className="text-xs font-medium underline ml-2 whitespace-nowrap">
+            {action} →
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Growth Chart Component (Simple CSS-based) - Legacy
 const GrowthChart: React.FC<{
   title: string
   data: Array<{ date: string; [key: string]: any }>
@@ -625,7 +1169,105 @@ const GrowthChart: React.FC<{
   )
 }
 
-// Category Bar Component
+// Enhanced Growth Chart with Trends - PM Focus
+const EnhancedGrowthChart: React.FC<{
+  title: string
+  data: Array<{ date: string; [key: string]: any }>
+  dataKey: string
+  extensionKey?: string
+  webKey?: string
+  showTrend?: boolean
+  periodLabel?: string
+}> = ({ title, data, dataKey, extensionKey, webKey, showTrend, periodLabel }) => {
+  const maxValue = Math.max(...data.map(d => {
+    const total = d[dataKey] || 0
+    const ext = extensionKey ? (d[extensionKey] || 0) : 0
+    const web = webKey ? (d[webKey] || 0) : 0
+    return total || ext || web
+  }), 1)
+
+  // Calculate trend
+  const recentValues = data.slice(-7).map(d => d[dataKey] || 0)
+  const previousValues = data.length >= 14 ? data.slice(-14, -7).map(d => d[dataKey] || 0) : []
+  const recentAvg = recentValues.reduce((a, b) => a + b, 0) / recentValues.length
+  const previousAvg = previousValues.length > 0 ? previousValues.reduce((a, b) => a + b, 0) / previousValues.length : recentAvg
+  const trend = previousAvg > 0 ? ((recentAvg - previousAvg) / previousAvg * 100).toFixed(1) : '0'
+  const trendDirection = parseFloat(trend) >= 0 ? 'up' : 'down'
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        {showTrend && (
+          <div className="flex items-center gap-2">
+            {periodLabel && <span className="text-xs text-gray-500">{periodLabel}</span>}
+            <span className={`text-xs font-medium px-2 py-1 rounded ${
+              trendDirection === 'up' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+            }`}>
+              {trendDirection === 'up' ? '↑' : '↓'} {Math.abs(parseFloat(trend))}%
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="space-y-2">
+        {data.map((item, index) => {
+          const date = new Date(item.date)
+          const value = item[dataKey] || 0
+          const ext = extensionKey ? (item[extensionKey] || 0) : 0
+          const web = webKey ? (item[webKey] || 0) : 0
+          
+          return (
+            <div key={index} className="flex items-center gap-2 group">
+              <div className="text-xs text-gray-600 w-20 flex-shrink-0">
+                {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </div>
+              <div className="flex-1 flex items-center gap-0.5 bg-gray-100 rounded h-7 relative overflow-hidden">
+                {webKey && web > 0 && (
+                  <div
+                    className="bg-blue-500 h-7 rounded-l transition-all group-hover:opacity-90"
+                    style={{ width: `${(web / maxValue) * 100}%` }}
+                    title={`Web: ${web}`}
+                  />
+                )}
+                {extensionKey && ext > 0 && (
+                  <div
+                    className="bg-green-500 h-7 rounded-r transition-all group-hover:opacity-90"
+                    style={{ width: `${(ext / maxValue) * 100}%` }}
+                    title={`Extension: ${ext}`}
+                  />
+                )}
+                {!extensionKey && !webKey && (
+                  <div
+                    className="bg-blue-500 h-7 rounded transition-all group-hover:opacity-90"
+                    style={{ width: `${(value / maxValue) * 100}%` }}
+                    title={value.toString()}
+                  />
+                )}
+              </div>
+              <div className="text-xs font-semibold text-gray-700 w-12 text-right">
+                {value}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {extensionKey && webKey && (
+        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded"></div>
+            <span className="text-xs text-gray-600">Web</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-green-500 rounded"></div>
+            <span className="text-xs text-gray-600">Extension</span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Category Bar Component - Legacy
 const CategoryBar: React.FC<{
   category: string
   linkCount: number
@@ -650,6 +1292,200 @@ const CategoryBar: React.FC<{
           />
         </div>
       </div>
+    </div>
+  )
+}
+
+// Enhanced Category Bar with Percentage - PM Focus
+const EnhancedCategoryBar: React.FC<{
+  category: string
+  linkCount: number
+  userCount: number
+  maxCount: number
+  rank: number
+  percentage: string
+}> = ({ category, linkCount, userCount, maxCount, rank, percentage }) => {
+  const barPercentage = (linkCount / maxCount) * 100
+
+  return (
+    <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors group">
+      <div className="text-sm font-bold text-gray-400 w-8">#{rank}</div>
+      <div className="flex-1">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-sm font-semibold text-gray-900 capitalize">{category}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium text-blue-600">{percentage}%</span>
+            <span className="text-xs text-gray-600">{linkCount} links</span>
+            <span className="text-xs text-gray-500">({userCount} users)</span>
+          </div>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+          <div
+            className="bg-gradient-to-r from-blue-500 to-blue-600 h-2.5 rounded-full transition-all group-hover:from-blue-600 group-hover:to-blue-700"
+            style={{ width: `${barPercentage}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Content Type Chart Component - PM Focus
+const ContentTypeChart: React.FC<{
+  data: Array<{ contentType: string; count: number }>
+  total: number
+}> = ({ data, total }) => {
+  const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
+  
+  return (
+    <div className="relative w-full h-48 flex items-center justify-center">
+      <svg viewBox="0 0 200 200" className="w-full h-full">
+        {data.map((item, index) => {
+          const percentage = total > 0 ? (item.count / total) * 100 : 0
+          const angle = (percentage / 100) * 360
+          const startAngle = data.slice(0, index).reduce((sum, d) => sum + (total > 0 ? (d.count / total) * 360 : 0), 0)
+          
+          // Simple pie chart representation
+          const radius = 80
+          const x1 = 100 + radius * Math.cos((startAngle - 90) * Math.PI / 180)
+          const y1 = 100 + radius * Math.sin((startAngle - 90) * Math.PI / 180)
+          const x2 = 100 + radius * Math.cos((startAngle + angle - 90) * Math.PI / 180)
+          const y2 = 100 + radius * Math.sin((startAngle + angle - 90) * Math.PI / 180)
+          const largeArc = angle > 180 ? 1 : 0
+          
+          return (
+            <path
+              key={item.contentType}
+              d={`M 100 100 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`}
+              fill={colors[index % colors.length]}
+              opacity="0.8"
+              className="hover:opacity-100 transition-opacity"
+            />
+          )
+        })}
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-gray-900">{total}</div>
+          <div className="text-xs text-gray-500">Total Links</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ✅ NEW: Segment Card Component - PM Focus
+const SegmentCard: React.FC<{
+  title: string
+  value: number
+  description: string
+  color: 'blue' | 'green' | 'purple' | 'orange' | 'gray'
+  percentage: string
+}> = ({ title, value, description, color, percentage }) => {
+  const colorClasses = {
+    blue: 'bg-blue-100 text-blue-700 border-blue-300',
+    green: 'bg-green-100 text-green-700 border-green-300',
+    purple: 'bg-purple-100 text-purple-700 border-purple-300',
+    orange: 'bg-orange-100 text-orange-700 border-orange-300',
+    gray: 'bg-gray-100 text-gray-700 border-gray-300',
+  }
+
+  return (
+    <div className={`p-4 rounded-lg border-2 ${colorClasses[color]}`}>
+      <div className="text-sm font-semibold mb-1">{title}</div>
+      <div className="text-2xl font-bold mb-1">{value}</div>
+      <div className="text-xs opacity-90 mb-1">{description}</div>
+      <div className="text-xs font-medium">{percentage}% of total</div>
+    </div>
+  )
+}
+
+// ✅ NEW: Engagement Metric Component - PM Focus
+const EngagementMetric: React.FC<{
+  title: string
+  value: string
+  description: string
+  icon: React.ElementType
+}> = ({ title, value, description, icon: Icon }) => {
+  return (
+    <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+      <div className="flex items-center gap-2 mb-2">
+        <Icon className="w-4 h-4 text-blue-600" />
+        <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
+      </div>
+      <div className="text-3xl font-bold text-blue-600 mb-1">{value}</div>
+      <p className="text-xs text-gray-600">{description}</p>
+    </div>
+  )
+}
+
+// ✅ NEW: Retention Card Component - PM Focus
+const RetentionCard: React.FC<{
+  title: string
+  value: string | number
+  description: string
+  status: 'excellent' | 'good' | 'poor' | 'neutral'
+  trend: 'up' | 'down' | 'neutral'
+}> = ({ title, value, description, status, trend }) => {
+  const statusColors = {
+    excellent: 'bg-green-50 border-green-300 text-green-900',
+    good: 'bg-blue-50 border-blue-300 text-blue-900',
+    poor: 'bg-red-50 border-red-300 text-red-900',
+    neutral: 'bg-gray-50 border-gray-300 text-gray-900',
+  }
+
+  const statusIcons = {
+    excellent: '✓',
+    good: '→',
+    poor: '⚠',
+    neutral: '•',
+  }
+
+  return (
+    <div className={`p-4 rounded-lg border-2 ${statusColors[status]}`}>
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-sm font-semibold">{title}</h4>
+        <span className="text-lg">{statusIcons[status]}</span>
+      </div>
+      <div className="text-2xl font-bold mb-1">{value}</div>
+      <p className="text-xs opacity-90">{description}</p>
+    </div>
+  )
+}
+
+// ✅ NEW: Feature Adoption Card Component - PM Focus
+const FeatureAdoptionCard: React.FC<{
+  title: string
+  adoptionRate: number
+  userCount: number
+  totalUsers: number
+  color: 'blue' | 'yellow' | 'gray' | 'green'
+}> = ({ title, adoptionRate, userCount, totalUsers, color }) => {
+  const colorClasses = {
+    blue: 'bg-blue-50 border-blue-200 text-blue-900',
+    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-900',
+    gray: 'bg-gray-50 border-gray-200 text-gray-900',
+    green: 'bg-green-50 border-green-200 text-green-900',
+  }
+
+  const barColors = {
+    blue: 'bg-blue-600',
+    yellow: 'bg-yellow-600',
+    gray: 'bg-gray-600',
+    green: 'bg-green-600',
+  }
+
+  return (
+    <div className={`p-4 rounded-lg border ${colorClasses[color]}`}>
+      <h4 className="text-sm font-semibold mb-2">{title}</h4>
+      <div className="text-3xl font-bold mb-2">{adoptionRate}%</div>
+      <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+        <div
+          className={`h-2 rounded-full ${barColors[color]}`}
+          style={{ width: `${adoptionRate}%` }}
+        />
+      </div>
+      <p className="text-xs opacity-90">{userCount} of {totalUsers} users</p>
     </div>
   )
 }

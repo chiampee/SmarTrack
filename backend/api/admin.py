@@ -456,8 +456,291 @@ async def get_admin_analytics(
                 logger.error(f"[ANALYTICS ERROR] get_extension_versions failed: {e}")
                 return []
         
+        # ✅ PM-FOCUSED METRICS: User Segmentation & Retention
+        async def get_user_segmentation():
+            """Segment users into new, returning, power users, casual users"""
+            try:
+                # Get all users with their first link date and total links
+                pipeline = [
+                    {"$group": {
+                        "_id": "$userId",
+                        "firstLinkDate": {"$min": "$createdAt"},
+                        "lastLinkDate": {"$max": "$updatedAt"},
+                        "totalLinks": {"$sum": 1},
+                        "linksInPeriod": {
+                            "$sum": {
+                                "$cond": [
+                                    {"$and": [
+                                        {"$gte": ["$createdAt", start_date_obj]},
+                                        {"$lte": ["$createdAt", end_date_obj]}
+                                    ]},
+                                    1, 0
+                                ]
+                            }
+                        }
+                    }}
+                ]
+                users_data = await db.links.aggregate(pipeline).to_list(10000)
+                
+                new_users = 0
+                returning_users = 0
+                power_users = 0  # 20+ links
+                casual_users = 0  # 1-5 links
+                moderate_users = 0  # 6-19 links
+                
+                period_start = start_date_obj
+                period_end = end_date_obj
+                
+                for user in users_data:
+                    first_link = user.get("firstLinkDate")
+                    total_links = user.get("totalLinks", 0)
+                    links_in_period = user.get("linksInPeriod", 0)
+                    
+                    # New user: first link in this period
+                    if first_link and period_start <= first_link <= period_end:
+                        new_users += 1
+                    # Returning user: first link before period but active in period
+                    elif first_link and first_link < period_start and links_in_period > 0:
+                        returning_users += 1
+                    
+                    # User segmentation by link count
+                    if total_links >= 20:
+                        power_users += 1
+                    elif total_links >= 6:
+                        moderate_users += 1
+                    elif total_links >= 1:
+                        casual_users += 1
+                
+                return {
+                    "newUsers": new_users,
+                    "returningUsers": returning_users,
+                    "powerUsers": power_users,
+                    "moderateUsers": moderate_users,
+                    "casualUsers": casual_users
+                }
+            except Exception as e:
+                logger.error(f"[ANALYTICS ERROR] get_user_segmentation failed: {e}")
+                return {"newUsers": 0, "returningUsers": 0, "powerUsers": 0, "moderateUsers": 0, "casualUsers": 0}
+        
+        async def get_engagement_metrics():
+            """Calculate engagement depth metrics"""
+            try:
+                # Links per active user in period
+                pipeline = [
+                    {"$match": {
+                        "$or": [
+                            {"createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}},
+                            {"updatedAt": {"$gte": start_date_obj, "$lte": end_date_obj}}
+                        ]
+                    }},
+                    {"$group": {
+                        "_id": "$userId",
+                        "linksCreated": {
+                            "$sum": {
+                                "$cond": [
+                                    {"$and": [
+                                        {"$gte": ["$createdAt", start_date_obj]},
+                                        {"$lte": ["$createdAt", end_date_obj]}
+                                    ]},
+                                    1, 0
+                                ]
+                            }
+                        },
+                        "linksUpdated": {
+                            "$sum": {
+                                "$cond": [
+                                    {"$and": [
+                                        {"$gte": ["$updatedAt", start_date_obj]},
+                                        {"$lte": ["$updatedAt", end_date_obj]},
+                                        {"$ne": ["$createdAt", "$updatedAt"]}
+                                    ]},
+                                    1, 0
+                                ]
+                            }
+                        },
+                        "categoriesUsed": {"$addToSet": "$category"},
+                        "collectionsUsed": {"$addToSet": "$collectionId"}
+                    }},
+                    {"$project": {
+                        "userId": "$_id",
+                        "linksCreated": 1,
+                        "linksUpdated": 1,
+                        "categoriesCount": {"$size": {"$filter": {"input": "$categoriesUsed", "as": "cat", "cond": {"$ne": ["$$cat", None]}}}},
+                        "collectionsCount": {"$size": {"$filter": {"input": "$collectionsUsed", "as": "col", "cond": {"$ne": ["$$col", None]}}}}
+                    }}
+                ]
+                engagement_data = await db.links.aggregate(pipeline).to_list(10000)
+                
+                if not engagement_data:
+                    return {
+                        "avgLinksPerActiveUser": 0,
+                        "avgCategoriesPerUser": 0,
+                        "avgCollectionsPerUser": 0,
+                        "usersWithCollections": 0,
+                        "usersWithMultipleCategories": 0
+                    }
+                
+                total_links_created = sum(u.get("linksCreated", 0) for u in engagement_data)
+                total_categories = sum(u.get("categoriesCount", 0) for u in engagement_data)
+                total_collections = sum(u.get("collectionsCount", 0) for u in engagement_data)
+                users_with_collections = sum(1 for u in engagement_data if u.get("collectionsCount", 0) > 0)
+                users_multiple_categories = sum(1 for u in engagement_data if u.get("categoriesCount", 0) > 1)
+                
+                active_user_count = len(engagement_data)
+                
+                return {
+                    "avgLinksPerActiveUser": round(total_links_created / active_user_count, 2) if active_user_count > 0 else 0,
+                    "avgCategoriesPerUser": round(total_categories / active_user_count, 2) if active_user_count > 0 else 0,
+                    "avgCollectionsPerUser": round(total_collections / active_user_count, 2) if active_user_count > 0 else 0,
+                    "usersWithCollections": users_with_collections,
+                    "usersWithMultipleCategories": users_multiple_categories,
+                    "collectionAdoptionRate": round((users_with_collections / active_user_count * 100), 1) if active_user_count > 0 else 0
+                }
+            except Exception as e:
+                logger.error(f"[ANALYTICS ERROR] get_engagement_metrics failed: {e}")
+                return {
+                    "avgLinksPerActiveUser": 0,
+                    "avgCategoriesPerUser": 0,
+                    "avgCollectionsPerUser": 0,
+                    "usersWithCollections": 0,
+                    "usersWithMultipleCategories": 0,
+                    "collectionAdoptionRate": 0
+                }
+        
+        async def get_retention_metrics():
+            """Calculate retention and churn indicators"""
+            try:
+                # Users who were active in previous period
+                previous_period_start = start_date_obj - (end_date_obj - start_date_obj)
+                previous_period_end = start_date_obj
+                
+                # Users active in previous period
+                previous_active = await db.links.aggregate([
+                    {"$match": {
+                        "$or": [
+                            {"createdAt": {"$gte": previous_period_start, "$lte": previous_period_end}},
+                            {"updatedAt": {"$gte": previous_period_start, "$lte": previous_period_end}}
+                        ]
+                    }},
+                    {"$group": {"_id": "$userId"}},
+                    {"$count": "total"}
+                ]).to_list(1)
+                
+                previous_active_count = previous_active[0]["total"] if previous_active and previous_active[0].get("total") else 0
+                
+                # Users active in current period
+                current_active = active_users  # Already calculated
+                
+                # Users active in both periods (retained)
+                retained_users = await db.links.aggregate([
+                    {"$match": {
+                        "$or": [
+                            {"createdAt": {"$gte": previous_period_start, "$lte": previous_period_end}},
+                            {"updatedAt": {"$gte": previous_period_start, "$lte": previous_period_end}}
+                        ]
+                    }},
+                    {"$group": {"_id": "$userId"}},
+                    {"$project": {"userId": "$_id"}}
+                ]).to_list(10000)
+                
+                retained_user_ids = {u["userId"] for u in retained_users}
+                
+                current_active_users = await db.links.aggregate([
+                    {"$match": {
+                        "$or": [
+                            {"createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}},
+                            {"updatedAt": {"$gte": start_date_obj, "$lte": end_date_obj}}
+                        ]
+                    }},
+                    {"$group": {"_id": "$userId"}},
+                    {"$project": {"userId": "$_id"}}
+                ]).to_list(10000)
+                
+                current_active_user_ids = {u["userId"] for u in current_active_users}
+                retained_count = len(retained_user_ids & current_active_user_ids)
+                
+                # Churned users (active in previous but not current)
+                churned_count = len(retained_user_ids - current_active_user_ids)
+                
+                retention_rate = round((retained_count / previous_active_count * 100), 1) if previous_active_count > 0 else 0
+                churn_rate = round((churned_count / previous_active_count * 100), 1) if previous_active_count > 0 else 0
+                
+                return {
+                    "retentionRate": retention_rate,
+                    "churnRate": churn_rate,
+                    "retainedUsers": retained_count,
+                    "churnedUsers": churned_count,
+                    "previousPeriodActive": previous_active_count
+                }
+            except Exception as e:
+                logger.error(f"[ANALYTICS ERROR] get_retention_metrics failed: {e}")
+                return {
+                    "retentionRate": 0,
+                    "churnRate": 0,
+                    "retainedUsers": 0,
+                    "churnedUsers": 0,
+                    "previousPeriodActive": 0
+                }
+        
+        async def get_feature_adoption():
+            """Calculate feature adoption rates"""
+            try:
+                # Collection usage
+                users_with_collections = await db.collections.aggregate([
+                    {"$group": {"_id": "$userId"}},
+                    {"$count": "total"}
+                ]).to_list(1)
+                collection_users = users_with_collections[0]["total"] if users_with_collections and users_with_collections[0].get("total") else 0
+                
+                # Favorite usage
+                users_with_favorites = await db.links.aggregate([
+                    {"$match": {"isFavorite": True}},
+                    {"$group": {"_id": "$userId"}},
+                    {"$count": "total"}
+                ]).to_list(1)
+                favorite_users = users_with_favorites[0]["total"] if users_with_favorites and users_with_favorites[0].get("total") else 0
+                
+                # Archive usage
+                users_with_archived = await db.links.aggregate([
+                    {"$match": {"isArchived": True}},
+                    {"$group": {"_id": "$userId"}},
+                    {"$count": "total"}
+                ]).to_list(1)
+                archived_users = users_with_archived[0]["total"] if users_with_archived and users_with_archived[0].get("total") else 0
+                
+                # Tags usage (users who have links with tags)
+                users_with_tags = await db.links.aggregate([
+                    {"$match": {"tags": {"$exists": True, "$ne": [], "$not": {"$size": 0}}}},
+                    {"$group": {"_id": "$userId"}},
+                    {"$count": "total"}
+                ]).to_list(1)
+                tags_users = users_with_tags[0]["total"] if users_with_tags and users_with_tags[0].get("total") else 0
+                
+                return {
+                    "collectionAdoption": round((collection_users / total_users * 100), 1) if total_users > 0 else 0,
+                    "favoriteAdoption": round((favorite_users / total_users * 100), 1) if total_users > 0 else 0,
+                    "archiveAdoption": round((archived_users / total_users * 100), 1) if total_users > 0 else 0,
+                    "tagsAdoption": round((tags_users / total_users * 100), 1) if total_users > 0 else 0,
+                    "collectionUsers": collection_users,
+                    "favoriteUsers": favorite_users,
+                    "archiveUsers": archived_users,
+                    "tagsUsers": tags_users
+                }
+            except Exception as e:
+                logger.error(f"[ANALYTICS ERROR] get_feature_adoption failed: {e}")
+                return {
+                    "collectionAdoption": 0,
+                    "favoriteAdoption": 0,
+                    "archiveAdoption": 0,
+                    "tagsAdoption": 0,
+                    "collectionUsers": 0,
+                    "favoriteUsers": 0,
+                    "archiveUsers": 0,
+                    "tagsUsers": 0
+                }
+        
         # Execute all remaining queries in parallel
-        user_growth, links_growth, top_categories, content_types, avg_links_per_user, active_users, users_approaching, extension_versions = await asyncio.gather(
+        user_growth, links_growth, top_categories, content_types, avg_links_per_user, active_users, users_approaching, extension_versions, user_segmentation, engagement_metrics, retention_metrics, feature_adoption = await asyncio.gather(
             get_user_growth(),
             get_links_growth(),
             get_top_categories(),
@@ -465,7 +748,11 @@ async def get_admin_analytics(
             get_avg_links_per_user(),
             get_active_users(),
             get_users_approaching(),
-            get_extension_versions()
+            get_extension_versions(),
+            get_user_segmentation(),
+            get_engagement_metrics(),
+            get_retention_metrics(),
+            get_feature_adoption()
         )
         
         inactive_users = total_users - active_users if total_users >= active_users else 0
@@ -492,6 +779,11 @@ async def get_admin_analytics(
             "contentTypes": content_types,
             "extensionVersions": extension_versions,
             "usersApproachingLimits": len(users_approaching),
+            # ✅ PM-FOCUSED METRICS
+            "userSegmentation": user_segmentation,
+            "engagement": engagement_metrics,
+            "retention": retention_metrics,
+            "featureAdoption": feature_adoption,
             "dateRange": {
                 "startDate": start_date_obj.isoformat(),
                 "endDate": end_date_obj.isoformat()

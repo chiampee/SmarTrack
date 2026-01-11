@@ -41,6 +41,39 @@ export interface AdminAnalytics {
     userCount: number
   }>
   usersApproachingLimits: number
+  // ✅ PM-FOCUSED METRICS
+  userSegmentation?: {
+    newUsers: number
+    returningUsers: number
+    powerUsers: number
+    moderateUsers: number
+    casualUsers: number
+  }
+  engagement?: {
+    avgLinksPerActiveUser: number
+    avgCategoriesPerUser: number
+    avgCollectionsPerUser: number
+    usersWithCollections: number
+    usersWithMultipleCategories: number
+    collectionAdoptionRate: number
+  }
+  retention?: {
+    retentionRate: number
+    churnRate: number
+    retainedUsers: number
+    churnedUsers: number
+    previousPeriodActive: number
+  }
+  featureAdoption?: {
+    collectionAdoption: number
+    favoriteAdoption: number
+    archiveAdoption: number
+    tagsAdoption: number
+    collectionUsers: number
+    favoriteUsers: number
+    archiveUsers: number
+    tagsUsers: number
+  }
   dateRange: {
     startDate: string
     endDate: string
