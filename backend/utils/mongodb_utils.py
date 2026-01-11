@@ -41,6 +41,7 @@ def validate_object_id(id_string: str, resource_name: str = "Resource") -> Objec
 def normalize_document(doc: Dict[str, Any], exclude_fields: Optional[List[str]] = None) -> Dict[str, Any]:
     """
     Normalizes a MongoDB document by converting _id to id and removing _id
+    ✅ Enhanced: Serializes datetime objects to ISO strings for JSON compatibility
     
     Args:
         doc: MongoDB document dictionary
@@ -66,6 +67,15 @@ def normalize_document(doc: Dict[str, Any], exclude_fields: Optional[List[str]] 
         
         # Remove _id field
         del normalized['_id']
+    
+    # ✅ NEW: Serialize datetime objects to ISO strings
+    from datetime import datetime
+    for key, value in normalized.items():
+        if isinstance(value, datetime):
+            normalized[key] = value.isoformat()
+        elif isinstance(value, ObjectId):
+            # Handle nested ObjectIds (e.g., in collectionId)
+            normalized[key] = str(value)
     
     # Remove excluded fields
     if exclude_fields:

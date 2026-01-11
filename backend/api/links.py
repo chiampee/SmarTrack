@@ -156,6 +156,22 @@ async def get_links(
         # Normalize documents
         normalized_links = normalize_documents(links)
         
+        # ✅ ENHANCED: Ensure all optional fields have proper defaults
+        for link in normalized_links:
+            # Ensure optional fields exist with defaults
+            link.setdefault("description", None)
+            link.setdefault("tags", [])
+            link.setdefault("collectionId", None)
+            link.setdefault("thumbnail", None)
+            link.setdefault("favicon", None)
+            link.setdefault("isFavorite", False)
+            link.setdefault("isArchived", False)
+            link.setdefault("clickCount", 0)
+            link.setdefault("lastAccessedAt", None)
+            # Ensure tags is always a list (not None)
+            if link.get("tags") is None:
+                link["tags"] = []
+        
         return {
             "links": normalized_links,
             "total": total,

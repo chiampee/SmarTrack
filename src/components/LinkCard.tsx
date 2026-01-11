@@ -194,39 +194,51 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             </div>
           </div>
 
-          {link.description && (
-            <p className="text-gray-700 text-xs line-clamp-2">{link.description}</p>
-          )}
-
-          {/* Category and Collection Badges */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {link.category && (
-              <span className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-full font-medium">
-                {link.category}
-              </span>
-            )}
-            {link.collectionId && (
-              <span className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full font-medium">
-                📁 {getCollectionName(link.collectionId)}
-              </span>
+          {/* ✅ ENHANCED: Always show description field (even if empty) */}
+          <div className="min-h-[2.5rem]">
+            {link.description ? (
+              <p className="text-gray-700 text-xs line-clamp-2" title={link.description}>
+                {link.description}
+              </p>
+            ) : (
+              <p className="text-gray-400 text-xs italic">No description</p>
             )}
           </div>
 
-          {link.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {link.tags.slice(0, 3).map((tag, index) => (
-                <span
-                  key={index}
-                  className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full"
-                >
-                  {tag}
+          {/* ✅ ENHANCED: Category, Collection/Project, and Tags */}
+          <div className="space-y-2">
+            {/* Category and Collection/Project Badges */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {link.category && (
+                <span className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-full font-medium">
+                  {link.category}
                 </span>
-              ))}
-              {link.tags.length > 3 && (
-                <span className="text-xs text-gray-500">+{link.tags.length - 3} more</span>
+              )}
+              {link.collectionId && (
+                <span className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full font-medium flex items-center gap-1">
+                  <span>📁</span>
+                  <span>{getCollectionName(link.collectionId) || 'Project'}</span>
+                </span>
               )}
             </div>
-          )}
+
+            {/* ✅ ENHANCED: Show all tags with better visibility */}
+            {link.tags && link.tags.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {link.tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200"
+                    title={tag}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="text-xs text-gray-400 italic">No tags</div>
+            )}
+          </div>
 
           <div className="flex items-center justify-between text-xs text-gray-500">
             <span>{formatDate(link.createdAt)}</span>
@@ -293,37 +305,52 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               </a>
               <p className="text-gray-500 text-sm truncate mt-1">{link.url}</p>
               
-              {link.description && (
-                <p className="text-gray-700 text-sm mt-2 line-clamp-2">{link.description}</p>
-              )}
-
-              {/* Category and Collection Badges */}
-              <div className="flex items-center gap-2 mt-3 flex-wrap">
-                {link.category && (
-                  <span className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-full font-medium">
-                    {link.category}
-                  </span>
-                )}
-                {link.collectionId && (
-                  <span className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full font-medium">
-                    📁 {getCollectionName(link.collectionId)}
-                  </span>
+              {/* ✅ ENHANCED: Always show description field */}
+              <div className="mt-2 min-h-[1.5rem]">
+                {link.description ? (
+                  <p className="text-gray-700 text-sm line-clamp-2" title={link.description}>
+                    {link.description}
+                  </p>
+                ) : (
+                  <p className="text-gray-400 text-sm italic">No description</p>
                 )}
               </div>
 
-              {link.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {link.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full"
-                    >
-                      <Tag className="w-3 h-3" />
-                      {tag}
+              {/* ✅ ENHANCED: Category, Collection/Project, and Tags */}
+              <div className="space-y-2 mt-3">
+                {/* Category and Collection/Project Badges */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {link.category && (
+                    <span className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-full font-medium">
+                      {link.category}
                     </span>
-                  ))}
+                  )}
+                  {link.collectionId && (
+                    <span className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full font-medium flex items-center gap-1">
+                      <span>📁</span>
+                      <span>{getCollectionName(link.collectionId) || 'Project'}</span>
+                    </span>
+                  )}
                 </div>
-              )}
+
+                {/* ✅ ENHANCED: Show all tags with better visibility */}
+                {link.tags && link.tags.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {link.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-200"
+                        title={tag}
+                      >
+                        <Tag className="w-3 h-3" />
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-400 italic">No tags</div>
+                )}
+              </div>
 
               <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
                 <span className="flex items-center gap-1">
