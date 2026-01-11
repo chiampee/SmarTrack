@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Plus, Grid, List, Star, Download, Loader2, Archive } from 'lucide-react'
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { CollectionSidebar } from '../components/CollectionSidebar'
 import { LinkCard } from '../components/LinkCard'
@@ -601,6 +602,59 @@ export const Dashboard: React.FC = () => {
     // Cleanup if needed
   }
 
+  // Handle drag and drop reordering
+  const handleDragDropEnd = async (result: DropResult) => {
+    // No destination or dropped outside list
+    if (!result.destination) {
+      return
+    }
+
+    const sourceIndex = result.source.index
+    const destinationIndex = result.destination.index
+
+    // Same position
+    if (sourceIndex === destinationIndex) {
+      return
+    }
+
+    // Get category from droppableId
+    const category = result.source.droppableId
+
+    // Reorder links within the category
+    const reorderedLinks = Array.from(filteredLinks)
+    
+    // Find links for this category
+    const categoryLinks = reorderedLinks.filter(l => (l.category || 'Uncategorized') === category)
+    const otherLinks = reorderedLinks.filter(l => (l.category || 'Uncategorized') !== category)
+    
+    // Reorder within category
+    const [removed] = categoryLinks.splice(sourceIndex, 1)
+    categoryLinks.splice(destinationIndex, 0, removed)
+    
+    // Combine back
+    const newLinks = [...otherLinks, ...categoryLinks]
+    setFilteredLinks(newLinks)
+    setLinks(newLinks)
+    
+    // Optionally: Save order to backend
+    try {
+      // You can implement a backend endpoint to save the order
+      // await makeRequest('/api/links/reorder', {
+      //   method: 'POST',
+      //   body: JSON.stringify({
+      //     linkIds: newLinks.map(l => l.id),
+      //   }),
+      // })
+      toast.success('Link order updated!')
+    } catch (error) {
+      console.error('Failed to save link order:', error)
+      // Revert on error by reloading
+      const freshLinks = await getLinks()
+      setLinks(freshLinks)
+      setFilteredLinks(freshLinks)
+    }
+  }
+
   // Handle drop on collection
   const handleDropOnCollection = async (collectionId: string, linkId: string) => {
     try {
@@ -1090,6 +1144,7 @@ export const Dashboard: React.FC = () => {
                 )}
                 
                 {/* Group by Category */}
+                <DragDropContext onDragEnd={handleDragDropEnd}>
                 {(() => {
                   // Group links by category
                   const groupedLinks = filteredLinks.reduce((acc, link) => {
@@ -1106,7 +1161,7 @@ export const Dashboard: React.FC = () => {
                       variants={staggerContainer}
                       className="space-y-6"
                     >
-                      {Object.entries(groupedLinks).map(([category, links]) => (
+                      {Object.entries(groupedLinks).map(([category, categoryLinks]) => (
                         <motion.div
                           key={category}
                           variants={staggerItem}
@@ -1123,53 +1178,61 @@ export const Dashboard: React.FC = () => {
                               <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
                               <h3 className="text-xl font-bold text-gray-800">{category}</h3>
                               <span className="px-3 py-0.5 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                                {links.length} {links.length === 1 ? 'link' : 'links'}
+                                {categoryLinks.length} {categoryLinks.length === 1 ? 'link' : 'links'}
                               </span>
                             </div>
                           </motion.div>
 
-                          {/* Links for this category */}
-                          <motion.div
-                            variants={staggerContainer}
-            className={viewMode === 'grid'
-              ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-4'
-              : 'space-y-2 sm:space-y-4'
-            }
-                          >
-                            {links.map((link, index) => (
-          <motion.div
-            key={link.id}
-            variants={staggerItem}
-            initial={shouldAnimate ? "hidden" : "visible"}
-            whileInView="visible"
-            viewport={{ once: true, margin: isMobile ? "0px" : "-50px", amount: 0.2 }}
-            transition={{ 
-              duration: animationConfig.duration * 0.7, 
-              delay: shouldAnimate ? index * 0.03 : 0, 
-              ease: "easeOut" 
-            }}
-          >
-                                <LinkCard
-                                  link={link}
-                                  viewMode={viewMode}
-                                  isSelected={selectedLinks.has(link.id)}
-                                  onSelect={() => toggleSelection(link.id)}
-                                  onAction={handleLinkAction}
-                                  onDragStart={(e) => {
-                                    e.dataTransfer.setData('text/plain', link.id)
-                                    e.dataTransfer.effectAllowed = 'move'
-                                  }}
-                                onDragEnd={handleDragEnd}
-                                collections={collections}
-                              />
+                          {/* Links for this category - Droppable */}
+                          <Droppable droppableId={category}>
+                            {(provided, snapshot) => (
+                              <motion.div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                variants={staggerContainer}
+                                className={`${viewMode === 'grid'
+                                  ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-4'
+                                  : 'space-y-2 sm:space-y-4'
+                                } ${snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2' : ''}`}
+                              >
+                                {categoryLinks.map((link, index) => (
+                                  <Draggable key={link.id} draggableId={link.id} index={index}>
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        style={{
+                                          ...provided.draggableProps.style,
+                                          opacity: snapshot.isDragging ? 0.8 : 1,
+                                          transform: snapshot.isDragging
+                                            ? `${provided.draggableProps.style?.transform} scale(1.02)`
+                                            : provided.draggableProps.style?.transform,
+                                          transition: snapshot.isDragging ? 'none' : 'opacity 0.2s ease',
+                                        }}
+                                      >
+                                        <LinkCard
+                                          link={link}
+                                          viewMode={viewMode}
+                                          isSelected={selectedLinks.has(link.id)}
+                                          onSelect={() => toggleSelection(link.id)}
+                                          onAction={handleLinkAction}
+                                          collections={collections}
+                                        />
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
                               </motion.div>
-                            ))}
-                          </motion.div>
+                            )}
+                          </Droppable>
                         </motion.div>
                       ))}
                     </motion.div>
                   )
                 })()}
+                </DragDropContext>
               </motion.div>
             )}
           </motion.div>
