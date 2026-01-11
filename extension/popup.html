@@ -166,6 +166,52 @@
       white-space: nowrap;
     }
 
+    .content-type-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+    .content-type-badge[data-type="blog"] {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .content-type-badge[data-type="article"] {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+
+    .content-type-badge[data-type="video"] {
+      background: #fce7f3;
+      color: #9f1239;
+    }
+
+    .content-type-badge[data-type="pdf"] {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .content-type-badge[data-type="document"] {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .content-type-badge[data-type="image"] {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .content-type-badge[data-type="website"] {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
     .dupe {
       background: #fff7ed;
       border: 1px solid #fed7aa;
@@ -460,7 +506,10 @@
              Let's keep favicon as fallback or secondary. -->
         <div class="preview-favicon" id="favicon"></div>
         <div class="preview-content">
-          <div class="preview-title" id="pageTitle">Loading...</div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <div class="preview-title" id="pageTitle" style="flex: 1; min-width: 0;">Loading...</div>
+            <span id="contentTypeBadge" class="content-type-badge" style="display: none;"></span>
+          </div>
           <div class="preview-url" id="pageUrl">Loading...</div>
         </div>
       </div>

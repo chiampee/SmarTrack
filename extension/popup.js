@@ -565,13 +565,89 @@ class SmarTrackPopup {
     };
 
     const selectedText = window.getSelection().toString().trim();
-    const title = document.title;
     const url = window.location.href;
     
-    const description = getMetaContent('description') ||
-      getMetaContent('og:description') ||
-      getMetaContent('twitter:description') ||
-      (document.querySelector('p')?.textContent?.substring(0, 200) || '');
+    // Improved title extraction - prioritize H1, then og:title, then document.title
+    const getBestTitle = () => {
+      // Try H1 first (most accurate for articles)
+      const h1 = document.querySelector('h1');
+      if (h1 && h1.textContent.trim()) {
+        return h1.textContent.trim();
+      }
+      
+      // Try og:title (social media optimized)
+      const ogTitle = getMetaContent('og:title');
+      if (ogTitle && ogTitle.trim()) {
+        return ogTitle.trim();
+      }
+      
+      // Fallback to document.title but clean it up
+      let docTitle = document.title || '';
+      // Remove common suffixes like " - Site Name"
+      docTitle = docTitle.replace(/\s*[-|–|—]\s*[^-|–|—]+$/, '').trim();
+      return docTitle;
+    };
+    
+    const title = getBestTitle();
+    
+    // Improved description extraction - prioritize meta descriptions, then article content
+    const getBestDescription = () => {
+      // Try meta descriptions first (usually well-crafted)
+      const metaDesc = getMetaContent('description') ||
+                      getMetaContent('og:description') ||
+                      getMetaContent('twitter:description');
+      
+      if (metaDesc && metaDesc.trim().length > 20) {
+        return metaDesc.trim();
+      }
+      
+      // Try article tag content (structured content)
+      const article = document.querySelector('article');
+      if (article) {
+        // Get first few paragraphs from article
+        const paragraphs = article.querySelectorAll('p');
+        for (const p of paragraphs) {
+          const text = p.textContent.trim();
+          if (text.length > 50 && text.length < 300) {
+            return text;
+          }
+        }
+        // If no good paragraph, get first 200 chars of article text
+        const articleText = article.textContent.trim();
+        if (articleText.length > 50) {
+          return articleText.substring(0, 250).replace(/\s+/g, ' ').trim();
+        }
+      }
+      
+      // Try main content area
+      const main = document.querySelector('main');
+      if (main) {
+        const paragraphs = main.querySelectorAll('p');
+        for (const p of paragraphs) {
+          const text = p.textContent.trim();
+          if (text.length > 50 && text.length < 300) {
+            return text;
+          }
+        }
+      }
+      
+      // Fallback: get first meaningful paragraph from body
+      const paragraphs = document.querySelectorAll('body p');
+      for (const p of paragraphs) {
+        const text = p.textContent.trim();
+        // Skip very short or very long paragraphs
+        if (text.length > 50 && text.length < 400) {
+          // Skip navigation/header/footer content
+          if (!p.closest('nav, header, footer, aside')) {
+            return text.substring(0, 250).trim();
+          }
+        }
+      }
+      
+      return '';
+    };
+    
+    const description = getBestDescription();
     
     // Extract image and convert to absolute URL
     const getImageUrl = () => {
@@ -652,13 +728,74 @@ class SmarTrackPopup {
       console.log('[SRT] No image found on page');
     }
 
+    // Detect content type
+    const detectContentType = () => {
+      const urlLower = url.toLowerCase();
+      
+      // PDF files
+      if (urlLower.includes('.pdf') || urlLower.endsWith('.pdf')) return 'pdf';
+      
+      // Video platforms
+      if (urlLower.includes('youtube.com') || 
+          urlLower.includes('youtu.be') ||
+          urlLower.includes('vimeo.com') ||
+          urlLower.includes('dailymotion.com') ||
+          urlLower.includes('twitch.tv')) {
+        return 'video';
+      }
+      
+      // Image files
+      if (urlLower.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)$/)) return 'image';
+      
+      // Documents
+      if (urlLower.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt|rtf)$/)) return 'document';
+      
+      // Academic/Research articles
+      if (urlLower.includes('arxiv.org') || 
+          urlLower.includes('scholar.google') ||
+          urlLower.includes('pubmed.ncbi.nlm.nih.gov') ||
+          urlLower.includes('researchgate.net')) {
+        return 'article';
+      }
+      
+      // Blog detection
+      const ogType = getMetaContent('og:type');
+      if (ogType === 'article') {
+        // Check if it's a blog post
+        if (urlLower.includes('/blog/') ||
+            urlLower.includes('/post/') ||
+            urlLower.includes('medium.com') ||
+            urlLower.includes('wordpress.com') ||
+            urlLower.includes('blogspot.com') ||
+            document.querySelector('[itemtype*="BlogPosting"]')) {
+          return 'blog';
+        }
+        return 'article';
+      }
+      
+      // Check for article/blog structure
+      if (document.querySelector('article')) {
+        if (urlLower.match(/\/(blog|post|article|news)\//) ||
+            urlLower.includes('medium.com') ||
+            urlLower.includes('wordpress.com') ||
+            urlLower.includes('blogspot.com') ||
+            urlLower.includes('tumblr.com')) {
+          return 'blog';
+        }
+      }
+      
+      // Default to website
+      return 'website';
+    };
+
     return {
       title: title || 'Untitled',
       url: url || '',
       description: description || '',
       image: image || null,
       favicon: favicon || null,
-      selectedText: selectedText || ''
+      selectedText: selectedText || '',
+      contentType: detectContentType()
     };
   }
 
@@ -667,13 +804,15 @@ class SmarTrackPopup {
    * @returns {Object} Fallback page data
    */
   getFallbackPageData() {
+    const url = this.currentTab?.url || '';
     return {
       title: this.currentTab?.title || 'Untitled',
-      url: this.currentTab?.url || '',
+      url: url,
       description: '',
       favicon: null,
       selectedText: '',
-      image: null
+      image: null,
+      contentType: this.detectContentType(url)
     };
   }
 
@@ -807,10 +946,29 @@ class SmarTrackPopup {
     const title = this.pageData.title || this.currentTab?.title || 'Untitled';
     const url = this.pageData.url || this.currentTab?.url || '';
     
-    if (titleEl) titleEl.textContent = title;
+    // Truncate title if too long (max 60 chars for preview)
+    const displayTitle = title.length > 60 ? title.substring(0, 57) + '...' : title;
+    if (titleEl) {
+      titleEl.textContent = displayTitle;
+      titleEl.setAttribute('title', title); // Full title in tooltip
+    }
+    
     if (urlEl) {
       urlEl.textContent = url;
       urlEl.setAttribute('title', url); // Tooltip for long URLs
+    }
+    
+    // Display content type badge
+    const contentTypeBadge = getElement('contentTypeBadge');
+    if (contentTypeBadge) {
+      const contentType = this.pageData.contentType || this.detectContentType(url);
+      if (contentType && contentType !== 'website') {
+        contentTypeBadge.textContent = contentType;
+        contentTypeBadge.setAttribute('data-type', contentType);
+        contentTypeBadge.style.display = 'inline-block';
+      } else {
+        contentTypeBadge.style.display = 'none';
+      }
     }
     
     // Set thumbnail image (if available)
@@ -916,14 +1074,35 @@ class SmarTrackPopup {
       }
     }
     
-    // Auto-fill form inputs
+    // Auto-fill form inputs with cleaned title
     if (titleInput) {
-      titleInput.value = sanitizeString(title, 200);
+      // Clean title: remove extra whitespace, normalize, and limit length
+      let cleanedTitle = title
+        .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
+        .replace(/\s*[-|–|—]\s*[^-|–|—]+$/, '')  // Remove site name suffix
+        .trim();
+      
+      // Limit to 100 chars for better UX (user can edit if needed)
+      if (cleanedTitle.length > 100) {
+        cleanedTitle = cleanedTitle.substring(0, 97) + '...';
+      }
+      
+      titleInput.value = cleanedTitle;
     }
     
     // Only auto-fill description if meaningful content exists
     if (descriptionInput && this.pageData.description) {
-      const description = sanitizeString(this.pageData.description);
+      // Clean description: remove extra whitespace and normalize
+      let description = this.pageData.description
+        .replace(/\s+/g, ' ')  // Replace multiple spaces/newlines with single space
+        .replace(/\n\s*\n/g, '\n')  // Remove multiple newlines
+        .trim();
+      
+      // Limit to reasonable length (500 chars for description field)
+      if (description.length > 500) {
+        description = description.substring(0, 497) + '...';
+      }
+      
       if (description.length >= CONSTANTS.SELECTED_TEXT_MIN_LENGTH) {
         descriptionInput.value = description;
       }
@@ -1427,6 +1606,9 @@ class SmarTrackPopup {
     const titleInput = getElement(CONSTANTS.SELECTORS.TITLE_INPUT);
     const descriptionInput = getElement(CONSTANTS.SELECTORS.DESCRIPTION_INPUT);
     
+    // Use detected content type from pageData, or detect it if not available
+    const contentType = this.pageData.contentType || this.detectContentType(url);
+    
     return {
       url: url,
       title: sanitizeString(titleInput?.value || '', 200),
@@ -1434,7 +1616,7 @@ class SmarTrackPopup {
       content: sanitizeString(content, 5000),
       category: category,
       tags: [], // Tags removed for better UX - can be added later in dashboard
-      contentType: this.detectContentType(url),
+      contentType: contentType,
       thumbnail: this.pageData.image || null,
       favicon: this.pageData.favicon || null,
       isFavorite: false,
@@ -1443,22 +1625,72 @@ class SmarTrackPopup {
   }
 
   /**
-   * Detects content type from URL
+   * Detects content type from URL and page structure
    * @param {string} url - URL to analyze
    * @returns {string} Content type
    */
   detectContentType(url) {
-    if (!url || typeof url !== 'string') return 'webpage';
+    if (!url || typeof url !== 'string') return 'website';
     
     const urlLower = url.toLowerCase();
     
-    if (urlLower.includes('.pdf')) return 'pdf';
-    if (urlLower.includes('youtube.com') || urlLower.includes('vimeo.com')) return 'video';
-    if (urlLower.match(/\.(jpg|jpeg|png|gif|webp)$/)) return 'image';
-    if (urlLower.includes('arxiv.org') || urlLower.includes('scholar.google')) return 'article';
-    if (urlLower.includes('.doc') || urlLower.includes('.docx')) return 'document';
+    // PDF files
+    if (urlLower.includes('.pdf') || urlLower.endsWith('.pdf')) return 'pdf';
     
-    return 'webpage';
+    // Video platforms
+    if (urlLower.includes('youtube.com') || 
+        urlLower.includes('youtu.be') ||
+        urlLower.includes('vimeo.com') ||
+        urlLower.includes('dailymotion.com') ||
+        urlLower.includes('twitch.tv')) {
+      return 'video';
+    }
+    
+    // Image files
+    if (urlLower.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)$/)) return 'image';
+    
+    // Documents
+    if (urlLower.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt|rtf)$/)) return 'document';
+    
+    // Academic/Research articles
+    if (urlLower.includes('arxiv.org') || 
+        urlLower.includes('scholar.google') ||
+        urlLower.includes('pubmed.ncbi.nlm.nih.gov') ||
+        urlLower.includes('researchgate.net')) {
+      return 'article';
+    }
+    
+    // Blog detection - check for common blog patterns
+    try {
+      // Check for article tag (common in blogs)
+      if (document.querySelector('article')) {
+        // Check for blog-specific meta tags
+        const isBlog = getMetaContent('og:type') === 'article' ||
+                      document.querySelector('[itemtype*="BlogPosting"]') ||
+                      document.querySelector('[itemtype*="Article"]') ||
+                      urlLower.includes('/blog/') ||
+                      urlLower.includes('/post/') ||
+                      urlLower.includes('/article/');
+        
+        if (isBlog) {
+          return 'blog';
+        }
+      }
+      
+      // Check URL patterns for blogs
+      if (urlLower.match(/\/(blog|post|article|news)\//) ||
+          urlLower.includes('medium.com') ||
+          urlLower.includes('wordpress.com') ||
+          urlLower.includes('blogspot.com') ||
+          urlLower.includes('tumblr.com')) {
+        return 'blog';
+      }
+    } catch (e) {
+      // If we can't check DOM, just use URL
+    }
+    
+    // Default to website
+    return 'website';
   }
 
   /**
