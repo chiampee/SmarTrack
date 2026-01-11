@@ -178,7 +178,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
+        <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
         <input
           ref={inputRef}
           type="text"
@@ -186,7 +186,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="input-field pl-12 h-12 text-base w-full"
+          className="pl-9 pr-8 h-9 sm:h-10 text-sm w-full border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
         />
         {value && (
           <button
@@ -195,7 +195,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
               setIsOpen(false)
               inputRef.current?.focus()
             }}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm"
           >
             ✕
           </button>

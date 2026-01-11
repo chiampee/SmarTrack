@@ -791,99 +791,95 @@ export const Dashboard: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Search and Filters */}
+        {/* ✅ MINIMALISTIC: Search and Filters - compact, clean design */}
         <motion.div
           initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
           variants={fadeInUp}
           transition={{ delay: shouldAnimate ? 0.1 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-          className="bg-white rounded-xl shadow-sm border border-gray-200 mb-3 sm:mb-8 p-3 sm:p-6"
+          className="bg-white rounded-lg shadow-sm border border-gray-200 mb-3 sm:mb-8 p-2.5 sm:p-4"
         >
-          {/* ✅ MOBILE RESPONSIVE: Quick Filters - better mobile layout, smaller on mobile */}
-          <div className="mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-100">
-            <span className="block sm:inline text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 sm:mb-0 sm:mr-2">Quick Filters</span>
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mt-1.5 sm:mt-0">
-              <button
-                onClick={() => setFilters({ ...filters, dateRange: 'today' })}
-                className={`px-2.5 sm:px-3 py-1.5 sm:py-1.5 text-xs font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 min-h-[36px] sm:min-h-0 ${
-                  filters.dateRange === 'today'
-                    ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 hover:border-gray-300'
-                }`}
-                aria-pressed={filters.dateRange === 'today'}
-                aria-label="Filter by today"
-              >
-                Today
-              </button>
-              <button
-                onClick={() => setFilters({ ...filters, dateRange: 'last_week' })}
-                className={`px-2.5 sm:px-3 py-1.5 sm:py-1.5 text-xs font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 min-h-[36px] sm:min-h-0 ${
-                  filters.dateRange === 'last_week'
-                    ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 hover:border-gray-300'
-                }`}
-                aria-pressed={filters.dateRange === 'last_week'}
-                aria-label="Filter by this week"
-              >
-                This Week
-              </button>
-              <button
-                onClick={() => setFilters({ ...filters, dateRange: 'last_month' })}
-                className={`px-2.5 sm:px-3 py-1.5 sm:py-1.5 text-xs font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 min-h-[36px] sm:min-h-0 ${
-                  filters.dateRange === 'last_month'
-                    ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200 hover:border-gray-300'
-                }`}
-                aria-pressed={filters.dateRange === 'last_month'}
-                aria-label="Filter by this month"
-              >
-                This Month
-              </button>
+          {/* Minimalistic Quick Filters - no heading, inline with search */}
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 flex-wrap">
+            <button
+              onClick={() => setFilters({ ...filters, dateRange: 'today' })}
+              className={`px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium rounded transition-all focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                filters.dateRange === 'today'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              aria-pressed={filters.dateRange === 'today'}
+              aria-label="Filter by today"
+            >
+              Today
+            </button>
+            <button
+              onClick={() => setFilters({ ...filters, dateRange: 'last_week' })}
+              className={`px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium rounded transition-all focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                filters.dateRange === 'last_week'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              aria-pressed={filters.dateRange === 'last_week'}
+              aria-label="Filter by this week"
+            >
+              Week
+            </button>
+            <button
+              onClick={() => setFilters({ ...filters, dateRange: 'last_month' })}
+              className={`px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium rounded transition-all focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                filters.dateRange === 'last_month'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              aria-pressed={filters.dateRange === 'last_month'}
+              aria-label="Filter by this month"
+            >
+              Month
+            </button>
+            <button
+              onClick={() => {
+                const favoritesFilter = links.filter(l => l.isFavorite)
+                setFilteredLinks(favoritesFilter)
+                setActiveFilterId('favorites')
+              }}
+              className={`px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium rounded transition-all flex items-center gap-1 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                activeFilterId === 'favorites'
+                  ? 'bg-yellow-100 text-yellow-700'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              aria-pressed={activeFilterId === 'favorites'}
+              aria-label="Show favorites"
+            >
+              <Star className={`w-3 h-3 ${activeFilterId === 'favorites' ? 'fill-current' : ''}`} />
+            </button>
+            {(filters.dateRange !== 'all_time' || filters.category || filters.tags.length > 0) && (
               <button
                 onClick={() => {
-                  const favoritesFilter = links.filter(l => l.isFavorite)
-                  setFilteredLinks(favoritesFilter)
-                  setActiveFilterId('favorites')
+                  setFilters({ category: '', dateRange: 'all_time', tags: [], contentType: '' })
+                  setFilteredLinks(links)
+                  setActiveFilterId(null)
                 }}
-                className={`px-2.5 sm:px-3 py-1.5 sm:py-1.5 text-xs font-medium rounded-md border transition-all flex items-center gap-1 justify-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 min-h-[36px] sm:min-h-0 ${
-                  activeFilterId === 'favorites'
-                    ? 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200 hover:border-gray-300'
-                }`}
-                aria-pressed={activeFilterId === 'favorites'}
-                aria-label="Show favorites"
+                className="px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium rounded text-red-600 hover:bg-red-50 transition-all focus:outline-none focus:ring-1 focus:ring-red-500"
+                aria-label="Clear all filters"
               >
-                <Star className={`w-3.5 h-3.5 ${activeFilterId === 'favorites' ? 'fill-current' : ''}`} />
-                <span>Favorites</span>
+                Clear
               </button>
-              {(filters.dateRange !== 'all_time' || filters.category || filters.tags.length > 0) && (
-                <button
-                  onClick={() => {
-                    setFilters({ category: '', dateRange: 'all_time', tags: [], contentType: '' })
-                    setFilteredLinks(links)
-                    setActiveFilterId(null)
-                  }}
-                  className="px-2.5 sm:px-3 py-1.5 sm:py-1.5 text-xs font-medium rounded-md bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 min-h-[36px] sm:min-h-0"
-                  aria-label="Clear all filters"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+            )}
           </div>
 
-          {/* ✅ MOBILE RESPONSIVE: Search and view controls - stack on mobile, smaller on mobile */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
+          {/* Minimalistic Search and Controls - single row, compact */}
+          <div className="flex items-center gap-2">
             <div className="flex-1 min-w-0">
               <SearchAutocomplete
                 value={searchQuery}
                 onChange={setSearchQuery}
                 links={links}
-                placeholder="Search your research library..."
+                placeholder="Search..."
               />
             </div>
             
-            <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <FiltersDropdown
                 filters={{
                   category: filters.category,
@@ -899,26 +895,26 @@ export const Dashboard: React.FC = () => {
                 }}
               />
               
-              <div className="flex items-center gap-1 border-l border-gray-300 pl-1.5 sm:pl-3">
+              <div className="flex items-center gap-0.5 border-l border-gray-200 pl-2">
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 sm:p-2 rounded-md transition-colors min-h-[36px] sm:min-h-0 min-w-[36px] sm:min-w-0 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  className={`p-1.5 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 ${
                     viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                   }`}
                   aria-label="List view"
                   aria-pressed={viewMode === 'list'}
                 >
-                  <List className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <List className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 sm:p-2 rounded-md transition-colors min-h-[36px] sm:min-h-0 min-w-[36px] sm:min-w-0 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  className={`p-1.5 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 ${
                     viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                   }`}
                   aria-label="Grid view"
                   aria-pressed={viewMode === 'grid'}
                 >
-                  <Grid className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <Grid className="w-4 h-4" />
                 </button>
               </div>
             </div>
