@@ -1089,12 +1089,26 @@ class SmarTrackPopup {
       // Clean title: remove extra whitespace, normalize, and limit length
       let cleanedTitle = title
         .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
-        .replace(/\s*[-|–|—]\s*[^-|–|—]+$/, '')  // Remove site name suffix
         .trim();
       
-      // Limit to 100 chars for better UX (user can edit if needed)
-      if (cleanedTitle.length > 100) {
-        cleanedTitle = cleanedTitle.substring(0, 97) + '...';
+      // Only remove site suffix if it follows this specific pattern: " - SiteName" or " | SiteName" at the END
+      // This regex matches: space + (dash/pipe/em-dash) + space + word(s) at the very end
+      // BUT only if there are NO other dashes before it (to avoid removing meaningful dashes like "AI-powered")
+      const suffixMatch = cleanedTitle.match(/^(.+?)\s+[-|–|—]\s+([A-Z][A-Za-z0-9\s&.]+)$/);
+      if (suffixMatch) {
+        const mainPart = suffixMatch[1].trim();
+        const suffixPart = suffixMatch[2].trim();
+        
+        // Only remove if suffix looks like a site name (short, capitalized, no punctuation except &.)
+        // and main part is substantial
+        if (mainPart.length > 20 && suffixPart.length < 30 && !suffixPart.includes(',')) {
+          cleanedTitle = mainPart;
+        }
+      }
+      
+      // Limit to 120 chars for better UX (user can edit if needed)
+      if (cleanedTitle.length > 120) {
+        cleanedTitle = cleanedTitle.substring(0, 117) + '...';
       }
       
       titleInput.value = cleanedTitle;
