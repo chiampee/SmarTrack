@@ -725,16 +725,27 @@ export const Dashboard: React.FC = () => {
           transition={{ duration: animationConfig.duration, ease: "easeOut" }}
           className="bg-white rounded-lg shadow-sm border border-gray-200 mb-3 sm:mb-6 p-2.5 sm:p-3"
         >
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            {/* Left: Action Buttons */}
-            <div className="flex items-center gap-2 flex-shrink-0 order-1 sm:order-1">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            {/* Left: Search */}
+            <div className="flex-1 min-w-0 order-1">
+              <SearchAutocomplete
+                value={searchQuery}
+                onChange={setSearchQuery}
+                links={links}
+                placeholder="Search..."
+              />
+            </div>
+
+            {/* Right: All Controls */}
+            <div className="flex items-center gap-2 flex-shrink-0 order-2 flex-wrap sm:flex-nowrap">
+              {/* Action Buttons */}
               <button 
                 onClick={() => setShowAddModal(true)}
                 className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-1.5"
                 aria-label="Add new link"
               >
                 <Plus className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">New Link</span>
+                <span className="hidden lg:inline">New Link</span>
               </button>
               
               <button 
@@ -745,22 +756,13 @@ export const Dashboard: React.FC = () => {
                 title={filteredLinksCount === 0 ? 'No links to export' : 'Export filtered links'}
               >
                 <Download className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Export</span>
+                <span className="hidden lg:inline">Export</span>
               </button>
-            </div>
 
-            {/* Center: Search */}
-            <div className="flex-1 min-w-0 order-3 sm:order-2">
-              <SearchAutocomplete
-                value={searchQuery}
-                onChange={setSearchQuery}
-                links={links}
-                placeholder="Search..."
-              />
-            </div>
+              {/* Divider */}
+              <div className="hidden sm:block w-px h-8 bg-gray-200"></div>
 
-            {/* Right: Filter and View Controls */}
-            <div className="flex items-center gap-2 flex-shrink-0 order-2 sm:order-3">
+              {/* Filter Button */}
               <FiltersDropdown
                 filters={{
                   category: filters.category,
@@ -776,6 +778,7 @@ export const Dashboard: React.FC = () => {
                 }}
               />
               
+              {/* View Toggle */}
               <div className="flex items-center gap-0.5 border-l border-gray-200 pl-2">
                 <button
                   onClick={() => setViewMode('list')}
