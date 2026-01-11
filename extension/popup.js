@@ -340,38 +340,65 @@ class SmarTrackPopup {
   }
 
   /**
-   * Renders category options in the select dropdown
+   * Renders category options as interactive pills
    * @param {string|null} selectedValue - Value to pre-select
    * @returns {void}
    */
   renderCategories(selectedValue = null) {
-    const select = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
-    if (!select) return;
+    const container = document.getElementById('categoryPillsContainer');
+    const hiddenInput = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
+    if (!container || !hiddenInput) return;
 
-    // Clear existing options
-    select.innerHTML = '';
+    // Clear existing pills
+    container.innerHTML = '';
 
-    // Ensure "other" is in the categories list
-    const categoriesWithOther = [...this.categories];
-    if (!categoriesWithOther.includes('other')) {
-      categoriesWithOther.push('other');
-    }
+    // Get selected category
+    const selected = selectedValue || this.lastCategory || this.categories[0] || CONSTANTS.DEFAULT_CATEGORIES[0];
+    hiddenInput.value = selected;
 
-    // Add stored categories (including "other")
-    categoriesWithOther.forEach((category) => {
-      const option = document.createElement('option');
-      option.value = category;
-      option.textContent = capitalize(category);
-      select.appendChild(option);
+    // Render category pills
+    this.categories.forEach((category) => {
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'category-pill';
+      pill.textContent = capitalize(category);
+      pill.dataset.category = category;
+      
+      if (category === selected) {
+        pill.classList.add('active');
+      }
+      
+      pill.addEventListener('click', () => {
+        // Remove active from all pills
+        container.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+        // Add active to clicked pill
+        pill.classList.add('active');
+        // Update hidden input
+        hiddenInput.value = category;
+        // Save as last category
+        this.saveLastCategory(category);
+      });
+      
+      container.appendChild(pill);
     });
 
-    // Determine selection: explicit > lastCategory > default
-    const fallback = this.categories[0] || CONSTANTS.DEFAULT_CATEGORIES[0];
-    const toSelect = selectedValue || this.lastCategory || fallback;
-    select.value = categoriesWithOther.includes(toSelect) ? toSelect : fallback;
+    // Add "+" pill for custom category
+    const addPill = document.createElement('button');
+    addPill.type = 'button';
+    addPill.className = 'category-pill category-pill-add';
+    addPill.innerHTML = '+ New';
+    addPill.addEventListener('click', () => {
+      const customRow = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_ROW);
+      const customInput = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_INPUT);
+      if (customRow) {
+        customRow.classList.toggle('hidden');
+        if (!customRow.classList.contains('hidden') && customInput) {
+          customInput.focus();
+        }
+      }
+    });
     
-    // Show/hide custom category input based on selection
-    this.updateCustomCategoryVisibility();
+    container.appendChild(addPill);
   }
 
   /**
@@ -1244,31 +1271,10 @@ class SmarTrackPopup {
    * @returns {void}
    */
   setupCategoryListeners() {
-    // Hide the "Add custom category" button since it's triggered by selecting "other"
-    const addCategoryBtn = getElement(CONSTANTS.SELECTORS.ADD_CATEGORY_BTN);
-    if (addCategoryBtn) {
-      addCategoryBtn.style.display = 'none';
-    }
-
-    const categorySelect = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
-    if (categorySelect) {
-      const handleCategoryChange = () => {
-        // Show custom input only when "other" is selected
-        this.updateCustomCategoryVisibility();
-        
-        // Save last category if not "other" (don't save "other" as it's just a trigger)
-        if (categorySelect.value !== 'other') {
-          this.saveLastCategory(categorySelect.value);
-        }
-      };
-      categorySelect.addEventListener('change', handleCategoryChange);
-      this.cleanupFunctions.push(() => {
-        categorySelect.removeEventListener('change', handleCategoryChange);
-      });
-    }
-
     const saveCustomCategoryBtn = getElement(CONSTANTS.SELECTORS.SAVE_CUSTOM_CATEGORY_BTN);
+    const cancelCustomCategoryBtn = document.getElementById('cancelCustomCategoryBtn');
     const customCategoryInput = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_INPUT);
+    const customCategoryRow = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_ROW);
     
     if (saveCustomCategoryBtn && customCategoryInput) {
       const handleSaveCustomCategory = async () => {
@@ -1283,12 +1289,31 @@ class SmarTrackPopup {
           e.preventDefault();
           await handleSaveCustomCategory();
         }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          if (customCategoryRow) {
+            customCategoryRow.classList.add('hidden');
+            customCategoryInput.value = '';
+          }
+        }
       };
-      customCategoryInput.addEventListener('keypress', handleCustomCategoryKeyPress);
+      customCategoryInput.addEventListener('keydown', handleCustomCategoryKeyPress);
       
       this.cleanupFunctions.push(() => {
         saveCustomCategoryBtn.removeEventListener('click', handleSaveCustomCategory);
-        customCategoryInput.removeEventListener('keypress', handleCustomCategoryKeyPress);
+        customCategoryInput.removeEventListener('keydown', handleCustomCategoryKeyPress);
+      });
+    }
+
+    // Cancel button
+    if (cancelCustomCategoryBtn && customCategoryRow && customCategoryInput) {
+      const handleCancel = () => {
+        customCategoryRow.classList.add('hidden');
+        customCategoryInput.value = '';
+      };
+      cancelCustomCategoryBtn.addEventListener('click', handleCancel);
+      this.cleanupFunctions.push(() => {
+        cancelCustomCategoryBtn.removeEventListener('click', handleCancel);
       });
     }
   }
