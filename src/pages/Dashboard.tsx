@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List, Star, Download, Loader2 } from 'lucide-react'
+import { Plus, Grid, List, Star, Download, Loader2, Archive, Calendar } from 'lucide-react'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { CollectionSidebar } from '../components/CollectionSidebar'
 import { LinkCard } from '../components/LinkCard'
@@ -723,7 +723,7 @@ export const Dashboard: React.FC = () => {
           animate="visible"
           variants={fadeInUp}
           transition={{ duration: animationConfig.duration, ease: "easeOut" }}
-          className="bg-white rounded-lg shadow-sm border border-gray-200 mb-3 sm:mb-6 p-2.5 sm:p-3"
+          className="bg-white rounded-lg shadow-sm border border-gray-200 mb-3 p-2.5 sm:p-3"
         >
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             {/* Left: Search with integrated Filter */}
@@ -777,32 +777,73 @@ export const Dashboard: React.FC = () => {
                 <Download className="w-4 h-4 flex-shrink-0" />
                 <span className="hidden lg:inline">Export</span>
               </button>
-              
-              {/* View Toggle */}
-              <div className="flex items-center gap-0.5 border-l border-gray-200 pl-2">
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                  }`}
-                  aria-label="List view"
-                  aria-pressed={viewMode === 'list'}
-                  title="List view"
-                >
-                  <List className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                  }`}
-                  aria-label="Grid view"
-                  aria-pressed={viewMode === 'grid'}
-                  title="Grid view"
-                >
-                  <Grid className="w-5 h-5" />
-                </button>
-              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ✅ SECONDARY HEADER: Collection info and view controls */}
+        <motion.div
+          initial={shouldAnimate ? "hidden" : "visible"}
+          animate="visible"
+          variants={fadeInUp}
+          transition={{ delay: shouldAnimate ? 0.05 : 0, duration: animationConfig.duration, ease: "easeOut" }}
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6 px-2"
+        >
+          {/* Left: Collection Title and Stats */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Archive className="w-5 h-5 text-gray-600" />
+              {selectedCollectionId 
+                ? collections.find(c => c.id === selectedCollectionId)?.name || 'Collection'
+                : activeFilterId === 'favorites'
+                  ? 'Favorites'
+                  : activeFilterId === 'archived'
+                    ? 'Archived'
+                    : 'All Links'}
+            </h2>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 rounded-full border border-blue-200">
+                {filteredLinksCount} {filteredLinksCount === 1 ? 'link' : 'links'}
+              </span>
+            </div>
+          </div>
+
+          {/* Right: View Controls */}
+          <div className="flex items-center gap-3">
+            {/* Sort Indicator - placeholder for future functionality */}
+            <div className="hidden sm:flex items-center gap-2 text-sm text-gray-600">
+              <Calendar className="w-4 h-4" />
+              <span>By Added Date</span>
+            </div>
+            
+            {/* View Toggle */}
+            <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 border border-gray-200">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1.5 ${
+                  viewMode === 'list' 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                aria-label="List view"
+                aria-pressed={viewMode === 'list'}
+              >
+                <List className="w-4 h-4" />
+                <span className="hidden sm:inline">List</span>
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`px-3 py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1.5 ${
+                  viewMode === 'grid' 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                aria-label="Grid view"
+                aria-pressed={viewMode === 'grid'}
+              >
+                <Grid className="w-4 h-4" />
+                <span className="hidden sm:inline">Grid</span>
+              </button>
             </div>
           </div>
         </motion.div>
