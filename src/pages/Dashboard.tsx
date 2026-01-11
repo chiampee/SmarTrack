@@ -1205,6 +1205,7 @@ export const Dashboard: React.FC = () => {
         onClose={() => setShowAddModal(false)}
         onSave={handleAddLink}
         collections={collections}
+        existingCategories={Array.from(new Set(links.map(l => l.category).filter(Boolean)))}
       />
 
       {/* Edit Link Modal */}
