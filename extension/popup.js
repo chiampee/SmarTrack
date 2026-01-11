@@ -1244,46 +1244,13 @@ class SmarTrackPopup {
    * @returns {void}
    */
   setupCategoryListeners() {
+    // Hide the "Add custom category" button since it's triggered by selecting "other"
     const addCategoryBtn = getElement(CONSTANTS.SELECTORS.ADD_CATEGORY_BTN);
-    const customCategoryRow = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_ROW);
-    const categorySelect = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
-    
-    // Show/hide custom category input when + button is clicked
     if (addCategoryBtn) {
-      const handleAddCategoryClick = () => {
-        if (customCategoryRow) {
-          customCategoryRow.classList.toggle('hidden');
-          if (!customCategoryRow.classList.contains('hidden')) {
-            // Focus the input when shown
-            const input = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_INPUT);
-            if (input) {
-              input.focus();
-            }
-          }
-        }
-      };
-      addCategoryBtn.addEventListener('click', handleAddCategoryClick);
-      this.cleanupFunctions.push(() => {
-        addCategoryBtn.removeEventListener('click', handleAddCategoryClick);
-      });
+      addCategoryBtn.style.display = 'none';
     }
 
-    // Handle cancel button
-    const cancelCustomCategoryBtn = document.getElementById('cancelCustomCategoryBtn');
-    if (cancelCustomCategoryBtn && customCategoryRow) {
-      const handleCancelCategory = () => {
-        customCategoryRow.classList.add('hidden');
-        const input = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_INPUT);
-        if (input) {
-          input.value = '';
-        }
-      };
-      cancelCustomCategoryBtn.addEventListener('click', handleCancelCategory);
-      this.cleanupFunctions.push(() => {
-        cancelCustomCategoryBtn.removeEventListener('click', handleCancelCategory);
-      });
-    }
-
+    const categorySelect = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
     if (categorySelect) {
       const handleCategoryChange = () => {
         // Show custom input only when "other" is selected
@@ -1316,22 +1283,12 @@ class SmarTrackPopup {
           e.preventDefault();
           await handleSaveCustomCategory();
         }
-        // Escape key to cancel
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          if (customCategoryRow) {
-            customCategoryRow.classList.add('hidden');
-            customCategoryInput.value = '';
-          }
-        }
       };
       customCategoryInput.addEventListener('keypress', handleCustomCategoryKeyPress);
-      customCategoryInput.addEventListener('keydown', handleCustomCategoryKeyPress);
       
       this.cleanupFunctions.push(() => {
         saveCustomCategoryBtn.removeEventListener('click', handleSaveCustomCategory);
         customCategoryInput.removeEventListener('keypress', handleCustomCategoryKeyPress);
-        customCategoryInput.removeEventListener('keydown', handleCustomCategoryKeyPress);
       });
     }
   }
