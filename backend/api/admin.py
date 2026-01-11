@@ -1132,11 +1132,13 @@ async def get_admin_logs(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
+    include_stats: bool = Query(False, description="Include log statistics"),
     current_user: dict = Depends(check_admin_access),
     db = Depends(get_database)
 ):
     """
     Get system logs with filtering and pagination
+    ✅ Enhanced: Now includes optional statistics for PM analysis
     """
     try:
         # Build match filters
@@ -1186,6 +1188,89 @@ async def get_admin_logs(
         count_result = await db.system_logs.aggregate(count_pipeline).to_list(1)
         total_count = count_result[0]["total"] if count_result else 0
         
+        # ✅ NEW: Calculate statistics if requested
+        stats = None
+        if include_stats:
+            try:
+                # Severity distribution
+                severity_pipeline = pipeline + [
+                    {"$group": {"_id": "$severity", "count": {"$sum": 1}}},
+                    {"$sort": {"count": -1}}
+                ]
+                severity_dist = await db.system_logs.aggregate(severity_pipeline).to_list(10)
+                
+                # Type distribution
+                type_pipeline = pipeline + [
+                    {"$group": {"_id": "$type", "count": {"$sum": 1}}},
+                    {"$sort": {"count": -1}},
+                    {"$limit": 20}
+                ]
+                type_dist = await db.system_logs.aggregate(type_pipeline).to_list(20)
+                
+                # Error rate (errors + critical / total)
+                error_pipeline = pipeline + [
+                    {"$match": {"severity": {"$in": ["error", "critical"]}}},
+                    {"$count": "total"}
+                ]
+                error_result = await db.system_logs.aggregate(error_pipeline).to_list(1)
+                error_count = error_result[0]["total"] if error_result else 0
+                error_rate = round((error_count / total_count * 100), 2) if total_count > 0 else 0
+                
+                # Recent errors (last 24 hours)
+                recent_errors_pipeline = [
+                    {"$match": {
+                        "severity": {"$in": ["error", "critical"]},
+                        "timestamp": {"$gte": datetime.utcnow() - timedelta(hours=24)}
+                    }},
+                    {"$count": "total"}
+                ]
+                recent_errors_result = await db.system_logs.aggregate(recent_errors_pipeline).to_list(1)
+                recent_errors = recent_errors_result[0]["total"] if recent_errors_result else 0
+                
+                # Logs by hour (last 24 hours for trend)
+                hourly_pipeline = [
+                    {"$match": {
+                        "timestamp": {"$gte": datetime.utcnow() - timedelta(hours=24)}
+                    }},
+                    {"$group": {
+                        "_id": {
+                            "year": {"$year": "$timestamp"},
+                            "month": {"$month": "$timestamp"},
+                            "day": {"$dayOfMonth": "$timestamp"},
+                            "hour": {"$hour": "$timestamp"}
+                        },
+                        "count": {"$sum": 1}
+                    }},
+                    {"$sort": {"_id": 1}},
+                    {"$limit": 24}
+                ]
+                hourly_logs = await db.system_logs.aggregate(hourly_pipeline).to_list(24)
+                
+                stats = {
+                    "severityDistribution": [
+                        {"severity": item["_id"], "count": item["count"]}
+                        for item in severity_dist
+                    ],
+                    "typeDistribution": [
+                        {"type": item["_id"], "count": item["count"]}
+                        for item in type_dist
+                    ],
+                    "errorRate": error_rate,
+                    "errorCount": error_count,
+                    "recentErrors": recent_errors,
+                    "totalLogs": total_count,
+                    "hourlyTrend": [
+                        {
+                            "hour": f"{item['_id']['hour']:02d}:00",
+                            "count": item["count"]
+                        }
+                        for item in hourly_logs
+                    ]
+                }
+            except Exception as e:
+                logger.error(f"[ANALYTICS ERROR] Failed to calculate log stats: {e}")
+                stats = None
+        
         # Add sorting, pagination
         pipeline.append({"$sort": {"timestamp": DESCENDING}})
         pipeline.append({"$skip": (page - 1) * limit})
@@ -1208,7 +1293,7 @@ async def get_admin_logs(
             }
             log_list.append(log_entry)
         
-        return {
+        result = {
             "logs": log_list,
             "pagination": {
                 "page": page,
@@ -1217,6 +1302,11 @@ async def get_admin_logs(
                 "totalPages": (total_count + limit - 1) // limit
             }
         }
+        
+        if stats:
+            result["statistics"] = stats
+        
+        return result
         
     except HTTPException:
         raise

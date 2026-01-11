@@ -144,6 +144,15 @@ export interface SystemLogsResponse {
     total: number
     totalPages: number
   }
+  statistics?: {
+    severityDistribution: Array<{ severity: string; count: number }>
+    typeDistribution: Array<{ type: string; count: number }>
+    errorRate: number
+    errorCount: number
+    recentErrors: number
+    totalLogs: number
+    hourlyTrend: Array<{ hour: string; count: number }>
+  }
 }
 
 export interface AdminCategory {
@@ -211,7 +220,8 @@ export const useAdminApi = () => {
     severity?: string,
     startDate?: string,
     endDate?: string,
-    search?: string
+    search?: string,
+    includeStats: boolean = false
   ): Promise<SystemLogsResponse> => {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -222,6 +232,7 @@ export const useAdminApi = () => {
     if (startDate) params.append('start_date', startDate)
     if (endDate) params.append('end_date', endDate)
     if (search) params.append('search', search)
+    if (includeStats) params.append('include_stats', 'true')
     
     return makeRequest<SystemLogsResponse>(`/api/admin/logs?${params.toString()}`)
   }

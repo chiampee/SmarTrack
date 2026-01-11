@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { 
   Users, Link as LinkIcon, HardDrive, TrendingUp, 
   RefreshCw, BarChart3, FileText, Settings,
-  ChevronLeft, ChevronRight, Search, AlertCircle, Tag, LogIn
+  ChevronLeft, ChevronRight, Search, AlertCircle, Tag, LogIn, Download
 } from 'lucide-react'
 import { useAdminAccess } from '../hooks/useAdminAccess'
-import { useAdminApi, AdminAnalytics as AdminAnalyticsType, AdminUser, SystemLog, AdminCategory, UserLimits } from '../services/adminApi'
+import { useAdminApi, AdminAnalytics as AdminAnalyticsType, AdminUser, SystemLog, AdminCategory, UserLimits, SystemLogsResponse } from '../services/adminApi'
 import { useToast } from '../components/Toast'
 import { LoadingSpinner } from '../components/LoadingSpinner'
 import { useAuth0 } from '@auth0/auth0-react'
@@ -1670,7 +1670,7 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
   )
 }
 
-// Logs Tab Component
+// ✅ ENHANCED: Logs Tab Component - PM Focus
 const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ adminApi }) => {
   const [logs, setLogs] = useState<SystemLog[]>([])
   const [loading, setLoading] = useState(false)
@@ -1682,11 +1682,15 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
   const [severity, setSeverity] = useState<string>('')
   const [logStartDate, setLogStartDate] = useState<string>('')
   const [logEndDate, setLogEndDate] = useState<string>('')
+  const [showStats, setShowStats] = useState(true)
+  const [autoRefresh, setAutoRefresh] = useState(false)
+  const [statistics, setStatistics] = useState<SystemLogsResponse['statistics'] | null>(null)
   const toast = useToast()
 
   const loadingRef = React.useRef(false)
+  const autoRefreshIntervalRef = React.useRef<NodeJS.Timeout | null>(null)
 
-  const loadLogs = async () => {
+  const loadLogs = async (includeStats: boolean = showStats) => {
     if (loadingRef.current) return
 
     try {
@@ -1700,10 +1704,14 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
         severity || undefined,
         logStartDate || undefined,
         logEndDate || undefined,
-        search || undefined
+        search || undefined,
+        includeStats
       )
       setLogs(data.logs)
       setTotal(data.pagination.total)
+      if (data.statistics) {
+        setStatistics(data.statistics)
+      }
       setError(null)
     } catch (error: any) {
       const errorMessage = error?.message || error?.type === 'NOT_FOUND'
@@ -1721,7 +1729,83 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
   useEffect(() => {
     loadLogs()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, logType, severity, logStartDate, logEndDate])
+  }, [page, search, logType, severity, logStartDate, logEndDate, showStats])
+
+  // Auto-refresh
+  useEffect(() => {
+    if (autoRefresh) {
+      autoRefreshIntervalRef.current = setInterval(() => {
+        loadLogs(false) // Don't reload stats every time
+      }, 30000) // 30 seconds
+      return () => {
+        if (autoRefreshIntervalRef.current) {
+          clearInterval(autoRefreshIntervalRef.current)
+        }
+      }
+    } else {
+      if (autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current)
+      }
+    }
+  }, [autoRefresh])
+
+  const exportLogs = () => {
+    const csvContent = [
+      ['Timestamp', 'Type', 'Severity', 'User ID', 'Email', 'Details'].join(','),
+      ...logs.map(log => [
+        log.timestamp || '',
+        log.type || '',
+        log.severity || '',
+        log.userId || '',
+        log.email || '',
+        JSON.stringify(log.details).replace(/"/g, '""')
+      ].join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `smartrack-logs-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success('Logs exported successfully')
+  }
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity.toLowerCase()) {
+      case 'error':
+      case 'critical':
+        return 'bg-red-100 text-red-700 border-red-300'
+      case 'warning':
+        return 'bg-yellow-100 text-yellow-700 border-yellow-300'
+      case 'info':
+      default:
+        return 'bg-blue-100 text-blue-700 border-blue-300'
+    }
+  }
+
+  const getSeverityIcon = (severity: string) => {
+    switch (severity.toLowerCase()) {
+      case 'error':
+      case 'critical':
+        return '❌'
+      case 'warning':
+        return '⚠️'
+      case 'info':
+      default:
+        return 'ℹ️'
+    }
+  }
+
+  // Quick filter presets
+  const quickFilters = [
+    { label: 'Last 24h', start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0], end: new Date().toISOString().split('T')[0] },
+    { label: 'Last 7 days', start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], end: new Date().toISOString().split('T')[0] },
+    { label: 'Last 30 days', start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], end: new Date().toISOString().split('T')[0] },
+    { label: 'Errors Only', severity: 'error' },
+    { label: 'Warnings Only', severity: 'warning' },
+  ]
 
   if (error && logs.length === 0 && !loading) {
     return (
@@ -1739,76 +1823,262 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
     )
   }
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity.toLowerCase()) {
-      case 'error':
-      case 'critical':
-        return 'bg-red-100 text-red-700'
-      case 'warning':
-        return 'bg-yellow-100 text-yellow-700'
-      case 'info':
-      default:
-        return 'bg-blue-100 text-blue-700'
-    }
-  }
-
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+      {/* ✅ NEW: Statistics Panel */}
+      {statistics && showStats && (
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-indigo-600" />
+              Log Statistics
+            </h3>
+            <button
+              onClick={() => setShowStats(false)}
+              className="text-xs text-gray-600 hover:text-gray-900"
+            >
+              Hide Stats
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="text-sm text-gray-600 mb-1">Total Logs</div>
+              <div className="text-2xl font-bold text-gray-900">{statistics.totalLogs.toLocaleString()}</div>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="text-sm text-gray-600 mb-1">Error Rate</div>
+              <div className={`text-2xl font-bold ${statistics.errorRate > 10 ? 'text-red-600' : statistics.errorRate > 5 ? 'text-yellow-600' : 'text-green-600'}`}>
+                {statistics.errorRate}%
+              </div>
+              <div className="text-xs text-gray-500">{statistics.errorCount} errors</div>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="text-sm text-gray-600 mb-1">Recent Errors (24h)</div>
+              <div className={`text-2xl font-bold ${statistics.recentErrors > 10 ? 'text-red-600' : statistics.recentErrors > 5 ? 'text-yellow-600' : 'text-green-600'}`}>
+                {statistics.recentErrors}
+              </div>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="text-sm text-gray-600 mb-1">Severity Distribution</div>
+              <div className="flex gap-2 mt-2">
+                {statistics.severityDistribution.slice(0, 3).map((s) => (
+                  <div key={s.severity} className="flex-1 text-center">
+                    <div className={`text-xs px-2 py-1 rounded ${getSeverityColor(s.severity)}`}>
+                      {s.severity}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">{s.count}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Severity & Type Distribution */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Severity Distribution</h4>
+              <div className="space-y-2">
+                {statistics.severityDistribution.map((s: { severity: string; count: number }) => {
+                  const percentage = statistics.totalLogs > 0 ? (s.count / statistics.totalLogs * 100).toFixed(1) : '0'
+                  return (
+                    <div key={s.severity} className="flex items-center gap-2">
+                      <span className="text-xs w-20">{s.severity}</span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full ${getSeverityColor(s.severity).split(' ')[0]}`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-600 w-16 text-right">{s.count} ({percentage}%)</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Top Log Types</h4>
+              <div className="space-y-2">
+                {statistics.typeDistribution.slice(0, 5).map((item: { type: string; count: number }) => {
+                  const percentage = statistics.totalLogs > 0 ? (item.count / statistics.totalLogs * 100).toFixed(1) : '0'
+                  return (
+                    <div key={item.type} className="flex items-center justify-between">
+                      <span className="text-xs font-mono">{item.type}</span>
+                      <span className="text-xs text-gray-600">{item.count} ({percentage}%)</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Hourly Trend */}
+          {statistics.hourlyTrend && statistics.hourlyTrend.length > 0 && (
+            <div className="bg-white rounded-lg p-4 border border-gray-200 mt-4">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Logs by Hour (Last 24h)</h4>
+              <div className="flex items-end gap-1 h-32">
+                {statistics.hourlyTrend.map((item: { hour: string; count: number }, index: number) => {
+                  const maxCount = Math.max(...statistics.hourlyTrend.map((h: { hour: string; count: number }) => h.count), 1)
+                  const height = (item.count / maxCount) * 100
+                  return (
+                    <div key={index} className="flex-1 flex flex-col items-center">
+                      <div
+                        className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition-colors cursor-pointer"
+                        style={{ height: `${height}%` }}
+                        title={`${item.hour}: ${item.count} logs`}
+                      />
+                      <div className="text-xs text-gray-500 mt-1 transform -rotate-45 origin-top-left whitespace-nowrap">
+                        {item.hour.split(':')[0]}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ✅ ENHANCED: Filters with Quick Presets */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-gray-900">Filters & Search</h3>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 text-xs text-gray-600">
+              <input
+                type="checkbox"
+                checked={showStats}
+                onChange={(e) => setShowStats(e.target.checked)}
+                className="rounded"
+              />
+              Show Stats
+            </label>
+            <label className="flex items-center gap-2 text-xs text-gray-600">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="rounded"
+              />
+              Auto-refresh (30s)
+            </label>
+            <button
+              onClick={exportLogs}
+              className="px-3 py-1.5 text-xs bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors flex items-center gap-1"
+            >
+              <Download className="w-3 h-3" />
+              Export CSV
+            </button>
+            <button
+              onClick={() => loadLogs()}
+              disabled={loading}
+              className="px-3 py-1.5 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors flex items-center gap-1"
+            >
+              <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Filters */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {quickFilters.map((filter, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                if (filter.start && filter.end) {
+                  setLogStartDate(filter.start)
+                  setLogEndDate(filter.end)
+                }
+                if (filter.severity) {
+                  setSeverity(filter.severity)
+                }
+                setPage(1)
+              }}
+              className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+            >
+              {filter.label}
+            </button>
+          ))}
+          <button
+            onClick={() => {
+              setSearch('')
+              setLogType('')
+              setSeverity('')
+              setLogStartDate('')
+              setLogEndDate('')
+              setPage(1)
+            }}
+            className="px-3 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
+          >
+            Clear All
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search logs..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setPage(1)
+                  loadLogs()
+                }
+              }}
+              className="input-field pl-10 w-full"
+            />
+          </div>
+          <select
+            value={logType}
+            onChange={(e) => setLogType(e.target.value)}
+            className="input-field"
+          >
+            <option value="">All Types</option>
+            <option value="admin_access">Admin Access</option>
+            <option value="admin_analytics_access">Analytics Access</option>
+            <option value="admin_analytics_error">Analytics Error</option>
+            <option value="api_request">API Request</option>
+            <option value="error">Error</option>
+            <option value="user_action">User Action</option>
+            <option value="rate_limit">Rate Limit</option>
+          </select>
+          <select
+            value={severity}
+            onChange={(e) => setSeverity(e.target.value)}
+            className="input-field"
+          >
+            <option value="">All Severities</option>
+            <option value="info">Info</option>
+            <option value="warning">Warning</option>
+            <option value="error">Error</option>
+            <option value="critical">Critical</option>
+          </select>
           <input
-            type="text"
-            placeholder="Search logs..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input-field pl-10 w-full"
+            type="date"
+            value={logStartDate}
+            onChange={(e) => setLogStartDate(e.target.value)}
+            placeholder="Start Date"
+            className="input-field"
+          />
+          <input
+            type="date"
+            value={logEndDate}
+            onChange={(e) => setLogEndDate(e.target.value)}
+            placeholder="End Date"
+            className="input-field"
           />
         </div>
-        <select
-          value={logType}
-          onChange={(e) => setLogType(e.target.value)}
-          className="input-field"
-        >
-          <option value="">All Types</option>
-          <option value="admin_access">Admin Access</option>
-          <option value="api_request">API Request</option>
-          <option value="error">Error</option>
-          <option value="user_action">User Action</option>
-          <option value="rate_limit">Rate Limit</option>
-        </select>
-        <select
-          value={severity}
-          onChange={(e) => setSeverity(e.target.value)}
-          className="input-field"
-        >
-          <option value="">All Severities</option>
-          <option value="info">Info</option>
-          <option value="warning">Warning</option>
-          <option value="error">Error</option>
-          <option value="critical">Critical</option>
-        </select>
-        <input
-          type="date"
-          value={logStartDate}
-          onChange={(e) => setLogStartDate(e.target.value)}
-          placeholder="Start Date"
-          className="input-field"
-        />
-        <input
-          type="date"
-          value={logEndDate}
-          onChange={(e) => setLogEndDate(e.target.value)}
-          placeholder="End Date"
-          className="input-field"
-        />
       </div>
 
       {loading ? (
         <LoadingSpinner />
       ) : (
         <>
+          {/* ✅ ENHANCED: Better Log Table */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -1823,31 +2093,50 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {logs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-700">
-                        {log.timestamp ? new Date(log.timestamp).toLocaleString() : '-'}
+                    <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                        {log.timestamp ? (
+                          <div>
+                            <div className="font-medium">{new Date(log.timestamp).toLocaleDateString()}</div>
+                            <div className="text-xs text-gray-500">{new Date(log.timestamp).toLocaleTimeString()}</div>
+                          </div>
+                        ) : '-'}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 font-mono text-xs">{log.type || '-'}</td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 text-xs rounded-full ${getSeverityColor(log.severity)}`}>
+                        <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+                          {log.type || '-'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 text-xs rounded-full border ${getSeverityColor(log.severity)} flex items-center gap-1 w-fit`}>
+                          <span>{getSeverityIcon(log.severity)}</span>
                           {log.severity || 'info'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-700">
                         {log.email ? (
-                          <span className="font-mono text-xs">{log.email}</span>
+                          <div>
+                            <div className="font-mono text-xs">{log.email}</div>
+                            {log.userId && (
+                              <div className="text-xs text-gray-500">{log.userId.slice(0, 16)}...</div>
+                            )}
+                          </div>
                         ) : log.userId ? (
-                          <span className="font-mono text-xs">{log.userId.slice(0, 20)}...</span>
+                          <span className="font-mono text-xs">{log.userId.slice(0, 24)}...</span>
                         ) : (
-                          '-'
+                          <span className="text-gray-400">-</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        <details className="cursor-pointer">
-                          <summary className="text-blue-600 hover:text-blue-800">View Details</summary>
-                          <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-x-auto">
-                            {JSON.stringify(log.details, null, 2)}
-                          </pre>
+                        <details className="cursor-pointer group">
+                          <summary className="text-blue-600 hover:text-blue-800 font-medium">
+                            View Details
+                          </summary>
+                          <div className="mt-2 p-3 bg-gray-50 rounded border border-gray-200">
+                            <pre className="text-xs overflow-x-auto whitespace-pre-wrap break-words">
+                              {JSON.stringify(log.details, null, 2)}
+                            </pre>
+                          </div>
                         </details>
                       </td>
                     </tr>
@@ -1859,28 +2148,38 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
 
           {logs.length === 0 && !loading && (
             <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">No logs found</p>
+              <p className="text-sm text-gray-400 mt-2">Try adjusting your filters</p>
             </div>
           )}
 
-          <div className="flex items-center justify-between">
+          {/* ✅ ENHANCED: Pagination */}
+          <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm text-gray-600">
-              Showing {logs.length} of {total} logs
+              Showing <span className="font-medium">{logs.length}</span> of <span className="font-medium">{total.toLocaleString()}</span> logs
+              {total > 0 && (
+                <span className="ml-2 text-gray-400">
+                  (Page {page} of {Math.ceil(total / 50)})
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="btn btn-secondary"
+                disabled={page === 1 || loading}
+                className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="w-4 h-4" />
+                Previous
               </button>
-              <span className="text-sm text-gray-600">Page {page}</span>
+              <span className="text-sm text-gray-600 px-3">Page {page}</span>
               <button
                 onClick={() => setPage(p => p + 1)}
-                disabled={logs.length < 50}
-                className="btn btn-secondary"
+                disabled={logs.length < 50 || loading}
+                className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
               >
+                Next
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
