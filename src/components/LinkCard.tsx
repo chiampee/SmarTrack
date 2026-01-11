@@ -88,8 +88,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       if (viewMode === 'grid') {
         return (
           <div 
-            className={`card p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-blue-300 cursor-move group relative overflow-hidden ${
-              isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-br from-blue-50 to-purple-50 scale-[1.02] border-blue-300' : 'border-gray-200'
+            className={`card p-4 sm:p-5 transition-all duration-300 hover:shadow-xl sm:hover:-translate-y-1 hover:border-blue-300 cursor-move group relative overflow-hidden touch-manipulation ${
+              isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-br from-blue-50 to-purple-50 sm:scale-[1.02] border-blue-300' : 'border-gray-200'
             }`}
             draggable
             onDragStart={onDragStart}
@@ -102,14 +102,14 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             {isSelected && (
               <div className="absolute top-2 left-2 w-2 h-2 bg-blue-500 rounded-full animate-pulse" aria-hidden="true" />
             )}
-        {/* ✅ SENIOR UX: Selection checkbox with better accessibility */}
+        {/* ✅ MOBILE RESPONSIVE: Selection checkbox with better touch targets */}
         <div className="flex items-start justify-between mb-3">
-          <label className="flex items-center cursor-pointer group">
+          <label className="flex items-center cursor-pointer group touch-manipulation">
             <input
               type="checkbox"
               checked={isSelected}
               onChange={onSelect}
-              className="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all cursor-pointer"
+              className="w-5 h-5 sm:w-4 sm:h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all cursor-pointer"
               aria-label={`Select ${link.title}`}
             />
             <span className="ml-2 text-xs text-gray-500 group-hover:text-gray-700 transition-colors sr-only">
@@ -122,15 +122,15 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               onKeyDown={(e) => {
                 if (e.key === 'Escape') setShowActions(false)
               }}
-              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+              className="p-2.5 sm:p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
               aria-label="More actions"
               aria-expanded={showActions}
               aria-haspopup="true"
             >
-              <MoreVertical className="w-4 h-4" />
+              <MoreVertical className="w-5 h-5 sm:w-4 sm:h-4" />
             </button>
             
-            {/* ✅ SENIOR UX: Dropdown menu with better accessibility and animations */}
+            {/* ✅ MOBILE RESPONSIVE: Dropdown menu with better mobile positioning */}
             {showActions && (
               <>
                 <div 
@@ -139,54 +139,54 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   aria-hidden="true"
                 />
                 <div 
-                  className="absolute right-0 top-10 w-56 bg-white border border-gray-200 rounded-lg shadow-xl z-20 animate-in fade-in slide-in-from-top-2 duration-200"
+                  className="absolute right-0 top-10 sm:top-10 w-56 sm:w-56 bg-white border border-gray-200 rounded-lg shadow-xl z-20 animate-in fade-in slide-in-from-top-2 duration-200 max-h-[calc(100vh-120px)] overflow-y-auto"
                   role="menu"
                   aria-orientation="vertical"
                 >
                   <div className="py-1.5">
                     <button
                       onClick={() => handleAction('toggleFavorite')}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-yellow-50 hover:text-yellow-700 transition-colors focus:outline-none focus:bg-yellow-50"
+                      className="w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 hover:bg-yellow-50 hover:text-yellow-700 active:bg-yellow-100 transition-colors focus:outline-none focus:bg-yellow-50 min-h-[44px] sm:min-h-0 touch-manipulation"
                       role="menuitem"
                     >
-                      <Star className={`w-4 h-4 ${link.isFavorite ? 'fill-current text-yellow-500' : ''}`} />
-                      <span>{link.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}</span>
+                      <Star className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${link.isFavorite ? 'fill-current text-yellow-500' : ''}`} />
+                      <span className="text-left">{link.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}</span>
                     </button>
                     <button
                       onClick={() => handleAction('toggleArchive')}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50"
+                      className="w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors focus:outline-none focus:bg-gray-50 min-h-[44px] sm:min-h-0 touch-manipulation"
                       role="menuitem"
                     >
-                      <Archive className={`w-4 h-4 ${link.isArchived ? 'text-orange-500' : ''}`} />
-                      <span>{link.isArchived ? 'Unarchive' : 'Archive'}</span>
+                      <Archive className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${link.isArchived ? 'text-orange-500' : ''}`} />
+                      <span className="text-left">{link.isArchived ? 'Unarchive' : 'Archive'}</span>
                     </button>
                     <div className="my-1 h-px bg-gray-100" />
                     <button
                       onClick={copyToClipboard}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors focus:outline-none focus:bg-blue-50"
+                      className="w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 active:bg-blue-100 transition-colors focus:outline-none focus:bg-blue-50 min-h-[44px] sm:min-h-0 touch-manipulation"
                       role="menuitem"
                     >
                       {copied ? (
                         <>
-                          <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center animate-in zoom-in duration-200">
+                          <div className="w-5 h-5 sm:w-4 sm:h-4 rounded-full bg-green-500 flex items-center justify-center animate-in zoom-in duration-200 flex-shrink-0">
                             <span className="text-white text-xs">✓</span>
                           </div>
-                          <span className="text-green-600 font-medium">Copied!</span>
+                          <span className="text-green-600 font-medium text-left">Copied!</span>
                         </>
                       ) : (
                         <>
-                          <Copy className="w-4 h-4" />
-                          <span>Copy URL</span>
+                          <Copy className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span className="text-left">Copy URL</span>
                         </>
                       )}
                     </button>
                     <button
                       onClick={() => handleAction('update')}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors focus:outline-none focus:bg-indigo-50"
+                      className="w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 active:bg-indigo-100 transition-colors focus:outline-none focus:bg-indigo-50 min-h-[44px] sm:min-h-0 touch-manipulation"
                       role="menuitem"
                     >
-                      <Edit className="w-4 h-4" />
-                      <span>Edit</span>
+                      <Edit className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                      <span className="text-left">Edit</span>
                     </button>
                     <div className="my-1 h-px bg-gray-100" />
                     <button
@@ -196,11 +196,11 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                         }
                         setShowActions(false)
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors focus:outline-none focus:bg-red-50"
+                      className="w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors focus:outline-none focus:bg-red-50 min-h-[44px] sm:min-h-0 touch-manipulation"
                       role="menuitem"
                     >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Delete</span>
+                      <Trash2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                      <span className="text-left">Delete</span>
                     </button>
                   </div>
                 </div>
@@ -209,13 +209,14 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
           </div>
         </div>
 
-        {/* Thumbnail */}
+        {/* ✅ MOBILE RESPONSIVE: Thumbnail with better mobile sizing */}
         {link.thumbnail && (
           <div className="mb-3">
             <img
               src={link.thumbnail}
               alt={link.title}
-              className="w-full h-32 object-cover rounded-lg"
+              className="w-full h-28 sm:h-32 object-cover rounded-lg"
+              loading="lazy"
             />
           </div>
         )}
@@ -300,10 +301,10 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     )
   }
 
-      // ✅ SENIOR UX: List view with better interactions
+      // ✅ MOBILE RESPONSIVE: List view with better touch interactions
       return (
         <div 
-          className={`card p-5 transition-all duration-300 hover:shadow-xl hover:border-blue-300 hover:bg-blue-50/30 cursor-move group relative ${
+          className={`card p-4 sm:p-5 transition-all duration-300 hover:shadow-xl hover:border-blue-300 hover:bg-blue-50/30 cursor-move group relative touch-manipulation ${
             isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300' : 'border-gray-200'
           }`}
           draggable
@@ -313,40 +314,42 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
           role="article"
           aria-label={`Link: ${link.title}`}
         >
-          {/* ✅ SENIOR UX: Selection indicator */}
+          {/* ✅ MOBILE RESPONSIVE: Selection indicator */}
           {isSelected && (
-            <div className="absolute top-4 left-4 w-2 h-2 bg-blue-500 rounded-full animate-pulse" aria-hidden="true" />
+            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 w-2.5 h-2.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full animate-pulse" aria-hidden="true" />
           )}
-      <div className="flex items-start gap-4">
-        {/* ✅ SENIOR UX: Selection checkbox with better accessibility */}
-        <label className="flex items-center cursor-pointer group mt-1">
+      <div className="flex items-start gap-3 sm:gap-4">
+        {/* ✅ MOBILE RESPONSIVE: Selection checkbox with better touch targets */}
+        <label className="flex items-center cursor-pointer group mt-1 touch-manipulation">
           <input
             type="checkbox"
             checked={isSelected}
             onChange={onSelect}
-            className="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all cursor-pointer"
+            className="w-5 h-5 sm:w-4 sm:h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all cursor-pointer"
             aria-label={`Select ${link.title}`}
           />
           <span className="sr-only">Select link</span>
         </label>
 
-        {/* Favicon/Thumbnail */}
+        {/* ✅ MOBILE RESPONSIVE: Favicon/Thumbnail with better sizing */}
         <div className="flex-shrink-0">
           {link.thumbnail ? (
             <img
               src={link.thumbnail}
               alt={link.title}
-              className="w-12 h-12 object-cover rounded-lg"
+              className="w-14 h-14 sm:w-12 sm:h-12 object-cover rounded-lg"
+              loading="lazy"
             />
           ) : link.favicon ? (
             <img
               src={link.favicon}
               alt={link.title}
-              className="w-8 h-8"
+              className="w-10 h-10 sm:w-8 sm:h-8"
+              loading="lazy"
             />
           ) : (
-            <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
-              <span className="text-lg">{getContentTypeIcon(link.contentType)}</span>
+            <div className="w-10 h-10 sm:w-8 sm:h-8 bg-gray-200 rounded flex items-center justify-center">
+              <span className="text-xl sm:text-lg">{getContentTypeIcon(link.contentType)}</span>
             </div>
           )}
         </div>
@@ -359,14 +362,14 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-700 hover:underline font-medium text-lg flex items-center gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
+                className="text-blue-600 hover:text-blue-700 hover:underline font-medium text-base sm:text-lg flex items-start sm:items-center gap-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded py-1 -my-1"
                 title={link.title}
                 aria-label={`Open ${link.title} in new tab`}
               >
-                <span className="line-clamp-2">{link.title}</span>
-                <ExternalLink className="w-4 h-4 flex-shrink-0 opacity-70 group-hover:opacity-100 transition-opacity" />
+                <span className="line-clamp-2 flex-1">{link.title}</span>
+                <ExternalLink className="w-4 h-4 flex-shrink-0 opacity-70 group-hover:opacity-100 transition-opacity mt-0.5 sm:mt-0" />
               </a>
-              <p className="text-gray-500 text-sm truncate mt-1" title={link.url}>
+              <p className="text-gray-500 text-xs sm:text-sm truncate mt-1" title={link.url}>
                 {link.url}
               </p>
               
@@ -435,54 +438,92 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 <Archive className="w-4 h-4 text-gray-500" />
               )}
               
+              {/* ✅ MOBILE RESPONSIVE: Actions menu with better touch targets */}
               <div className="relative">
                 <button
                   onClick={() => setShowActions(!showActions)}
-                  className="p-1 text-gray-400 hover:text-gray-600"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setShowActions(false)
+                  }}
+                  className="p-2.5 sm:p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center touch-manipulation"
+                  aria-label="More actions"
+                  aria-expanded={showActions}
+                  aria-haspopup="true"
                 >
-                  <MoreVertical className="w-4 h-4" />
+                  <MoreVertical className="w-5 h-5 sm:w-4 sm:h-4" />
                 </button>
                 
+                {/* ✅ MOBILE RESPONSIVE: Dropdown menu with better mobile positioning */}
                 {showActions && (
-                  <div className="absolute right-0 top-8 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    <div className="py-1">
-                      <button
-                        onClick={() => handleAction('toggleFavorite')}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        <Star className="w-4 h-4" />
-                        {link.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}
-                      </button>
-                      <button
-                        onClick={() => handleAction('toggleArchive')}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        <Archive className="w-4 h-4" />
-                        {link.isArchived ? 'Unarchive' : 'Archive'}
-                      </button>
-                      <button
-                        onClick={copyToClipboard}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        <Copy className="w-4 h-4" />
-                        Copy URL
-                      </button>
-                      <button
-                        onClick={() => handleAction('update')}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        <Edit className="w-4 h-4" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleAction('delete')}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete
-                      </button>
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowActions(false)}
+                      aria-hidden="true"
+                    />
+                    <div className="absolute right-0 top-12 sm:top-10 w-56 bg-white border border-gray-200 rounded-lg shadow-xl z-20 animate-in fade-in slide-in-from-top-2 duration-200 max-h-[calc(100vh-120px)] overflow-y-auto">
+                      <div className="py-1.5">
+                        <button
+                          onClick={() => handleAction('toggleFavorite')}
+                          className="w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 hover:bg-yellow-50 hover:text-yellow-700 active:bg-yellow-100 transition-colors focus:outline-none focus:bg-yellow-50 min-h-[44px] sm:min-h-0 touch-manipulation"
+                          role="menuitem"
+                        >
+                          <Star className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${link.isFavorite ? 'fill-current text-yellow-500' : ''}`} />
+                          <span className="text-left">{link.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}</span>
+                        </button>
+                        <button
+                          onClick={() => handleAction('toggleArchive')}
+                          className="w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors focus:outline-none focus:bg-gray-50 min-h-[44px] sm:min-h-0 touch-manipulation"
+                          role="menuitem"
+                        >
+                          <Archive className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${link.isArchived ? 'text-orange-500' : ''}`} />
+                          <span className="text-left">{link.isArchived ? 'Unarchive' : 'Archive'}</span>
+                        </button>
+                        <div className="my-1 h-px bg-gray-100" />
+                        <button
+                          onClick={copyToClipboard}
+                          className="w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 active:bg-blue-100 transition-colors focus:outline-none focus:bg-blue-50 min-h-[44px] sm:min-h-0 touch-manipulation"
+                          role="menuitem"
+                        >
+                          {copied ? (
+                            <>
+                              <div className="w-5 h-5 sm:w-4 sm:h-4 rounded-full bg-green-500 flex items-center justify-center animate-in zoom-in duration-200 flex-shrink-0">
+                                <span className="text-white text-xs">✓</span>
+                              </div>
+                              <span className="text-green-600 font-medium text-left">Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                              <span className="text-left">Copy URL</span>
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleAction('update')}
+                          className="w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 active:bg-indigo-100 transition-colors focus:outline-none focus:bg-indigo-50 min-h-[44px] sm:min-h-0 touch-manipulation"
+                          role="menuitem"
+                        >
+                          <Edit className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span className="text-left">Edit</span>
+                        </button>
+                        <div className="my-1 h-px bg-gray-100" />
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Are you sure you want to delete "${link.title}"?`)) {
+                              handleAction('delete')
+                            }
+                            setShowActions(false)
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors focus:outline-none focus:bg-red-50 min-h-[44px] sm:min-h-0 touch-manipulation"
+                          role="menuitem"
+                        >
+                          <Trash2 className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span className="text-left">Delete</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             </div>
