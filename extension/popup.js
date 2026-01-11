@@ -12,7 +12,7 @@
 
 const CONSTANTS = {
   // API Configuration
-  DASHBOARD_URL: 'https://smar-track.vercel.app',
+  DASHBOARD_URL: typeof SRT_CONFIG !== 'undefined' ? SRT_CONFIG.getDashboardUrl() : 'https://smar-track.vercel.app',
   TOKEN_CHECK_INTERVAL: 2000, // ms
   TOAST_DISPLAY_DURATION: 3000, // ms
   AUTO_CLOSE_DELAY: 2000, // ms

@@ -6,14 +6,21 @@
  * @version 2.0.0
  */
 
+// Import configuration
+try {
+  importScripts('utils/config.js');
+} catch (e) {
+  console.error('[SRT] Failed to import scripts in background:', e);
+}
+
 // ============================================================================
 // Constants
 // ============================================================================
 
 const BACKGROUND_CONSTANTS = {
   // URLs
-  DASHBOARD_URL: 'https://smar-track.vercel.app',
-  API_BASE_URL: 'https://smartrack-back.onrender.com',
+  DASHBOARD_URL: typeof SRT_CONFIG !== 'undefined' ? SRT_CONFIG.getDashboardUrl() : 'https://smar-track.vercel.app',
+  API_BASE_URL: typeof SRT_CONFIG !== 'undefined' ? SRT_CONFIG.getApiBaseUrl() : 'https://smartrack-back.onrender.com',
   LINKS_ENDPOINT: '/api/links',
   
   // Storage Keys
@@ -130,24 +137,6 @@ class SmarTrackBackground {
       this.handleInstall(details).catch((error) => {
         console.error('[SRT] Install handler failed:', error);
       });
-    });
-
-    // Tab updates (for content script injection)
-    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-      if (changeInfo.status === 'complete' && tab.url) {
-        this.injectContentScript(tabId).catch((error) => {
-          // Log errors for Chrome Web Store attempts (user wants to support it)
-          // but gracefully handle browser restrictions
-          if (this.isScriptingError(error) && tab.url?.includes('chrome.google.com')) {
-            console.debug('[SRT] Chrome Web Store page cannot be scripted (browser restriction):', tab.url);
-            return;
-          }
-          // Silently fail for other system/restricted pages
-          if (!this.isSystemUrl(tab.url) && !this.isScriptingError(error)) {
-            console.error('[SRT] Content script injection failed:', error);
-          }
-        });
-      }
     });
 
     // Messages from content scripts and popup
@@ -371,83 +360,6 @@ class SmarTrackBackground {
   async handleUpdate(previousVersion) {
     console.log(`[SRT] Extension updated from ${previousVersion || 'unknown'}`);
     // Add migration logic here if needed
-  }
-
-  /**
-   * Injects content script into a tab if needed
-   * @async
-   * @param {number} tabId - Tab ID
-   * @returns {Promise<void>}
-   */
-  async injectContentScript(tabId) {
-    try {
-      const tab = await chrome.tabs.get(tabId);
-      
-      if (!tab || !tab.url) {
-        return;
-      }
-      
-      // Skip system pages and restricted domains
-      if (this.isSystemUrl(tab.url)) {
-        return;
-      }
-      
-      // Check if content script is already injected
-      try {
-        const results = await chrome.scripting.executeScript({
-          target: { tabId: tabId },
-          func: () => window.smartrackContentScript
-        });
-        
-        if (results[0]?.result) {
-          // Already injected
-          return;
-        }
-      } catch (error) {
-        // Script injection check failed - page might be restricted
-        // Check for common error messages indicating restricted pages
-        if (this.isScriptingError(error)) {
-          return; // Silently skip restricted pages
-        }
-        // Other errors, try to inject anyway
-        console.debug('[SRT] Could not check for existing script:', error);
-      }
-      
-      // Inject content script
-      await chrome.scripting.executeScript({
-        target: { tabId: tabId },
-        files: ['contentScript.js']
-      });
-    } catch (error) {
-      // Silently ignore errors for restricted/system pages
-      if (this.isScriptingError(error)) {
-        return;
-      }
-      throw error;
-    }
-  }
-  
-  /**
-   * Checks if an error indicates the page cannot be scripted
-   * @param {Error} error - Error to check
-   * @returns {boolean}
-   */
-  isScriptingError(error) {
-    if (!error || !error.message) {
-      return false;
-    }
-    
-    const errorMessage = error.message.toLowerCase();
-    const restrictedErrors = [
-      'cannot access',
-      'cannot be scripted',
-      'extensions gallery',
-      'restricted page',
-      'cannot access a chrome://',
-      'cannot access a chrome-extension://'
-    ];
-    
-    return restrictedErrors.some(phrase => errorMessage.includes(phrase));
   }
 
   /**

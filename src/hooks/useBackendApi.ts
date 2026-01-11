@@ -420,10 +420,22 @@ export const useBackendApi = () => {
     }
   }, [makeAuthenticatedRequest, token])
 
+  // Get user ID from token
+  const getUserId = useCallback((): string | null => {
+    if (!token) return null
+    try {
+      const decoded = jwtDecode<JWTPayload>(token)
+      return decoded.sub
+    } catch {
+      return null
+    }
+  }, [token])
+
   return {
     healthCheck,
     getUserStats,
     getLinks,
+    getUserId,
     isAuthenticated: !!token,
     isLoading,
     makeRequest: makeAuthenticatedRequest, // Expose for advanced usage

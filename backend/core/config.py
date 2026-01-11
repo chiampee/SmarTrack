@@ -26,6 +26,9 @@ class Settings(BaseSettings):
         "https://smar-track.vercel.app",
         "https://smartracker.vercel.app",
         "https://smartrack.vercel.app",
+        "https://smartrack.top",
+        # Add your production Chrome Extension ID here:
+        # "chrome-extension://hbgpbeonpmmbiomclclhpgephdboabao", 
     ]
     
     # Usage Limits

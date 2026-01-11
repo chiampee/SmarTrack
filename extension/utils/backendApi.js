@@ -11,7 +11,7 @@
 // ============================================================================
 
 const API_CONSTANTS = {
-  BASE_URL: 'https://smartrack-back.onrender.com',
+  BASE_URL: typeof SRT_CONFIG !== 'undefined' ? SRT_CONFIG.getApiBaseUrl() : 'https://smartrack-back.onrender.com',
   HEALTH_ENDPOINT: '/api/health',
   LINKS_ENDPOINT: '/api/links',
   USER_STATS_ENDPOINT: '/api/users/stats',

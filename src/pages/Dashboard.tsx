@@ -17,6 +17,8 @@ import { CopyLinksButton } from '../components/CopyLinksButton'
 import { useCategories } from '../context/CategoriesContext'
 import { Link, Collection, Category } from '../types/Link'
 import { logger } from '../utils/logger'
+import { cacheManager } from '../utils/cacheManager'
+import { DashboardSkeleton } from '../components/LoadingSkeleton'
 
 export const Dashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -94,13 +96,44 @@ export const Dashboard: React.FC = () => {
       }
 
       try {
+        // Track performance
+        const startTime = Date.now()
+        
+        // Try to load from cache first for instant display
+        const userId = backendApi.getUserId()
+        if (userId) {
+          const cachedLinks = await cacheManager.getLinks(userId)
+          if (cachedLinks && cachedLinks.length > 0) {
+            console.log(`[Perf] Loaded ${cachedLinks.length} links from cache in ${Date.now() - startTime}ms`)
+            setLinks(cachedLinks)
+            setFilteredLinks(cachedLinks)
+            const computedCategories = computeCategories(cachedLinks)
+            setCategories(computedCategories)
+            // Don't return - still fetch fresh data in background
+          }
+        }
+        
         setLoading(true)
         setSlowLoading(false)
-        const slowTimer = setTimeout(() => setSlowLoading(true), 6000)
+        const slowTimer = setTimeout(() => {
+          setSlowLoading(true)
+          console.warn('[Perf] Slow loading detected (>6s) - backend may be cold starting')
+        }, 6000)
+        
         const data = await getLinks()
         clearTimeout(slowTimer)
+        
+        const loadTime = Date.now() - startTime
+        console.log(`[Perf] Loaded ${data?.length || 0} links from backend in ${loadTime}ms`)
+        
         setLinks(data || [])
         setFilteredLinks(data || [])
+        
+        // Update cache for next visit
+        if (userId && data) {
+          await cacheManager.saveLinks(userId, data)
+          console.log('[Perf] Updated cache with fresh data')
+        }
         
         // Update categories with link counts
         const computedCategories = computeCategories(data || [])
@@ -862,10 +895,12 @@ export const Dashboard: React.FC = () => {
           {/* Content */}
           <motion.div>
             {/* Links Section */}
-            {loading ? (
+            {loading && links.length === 0 ? (
+              <DashboardSkeleton />
+            ) : loading ? (
               <div className="card p-6">
                 <div className="space-y-4">
-                  {[...Array(6)].map((_, i) => (
+                  {[...Array(3)].map((_, i) => (
                     <div key={i} className="animate-pulse flex items-center gap-4">
                       <div className="h-10 w-10 rounded bg-slate-200" />
                       <div className="flex-1">
@@ -876,8 +911,9 @@ export const Dashboard: React.FC = () => {
                     </div>
                   ))}
                   {slowLoading && (
-                    <div className="pt-2 text-center">
-                      <p className="text-sm text-gray-500 mb-2">This is taking longer than usual…</p>
+                    <div className="pt-4 text-center">
+                      <p className="text-sm text-orange-600 mb-2 font-medium">⏱️ Backend is warming up...</p>
+                      <p className="text-xs text-gray-500 mb-3">First load may take 30-60 seconds</p>
                       <button onClick={() => window.location.reload()} className="btn btn-secondary text-sm">Refresh</button>
                     </div>
                   )}

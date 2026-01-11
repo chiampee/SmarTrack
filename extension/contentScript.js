@@ -231,6 +231,31 @@ class SmarTrackContentScript {
     
     this.setupMessageListeners();
     this.initIndexedDB();
+    this.syncTokenIfOnDashboard();
+  }
+
+  /**
+   * Syncs auth token from localStorage to extension storage if on dashboard
+   * @returns {void}
+   */
+  syncTokenIfOnDashboard() {
+    const hostname = window.location.hostname;
+    const isDashboard = hostname === 'smar-track.vercel.app' || 
+                        hostname === 'smartracker.vercel.app' || 
+                        hostname === 'smartrack.vercel.app' ||
+                        hostname === 'localhost';
+    
+    if (!isDashboard) return;
+
+    try {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        console.log('[SRT] Found auth token on dashboard, syncing to extension storage');
+        chrome.storage.local.set({ 'authToken': token });
+      }
+    } catch (error) {
+      console.debug('[SRT] Failed to sync token:', error);
+    }
   }
 
   /**
@@ -272,6 +297,18 @@ class SmarTrackContentScript {
   async handleTokenRequest(messageId) {
     if (!messageId || typeof messageId !== 'string') {
       console.warn('[SRT] Invalid message ID in token request');
+      return;
+    }
+    
+    // Only allow token retrieval from SmarTrack dashboard domains
+    const hostname = window.location.hostname;
+    const isDashboard = hostname === 'smar-track.vercel.app' || 
+                        hostname === 'smartracker.vercel.app' || 
+                        hostname === 'smartrack.vercel.app' ||
+                        hostname === 'localhost';
+    
+    if (!isDashboard) {
+      console.debug('[SRT] Token request ignored: not on dashboard domain');
       return;
     }
     
