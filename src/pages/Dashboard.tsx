@@ -620,39 +620,49 @@ export const Dashboard: React.FC = () => {
     // Get category from droppableId
     const category = result.source.droppableId
 
-    // Reorder links within the category
-    const reorderedLinks = Array.from(filteredLinks)
+    // Work with the full links array to preserve order across categories
+    const allLinks = Array.from(links)
     
-    // Find links for this category
-    const categoryLinks = reorderedLinks.filter(l => (l.category || 'Uncategorized') === category)
-    const otherLinks = reorderedLinks.filter(l => (l.category || 'Uncategorized') !== category)
+    // Find all links for this category and their indices in the full array
+    const categoryLinksWithIndices = allLinks
+      .map((link, idx) => ({ link, originalIndex: idx }))
+      .filter(item => (item.link.category || 'Uncategorized') === category)
+    
+    // Get the actual links
+    const categoryLinks = categoryLinksWithIndices.map(item => item.link)
     
     // Reorder within category
     const [removed] = categoryLinks.splice(sourceIndex, 1)
     categoryLinks.splice(destinationIndex, 0, removed)
     
-    // Combine back
-    const newLinks = [...otherLinks, ...categoryLinks]
-    setFilteredLinks(newLinks)
-    setLinks(newLinks)
+    // Create new array with reordered category links
+    const newLinks = [...allLinks]
+    categoryLinksWithIndices.forEach((item, newIdx) => {
+      newLinks[item.originalIndex] = categoryLinks[newIdx]
+    })
     
-    // Optionally: Save order to backend
-    try {
-      // You can implement a backend endpoint to save the order
-      // await makeRequest('/api/links/reorder', {
-      //   method: 'POST',
-      //   body: JSON.stringify({
-      //     linkIds: newLinks.map(l => l.id),
-      //   }),
-      // })
-      toast.success('Link order updated!')
-    } catch (error) {
-      console.error('Failed to save link order:', error)
-      // Revert on error by reloading
-      const freshLinks = await getLinks()
-      setLinks(freshLinks)
-      setFilteredLinks(freshLinks)
-    }
+    // Update state
+    setLinks(newLinks)
+    setFilteredLinks(newLinks)
+    
+    // Show success message
+    toast.success('Link reordered!')
+    
+    // Optionally: Save order to backend (future feature)
+    // try {
+    //   await makeRequest('/api/links/reorder', {
+    //     method: 'POST',
+    //     body: JSON.stringify({
+    //       linkIds: newLinks.map(l => l.id),
+    //     }),
+    //   })
+    // } catch (error) {
+    //   console.error('Failed to save link order:', error)
+    //   // Revert on error by reloading
+    //   const freshLinks = await getLinks()
+    //   setLinks(freshLinks)
+    //   setFilteredLinks(freshLinks)
+    // }
   }
 
   // Handle drop on collection
