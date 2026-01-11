@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List, Star, Download, Loader2, Archive } from 'lucide-react'
+import { Plus, Grid, List, Star, Download, Loader2, Archive, GripVertical } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { CollectionSidebar } from '../components/CollectionSidebar'
@@ -1215,10 +1215,10 @@ export const Dashboard: React.FC = () => {
                                         ref={provided.innerRef}
                                         {...provided.draggableProps}
                                         {...provided.dragHandleProps}
-                                        className={viewMode === 'grid' 
+                                        className={`relative ${viewMode === 'grid' 
                                           ? 'w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)] xl:w-[calc(25%-0.75rem)] 2xl:w-[calc(20%-0.8rem)]'
                                           : 'w-full'
-                                        }
+                                        }`}
                                         style={{
                                           ...provided.draggableProps.style,
                                           opacity: snapshot.isDragging ? 0.8 : 1,
@@ -1226,10 +1226,13 @@ export const Dashboard: React.FC = () => {
                                             ? `${provided.draggableProps.style?.transform} rotate(2deg)`
                                             : provided.draggableProps.style?.transform,
                                           transition: snapshot.isDragging ? 'none' : 'transform 0.2s ease, opacity 0.2s ease',
-                                          cursor: snapshot.isDragging ? 'grabbing' : 'grab',
                                           boxShadow: snapshot.isDragging ? '0 8px 16px rgba(0,0,0,0.2)' : 'none',
+                                          cursor: snapshot.isDragging ? 'grabbing' : 'grab',
                                         }}
                                       >
+                                        {/* Visual drag indicator */}
+                                        <div className={`absolute ${viewMode === 'list' ? 'left-0 top-0 bottom-0 w-1 bg-blue-500' : 'left-0 top-0 right-0 h-1 bg-blue-500'} opacity-0 hover:opacity-100 transition-opacity pointer-events-none rounded-t`} />
+                                        
                                         <LinkCard
                                           link={link}
                                           viewMode={viewMode}
@@ -1239,7 +1242,7 @@ export const Dashboard: React.FC = () => {
                                           collections={collections}
                                         />
                                         {snapshot.isDragging && (
-                                          <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                          <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-bold z-20">
                                             Moving...
                                           </div>
                                         )}
