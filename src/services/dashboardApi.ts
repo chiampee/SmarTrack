@@ -57,7 +57,8 @@ class DashboardApiService {
   }
 
   // Links CRUD operations
-  async getLinks(page: number = 1, limit: number = 50, filters?: SearchFilters): Promise<{ links: Link[]; total: number; hasMore: boolean }> {
+  async getLinks(page: number = 1, limit: number = 50, filters?: SearchFilters): Promise<{ links: Link[]; total: number; hasMore: boolean; page: number; limit: number }> {
+    // ✅ Backend supports pagination (page, limit parameters)
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
@@ -101,17 +102,29 @@ class DashboardApiService {
     });
   }
 
-  async bulkUpdateLinks(linkIds: string[], updates: Partial<Link>): Promise<void> {
-    await this.makeRequest('/api/links/bulk', {
+  async bulkUpdateLinks(linkIds: string[], updates: Partial<Link>): Promise<{ message: string; modifiedCount: number }> {
+    return this.makeRequest('/api/links/bulk', {
       method: 'PUT',
       body: JSON.stringify({ linkIds, updates }),
     });
   }
 
-  async bulkDeleteLinks(linkIds: string[]): Promise<void> {
-    await this.makeRequest('/api/links/bulk', {
+  async bulkDeleteLinks(linkIds: string[]): Promise<{ message: string; deletedCount: number }> {
+    return this.makeRequest('/api/links/bulk', {
       method: 'DELETE',
       body: JSON.stringify({ linkIds }),
+    });
+  }
+  
+  async deleteAllLinks(): Promise<{ message: string; deletedCount: number }> {
+    // ✅ Requires confirmation header (Phase 2 safety feature)
+    const headers = await this.getAuthHeaders();
+    return this.makeRequest('/api/links', {
+      method: 'DELETE',
+      headers: {
+        ...headers,
+        'X-Confirm-Delete-All': 'yes'  // Required confirmation
+      }
     });
   }
 
