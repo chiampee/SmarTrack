@@ -946,6 +946,9 @@ class SmarTrackPopup {
     const title = this.pageData.title || this.currentTab?.title || 'Untitled';
     const url = this.pageData.url || this.currentTab?.url || '';
     
+    // Check if this is a system URL
+    const isSystemPage = isSystemUrl(url);
+    
     // Truncate title if too long (max 60 chars for preview)
     const displayTitle = title.length > 60 ? title.substring(0, 57) + '...' : title;
     if (titleEl) {
@@ -961,13 +964,20 @@ class SmarTrackPopup {
     // Display content type badge
     const contentTypeBadge = getElement('contentTypeBadge');
     if (contentTypeBadge) {
-      const contentType = this.pageData.contentType || this.detectContentType(url);
-      if (contentType && contentType !== 'website') {
-        contentTypeBadge.textContent = contentType;
-        contentTypeBadge.setAttribute('data-type', contentType);
+      if (isSystemPage) {
+        contentTypeBadge.textContent = 'SYSTEM';
+        contentTypeBadge.setAttribute('data-type', 'website');
         contentTypeBadge.style.display = 'inline-block';
       } else {
-        contentTypeBadge.style.display = 'none';
+        const contentType = this.pageData.contentType || this.detectContentType(url);
+        console.log('[SRT] Content type detected:', contentType);
+        if (contentType) {
+          contentTypeBadge.textContent = contentType.toUpperCase();
+          contentTypeBadge.setAttribute('data-type', contentType);
+          contentTypeBadge.style.display = 'inline-block';
+        } else {
+          contentTypeBadge.style.display = 'none';
+        }
       }
     }
     

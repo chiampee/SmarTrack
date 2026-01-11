@@ -1,13 +1,18 @@
 #!/bin/bash
 # Package Chrome Extension for Store Submission
 
-echo "📦 Packing SmarTrack Chrome Extension..."
+# Extract version from manifest.json
+VERSION=$(grep '"version"' manifest.json | head -1 | awk -F '"' '{print $4}')
+FILENAME="../SmarTrack-extension-v${VERSION}.zip"
+
+echo "📦 Packing SmarTrack Chrome Extension v${VERSION}..."
 
 # Remove old zip if exists
+rm -f "$FILENAME"
 rm -f ../SmarTrack-extension.zip
 
 # Create zip file excluding unnecessary files
-zip -r ../SmarTrack-extension.zip . \
+zip -r "$FILENAME" . \
   -x "*.DS_Store" \
   -x "*__MACOSX*" \
   -x "README.md" \
@@ -15,7 +20,7 @@ zip -r ../SmarTrack-extension.zip . \
   -x "*.sh" \
   -x "*.svg"
 
-echo "✅ Extension packaged: SmarTrack-extension.zip"
+echo "✅ Extension packaged: $FILENAME"
 echo ""
 echo "📤 Upload this file to Chrome Web Store:"
 echo "   https://chrome.google.com/webstore/devconsole/"
