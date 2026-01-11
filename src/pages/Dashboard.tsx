@@ -13,7 +13,6 @@ import { FiltersDropdown } from '../components/FiltersDropdown'
 import { useBackendApi } from '../hooks/useBackendApi'
 import { useBulkOperations } from '../hooks/useBulkOperations'
 import { useToast } from '../components/Toast'
-import { CopyLinksButton } from '../components/CopyLinksButton'
 import { useCategories } from '../context/CategoriesContext'
 import { Link, Collection, Category } from '../types/Link'
 import { logger } from '../utils/logger'
@@ -767,28 +766,24 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
             
-            {/* ✅ MOBILE RESPONSIVE: Action buttons - stack on mobile, horizontal on desktop, smaller on mobile */}
-            <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
-              <CopyLinksButton 
-                selectedLinkIds={Array.from(selectedLinks)} 
-                onSuccess={clearSelection}
-              />
+            {/* ✅ IMPROVED: Action buttons - better design, removed Copy button */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <button 
                 onClick={handleExport}
                 disabled={filteredLinksCount === 0}
-                className="px-2.5 sm:px-4 py-2 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 min-h-[40px] sm:min-h-0"
+                className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-gray-700 bg-white border-2 border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm hover:shadow-md min-h-[40px] sm:min-h-0 flex items-center justify-center gap-1.5"
                 aria-label="Export links"
                 title={filteredLinksCount === 0 ? 'No links to export' : 'Export filtered links'}
               >
-                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline sm:mr-1.5" />
+                <Download className="w-4 h-4 sm:w-4 sm:h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Export</span>
               </button>
               <button 
                 onClick={() => setShowAddModal(true)}
-                className="px-2.5 sm:px-4 py-2 sm:py-2 text-xs sm:text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 min-h-[40px] sm:min-h-0"
+                className="px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 active:from-blue-800 active:to-blue-900 transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 min-h-[40px] sm:min-h-0 flex items-center justify-center gap-1.5"
                 aria-label="Add new link"
               >
-                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline sm:mr-1.5" />
+                <Plus className="w-4 h-4 sm:w-4 sm:h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Add Link</span>
                 <span className="sm:hidden">Add</span>
               </button>
@@ -1106,11 +1101,6 @@ export const Dashboard: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      <CopyLinksButton 
-                        selectedLinkIds={Array.from(selectedLinks)} 
-                        onSuccess={clearSelection}
-                        className="px-4 py-2"
-                      />
                       <button 
                         onClick={handleBulkArchive}
                         disabled={isLoading}
