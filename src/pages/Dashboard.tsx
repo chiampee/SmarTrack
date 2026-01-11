@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List, Star, Download, Loader2, Archive, GripVertical } from 'lucide-react'
+import { Plus, Grid, List, Star, Download, Loader2, Archive } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { CollectionSidebar } from '../components/CollectionSidebar'
@@ -620,49 +620,39 @@ export const Dashboard: React.FC = () => {
     // Get category from droppableId
     const category = result.source.droppableId
 
-    // Work with the full links array to preserve order across categories
-    const allLinks = Array.from(links)
-    
-    // Find all links for this category and their indices in the full array
-    const categoryLinksWithIndices = allLinks
-      .map((link, idx) => ({ link, originalIndex: idx }))
-      .filter(item => (item.link.category || 'Uncategorized') === category)
-    
-    // Get the actual links
-    const categoryLinks = categoryLinksWithIndices.map(item => item.link)
+    // Get category links from filteredLinks (what's displayed)
+    const categoryLinks = filteredLinks.filter(l => (l.category || 'Uncategorized') === category)
     
     // Reorder within category
-    const [removed] = categoryLinks.splice(sourceIndex, 1)
-    categoryLinks.splice(destinationIndex, 0, removed)
+    const newCategoryLinks = Array.from(categoryLinks)
+    const [removed] = newCategoryLinks.splice(sourceIndex, 1)
+    newCategoryLinks.splice(destinationIndex, 0, removed)
     
-    // Create new array with reordered category links
-    const newLinks = [...allLinks]
-    categoryLinksWithIndices.forEach((item, newIdx) => {
-      newLinks[item.originalIndex] = categoryLinks[newIdx]
-    })
+    // Rebuild filteredLinks: replace category section with reordered links
+    const newFilteredLinks: Link[] = []
+    let inCategory = false
     
-    // Update state
-    setLinks(newLinks)
-    setFilteredLinks(newLinks)
+    for (const link of filteredLinks) {
+      const linkCategory = link.category || 'Uncategorized'
+      if (linkCategory === category) {
+        if (!inCategory) {
+          // First link of this category - add all reordered category links
+          newFilteredLinks.push(...newCategoryLinks)
+          inCategory = true
+        }
+        // Skip other links from this category (already added)
+      } else {
+        // Different category - add normally
+        if (inCategory) inCategory = false
+        newFilteredLinks.push(link)
+      }
+    }
+    
+    // Update state immediately
+    setFilteredLinks(newFilteredLinks)
     
     // Show success message
     toast.success('Link reordered!')
-    
-    // Optionally: Save order to backend (future feature)
-    // try {
-    //   await makeRequest('/api/links/reorder', {
-    //     method: 'POST',
-    //     body: JSON.stringify({
-    //       linkIds: newLinks.map(l => l.id),
-    //     }),
-    //   })
-    // } catch (error) {
-    //   console.error('Failed to save link order:', error)
-    //   // Revert on error by reloading
-    //   const freshLinks = await getLinks()
-    //   setLinks(freshLinks)
-    //   setFilteredLinks(freshLinks)
-    // }
   }
 
   // Handle drop on collection
