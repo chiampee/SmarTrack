@@ -41,9 +41,9 @@ export const DashboardPreview: React.FC = () => {
           {/* Navigation */}
           <div className="p-3 lg:p-4">
             <div className="text-xs font-semibold text-slate-400 uppercase mb-3">Navigation</div>
-            <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-400 rounded-lg mb-2 border border-blue-500/20 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02] group">
+            <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-600/20 to-indigo-500/20 text-indigo-400 rounded-lg mb-2 border border-indigo-500/20 shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20 transition-all duration-300 hover:scale-[1.02] group">
               <BarChart3 className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
-              <span className="text-sm font-medium">Dashboard</span>
+              <span className="text-sm font-medium">Library</span>
             </div>
           </div>
 
@@ -107,8 +107,8 @@ export const DashboardPreview: React.FC = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-purple-500/5 to-blue-500/0 opacity-0 hover:opacity-100 transition-opacity duration-500"></div>
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4 relative z-10">
               <div className="flex-1 min-w-0">
-                <h1 className="text-xl sm:text-2xl font-bold text-white mb-2 bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-transparent animate-gradient-x">
-                  Research Dashboard
+                <h1 className="text-xl sm:text-2xl font-bold text-white mb-2 bg-gradient-to-r from-white via-indigo-200 to-white bg-clip-text text-transparent animate-gradient-x">
+                  Intelligence Library
                 </h1>
                 <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-slate-400 flex-wrap">
                   <span className="flex items-center gap-1">
@@ -126,10 +126,10 @@ export const DashboardPreview: React.FC = () => {
                   <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 group-hover:rotate-12 transition-transform duration-300" />
                   <span className="hidden sm:inline">Export</span>
                 </button>
-                <button className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 hover:from-blue-500 hover:via-purple-500 hover:to-blue-500 text-white rounded-lg text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 group relative overflow-hidden">
+                <button className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 hover:from-indigo-500 hover:via-indigo-400 hover:to-indigo-500 text-white rounded-lg text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 group relative overflow-hidden">
                   <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></span>
                   <Link2 className="w-3 h-3 sm:w-4 sm:h-4 relative z-10 group-hover:rotate-12 transition-transform duration-300" />
-                  <span className="relative z-10 font-semibold">Add Link</span>
+                  <span className="relative z-10 font-semibold">Capture</span>
                 </button>
               </div>
             </div>

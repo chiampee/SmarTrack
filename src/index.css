@@ -98,21 +98,31 @@ body {
 }
 
 @layer components {
-    /* ✅ MOBILE RESPONSIVE: Card with responsive padding */
+    /* ✅ MOBILE RESPONSIVE: Card with responsive padding - Knowledge Curation Theme */
     .card {
-      @apply bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200;
+      @apply bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 shadow-lg border border-slate-700/50;
     }
   .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900;
   }
   .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 transition-all duration-200 shadow-md hover:shadow-lg;
+    @apply bg-indigo-600 text-white hover:bg-indigo-500 focus:ring-indigo-500 transition-all duration-200 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40;
   }
   .btn-secondary {
-    @apply bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-500 transition-all duration-200;
+    @apply bg-slate-700 text-slate-200 hover:bg-slate-600 focus:ring-slate-500 transition-all duration-200 border border-slate-600;
   }
   .input-field {
-    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm;
+    @apply block w-full px-3 py-2 border border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-slate-800 text-slate-100 placeholder-slate-400;
+  }
+  /* Knowledge Curation specific components */
+  .knowledge-card {
+    @apply bg-slate-800/60 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 hover:border-indigo-500/30 transition-all duration-300;
+  }
+  .knowledge-glow {
+    @apply shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20;
+  }
+  .capture-accent {
+    @apply bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600;
   }
 }
 
