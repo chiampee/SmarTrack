@@ -657,31 +657,38 @@ export const Dashboard: React.FC = () => {
       return
     }
     
-    // Reorder within category
-    const newCategoryLinks = Array.from(categoryLinks)
-    const [removed] = newCategoryLinks.splice(sourceIndex, 1)
-    newCategoryLinks.splice(destinationIndex, 0, removed)
+    // Extract IDs for mapping
+    const movedLinkId = categoryLinks[sourceIndex].id
+    const targetLinkId = categoryLinks[destinationIndex].id
     
-    // Rebuild filteredLinks: replace category section
-    const newFilteredLinks = [
-      ...filteredLinks.slice(0, categoryStart),
-      ...newCategoryLinks,
-      ...filteredLinks.slice(categoryEnd + 1)
-    ]
+    // Update the main links array - find and move the link
+    const newLinks = Array.from(links)
     
-    // Also update main links array to persist order
-    // Create a map of link IDs to their new positions in filteredLinks
-    const linkOrderMap = new Map(newFilteredLinks.map((link, idx) => [link.id, idx]))
+    // Find positions of these links in the main array
+    const movedIdx = newLinks.findIndex(l => l.id === movedLinkId)
+    const targetIdx = newLinks.findIndex(l => l.id === targetLinkId)
     
-    // Sort main links array to match filteredLinks order
-    const newLinks = [...links].sort((a, b) => {
-      const orderA = linkOrderMap.get(a.id) ?? Infinity
-      const orderB = linkOrderMap.get(b.id) ?? Infinity
-      return orderA - orderB
-    })
+    if (movedIdx === -1 || targetIdx === -1) {
+      console.error('Could not find links in main array')
+      return
+    }
     
-    // Update both state arrays
-    setFilteredLinks(newFilteredLinks)
+    // Remove from source
+    const [movedLink] = newLinks.splice(movedIdx, 1)
+    
+    // Recalculate target index after removal
+    const newTargetIdx = newLinks.findIndex(l => l.id === targetLinkId)
+    
+    // Insert at destination
+    if (sourceIndex < destinationIndex) {
+      // Moving down: insert after target
+      newLinks.splice(newTargetIdx + 1, 0, movedLink)
+    } else {
+      // Moving up: insert before target
+      newLinks.splice(newTargetIdx, 0, movedLink)
+    }
+    
+    // Update links array - useEffect will update filteredLinks automatically
     setLinks(newLinks)
     
     // Show success message
