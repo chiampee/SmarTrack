@@ -299,6 +299,8 @@ export const Dashboard: React.FC = () => {
 
   // Filter links based on search and filters
   useEffect(() => {
+    console.log('🔍 useEffect: Recalculating filteredLinks from links array')
+    
     // If a collection is selected, don't apply other filters
     if (selectedCollectionId) {
       return
@@ -604,8 +606,11 @@ export const Dashboard: React.FC = () => {
 
   // Handle drag and drop reordering
   const handleDragDropEnd = async (result: DropResult) => {
+    console.log('🎯 DROP EVENT:', result)
+    
     // No destination - dropped outside
     if (!result.destination) {
+      console.log('❌ No destination - dropped outside droppable area')
       return
     }
 
@@ -614,13 +619,22 @@ export const Dashboard: React.FC = () => {
     const sourceDroppableId = result.source.droppableId
     const destDroppableId = result.destination.droppableId
 
+    console.log('📍 Drop details:', { 
+      sourceIndex, 
+      destinationIndex, 
+      sourceCategory: sourceDroppableId, 
+      destCategory: destDroppableId 
+    })
+
     // Same position
     if (sourceIndex === destinationIndex && sourceDroppableId === destDroppableId) {
+      console.log('⚠️ Same position - no change needed')
       return
     }
 
     // Different categories - not supported yet (only reorder within same category)
     if (sourceDroppableId !== destDroppableId) {
+      console.log('⚠️ Cross-category drag attempted')
       toast.info('You can only reorder links within the same category')
       return
     }
@@ -640,18 +654,21 @@ export const Dashboard: React.FC = () => {
       }
     }
     
+    console.log('📦 Category bounds:', { category, categoryStart, categoryEnd, totalFiltered: filteredLinks.length })
+    
     if (categoryStart === -1) {
-      console.error('Category not found in filteredLinks:', category)
+      console.error('❌ Category not found in filteredLinks:', category)
       toast.error('Could not find category to reorder')
       return
     }
     
     // Get category links
     const categoryLinks = filteredLinks.slice(categoryStart, categoryEnd + 1)
+    console.log('📚 Category links:', categoryLinks.map(l => l.title))
     
     // Verify indices are valid
     if (sourceIndex >= categoryLinks.length || destinationIndex >= categoryLinks.length) {
-      console.error('Invalid indices:', { sourceIndex, destinationIndex, categoryLinksLength: categoryLinks.length })
+      console.error('❌ Invalid indices:', { sourceIndex, destinationIndex, categoryLinksLength: categoryLinks.length })
       return
     }
     
@@ -659,6 +676,8 @@ export const Dashboard: React.FC = () => {
     const reorderedCategoryLinks = Array.from(categoryLinks)
     const [movedLink] = reorderedCategoryLinks.splice(sourceIndex, 1)
     reorderedCategoryLinks.splice(destinationIndex, 0, movedLink)
+    
+    console.log('🔄 Reordered category:', reorderedCategoryLinks.map(l => l.title))
     
     // Build the ideal filteredLinks order
     const idealFilteredOrder = [
@@ -692,8 +711,13 @@ export const Dashboard: React.FC = () => {
       return (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0)
     })
     
+    console.log('✅ Final sorted order:', linksInFiltered.map(l => l.title))
+    console.log('📊 Links in filtered:', linksInFiltered.length, 'Links not in filtered:', linksNotInFiltered.length)
+    
     // Combine: filtered links in new order + other links at the end
     const newLinks = [...linksInFiltered, ...linksNotInFiltered]
+    
+    console.log('🎉 Updating links array with new order')
     
     // Update ONLY links - let useEffect handle filteredLinks
     setLinks(newLinks)
