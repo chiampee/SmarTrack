@@ -346,8 +346,10 @@ export const Dashboard: React.FC = () => {
       selectedCollectionId,
       activeFilterId,
       searchQuery,
-      totalLinks: links.length
+      totalLinks: links.length,
+      timestamp: new Date().toISOString()
     })
+    console.log('🔍 Current links order:', links.slice(0, 3).map(l => l.title))
     
     let filtered = links
 
@@ -830,13 +832,28 @@ export const Dashboard: React.FC = () => {
     })
     
     console.log('🎉 Updating links array with new order')
+    console.log('📊 Links state BEFORE update:', links.slice(0, 5).map(l => l.title))
+    console.log('📊 Links state AFTER will be:', newLinks.slice(0, 5).map(l => l.title))
+    
+    // Save the order to localStorage for persistence
+    try {
+      const orderData = newFilteredLinks.map((link, idx) => ({ id: link.id, order: idx }))
+      localStorage.setItem(`linkOrder_${sourceDroppableId}`, JSON.stringify(orderData))
+      console.log('💾 Saved order to localStorage for category:', sourceDroppableId)
+    } catch (e) {
+      console.warn('Failed to save order to localStorage:', e)
+    }
+    
     setLinks(newLinks)
     
-    // Reset reordering flag after React has processed the updates
+    // Reset reordering flag after a longer delay to ensure state settles
+    // This prevents the useEffect from recalculating before state updates complete
     setTimeout(() => {
       isReorderingRef.current = false
       console.log('✅ Reorder complete, re-enabling useEffect')
-    }, 100)
+      console.log('📊 Final links state:', links.slice(0, 5).map(l => l.title))
+      console.log('📊 Final filteredLinks state:', filteredLinks.slice(0, 5).map(l => l.title))
+    }, 500) // Increased from 100ms to 500ms for better stability
     
     // Show success message
     toast.success('Link reordered!')
