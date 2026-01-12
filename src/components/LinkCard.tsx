@@ -9,7 +9,6 @@ import {
   Trash2, 
   Copy,
   Folder,
-  GripVertical,
   Clock,
   Globe,
   StickyNote,
@@ -30,7 +29,6 @@ interface LinkCardProps {
   onAction: (linkId: string, action: string, data?: any) => void
   collections?: Collection[]
   onCardClick?: () => void
-  dragHandleProps?: any
 }
 
 const LinkCardComponent: React.FC<LinkCardProps> = ({ 
@@ -40,8 +38,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   onSelect, 
   onAction,
   collections = [],
-  onCardClick,
-  dragHandleProps
+  onCardClick
 }) => {
   const [copied, setCopied] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
@@ -113,7 +110,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       target.closest('input') ||
       target.closest('textarea') ||
       target.closest('select') ||
-      target.closest('[data-drag-handle]') ||
       target.closest('[data-link-title]') ||
       target.tagName === 'A'
     ) {
@@ -177,11 +173,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         {/* Main Row */}
         <div className="flex items-center gap-3 p-4">
           <div className="flex items-center gap-2 flex-shrink-0">
-            {dragHandleProps && (
-              <div {...dragHandleProps} data-drag-handle className="cursor-grab active:cursor-grabbing p-1 text-gray-300 hover:text-gray-500 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100">
-                <GripVertical className="w-4 h-4" />
-              </div>
-            )}
             <input type="checkbox" checked={isSelected} onChange={onSelect} className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer" onClick={(e) => e.stopPropagation()} />
           </div>
 
@@ -351,7 +342,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               <span className="text-xs text-gray-500 truncate">{getDomain(link.url)}</span>
             </div>
             <div className="flex items-center gap-0.5 flex-shrink-0">
-              {dragHandleProps && <div {...dragHandleProps} data-drag-handle className="p-1 text-gray-300 hover:text-gray-500 hover:bg-gray-100 rounded cursor-grab opacity-0 group-hover:opacity-100"><GripVertical className="w-3.5 h-3.5" /></div>}
               <div className={`transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                 <input type="checkbox" checked={isSelected} onChange={onSelect} className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer" onClick={(e) => e.stopPropagation()} />
               </div>

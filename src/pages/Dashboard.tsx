@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List, Star, Download, Loader2, Archive } from 'lucide-react'
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
+import { Plus, Grid, List, Download, Archive } from 'lucide-react'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { LinkCard } from '../components/LinkCard'
 import { SearchAutocomplete } from '../components/SearchAutocomplete'
@@ -279,8 +278,6 @@ export const Dashboard: React.FC = () => {
   // Debounced collection refetch to prevent multiple simultaneous requests
   const refetchCollectionsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isRefetchingCollectionsRef = useRef(false)
-  const isReorderingRef = useRef(false) // Prevent useEffect from overriding manual reorder
-  const isDraggingRef = useRef(false) // Prevent array updates during active drag
   
   const refetchCollections = useCallback(() => {
     // Clear any pending refetch
@@ -336,15 +333,6 @@ export const Dashboard: React.FC = () => {
 
   // Filter links based on search and filters
   useEffect(() => {
-    // Skip if we're manually reordering OR actively dragging
-    if (isReorderingRef.current || isDraggingRef.current) {
-      console.log('⏭️ Skipping useEffect -', {
-        isDragging: isDraggingRef.current,
-        isReordering: isReorderingRef.current
-      })
-      return
-    }
-    
     console.log('🔍 useEffect: Recalculating filteredLinks from links array', {
       selectedCollectionId,
       activeFilterId,
@@ -782,184 +770,6 @@ export const Dashboard: React.FC = () => {
       }
     }
   }
-
-  // Handle drag end
-  const handleDragEnd = (e: React.DragEvent) => {
-    // Cleanup if needed
-  }
-
-  // Handle drag start - lock the arrays
-  const handleDragStart = () => {
-    console.log('🎬 DRAG START: Locking arrays to prevent recalculation')
-    isDraggingRef.current = true
-  }
-
-  // Handle drag and drop reordering
-  const handleDragDropEnd = async (result: DropResult) => {
-    // Reset dragging flag immediately
-    isDraggingRef.current = false
-    
-    console.log('🎯 DROP EVENT:', result)
-    console.log('🔍 Current filteredLinks count:', filteredLinks.length)
-    console.log('🔍 Grouped by category:', Object.keys(filteredLinks.reduce((acc, link) => {
-      const cat = link.category || 'Uncategorized'
-      acc[cat] = (acc[cat] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)))
-    
-    // Set reordering flag to prevent useEffect from interfering
-    isReorderingRef.current = true
-    
-    // No destination - dropped outside
-    if (!result.destination) {
-      console.log('❌ No destination - dropped outside droppable area')
-      isReorderingRef.current = false
-      return
-    }
-
-    const sourceIndex = result.source.index
-    const destinationIndex = result.destination.index
-    const sourceDroppableId = result.source.droppableId
-    const destDroppableId = result.destination.droppableId
-
-    console.log('📍 Drop details:', { 
-      sourceIndex, 
-      destinationIndex, 
-      sourceCategory: sourceDroppableId, 
-      destCategory: destDroppableId,
-      draggableId: result.draggableId
-    })
-
-    // Same position
-    if (sourceIndex === destinationIndex && sourceDroppableId === destDroppableId) {
-      console.log('⚠️ Same position - no change needed', {
-        sourceIndex,
-        destinationIndex,
-        message: 'Item dropped in the same position - no reorder needed'
-      })
-      isReorderingRef.current = false
-      return
-    }
-    
-    console.log('✅ Different position detected - proceeding with reorder')
-
-    // Different categories - not supported yet (only reorder within same category)
-    if (sourceDroppableId !== destDroppableId) {
-      console.log('⚠️ Cross-category drag attempted')
-      toast.info('You can only reorder links within the same category')
-      isReorderingRef.current = false
-      return
-    }
-
-    // Get category from droppableId
-    const category = sourceDroppableId
-
-    // Find the start and end indices of this category in filteredLinks
-    let categoryStart = -1
-    let categoryEnd = -1
-    
-    for (let i = 0; i < filteredLinks.length; i++) {
-      const linkCategory = filteredLinks[i].category || 'Uncategorized'
-      if (linkCategory === category) {
-        if (categoryStart === -1) categoryStart = i
-        categoryEnd = i
-      }
-    }
-    
-    console.log('📦 Category bounds:', { category, categoryStart, categoryEnd, totalFiltered: filteredLinks.length })
-    
-    if (categoryStart === -1) {
-      console.error('❌ Category not found in filteredLinks:', category)
-      toast.error('Could not find category to reorder')
-      isReorderingRef.current = false
-      return
-    }
-    
-    // Get category links
-    const categoryLinks = filteredLinks.slice(categoryStart, categoryEnd + 1)
-    console.log('📚 Category links:', {
-      category,
-      count: categoryLinks.length,
-      titles: categoryLinks.map(l => l.title),
-      sourceLink: categoryLinks[sourceIndex]?.title,
-      destinationWillBeBefore: categoryLinks[destinationIndex]?.title
-    })
-    
-    // Verify indices are valid
-    if (sourceIndex >= categoryLinks.length || destinationIndex >= categoryLinks.length) {
-      console.error('❌ Invalid indices:', { sourceIndex, destinationIndex, categoryLinksLength: categoryLinks.length })
-      isReorderingRef.current = false
-      return
-    }
-    
-    // Reorder within the category visually
-    const reorderedCategoryLinks = Array.from(categoryLinks)
-    const [movedLink] = reorderedCategoryLinks.splice(sourceIndex, 1)
-    reorderedCategoryLinks.splice(destinationIndex, 0, movedLink)
-    
-    console.log('🔄 Reordered category:', reorderedCategoryLinks.map(l => l.title))
-    
-    // Build the ideal filteredLinks order
-    const newFilteredLinks = [
-      ...filteredLinks.slice(0, categoryStart),
-      ...reorderedCategoryLinks,
-      ...filteredLinks.slice(categoryEnd + 1)
-    ]
-    
-    console.log('✅ New filtered order:', newFilteredLinks.map(l => l.title))
-    
-    // Update filteredLinks immediately for instant visual feedback
-    setFilteredLinks(newFilteredLinks)
-    
-    // Also update the main links array to persist the order
-    // Build a map of the new order
-    const newOrderMap = new Map(newFilteredLinks.map((link, idx) => [link.id, idx]))
-    
-    // Sort main links array to match
-    const newLinks = [...links].sort((a, b) => {
-      const aOrder = newOrderMap.get(a.id)
-      const bOrder = newOrderMap.get(b.id)
-      
-      // Both in new order: sort by new position
-      if (aOrder !== undefined && bOrder !== undefined) {
-        return aOrder - bOrder
-      }
-      // Only a in new order: a first
-      if (aOrder !== undefined) return -1
-      // Only b in new order: b first
-      if (bOrder !== undefined) return 1
-      // Neither: keep original relative order
-      return 0
-    })
-    
-    console.log('🎉 Updating links array with new order')
-    console.log('📊 Links state BEFORE update:', links.slice(0, 5).map(l => l.title))
-    console.log('📊 Links state AFTER will be:', newLinks.slice(0, 5).map(l => l.title))
-    
-    // Save the order to localStorage for persistence
-    try {
-      const orderData = newFilteredLinks.map((link, idx) => ({ id: link.id, order: idx }))
-      localStorage.setItem(`linkOrder_${sourceDroppableId}`, JSON.stringify(orderData))
-      console.log('💾 Saved order to localStorage for category:', sourceDroppableId)
-    } catch (e) {
-      console.warn('Failed to save order to localStorage:', e)
-    }
-    
-    setLinks(newLinks)
-    
-    // Reset reordering flag after a longer delay to ensure state settles
-    // This prevents the useEffect from recalculating before state updates complete
-    setTimeout(() => {
-      isReorderingRef.current = false
-      console.log('✅ Reorder complete, re-enabling useEffect')
-      console.log('📊 Final links state:', links.slice(0, 5).map(l => l.title))
-      console.log('📊 Final filteredLinks state:', filteredLinks.slice(0, 5).map(l => l.title))
-    }, 500) // Increased from 100ms to 500ms for better stability
-    
-    // Show success message
-    toast.success('Link reordered!')
-  }
-
 
   // Handle add link
   const handleAddLink = async (linkData: Omit<Link, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'clickCount'>) => {
@@ -1430,7 +1240,6 @@ export const Dashboard: React.FC = () => {
                 )}
                 
                 {/* Group by Category */}
-                <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragDropEnd}>
                 {(() => {
                   // Group links by category
                   const groupedLinks = filteredLinks.reduce((acc, link) => {
@@ -1469,63 +1278,26 @@ export const Dashboard: React.FC = () => {
                             </div>
                           </motion.div>
 
-                          {/* Links for this category - Droppable - simple vertical list */}
-                          <Droppable droppableId={category} direction="vertical">
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
-                                className={`flex flex-col gap-4 ${snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2 border-2 border-blue-300' : ''}`}
-                                style={{
-                                  minHeight: categoryLinks.length === 0 ? '100px' : 'auto',
-                                }}
-                              >
-                                {categoryLinks.map((link, index) => (
-                                  <Draggable key={link.id} draggableId={link.id} index={index}>
-                                    {(provided, snapshot) => (
-                                      <div
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        className="relative"
-                                        style={{
-                                          ...provided.draggableProps.style,
-                                          opacity: snapshot.isDragging ? 0.8 : 1,
-                                          transform: snapshot.isDragging
-                                            ? `${provided.draggableProps.style?.transform} rotate(2deg)`
-                                            : provided.draggableProps.style?.transform,
-                                          transition: snapshot.isDragging ? 'none' : 'transform 0.2s ease, opacity 0.2s ease',
-                                          boxShadow: snapshot.isDragging ? '0 8px 16px rgba(0,0,0,0.2)' : 'none',
-                                        }}
-                                      >
-                                        <LinkCard
-                                          link={link}
-                                          viewMode={viewMode}
-                                          isSelected={selectedLinks.has(link.id)}
-                                          onSelect={() => toggleSelection(link.id)}
-                                          onAction={handleLinkAction}
-                                          collections={collections}
-                                          onCardClick={() => setEditingLink(link)}
-                                          dragHandleProps={provided.dragHandleProps}
-                                        />
-                                        {snapshot.isDragging && (
-                                          <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-bold z-20">
-                                            Moving...
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                ))}
-                                {provided.placeholder}
-                              </div>
-                            )}
-                          </Droppable>
+                          {/* Links for this category */}
+                          <div className="flex flex-col gap-4">
+                            {categoryLinks.map((link) => (
+                              <LinkCard
+                                key={link.id}
+                                link={link}
+                                viewMode={viewMode}
+                                isSelected={selectedLinks.has(link.id)}
+                                onSelect={() => toggleSelection(link.id)}
+                                onAction={handleLinkAction}
+                                collections={collections}
+                                onCardClick={() => setEditingLink(link)}
+                              />
+                            ))}
+                          </div>
                         </motion.div>
                       ))}
                     </motion.div>
                   )
                 })()}
-                </DragDropContext>
               </motion.div>
             )}
           </motion.div>
