@@ -12,8 +12,7 @@ import {
   Calendar,
   Eye,
   Folder,
-  GripVertical,
-  FolderInput
+  GripVertical
 } from 'lucide-react'
 import { Link, Collection } from '../types/Link'
 
@@ -157,11 +156,15 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
           <div 
             className={`card p-3 sm:p-5 transition-all duration-300 hover:shadow-xl sm:hover:-translate-y-1 hover:border-blue-300 cursor-pointer group relative overflow-hidden touch-manipulation ${
               isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-br from-blue-50 to-purple-50 sm:scale-[1.02] border-blue-300' : 'border-gray-200'
-            }`}
+            } ${isDraggingToProject ? 'ring-2 ring-green-500 opacity-70' : ''}`}
             onClick={handleCardClick}
-            title="Click to edit link details"
+            title="Click to edit, drag to move to project"
             role="article"
             aria-label={`Link: ${link.title}`}
+            // ✅ Make entire card draggable for moving to projects
+            draggable={collections.length > 0}
+            onDragStart={collections.length > 0 ? handleProjectDragStart : undefined}
+            onDragEnd={collections.length > 0 ? handleProjectDragEnd : undefined}
           >
             {/* ✅ SENIOR UX: Selection indicator */}
             {isSelected && (
@@ -170,29 +173,16 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         {/* ✅ MOBILE RESPONSIVE: Selection checkbox with better touch targets */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-1">
-            {/* Drag Handle for reordering (via @hello-pangea/dnd) */}
+            {/* Drag Handle for reordering (via @hello-pangea/dnd) - stops native drag */}
             {dragHandleProps && (
               <div
                 {...dragHandleProps}
                 className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded transition-colors touch-manipulation"
-                title="Drag to reorder"
+                title="Drag to reorder within category"
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
               >
                 <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-              </div>
-            )}
-            {/* ✅ Drag Handle for moving to project (native HTML5 drag) */}
-            {collections.length > 0 && (
-              <div
-                draggable
-                onDragStart={handleProjectDragStart}
-                onDragEnd={handleProjectDragEnd}
-                onMouseDown={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
-                data-rbd-drag-handle-context-id="disabled"
-                className={`cursor-grab active:cursor-grabbing p-1.5 hover:bg-green-100 rounded transition-colors touch-manipulation select-none ${isDraggingToProject ? 'bg-green-200 scale-110' : ''}`}
-                title="Drag to a project in the sidebar"
-              >
-                <FolderInput className={`w-4 h-4 ${isDraggingToProject ? 'text-green-600' : 'text-green-500 hover:text-green-600'}`} />
               </div>
             )}
             <label className="flex items-center cursor-pointer group touch-manipulation">
@@ -462,40 +452,31 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         <div 
           className={`card p-3 sm:p-5 transition-all duration-300 hover:shadow-xl hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer group relative touch-manipulation ${
             isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300' : 'border-gray-200'
-          }`}
+          } ${isDraggingToProject ? 'ring-2 ring-green-500 opacity-70' : ''}`}
           onClick={handleCardClick}
-          title="Click to edit link details"
+          title="Click to edit, drag to move to project"
           role="article"
           aria-label={`Link: ${link.title}`}
+          // ✅ Make entire card draggable for moving to projects
+          draggable={collections.length > 0}
+          onDragStart={collections.length > 0 ? handleProjectDragStart : undefined}
+          onDragEnd={collections.length > 0 ? handleProjectDragEnd : undefined}
         >
           {/* ✅ MOBILE RESPONSIVE: Selection indicator */}
           {isSelected && (
             <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 w-2 h-2 sm:w-2 sm:h-2 bg-blue-500 rounded-full animate-pulse" aria-hidden="true" />
           )}
       <div className="flex items-start gap-2.5 sm:gap-4">
-        {/* Drag Handle for reordering */}
+        {/* Drag Handle for reordering (via @hello-pangea/dnd) - stops native drag */}
         {dragHandleProps && (
           <div
             {...dragHandleProps}
             className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded transition-colors touch-manipulation mt-0.5 sm:mt-1"
-            title="Drag to reorder"
+            title="Drag to reorder within category"
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
           >
             <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-          </div>
-        )}
-        {/* ✅ Drag Handle for moving to project (native HTML5 drag) */}
-        {collections.length > 0 && (
-          <div
-            draggable
-            onDragStart={handleProjectDragStart}
-            onDragEnd={handleProjectDragEnd}
-            onMouseDown={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            data-rbd-drag-handle-context-id="disabled"
-            className={`cursor-grab active:cursor-grabbing p-1.5 hover:bg-green-100 rounded transition-colors touch-manipulation mt-0.5 sm:mt-1 select-none ${isDraggingToProject ? 'bg-green-200 scale-110' : ''}`}
-            title="Drag to a project in the sidebar"
-          >
-            <FolderInput className={`w-4 h-4 ${isDraggingToProject ? 'text-green-600' : 'text-green-500 hover:text-green-600'}`} />
           </div>
         )}
         {/* ✅ MOBILE RESPONSIVE: Selection checkbox with better touch targets */}
