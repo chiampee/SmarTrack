@@ -24,24 +24,39 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
   const [collections, setCollections] = useState<Array<{ id: string; name: string; linkCount?: number }>>([])
 
   useEffect(() => {
+    let isMounted = true
     const load = async () => {
       try {
         if (!isAuthenticated) return
-        // Wait a bit for token to be available if authentication just completed
-        // This prevents race condition errors
-        await new Promise(resolve => setTimeout(resolve, 100))
+        // Wait a bit longer for token to be available and to avoid race conditions with Dashboard
+        // This gives Dashboard's initial load priority
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        if (!isMounted) return
+        
         const cols = await makeRequest<Array<{ id: string; name: string }>>('/api/collections')
-        setCollections(cols || [])
+        
+        if (isMounted) {
+          setCollections(cols || [])
+        }
       } catch (e) {
-        // Silently ignore authentication errors - they're expected during initialization
-        // Only log if it's a real error (not "Authentication required")
+        // Silently ignore common errors during initialization
         const error = e instanceof Error ? e : new Error(String(e))
-        if (!error.message.includes('Authentication required')) {
+        const errorMsg = error.message.toLowerCase()
+        
+        // Only log unexpected errors (not auth or timeout issues)
+        if (!errorMsg.includes('authentication required') && 
+            !errorMsg.includes('timeout') &&
+            isMounted) {
           console.error('Failed to load collections:', error.message)
         }
       }
     }
     load()
+    
+    return () => {
+      isMounted = false
+    }
   }, [isAuthenticated, makeRequest])
 
   const renameCollection = async (id: string, currentName: string) => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Plus, Grid, List, Star, Download, Loader2, Archive } from 'lucide-react'
@@ -277,6 +277,42 @@ export const Dashboard: React.FC = () => {
     return () => window.removeEventListener('keydown', handler)
   }, [navigate])
 
+  // Debounced collection refetch to prevent multiple simultaneous requests
+  const refetchCollectionsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isRefetchingCollectionsRef = useRef(false)
+  
+  const refetchCollections = useCallback(() => {
+    // Clear any pending refetch
+    if (refetchCollectionsTimeoutRef.current) {
+      clearTimeout(refetchCollectionsTimeoutRef.current)
+    }
+    
+    // Schedule a new refetch after 800ms (longer debounce to prevent concurrent requests)
+    refetchCollectionsTimeoutRef.current = setTimeout(async () => {
+      // Prevent concurrent refetches
+      if (isRefetchingCollectionsRef.current) {
+        console.log('[Collections] Skipping refetch - already in progress')
+        return
+      }
+      
+      try {
+        isRefetchingCollectionsRef.current = true
+        console.log('[Collections] Refetching collections...')
+        const cols = await makeRequest<Collection[]>('/api/collections')
+        setCollections(cols || [])
+        console.log('[Collections] Successfully refetched:', cols?.length || 0, 'collections')
+      } catch (e) {
+        const error = e instanceof Error ? e : new Error(String(e))
+        // Only log if not a timeout (timeout might be due to backend cold start)
+        if (!error.message.includes('timeout')) {
+          logger.error('Failed to refetch collections', { component: 'Dashboard', action: 'refetchCollections' }, error)
+        }
+      } finally {
+        isRefetchingCollectionsRef.current = false
+      }
+    }, 800)
+  }, [makeRequest])
+
   // Load collections and categories from backend
   useEffect(() => {
     const fetchMeta = async () => {
@@ -427,8 +463,7 @@ export const Dashboard: React.FC = () => {
           
           // If deleted link was in a collection, refresh collections to update counts
           if (linkToDelete?.collectionId) {
-            const cols = await makeRequest<Collection[]>('/api/collections')
-            setCollections(cols || [])
+            refetchCollections()
           }
           
           toast.success('Link deleted')
@@ -504,8 +539,7 @@ export const Dashboard: React.FC = () => {
 
       // ✅ If collectionId was updated, refetch collections to update counts in sidebar
       if (updates.collectionId !== undefined) {
-        const cols = await makeRequest<Collection[]>('/api/collections')
-        setCollections(cols || [])
+        refetchCollections()
       }
 
       // Close the edit modal
@@ -618,9 +652,8 @@ export const Dashboard: React.FC = () => {
         body: JSON.stringify(collectionData),
       })
       
-      // Refresh collections
-      const updatedCollections = await makeRequest<Collection[]>('/api/collections')
-      setCollections(updatedCollections || [])
+      // Refresh collections using debounced function
+      refetchCollections()
       
       logger.info('Collection created successfully', { component: 'Dashboard', action: 'createCollection', metadata: { collectionId: createdCollection.id } })
       
@@ -804,8 +837,7 @@ export const Dashboard: React.FC = () => {
       setLinks(refreshedLinks)
       
       // Refresh collections to update counts in sidebar
-      const cols = await makeRequest<Collection[]>('/api/collections')
-      setCollections(cols || [])
+      refetchCollections()
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error('Failed to add link to collection:', errorMessage, error)
@@ -836,8 +868,7 @@ export const Dashboard: React.FC = () => {
       
       // If link was added to a collection, refresh collections to update counts
       if (linkData.collectionId) {
-        const cols = await makeRequest<Collection[]>('/api/collections')
-        setCollections(cols || [])
+        refetchCollections()
       }
       
       toast.success('Link added successfully!')
@@ -1260,8 +1291,7 @@ export const Dashboard: React.FC = () => {
                               
                               // If any deleted links were in collections, refresh collection counts
                               if (hadCollectionLinks) {
-                                const cols = await makeRequest<Collection[]>('/api/collections')
-                                setCollections(cols || [])
+                                refetchCollections()
                               }
                               
                               toast.success(`${linkIds.length} link(s) deleted successfully`)
