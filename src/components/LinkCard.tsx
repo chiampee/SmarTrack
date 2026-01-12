@@ -12,7 +12,8 @@ import {
   Calendar,
   Eye,
   Folder,
-  GripVertical
+  GripVertical,
+  FolderInput
 } from 'lucide-react'
 import { Link, Collection } from '../types/Link'
 
@@ -42,10 +43,36 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   dragHandleProps
 }) => {
   const [showActions, setShowActions] = useState(false)
+  const [showMoveToProject, setShowMoveToProject] = useState(false)
+  const [isDraggingToProject, setIsDraggingToProject] = useState(false)
 
   const handleAction = (action: string, data?: any) => {
     onAction(link.id, action, data)
     setShowActions(false)
+    setShowMoveToProject(false)
+  }
+
+  // Handle moving link to a different project/collection
+  const handleMoveToProject = (collectionId: string | null) => {
+    handleAction('moveToProject', { collectionId })
+    setShowMoveToProject(false)
+    setShowActions(false)
+  }
+
+  // ✅ Native HTML5 drag handlers for dragging to sidebar projects
+  // This is separate from @hello-pangea/dnd which handles reordering
+  const handleProjectDragStart = (e: React.DragEvent) => {
+    e.stopPropagation() // Prevent @hello-pangea/dnd from capturing this
+    e.dataTransfer.setData('text/plain', link.id)
+    e.dataTransfer.setData('application/json', JSON.stringify({ linkId: link.id, title: link.title }))
+    e.dataTransfer.effectAllowed = 'move'
+    setIsDraggingToProject(true)
+    console.log('📦 [DragToProject] Started dragging link:', link.id, link.title)
+  }
+
+  const handleProjectDragEnd = (e: React.DragEvent) => {
+    setIsDraggingToProject(false)
+    console.log('📦 [DragToProject] Drag ended for link:', link.id)
   }
 
   // Handle card click to open settings (edit modal)
@@ -129,7 +156,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         {/* ✅ MOBILE RESPONSIVE: Selection checkbox with better touch targets */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-1">
-            {/* Drag Handle */}
+            {/* Drag Handle for reordering (via @hello-pangea/dnd) */}
             {dragHandleProps && (
               <div
                 {...dragHandleProps}
@@ -137,6 +164,18 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 title="Drag to reorder"
               >
                 <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+              </div>
+            )}
+            {/* ✅ Drag Handle for moving to project (native HTML5 drag) */}
+            {collections.length > 0 && (
+              <div
+                draggable={true}
+                onDragStart={handleProjectDragStart}
+                onDragEnd={handleProjectDragEnd}
+                className={`cursor-grab active:cursor-grabbing p-1 hover:bg-green-100 rounded transition-colors touch-manipulation ${isDraggingToProject ? 'bg-green-200 scale-110' : ''}`}
+                title="Drag to a project in the sidebar"
+              >
+                <FolderInput className={`w-4 h-4 ${isDraggingToProject ? 'text-green-600' : 'text-green-500 hover:text-green-600'}`} />
               </div>
             )}
             <label className="flex items-center cursor-pointer group touch-manipulation">
@@ -224,6 +263,70 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                       <Edit className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
                       <span className="text-left">Edit</span>
                     </button>
+                    
+                    {/* ✅ Move to Project submenu */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowMoveToProject(!showMoveToProject)}
+                        className="w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 active:bg-green-100 transition-colors focus:outline-none focus:bg-green-50 min-h-[44px] sm:min-h-0 touch-manipulation"
+                        role="menuitem"
+                      >
+                        <Folder className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <span className="flex-1 text-left">Move to Project</span>
+                        <span className="text-gray-400 text-xs">›</span>
+                      </button>
+                      
+                      {/* Submenu */}
+                      {showMoveToProject && (
+                        <div className="absolute left-full top-0 ml-1 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-30 animate-in fade-in slide-in-from-left-2 duration-200 max-h-60 overflow-y-auto">
+                          <div className="py-1.5">
+                            {/* Remove from project option */}
+                            {link.collectionId && (
+                              <>
+                                <button
+                                  onClick={() => handleMoveToProject(null)}
+                                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-orange-600 hover:bg-orange-50 transition-colors"
+                                >
+                                  <span className="text-base">✕</span>
+                                  <span>Remove from Project</span>
+                                </button>
+                                <div className="my-1 h-px bg-gray-100" />
+                              </>
+                            )}
+                            
+                            {/* List of projects */}
+                            {collections.length > 0 ? (
+                              collections
+                                .filter(c => c.id !== link.collectionId) // Don't show current collection
+                                .map(collection => (
+                                  <button
+                                    key={collection.id}
+                                    onClick={() => handleMoveToProject(collection.id)}
+                                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors"
+                                  >
+                                    <div 
+                                      className="w-3 h-3 rounded-full flex-shrink-0"
+                                      style={{ backgroundColor: collection.color || '#6366f1' }}
+                                    />
+                                    <span className="truncate">{collection.name}</span>
+                                  </button>
+                                ))
+                            ) : (
+                              <div className="px-3 py-2 text-sm text-gray-500 italic">
+                                No projects yet
+                              </div>
+                            )}
+                            
+                            {collections.length > 0 && collections.every(c => c.id === link.collectionId) && (
+                              <div className="px-3 py-2 text-sm text-gray-500 italic">
+                                Already in only project
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
                     <div className="my-1 h-px bg-gray-100" />
                     <button
                       onClick={() => {
@@ -353,7 +456,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 w-2 h-2 sm:w-2 sm:h-2 bg-blue-500 rounded-full animate-pulse" aria-hidden="true" />
           )}
       <div className="flex items-start gap-2.5 sm:gap-4">
-        {/* Drag Handle */}
+        {/* Drag Handle for reordering */}
         {dragHandleProps && (
           <div
             {...dragHandleProps}
@@ -361,6 +464,18 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             title="Drag to reorder"
           >
             <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+          </div>
+        )}
+        {/* ✅ Drag Handle for moving to project (native HTML5 drag) */}
+        {collections.length > 0 && (
+          <div
+            draggable={true}
+            onDragStart={handleProjectDragStart}
+            onDragEnd={handleProjectDragEnd}
+            className={`cursor-grab active:cursor-grabbing p-1 hover:bg-green-100 rounded transition-colors touch-manipulation mt-0.5 sm:mt-1 ${isDraggingToProject ? 'bg-green-200 scale-110' : ''}`}
+            title="Drag to a project in the sidebar"
+          >
+            <FolderInput className={`w-4 h-4 ${isDraggingToProject ? 'text-green-600' : 'text-green-500 hover:text-green-600'}`} />
           </div>
         )}
         {/* ✅ MOBILE RESPONSIVE: Selection checkbox with better touch targets */}
@@ -551,6 +666,70 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                           <Edit className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
                           <span className="text-left">Edit</span>
                         </button>
+                        
+                        {/* ✅ Move to Project submenu (List View) */}
+                        <div className="relative">
+                          <button
+                            onClick={() => setShowMoveToProject(!showMoveToProject)}
+                            className="w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 active:bg-green-100 transition-colors focus:outline-none focus:bg-green-50 min-h-[44px] sm:min-h-0 touch-manipulation"
+                            role="menuitem"
+                          >
+                            <Folder className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                            <span className="flex-1 text-left">Move to Project</span>
+                            <span className="text-gray-400 text-xs">›</span>
+                          </button>
+                          
+                          {/* Submenu */}
+                          {showMoveToProject && (
+                            <div className="absolute left-full top-0 ml-1 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-30 animate-in fade-in slide-in-from-left-2 duration-200 max-h-60 overflow-y-auto">
+                              <div className="py-1.5">
+                                {/* Remove from project option */}
+                                {link.collectionId && (
+                                  <>
+                                    <button
+                                      onClick={() => handleMoveToProject(null)}
+                                      className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-orange-600 hover:bg-orange-50 transition-colors"
+                                    >
+                                      <span className="text-base">✕</span>
+                                      <span>Remove from Project</span>
+                                    </button>
+                                    <div className="my-1 h-px bg-gray-100" />
+                                  </>
+                                )}
+                                
+                                {/* List of projects */}
+                                {collections.length > 0 ? (
+                                  collections
+                                    .filter(c => c.id !== link.collectionId)
+                                    .map(collection => (
+                                      <button
+                                        key={collection.id}
+                                        onClick={() => handleMoveToProject(collection.id)}
+                                        className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors"
+                                      >
+                                        <div 
+                                          className="w-3 h-3 rounded-full flex-shrink-0"
+                                          style={{ backgroundColor: collection.color || '#6366f1' }}
+                                        />
+                                        <span className="truncate">{collection.name}</span>
+                                      </button>
+                                    ))
+                                ) : (
+                                  <div className="px-3 py-2 text-sm text-gray-500 italic">
+                                    No projects yet
+                                  </div>
+                                )}
+                                
+                                {collections.length > 0 && collections.every(c => c.id === link.collectionId) && (
+                                  <div className="px-3 py-2 text-sm text-gray-500 italic">
+                                    Already in only project
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
                         <div className="my-1 h-px bg-gray-100" />
                         <button
                           onClick={() => {

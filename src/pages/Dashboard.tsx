@@ -4,7 +4,6 @@ import { motion } from 'framer-motion'
 import { Plus, Grid, List, Star, Download, Loader2, Archive } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
-import { CollectionSidebar } from '../components/CollectionSidebar'
 import { LinkCard } from '../components/LinkCard'
 import { SearchAutocomplete } from '../components/SearchAutocomplete'
 import { AddLinkModal } from '../components/AddLinkModal'
@@ -15,6 +14,7 @@ import { useBackendApi } from '../hooks/useBackendApi'
 import { useBulkOperations } from '../hooks/useBulkOperations'
 import { useToast } from '../components/Toast'
 import { useCategories } from '../context/CategoriesContext'
+import { useDragDrop } from '../context/DragDropContext'
 import { Link, Collection, Category } from '../types/Link'
 import { logger } from '../utils/logger'
 import { cacheManager } from '../utils/cacheManager'
@@ -50,6 +50,7 @@ export const Dashboard: React.FC = () => {
   const [currentCategoryName, setCurrentCategoryName] = useState<string | null>(null)
   const [searchParams] = useSearchParams()
   const { isMobile, prefersReducedMotion, animationConfig } = useMobileOptimizations()
+  const { setDropHandler } = useDragDrop()
 
   // Check if we should redirect to analytics after login
   useEffect(() => {
@@ -457,7 +458,7 @@ export const Dashboard: React.FC = () => {
   }, [links, searchQuery, filters, selectedCollectionId, activeFilterId])
 
   // Handle link actions
-  const handleLinkAction = async (linkId: string, action: string) => {
+  const handleLinkAction = async (linkId: string, action: string, data?: any) => {
     switch (action) {
       case 'update': {
         const linkToEdit = links.find(l => l.id === linkId)
@@ -525,12 +526,54 @@ export const Dashboard: React.FC = () => {
           toast.error('Failed to update archive status. Please try again.')
         }
         break
+      case 'moveToProject':
+        // ✅ Handle moving link to a different project/collection
+        try {
+          const link = links.find(l => l.id === linkId)
+          if (!link) break
+          
+          const newCollectionId = data?.collectionId || null
+          const oldCollectionId = link.collectionId
+          
+          await makeRequest(`/api/links/${linkId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              collectionId: newCollectionId,
+            }),
+          })
+          
+          // Update local state
+          setLinks(links.map(l => 
+            l.id === linkId ? { ...l, collectionId: newCollectionId } : l
+          ))
+          
+          // Refresh collections to update counts if collection changed
+          if (oldCollectionId !== newCollectionId) {
+            refetchCollections()
+          }
+          
+          if (newCollectionId) {
+            const collection = collections.find(c => c.id === newCollectionId)
+            toast.success(`Moved to "${collection?.name || 'project'}"`)
+          } else {
+            toast.success('Removed from project')
+          }
+        } catch (error) {
+          logger.error('Failed to move link', { component: 'Dashboard', action: 'moveToProject', metadata: { linkId } }, error as Error)
+          toast.error('Failed to move link. Please try again.')
+        }
+        break
     }
   }
 
   // ✅ ENHANCED: Handle edit link save with proper data consistency
   const handleEditLink = async (linkId: string, updates: Partial<Link>) => {
     try {
+      // ✅ FIX: Get the original link to detect collectionId changes
+      const originalLink = links.find(l => l.id === linkId)
+      
+      // ✅ FIX: Always include collectionId in the request
+      // Use null to explicitly remove from collection (not undefined which would skip the field)
       const response = await makeRequest<Link>(`/api/links/${linkId}`, {
         method: 'PUT',
         body: JSON.stringify({
@@ -541,7 +584,8 @@ export const Dashboard: React.FC = () => {
           contentType: updates.contentType,
           isFavorite: updates.isFavorite,
           isArchived: updates.isArchived,
-          ...(updates.collectionId !== undefined && { collectionId: updates.collectionId }),
+          // Always send collectionId - null means remove from collection
+          collectionId: updates.collectionId === null ? null : (updates.collectionId || null),
         }),
       })
       
@@ -550,8 +594,16 @@ export const Dashboard: React.FC = () => {
         l.id === linkId ? { ...l, ...response, updatedAt: new Date(response.updatedAt) } : l
       ))
 
-      // ✅ If collectionId was updated, refetch collections to update counts in sidebar
-      if (updates.collectionId !== undefined) {
+      // ✅ FIX: Refetch collections if either old or new collection is involved
+      // This ensures counts are updated correctly in all scenarios:
+      // - Moving from one collection to another
+      // - Removing from a collection
+      // - Adding to a collection
+      // Normalize undefined and null to be equivalent for comparison
+      const oldCollectionId = originalLink?.collectionId || null
+      const newCollectionId = response.collectionId || null
+      const collectionChanged = oldCollectionId !== newCollectionId
+      if (collectionChanged) {
         refetchCollections()
       }
 
@@ -872,15 +924,9 @@ export const Dashboard: React.FC = () => {
     toast.success('Link reordered!')
   }
 
-  // Handle drop on collection
-  const handleDropOnCollection = async (collectionId: string, linkId: string) => {
+  // Handle drop on collection (drag from dashboard to sidebar)
+  const handleDropOnCollection = useCallback(async (collectionId: string, linkId: string) => {
     try {
-      // Update the link to add it to the collection
-      const link = links.find(l => l.id === linkId)
-      if (!link) {
-        return
-      }
-
       await makeRequest(`/api/links/${linkId}`, {
         method: 'PUT',
         body: JSON.stringify({
@@ -888,25 +934,27 @@ export const Dashboard: React.FC = () => {
         }),
       })
 
-      // Update local state
-      setLinks(links.map(l => 
+      // Optimistically update local state
+      setLinks(prevLinks => prevLinks.map(l => 
         l.id === linkId ? { ...l, collectionId } : l
       ))
       
-      toast.success('Link added to collection!')
-      
-      // Refresh links to get updated data - useEffect will handle filteredLinks
-      const refreshedLinks = await getLinks()
-      setLinks(refreshedLinks)
+      toast.success('Link added to project!')
       
       // Refresh collections to update counts in sidebar
       refetchCollections()
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error('Failed to add link to collection:', errorMessage, error)
-      toast.error('Failed to add link to collection. Please try again.')
+      toast.error('Failed to add link to project. Please try again.')
     }
-  }
+  }, [makeRequest, toast, refetchCollections])
+
+  // ✅ Register drag-drop handler with context for Sidebar to use
+  useEffect(() => {
+    setDropHandler(handleDropOnCollection)
+    return () => setDropHandler(null)
+  }, [handleDropOnCollection, setDropHandler])
 
   // Handle add link
   const handleAddLink = async (linkData: Omit<Link, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'clickCount'>) => {

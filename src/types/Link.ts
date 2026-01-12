@@ -11,7 +11,7 @@ export interface Link {
   contentType: ContentType;
   isFavorite: boolean;
   isArchived: boolean;
-  collectionId?: string; // Optional collection this link belongs to
+  collectionId?: string | null; // Optional collection this link belongs to (null = removed from collection)
   createdAt: Date;
   updatedAt: Date;
   lastAccessedAt?: Date;

@@ -474,7 +474,32 @@ async def update_link(
         
         # Process update fields with validation
         for field, value in link_data.dict(exclude_unset=True).items():
-            if value is not None:
+            # ✅ FIX: Handle collectionId specially - allow null to remove from collection
+            if field == "collectionId":
+                if value is None:
+                    # Explicitly remove from collection
+                    update_data[field] = None
+                else:
+                    # Validate the new collection exists and belongs to user
+                    try:
+                        collection_object_id = validate_object_id(value, "Collection")
+                        collection = await db.collections.find_one(
+                            build_user_filter(user_id, {"_id": collection_object_id})
+                        )
+                        if not collection:
+                            raise HTTPException(
+                                status_code=400,
+                                detail=f"Collection '{value}' not found or does not belong to you"
+                            )
+                        update_data[field] = value
+                    except HTTPException:
+                        raise
+                    except Exception as e:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Invalid collection ID format: {str(e)}"
+                        )
+            elif value is not None:
                 # Validate and sanitize fields if needed
                 if field == "title":
                     update_data[field] = validate_title(value, max_length=500)

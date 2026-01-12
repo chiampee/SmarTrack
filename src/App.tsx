@@ -9,6 +9,7 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { Layout } from './components/Layout'
 import { LoadingSpinner } from './components/LoadingSpinner'
 import { CategoriesProvider } from './context/CategoriesContext'
+import { DragDropProvider } from './context/DragDropContext'
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth0()
@@ -23,15 +24,17 @@ function App() {
 
   return (
     <CategoriesProvider>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/analytics" element={<AdminAnalytics />} />
-          <Route path="/404" element={<NotFoundPage />} />
-        </Routes>
-      </Layout>
+      <DragDropProvider>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/analytics" element={<AdminAnalytics />} />
+            <Route path="/404" element={<NotFoundPage />} />
+          </Routes>
+        </Layout>
+      </DragDropProvider>
     </CategoriesProvider>
   )
 }

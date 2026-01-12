@@ -109,6 +109,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
     const finalCategory = category.trim()
 
     // Create updates object
+    // ✅ FIX: Use null instead of undefined for collectionId to properly remove from collection
     const updates: Partial<Link> = {
       title,
       description: description || undefined,
@@ -117,7 +118,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
       contentType,
       isFavorite,
       isArchived,
-      collectionId: collectionId || undefined,
+      collectionId: collectionId || null,  // null = remove from collection
     }
 
     if (link) {
