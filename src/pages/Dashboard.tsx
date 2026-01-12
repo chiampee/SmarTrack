@@ -1387,7 +1387,7 @@ export const Dashboard: React.FC = () => {
                                 {...provided.droppableProps}
                                 className={`${
                                   viewMode === 'grid'
-                                    ? 'flex flex-wrap gap-2 sm:gap-4'
+                                    ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-4'
                                     : 'flex flex-col gap-2 sm:gap-4'
                                 } ${snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2 border-2 border-blue-300' : ''}`}
                                 style={{
@@ -1400,10 +1400,7 @@ export const Dashboard: React.FC = () => {
                                       <div
                                         ref={provided.innerRef}
                                         {...provided.draggableProps}
-                                        className={`relative ${viewMode === 'grid' 
-                                          ? 'w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)] xl:w-[calc(25%-0.75rem)] 2xl:w-[calc(20%-0.8rem)]'
-                                          : 'w-full'
-                                        }`}
+                                        className="relative"
                                         style={{
                                           ...provided.draggableProps.style,
                                           opacity: snapshot.isDragging ? 0.8 : 1,
