@@ -620,33 +620,37 @@ export const Dashboard: React.FC = () => {
     // Get category from droppableId
     const category = result.source.droppableId
 
-    // Get category links from filteredLinks (what's displayed)
-    const categoryLinks = filteredLinks.filter(l => (l.category || 'Uncategorized') === category)
+    // Find the start and end indices of this category in filteredLinks
+    let categoryStart = -1
+    let categoryEnd = -1
+    
+    for (let i = 0; i < filteredLinks.length; i++) {
+      const linkCategory = filteredLinks[i].category || 'Uncategorized'
+      if (linkCategory === category) {
+        if (categoryStart === -1) categoryStart = i
+        categoryEnd = i
+      }
+    }
+    
+    if (categoryStart === -1) {
+      console.error('Category not found in filteredLinks')
+      return
+    }
+    
+    // Get category links
+    const categoryLinks = filteredLinks.slice(categoryStart, categoryEnd + 1)
     
     // Reorder within category
     const newCategoryLinks = Array.from(categoryLinks)
     const [removed] = newCategoryLinks.splice(sourceIndex, 1)
     newCategoryLinks.splice(destinationIndex, 0, removed)
     
-    // Rebuild filteredLinks: replace category section with reordered links
-    const newFilteredLinks: Link[] = []
-    let inCategory = false
-    
-    for (const link of filteredLinks) {
-      const linkCategory = link.category || 'Uncategorized'
-      if (linkCategory === category) {
-        if (!inCategory) {
-          // First link of this category - add all reordered category links
-          newFilteredLinks.push(...newCategoryLinks)
-          inCategory = true
-        }
-        // Skip other links from this category (already added)
-      } else {
-        // Different category - add normally
-        if (inCategory) inCategory = false
-        newFilteredLinks.push(link)
-      }
-    }
+    // Rebuild filteredLinks: replace category section
+    const newFilteredLinks = [
+      ...filteredLinks.slice(0, categoryStart),
+      ...newCategoryLinks,
+      ...filteredLinks.slice(categoryEnd + 1)
+    ]
     
     // Update state immediately
     setFilteredLinks(newFilteredLinks)
