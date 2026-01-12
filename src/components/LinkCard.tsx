@@ -14,7 +14,10 @@ import {
   FolderPlus,
   Clock,
   Globe,
-  StickyNote
+  StickyNote,
+  ChevronDown,
+  ChevronUp,
+  MousePointer
 } from 'lucide-react'
 import { Link, Collection } from '../types/Link'
 
@@ -47,6 +50,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   const [showMoveToProject, setShowMoveToProject] = useState(false)
   const [isDraggingToProject, setIsDraggingToProject] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const handleAction = (action: string, data?: any) => {
     onAction(link.id, action, data)
@@ -96,7 +100,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     ) {
       return
     }
-    onCardClick?.()
+    setIsExpanded(!isExpanded)
   }
 
   const copyToClipboard = async () => {
@@ -113,6 +117,15 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
+    }).format(new Date(date))
+  }
+
+  const formatFullDate = (date: Date | string) => {
+    return new Intl.DateTimeFormat('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
     }).format(new Date(date))
   }
 
@@ -133,14 +146,14 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   if (viewMode === 'list') {
     return (
       <div 
-        className={`group bg-white rounded-xl border transition-all duration-200 hover:shadow-md hover:border-blue-200 cursor-pointer relative ${
-          isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200'
+        className={`group bg-white rounded-xl border transition-all duration-200 cursor-pointer relative ${
+          isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200 hover:shadow-md hover:border-blue-200'
         } ${isDraggingToProject ? 'ring-2 ring-purple-500 opacity-70 scale-[0.98]' : ''}`}
-        onClick={handleCardClick}
         role="article"
         aria-label={`Link: ${link.title}`}
       >
-        <div className="flex items-center gap-3 p-4">
+        {/* Main Row - Always Visible */}
+        <div className="flex items-center gap-3 p-4" onClick={handleCardClick}>
           {/* Left: Drag Handle + Checkbox */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {dragHandleProps && (
@@ -206,133 +219,144 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             {formatDate(link.createdAt)}
           </div>
 
-          {/* Actions */}
+          {/* Expand Indicator */}
           <div className="flex items-center gap-1 flex-shrink-0">
-            {/* Drag to Project Handle */}
-            {collections.length > 0 && (
-              <div
-                draggable
-                onDragStart={handleProjectDragStart}
-                onDragEnd={handleProjectDragEnd}
-                onMouseDown={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-                data-drag-handle
-                data-rbd-drag-handle-context-id="disabled"
-                className={`p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg cursor-grab active:cursor-grabbing transition-colors ${isDraggingToProject ? 'text-purple-600 bg-purple-100' : ''}`}
-                title="Drag to move to project"
-              >
-                <FolderPlus className="w-4 h-4" />
-              </div>
+            {isExpanded ? (
+              <ChevronUp className="w-4 h-4 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-gray-400" />
             )}
-            
-            {/* Open Link */}
-            <a
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              onClick={(e) => e.stopPropagation()}
-              title="Open link"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </a>
-
-            {/* More Actions */}
-            <div className="relative">
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowActions(!showActions) }}
-                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                title="More actions"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
-              
-              {showActions && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowActions(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 overflow-hidden">
-                    <button
-                      onClick={() => handleAction('toggleFavorite')}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Star className={`w-4 h-4 ${link.isFavorite ? 'fill-current text-amber-400' : ''}`} />
-                      {link.isFavorite ? 'Unfavorite' : 'Favorite'}
-                    </button>
-                    <button
-                      onClick={() => handleAction('toggleArchive')}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Archive className="w-4 h-4" />
-                      {link.isArchived ? 'Unarchive' : 'Archive'}
-                    </button>
-                    <button
-                      onClick={copyToClipboard}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Copy className="w-4 h-4" />
-                      {copied ? 'Copied!' : 'Copy URL'}
-                    </button>
-                    <hr className="my-1 border-gray-100" />
-                    <button
-                      onClick={() => handleAction('edit')}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Edit
-                    </button>
-                    
-                    {/* Move to Project Submenu */}
-                    {collections.length > 0 && (
-                      <div className="relative">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setShowMoveToProject(!showMoveToProject) }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        >
-                          <Folder className="w-4 h-4" />
-                          <span className="flex-1 text-left">Move to Project</span>
-                          <span className="text-gray-400">›</span>
-                        </button>
-                        
-                        {showMoveToProject && (
-                          <div className="absolute left-full top-0 ml-1 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-30 py-1">
-                            <button
-                              onClick={() => handleMoveToProject(null)}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:bg-gray-50"
-                            >
-                              None
-                            </button>
-                            {collections.map((c) => (
-                              <button
-                                key={c.id}
-                                onClick={() => handleMoveToProject(c.id)}
-                                className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 ${
-                                  link.collectionId === c.id ? 'text-purple-600 bg-purple-50' : 'text-gray-700'
-                                }`}
-                              >
-                                <Folder className="w-4 h-4" />
-                                {c.name}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    <hr className="my-1 border-gray-100" />
-                    <button
-                      onClick={() => handleAction('delete')}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         </div>
+
+        {/* Expanded Content - Accordion */}
+        {isExpanded && (
+          <div className="px-4 pb-4 pt-0 border-t border-gray-100 animate-in slide-in-from-top-2 duration-200">
+            <div className="pt-4 space-y-3">
+              {/* Notes/Description */}
+              {link.description && (
+                <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
+                  <div className="flex items-center gap-2 text-amber-700 text-xs font-medium mb-1">
+                    <StickyNote className="w-3.5 h-3.5" />
+                    Notes
+                  </div>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {link.description}
+                  </p>
+                </div>
+              )}
+
+              {/* URL with Copy */}
+              <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-600 truncate flex-1">{link.url}</p>
+                <button
+                  onClick={copyToClipboard}
+                  className={`p-1.5 rounded transition-colors flex-shrink-0 ${
+                    copied ? 'bg-green-100 text-green-600' : 'hover:bg-gray-200 text-gray-500'
+                  }`}
+                  title="Copy URL"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+                {copied && <span className="text-xs text-green-600">Copied!</span>}
+              </div>
+
+              {/* Metadata Row */}
+              <div className="flex flex-wrap gap-2 text-xs">
+                <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-gray-600">
+                  <Clock className="w-3 h-3" />
+                  {formatFullDate(link.createdAt)}
+                </div>
+                <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-full text-blue-600">
+                  <MousePointer className="w-3 h-3" />
+                  {link.clickCount || 0} clicks
+                </div>
+              </div>
+
+              {/* Tags */}
+              {link.tags && link.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {link.tags.map((tag, i) => (
+                    <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full flex items-center gap-1">
+                      <Tag className="w-3 h-3" />
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 pt-2">
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Open
+                </a>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleAction('toggleFavorite') }}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    link.isFavorite ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  title={link.isFavorite ? 'Unfavorite' : 'Favorite'}
+                >
+                  <Star className={`w-4 h-4 ${link.isFavorite ? 'fill-current' : ''}`} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleAction('toggleArchive') }}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    link.isArchived ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  title={link.isArchived ? 'Unarchive' : 'Archive'}
+                >
+                  <Archive className="w-4 h-4" />
+                </button>
+                
+                {/* Drag to Project */}
+                {collections.length > 0 && (
+                  <div
+                    draggable
+                    onDragStart={handleProjectDragStart}
+                    onDragEnd={handleProjectDragEnd}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    data-drag-handle
+                    data-rbd-drag-handle-context-id="disabled"
+                    className={`p-1.5 bg-gray-100 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-lg cursor-grab active:cursor-grabbing transition-colors ${isDraggingToProject ? 'bg-purple-100 text-purple-600' : ''}`}
+                    title="Drag to move to project"
+                  >
+                    <FolderPlus className="w-4 h-4" />
+                  </div>
+                )}
+
+                <div className="flex-1" />
+
+                {/* Edit Button */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); onCardClick?.() }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  Edit
+                </button>
+
+                {/* Delete */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleAction('delete') }}
+                  className="p-1.5 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg transition-colors"
+                  title="Delete"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -340,246 +364,270 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   // ============ GRID VIEW ============
   return (
     <div 
-      className={`group bg-white rounded-xl border transition-all duration-200 hover:shadow-lg hover:border-blue-200 hover:-translate-y-0.5 cursor-pointer relative overflow-hidden ${
-        isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200'
-      } ${isDraggingToProject ? 'ring-2 ring-purple-500 opacity-70 scale-[0.98]' : ''}`}
-      onClick={handleCardClick}
+      className={`group bg-white rounded-xl border transition-all duration-200 cursor-pointer relative overflow-hidden ${
+        isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200 hover:shadow-lg hover:border-blue-200'
+      } ${isDraggingToProject ? 'ring-2 ring-purple-500 opacity-70 scale-[0.98]' : ''} ${!isExpanded ? 'hover:-translate-y-0.5' : ''}`}
       role="article"
       aria-label={`Link: ${link.title}`}
     >
-      {/* Thumbnail */}
-      {link.thumbnail && (
-        <div className="aspect-video w-full overflow-hidden bg-gray-100">
-          <img 
-            src={link.thumbnail} 
-            alt="" 
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        </div>
-      )}
-
-      <div className="p-4">
-        {/* Header Row */}
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex items-center gap-2 min-w-0">
-            {/* Favicon */}
-            {link.favicon ? (
-              <img src={link.favicon} alt="" className="w-5 h-5 rounded flex-shrink-0" />
-            ) : (
-              <div className="w-5 h-5 rounded bg-gray-200 flex items-center justify-center flex-shrink-0">
-                <Globe className="w-3 h-3 text-gray-400" />
-              </div>
-            )}
-            {/* Domain */}
-            <span className="text-xs text-gray-500 truncate">{getDomain(link.url)}</span>
-          </div>
-
-          {/* Header Actions */}
-          <div className="flex items-center gap-0.5 flex-shrink-0">
-            {/* Reorder Handle (visible on hover) */}
-            {dragHandleProps && (
-              <div
-                {...dragHandleProps}
-                className="p-1 text-gray-300 hover:text-gray-500 hover:bg-gray-100 rounded cursor-grab active:cursor-grabbing transition-colors opacity-0 group-hover:opacity-100"
-                title="Drag to reorder"
-              >
-                <GripVertical className="w-3.5 h-3.5" />
-              </div>
-            )}
-            
-            {/* Checkbox (visible on hover or when selected) */}
-            <div className={`transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={onSelect}
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Title */}
-        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-1 leading-snug">
-          {link.title}
-        </h3>
-
-        {/* Note/Description */}
-        {link.description && (
-          <div className="mb-3 p-2 bg-amber-50/70 border border-amber-100 rounded-lg">
-            <div className="flex items-start gap-1.5">
-              <StickyNote className="w-3 h-3 text-amber-500 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-amber-800 line-clamp-2 leading-relaxed">
-                {link.description}
-              </p>
-            </div>
+      {/* Clickable Header Area */}
+      <div onClick={handleCardClick}>
+        {/* Thumbnail */}
+        {link.thumbnail && (
+          <div className="aspect-video w-full overflow-hidden bg-gray-100">
+            <img 
+              src={link.thumbnail} 
+              alt="" 
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
           </div>
         )}
 
-        {/* Tags Row */}
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {link.category && (
-            <span className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs font-medium rounded-full">
-              {link.category}
-            </span>
-          )}
-          {link.collectionId && (
-            <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs font-medium rounded-full flex items-center gap-1">
-              <Folder className="w-3 h-3" />
-              {getCollectionName(link.collectionId)}
-            </span>
-          )}
-          {link.tags?.slice(0, 2).map((tag, i) => (
-            <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full flex items-center gap-1">
-              <Tag className="w-3 h-3" />
-              {tag}
-            </span>
-          ))}
-          {(link.tags?.length || 0) > 2 && (
-            <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
-              +{link.tags!.length - 2}
-            </span>
-          )}
-        </div>
+        <div className="p-4">
+          {/* Header Row */}
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2 min-w-0">
+              {/* Favicon */}
+              {link.favicon ? (
+                <img src={link.favicon} alt="" className="w-5 h-5 rounded flex-shrink-0" />
+              ) : (
+                <div className="w-5 h-5 rounded bg-gray-200 flex items-center justify-center flex-shrink-0">
+                  <Globe className="w-3 h-3 text-gray-400" />
+                </div>
+              )}
+              {/* Domain */}
+              <span className="text-xs text-gray-500 truncate">{getDomain(link.url)}</span>
+            </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          {/* Left: Date & Status */}
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span>{formatDate(link.createdAt)}</span>
-            {link.isFavorite && <Star className="w-3.5 h-3.5 text-amber-400 fill-current" />}
-            {link.isArchived && <Archive className="w-3.5 h-3.5 text-gray-400" />}
-          </div>
-
-          {/* Right: Actions */}
-          <div className="flex items-center gap-0.5">
-            {/* Drag to Project */}
-            {collections.length > 0 && (
-              <div
-                draggable
-                onDragStart={handleProjectDragStart}
-                onDragEnd={handleProjectDragEnd}
-                onMouseDown={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-                data-drag-handle
-                data-rbd-drag-handle-context-id="disabled"
-                className={`p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg cursor-grab active:cursor-grabbing transition-colors ${isDraggingToProject ? 'text-purple-600 bg-purple-100' : ''}`}
-                title="Drag to move to project"
-              >
-                <FolderPlus className="w-4 h-4" />
-              </div>
-            )}
-
-            {/* Open Link */}
-            <a
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              onClick={(e) => e.stopPropagation()}
-              title="Open link"
-            >
-              <ExternalLink className="w-4 h-4" />
-            </a>
-
-            {/* More Actions */}
-            <div className="relative">
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowActions(!showActions) }}
-                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                title="More actions"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
+            {/* Header Actions */}
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              {/* Reorder Handle (visible on hover) */}
+              {dragHandleProps && (
+                <div
+                  {...dragHandleProps}
+                  className="p-1 text-gray-300 hover:text-gray-500 hover:bg-gray-100 rounded cursor-grab active:cursor-grabbing transition-colors opacity-0 group-hover:opacity-100"
+                  title="Drag to reorder"
+                >
+                  <GripVertical className="w-3.5 h-3.5" />
+                </div>
+              )}
               
-              {showActions && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowActions(false)} />
-                  <div className="absolute right-0 bottom-full mb-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 overflow-hidden">
-                    <button
-                      onClick={() => handleAction('toggleFavorite')}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Star className={`w-4 h-4 ${link.isFavorite ? 'fill-current text-amber-400' : ''}`} />
-                      {link.isFavorite ? 'Unfavorite' : 'Favorite'}
-                    </button>
-                    <button
-                      onClick={() => handleAction('toggleArchive')}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Archive className="w-4 h-4" />
-                      {link.isArchived ? 'Unarchive' : 'Archive'}
-                    </button>
-                    <button
-                      onClick={copyToClipboard}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Copy className="w-4 h-4" />
-                      {copied ? 'Copied!' : 'Copy URL'}
-                    </button>
-                    <hr className="my-1 border-gray-100" />
-                    <button
-                      onClick={() => handleAction('edit')}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Edit
-                    </button>
-                    
-                    {/* Move to Project Submenu */}
-                    {collections.length > 0 && (
-                      <div className="relative">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setShowMoveToProject(!showMoveToProject) }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        >
-                          <Folder className="w-4 h-4" />
-                          <span className="flex-1 text-left">Move to Project</span>
-                          <span className="text-gray-400">›</span>
-                        </button>
-                        
-                        {showMoveToProject && (
-                          <div className="absolute left-full top-0 ml-1 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-30 py-1">
-                            <button
-                              onClick={() => handleMoveToProject(null)}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:bg-gray-50"
-                            >
-                              None
-                            </button>
-                            {collections.map((c) => (
-                              <button
-                                key={c.id}
-                                onClick={() => handleMoveToProject(c.id)}
-                                className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 ${
-                                  link.collectionId === c.id ? 'text-purple-600 bg-purple-50' : 'text-gray-700'
-                                }`}
-                              >
-                                <Folder className="w-4 h-4" />
-                                {c.name}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    <hr className="my-1 border-gray-100" />
-                    <button
-                      onClick={() => handleAction('delete')}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </button>
-                  </div>
-                </>
+              {/* Checkbox (visible on hover or when selected) */}
+              <div className={`transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={onSelect}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+
+              {/* Expand indicator */}
+              {isExpanded ? (
+                <ChevronUp className="w-4 h-4 text-gray-400" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-gray-400" />
               )}
             </div>
           </div>
+
+          {/* Title */}
+          <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-1 leading-snug">
+            {link.title}
+          </h3>
+
+          {/* Note Preview (collapsed) */}
+          {link.description && !isExpanded && (
+            <div className="mb-3 p-2 bg-amber-50/70 border border-amber-100 rounded-lg">
+              <div className="flex items-start gap-1.5">
+                <StickyNote className="w-3 h-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-amber-800 line-clamp-1 leading-relaxed">
+                  {link.description}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Tags Row (collapsed) */}
+          {!isExpanded && (
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {link.category && (
+                <span className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs font-medium rounded-full">
+                  {link.category}
+                </span>
+              )}
+              {link.collectionId && (
+                <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs font-medium rounded-full flex items-center gap-1">
+                  <Folder className="w-3 h-3" />
+                  {getCollectionName(link.collectionId)}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Footer (collapsed) */}
+          {!isExpanded && (
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <span>{formatDate(link.createdAt)}</span>
+                {link.isFavorite && <Star className="w-3.5 h-3.5 text-amber-400 fill-current" />}
+                {link.isArchived && <Archive className="w-3.5 h-3.5 text-gray-400" />}
+              </div>
+              <div className="text-xs text-blue-500 font-medium">
+                Click to expand
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Expanded Content - Accordion */}
+      {isExpanded && (
+        <div className="px-4 pb-4 border-t border-gray-100 animate-in slide-in-from-top-2 duration-200">
+          <div className="pt-4 space-y-3">
+            {/* Full Notes */}
+            {link.description && (
+              <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
+                <div className="flex items-center gap-2 text-amber-700 text-xs font-medium mb-1">
+                  <StickyNote className="w-3.5 h-3.5" />
+                  Notes
+                </div>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {link.description}
+                </p>
+              </div>
+            )}
+
+            {/* URL with Copy */}
+            <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-600 truncate flex-1">{link.url}</p>
+              <button
+                onClick={(e) => { e.stopPropagation(); copyToClipboard() }}
+                className={`p-1.5 rounded transition-colors flex-shrink-0 ${
+                  copied ? 'bg-green-100 text-green-600' : 'hover:bg-gray-200 text-gray-500'
+                }`}
+                title="Copy URL"
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </button>
+              {copied && <span className="text-xs text-green-600">Copied!</span>}
+            </div>
+
+            {/* Metadata */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {link.category && (
+                <div className="p-2 bg-purple-50 rounded-lg">
+                  <div className="text-purple-600 font-medium mb-0.5">Category</div>
+                  <div className="text-purple-800">{link.category}</div>
+                </div>
+              )}
+              {link.collectionId && (
+                <div className="p-2 bg-green-50 rounded-lg">
+                  <div className="text-green-600 font-medium mb-0.5 flex items-center gap-1">
+                    <Folder className="w-3 h-3" /> Project
+                  </div>
+                  <div className="text-green-800">{getCollectionName(link.collectionId)}</div>
+                </div>
+              )}
+              <div className="p-2 bg-gray-50 rounded-lg">
+                <div className="text-gray-500 font-medium mb-0.5 flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> Added
+                </div>
+                <div className="text-gray-700">{formatFullDate(link.createdAt)}</div>
+              </div>
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <div className="text-blue-600 font-medium mb-0.5 flex items-center gap-1">
+                  <MousePointer className="w-3 h-3" /> Clicks
+                </div>
+                <div className="text-blue-800">{link.clickCount || 0}</div>
+              </div>
+            </div>
+
+            {/* Tags */}
+            {link.tags && link.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {link.tags.map((tag, i) => (
+                  <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full flex items-center gap-1">
+                    <Tag className="w-3 h-3" />
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 pt-2 flex-wrap">
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Open
+              </a>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleAction('toggleFavorite') }}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  link.isFavorite ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                title={link.isFavorite ? 'Unfavorite' : 'Favorite'}
+              >
+                <Star className={`w-4 h-4 ${link.isFavorite ? 'fill-current' : ''}`} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleAction('toggleArchive') }}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  link.isArchived ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                title={link.isArchived ? 'Unarchive' : 'Archive'}
+              >
+                <Archive className="w-4 h-4" />
+              </button>
+              
+              {/* Drag to Project */}
+              {collections.length > 0 && (
+                <div
+                  draggable
+                  onDragStart={handleProjectDragStart}
+                  onDragEnd={handleProjectDragEnd}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  data-drag-handle
+                  data-rbd-drag-handle-context-id="disabled"
+                  className={`p-1.5 bg-gray-100 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-lg cursor-grab active:cursor-grabbing transition-colors ${isDraggingToProject ? 'bg-purple-100 text-purple-600' : ''}`}
+                  title="Drag to move to project"
+                >
+                  <FolderPlus className="w-4 h-4" />
+                </div>
+              )}
+
+              <div className="flex-1" />
+
+              {/* Edit Button */}
+              <button
+                onClick={(e) => { e.stopPropagation(); onCardClick?.() }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+              >
+                <Edit className="w-3.5 h-3.5" />
+                Edit
+              </button>
+
+              {/* Delete */}
+              <button
+                onClick={(e) => { e.stopPropagation(); handleAction('delete') }}
+                className="p-1.5 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg transition-colors"
+                title="Delete"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
