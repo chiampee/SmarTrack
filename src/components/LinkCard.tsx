@@ -17,7 +17,13 @@ import {
   MousePointer,
   Save,
   X,
-  Plus
+  Plus,
+  FileText,
+  Video,
+  Image,
+  File,
+  Newspaper,
+  Link2
 } from 'lucide-react'
 import { Link, Collection } from '../types/Link'
 
@@ -158,6 +164,28 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     return collections.find(c => c.id === collectionId)?.name
   }
 
+  // Get content type label and styling
+  const getContentTypeInfo = (contentType?: string) => {
+    switch (contentType) {
+      case 'article':
+        return { icon: Newspaper, label: 'Article', color: 'bg-blue-50 text-blue-700' }
+      case 'video':
+        return { icon: Video, label: 'Video', color: 'bg-red-50 text-red-700' }
+      case 'image':
+        return { icon: Image, label: 'Image', color: 'bg-pink-50 text-pink-700' }
+      case 'pdf':
+        return { icon: FileText, label: 'PDF', color: 'bg-orange-50 text-orange-700' }
+      case 'document':
+        return { icon: File, label: 'Document', color: 'bg-yellow-50 text-yellow-700' }
+      case 'webpage':
+        return { icon: Globe, label: 'Webpage', color: 'bg-cyan-50 text-cyan-700' }
+      default:
+        return { icon: Link2, label: 'Link', color: 'bg-gray-50 text-gray-600' }
+    }
+  }
+
+  const contentTypeInfo = getContentTypeInfo(link.contentType)
+
   const currentTags = editTags.split(',').map(t => t.trim()).filter(t => t)
 
   // ============ LIST VIEW ============
@@ -205,6 +233,10 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
           </div>
 
           <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+            {/* Content Type Badge */}
+            <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1 ${contentTypeInfo.color}`}>
+              <contentTypeInfo.icon className="w-3 h-3" />{contentTypeInfo.label}
+            </span>
             {link.category && <span className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs font-medium rounded-full">{link.category}</span>}
             {link.collectionId && (
               <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs font-medium rounded-full flex items-center gap-1">
@@ -291,6 +323,9 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   </div>
 
                   <div className="flex flex-wrap gap-2 text-xs">
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${contentTypeInfo.color}`}>
+                      <contentTypeInfo.icon className="w-3 h-3" />{contentTypeInfo.label}
+                    </div>
                     <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-gray-600"><Clock className="w-3 h-3" />{formatFullDate(link.createdAt)}</div>
                     <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-full text-blue-600"><MousePointer className="w-3 h-3" />{link.clickCount || 0} clicks</div>
                   </div>
@@ -373,6 +408,10 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
           {!isExpanded && (
             <>
               <div className="flex flex-wrap gap-1.5 mb-3">
+                {/* Content Type Badge */}
+                <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1 ${contentTypeInfo.color}`}>
+                  <contentTypeInfo.icon className="w-3 h-3" />{contentTypeInfo.label}
+                </span>
                 {link.category && <span className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs font-medium rounded-full">{link.category}</span>}
                 {link.collectionId && <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs font-medium rounded-full flex items-center gap-1"><Folder className="w-3 h-3" />{getCollectionName(link.collectionId)}</span>}
               </div>
@@ -458,6 +497,13 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-xs">
+                  {/* Content Type */}
+                  <div className={`p-2 rounded-lg ${contentTypeInfo.color.replace('text-', 'bg-').split(' ')[0]}`}>
+                    <div className={`font-medium mb-0.5 flex items-center gap-1 ${contentTypeInfo.color.split(' ')[1]}`}>
+                      <contentTypeInfo.icon className="w-3 h-3" /> Type
+                    </div>
+                    <div className={contentTypeInfo.color.split(' ')[1]}>{contentTypeInfo.label}</div>
+                  </div>
                   {link.category && <div className="p-2 bg-purple-50 rounded-lg"><div className="text-purple-600 font-medium mb-0.5">Category</div><div className="text-purple-800">{link.category}</div></div>}
                   {link.collectionId && <div className="p-2 bg-green-50 rounded-lg"><div className="text-green-600 font-medium mb-0.5 flex items-center gap-1"><Folder className="w-3 h-3" /> Project</div><div className="text-green-800">{getCollectionName(link.collectionId)}</div></div>}
                   <div className="p-2 bg-gray-50 rounded-lg"><div className="text-gray-500 font-medium mb-0.5 flex items-center gap-1"><Clock className="w-3 h-3" /> Added</div><div className="text-gray-700">{formatFullDate(link.createdAt)}</div></div>
