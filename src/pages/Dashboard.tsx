@@ -280,6 +280,7 @@ export const Dashboard: React.FC = () => {
   // Debounced collection refetch to prevent multiple simultaneous requests
   const refetchCollectionsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isRefetchingCollectionsRef = useRef(false)
+  const isReorderingRef = useRef(false) // Prevent useEffect from overriding manual reorder
   
   const refetchCollections = useCallback(() => {
     // Clear any pending refetch
@@ -335,6 +336,12 @@ export const Dashboard: React.FC = () => {
 
   // Filter links based on search and filters
   useEffect(() => {
+    // Skip if we're manually reordering
+    if (isReorderingRef.current) {
+      console.log('⏭️ Skipping useEffect - manual reorder in progress')
+      return
+    }
+    
     console.log('🔍 useEffect: Recalculating filteredLinks from links array', {
       selectedCollectionId,
       activeFilterId,
@@ -691,9 +698,13 @@ export const Dashboard: React.FC = () => {
   const handleDragDropEnd = async (result: DropResult) => {
     console.log('🎯 DROP EVENT:', result)
     
+    // Set reordering flag to prevent useEffect from interfering
+    isReorderingRef.current = true
+    
     // No destination - dropped outside
     if (!result.destination) {
       console.log('❌ No destination - dropped outside droppable area')
+      isReorderingRef.current = false
       return
     }
 
@@ -712,6 +723,7 @@ export const Dashboard: React.FC = () => {
     // Same position
     if (sourceIndex === destinationIndex && sourceDroppableId === destDroppableId) {
       console.log('⚠️ Same position - no change needed')
+      isReorderingRef.current = false
       return
     }
 
@@ -719,6 +731,7 @@ export const Dashboard: React.FC = () => {
     if (sourceDroppableId !== destDroppableId) {
       console.log('⚠️ Cross-category drag attempted')
       toast.info('You can only reorder links within the same category')
+      isReorderingRef.current = false
       return
     }
 
@@ -742,6 +755,7 @@ export const Dashboard: React.FC = () => {
     if (categoryStart === -1) {
       console.error('❌ Category not found in filteredLinks:', category)
       toast.error('Could not find category to reorder')
+      isReorderingRef.current = false
       return
     }
     
@@ -752,6 +766,7 @@ export const Dashboard: React.FC = () => {
     // Verify indices are valid
     if (sourceIndex >= categoryLinks.length || destinationIndex >= categoryLinks.length) {
       console.error('❌ Invalid indices:', { sourceIndex, destinationIndex, categoryLinksLength: categoryLinks.length })
+      isReorderingRef.current = false
       return
     }
     
@@ -763,47 +778,46 @@ export const Dashboard: React.FC = () => {
     console.log('🔄 Reordered category:', reorderedCategoryLinks.map(l => l.title))
     
     // Build the ideal filteredLinks order
-    const idealFilteredOrder = [
+    const newFilteredLinks = [
       ...filteredLinks.slice(0, categoryStart),
       ...reorderedCategoryLinks,
       ...filteredLinks.slice(categoryEnd + 1)
     ]
     
-    // Create order map: link ID -> desired position
-    const orderMap = new Map<string, number>()
-    idealFilteredOrder.forEach((link, idx) => {
-      orderMap.set(link.id, idx)
-    })
+    console.log('✅ New filtered order:', newFilteredLinks.map(l => l.title))
     
-    // Reorder the ENTIRE links array to match
-    // Strategy: Links that appear in idealFilteredOrder should be sorted according to that order
-    // Links that don't appear should stay at the end in their current relative order
-    const linksInFiltered: Link[] = []
-    const linksNotInFiltered: Link[] = []
+    // Update filteredLinks immediately for instant visual feedback
+    setFilteredLinks(newFilteredLinks)
     
-    links.forEach(link => {
-      if (orderMap.has(link.id)) {
-        linksInFiltered.push(link)
-      } else {
-        linksNotInFiltered.push(link)
+    // Also update the main links array to persist the order
+    // Build a map of the new order
+    const newOrderMap = new Map(newFilteredLinks.map((link, idx) => [link.id, idx]))
+    
+    // Sort main links array to match
+    const newLinks = [...links].sort((a, b) => {
+      const aOrder = newOrderMap.get(a.id)
+      const bOrder = newOrderMap.get(b.id)
+      
+      // Both in new order: sort by new position
+      if (aOrder !== undefined && bOrder !== undefined) {
+        return aOrder - bOrder
       }
+      // Only a in new order: a first
+      if (aOrder !== undefined) return -1
+      // Only b in new order: b first
+      if (bOrder !== undefined) return 1
+      // Neither: keep original relative order
+      return 0
     })
-    
-    // Sort the filtered links by their desired position
-    linksInFiltered.sort((a, b) => {
-      return (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0)
-    })
-    
-    console.log('✅ Final sorted order:', linksInFiltered.map(l => l.title))
-    console.log('📊 Links in filtered:', linksInFiltered.length, 'Links not in filtered:', linksNotInFiltered.length)
-    
-    // Combine: filtered links in new order + other links at the end
-    const newLinks = [...linksInFiltered, ...linksNotInFiltered]
     
     console.log('🎉 Updating links array with new order')
-    
-    // Update ONLY links - let useEffect handle filteredLinks
     setLinks(newLinks)
+    
+    // Reset reordering flag after React has processed the updates
+    setTimeout(() => {
+      isReorderingRef.current = false
+      console.log('✅ Reorder complete, re-enabling useEffect')
+    }, 100)
     
     // Show success message
     toast.success('Link reordered!')
