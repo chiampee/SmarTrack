@@ -604,10 +604,8 @@ export const Dashboard: React.FC = () => {
 
   // Handle drag and drop reordering
   const handleDragDropEnd = async (result: DropResult) => {
-    // No destination - dropped outside (might be dropped on collection)
+    // No destination - dropped outside
     if (!result.destination) {
-      // Check if dropped on a collection (handled by sidebar HTML5 drag)
-      // The library drag is cancelled, but HTML5 drag might have handled it
       return
     }
 
@@ -657,38 +655,47 @@ export const Dashboard: React.FC = () => {
       return
     }
     
-    // Extract IDs for mapping
-    const movedLinkId = categoryLinks[sourceIndex].id
-    const targetLinkId = categoryLinks[destinationIndex].id
+    // Reorder within the category visually
+    const reorderedCategoryLinks = Array.from(categoryLinks)
+    const [movedLink] = reorderedCategoryLinks.splice(sourceIndex, 1)
+    reorderedCategoryLinks.splice(destinationIndex, 0, movedLink)
     
-    // Update the main links array - find and move the link
-    const newLinks = Array.from(links)
+    // Build the ideal filteredLinks order
+    const idealFilteredOrder = [
+      ...filteredLinks.slice(0, categoryStart),
+      ...reorderedCategoryLinks,
+      ...filteredLinks.slice(categoryEnd + 1)
+    ]
     
-    // Find positions of these links in the main array
-    const movedIdx = newLinks.findIndex(l => l.id === movedLinkId)
-    const targetIdx = newLinks.findIndex(l => l.id === targetLinkId)
+    // Create order map: link ID -> desired position
+    const orderMap = new Map<string, number>()
+    idealFilteredOrder.forEach((link, idx) => {
+      orderMap.set(link.id, idx)
+    })
     
-    if (movedIdx === -1 || targetIdx === -1) {
-      console.error('Could not find links in main array')
-      return
-    }
+    // Reorder the ENTIRE links array to match
+    // Strategy: Links that appear in idealFilteredOrder should be sorted according to that order
+    // Links that don't appear should stay at the end in their current relative order
+    const linksInFiltered: Link[] = []
+    const linksNotInFiltered: Link[] = []
     
-    // Remove from source
-    const [movedLink] = newLinks.splice(movedIdx, 1)
+    links.forEach(link => {
+      if (orderMap.has(link.id)) {
+        linksInFiltered.push(link)
+      } else {
+        linksNotInFiltered.push(link)
+      }
+    })
     
-    // Recalculate target index after removal
-    const newTargetIdx = newLinks.findIndex(l => l.id === targetLinkId)
+    // Sort the filtered links by their desired position
+    linksInFiltered.sort((a, b) => {
+      return (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0)
+    })
     
-    // Insert at destination
-    if (sourceIndex < destinationIndex) {
-      // Moving down: insert after target
-      newLinks.splice(newTargetIdx + 1, 0, movedLink)
-    } else {
-      // Moving up: insert before target
-      newLinks.splice(newTargetIdx, 0, movedLink)
-    }
+    // Combine: filtered links in new order + other links at the end
+    const newLinks = [...linksInFiltered, ...linksNotInFiltered]
     
-    // Update links array - useEffect will update filteredLinks automatically
+    // Update ONLY links - let useEffect handle filteredLinks
     setLinks(newLinks)
     
     // Show success message
