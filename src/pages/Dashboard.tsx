@@ -604,21 +604,31 @@ export const Dashboard: React.FC = () => {
 
   // Handle drag and drop reordering
   const handleDragDropEnd = async (result: DropResult) => {
-    // No destination or dropped outside list
+    // No destination - dropped outside (might be dropped on collection)
     if (!result.destination) {
+      // Check if dropped on a collection (handled by sidebar HTML5 drag)
+      // The library drag is cancelled, but HTML5 drag might have handled it
       return
     }
 
     const sourceIndex = result.source.index
     const destinationIndex = result.destination.index
+    const sourceDroppableId = result.source.droppableId
+    const destDroppableId = result.destination.droppableId
 
     // Same position
-    if (sourceIndex === destinationIndex) {
+    if (sourceIndex === destinationIndex && sourceDroppableId === destDroppableId) {
+      return
+    }
+
+    // Different categories - not supported yet (only reorder within same category)
+    if (sourceDroppableId !== destDroppableId) {
+      toast.info('You can only reorder links within the same category')
       return
     }
 
     // Get category from droppableId
-    const category = result.source.droppableId
+    const category = sourceDroppableId
 
     // Find the start and end indices of this category in filteredLinks
     let categoryStart = -1
@@ -633,12 +643,19 @@ export const Dashboard: React.FC = () => {
     }
     
     if (categoryStart === -1) {
-      console.error('Category not found in filteredLinks')
+      console.error('Category not found in filteredLinks:', category)
+      toast.error('Could not find category to reorder')
       return
     }
     
     // Get category links
     const categoryLinks = filteredLinks.slice(categoryStart, categoryEnd + 1)
+    
+    // Verify indices are valid
+    if (sourceIndex >= categoryLinks.length || destinationIndex >= categoryLinks.length) {
+      console.error('Invalid indices:', { sourceIndex, destinationIndex, categoryLinksLength: categoryLinks.length })
+      return
+    }
     
     // Reorder within category
     const newCategoryLinks = Array.from(categoryLinks)
@@ -652,8 +669,20 @@ export const Dashboard: React.FC = () => {
       ...filteredLinks.slice(categoryEnd + 1)
     ]
     
-    // Update state immediately
+    // Also update main links array to persist order
+    // Create a map of link IDs to their new positions in filteredLinks
+    const linkOrderMap = new Map(newFilteredLinks.map((link, idx) => [link.id, idx]))
+    
+    // Sort main links array to match filteredLinks order
+    const newLinks = [...links].sort((a, b) => {
+      const orderA = linkOrderMap.get(a.id) ?? Infinity
+      const orderB = linkOrderMap.get(b.id) ?? Infinity
+      return orderA - orderB
+    })
+    
+    // Update both state arrays
     setFilteredLinks(newFilteredLinks)
+    setLinks(newLinks)
     
     // Show success message
     toast.success('Link reordered!')
