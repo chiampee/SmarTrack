@@ -11,7 +11,8 @@ import {
   Copy,
   Calendar,
   Eye,
-  Folder
+  Folder,
+  GripVertical
 } from 'lucide-react'
 import { Link, Collection } from '../types/Link'
 
@@ -24,6 +25,8 @@ interface LinkCardProps {
   onDragStart?: (e: React.DragEvent) => void
   onDragEnd?: (e: React.DragEvent) => void
   collections?: Collection[]
+  onCardClick?: () => void // Open edit modal when clicking card
+  dragHandleProps?: any // Props from @hello-pangea/dnd for drag handle
 }
 
 const LinkCardComponent: React.FC<LinkCardProps> = ({ 
@@ -34,13 +37,36 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   onAction,
   onDragStart,
   onDragEnd,
-  collections = []
+  collections = [],
+  onCardClick,
+  dragHandleProps
 }) => {
   const [showActions, setShowActions] = useState(false)
 
   const handleAction = (action: string, data?: any) => {
     onAction(link.id, action, data)
     setShowActions(false)
+  }
+
+  // Handle card click to open settings (edit modal)
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Ignore clicks on interactive elements
+    const target = e.target as HTMLElement
+    if (
+      target.closest('button') ||
+      target.closest('a') ||
+      target.closest('input[type="checkbox"]') ||
+      target.tagName === 'A' ||
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'INPUT'
+    ) {
+      return
+    }
+    
+    // Open edit modal when clicking anywhere else on the card
+    if (onCardClick) {
+      onCardClick()
+    }
   }
 
   const [copied, setCopied] = useState(false)
@@ -88,10 +114,11 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       if (viewMode === 'grid') {
         return (
           <div 
-            className={`card p-3 sm:p-5 transition-all duration-300 hover:shadow-xl sm:hover:-translate-y-1 hover:border-blue-300 cursor-grab active:cursor-grabbing group relative overflow-hidden touch-manipulation ${
+            className={`card p-3 sm:p-5 transition-all duration-300 hover:shadow-xl sm:hover:-translate-y-1 hover:border-blue-300 cursor-pointer group relative overflow-hidden touch-manipulation ${
               isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-br from-blue-50 to-purple-50 sm:scale-[1.02] border-blue-300' : 'border-gray-200'
             }`}
-            title="Drag to reorder"
+            onClick={handleCardClick}
+            title="Click to edit link details"
             role="article"
             aria-label={`Link: ${link.title}`}
           >
@@ -101,18 +128,30 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             )}
         {/* ✅ MOBILE RESPONSIVE: Selection checkbox with better touch targets */}
         <div className="flex items-start justify-between mb-3">
-          <label className="flex items-center cursor-pointer group touch-manipulation">
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={onSelect}
-              className="w-5 h-5 sm:w-4 sm:h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all cursor-pointer"
-              aria-label={`Select ${link.title}`}
-            />
-            <span className="ml-2 text-xs text-gray-500 group-hover:text-gray-700 transition-colors sr-only">
-              Select link
-            </span>
-          </label>
+          <div className="flex items-center gap-1">
+            {/* Drag Handle */}
+            {dragHandleProps && (
+              <div
+                {...dragHandleProps}
+                className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded transition-colors touch-manipulation"
+                title="Drag to reorder"
+              >
+                <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+              </div>
+            )}
+            <label className="flex items-center cursor-pointer group touch-manipulation">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={onSelect}
+                className="w-5 h-5 sm:w-4 sm:h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all cursor-pointer"
+                aria-label={`Select ${link.title}`}
+              />
+              <span className="ml-2 text-xs text-gray-500 group-hover:text-gray-700 transition-colors sr-only">
+                Select link
+              </span>
+            </label>
+          </div>
           <div className="relative">
             <button
               onClick={() => setShowActions(!showActions)}
@@ -301,10 +340,11 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       // ✅ MOBILE RESPONSIVE: List view with better touch interactions, more compact on mobile
       return (
         <div 
-          className={`card p-3 sm:p-5 transition-all duration-300 hover:shadow-xl hover:border-blue-300 hover:bg-blue-50/30 cursor-grab active:cursor-grabbing group relative touch-manipulation ${
+          className={`card p-3 sm:p-5 transition-all duration-300 hover:shadow-xl hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer group relative touch-manipulation ${
             isSelected ? 'ring-2 ring-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300' : 'border-gray-200'
           }`}
-          title="Drag to reorder"
+          onClick={handleCardClick}
+          title="Click to edit link details"
           role="article"
           aria-label={`Link: ${link.title}`}
         >
@@ -313,6 +353,16 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 w-2 h-2 sm:w-2 sm:h-2 bg-blue-500 rounded-full animate-pulse" aria-hidden="true" />
           )}
       <div className="flex items-start gap-2.5 sm:gap-4">
+        {/* Drag Handle */}
+        {dragHandleProps && (
+          <div
+            {...dragHandleProps}
+            className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded transition-colors touch-manipulation mt-0.5 sm:mt-1"
+            title="Drag to reorder"
+          >
+            <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+          </div>
+        )}
         {/* ✅ MOBILE RESPONSIVE: Selection checkbox with better touch targets */}
         <label className="flex items-center cursor-pointer group mt-0.5 sm:mt-1 touch-manipulation">
           <input

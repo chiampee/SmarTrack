@@ -1374,7 +1374,6 @@ export const Dashboard: React.FC = () => {
                                       <div
                                         ref={provided.innerRef}
                                         {...provided.draggableProps}
-                                        {...provided.dragHandleProps}
                                         className={`relative ${viewMode === 'grid' 
                                           ? 'w-full sm:w-[calc(50%-0.5rem)] md:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)] xl:w-[calc(25%-0.75rem)] 2xl:w-[calc(20%-0.8rem)]'
                                           : 'w-full'
@@ -1387,12 +1386,8 @@ export const Dashboard: React.FC = () => {
                                             : provided.draggableProps.style?.transform,
                                           transition: snapshot.isDragging ? 'none' : 'transform 0.2s ease, opacity 0.2s ease',
                                           boxShadow: snapshot.isDragging ? '0 8px 16px rgba(0,0,0,0.2)' : 'none',
-                                          cursor: snapshot.isDragging ? 'grabbing' : 'grab',
                                         }}
                                       >
-                                        {/* Visual drag indicator */}
-                                        <div className={`absolute ${viewMode === 'list' ? 'left-0 top-0 bottom-0 w-1 bg-blue-500' : 'left-0 top-0 right-0 h-1 bg-blue-500'} opacity-0 hover:opacity-100 transition-opacity pointer-events-none rounded-t`} />
-                                        
                                         <LinkCard
                                           link={link}
                                           viewMode={viewMode}
@@ -1400,6 +1395,8 @@ export const Dashboard: React.FC = () => {
                                           onSelect={() => toggleSelection(link.id)}
                                           onAction={handleLinkAction}
                                           collections={collections}
+                                          onCardClick={() => setEditingLink(link)}
+                                          dragHandleProps={provided.dragHandleProps}
                                         />
                                         {snapshot.isDragging && (
                                           <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-bold z-20">
