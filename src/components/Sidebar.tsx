@@ -53,14 +53,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
     e.stopPropagation()
     setDragOverCollectionId(null)
     
-    const linkId = e.dataTransfer.getData('text/plain')
+    // Try multiple data formats
+    let linkId = e.dataTransfer.getData('application/x-link-id')
+    if (!linkId) {
+      linkId = e.dataTransfer.getData('text/plain')
+    }
+    
     console.log('📁 [Sidebar] Drop event - linkId:', linkId, 'collectionId:', collectionId, 'hasHandler:', !!onDropOnCollection)
+    console.log('📁 [Sidebar] Available types:', e.dataTransfer.types)
     
     if (linkId && onDropOnCollection) {
       console.log('📁 [Sidebar] Calling onDropOnCollection')
       onDropOnCollection(collectionId, linkId)
     } else {
-      console.warn('📁 [Sidebar] Drop failed - missing linkId or handler')
+      console.warn('📁 [Sidebar] Drop failed - missing linkId or handler', { linkId, hasHandler: !!onDropOnCollection })
     }
   }
 

@@ -62,15 +62,29 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   // ✅ Native HTML5 drag handlers for dragging to sidebar projects
   // This is separate from @hello-pangea/dnd which handles reordering
   const handleProjectDragStart = (e: React.DragEvent) => {
-    e.stopPropagation() // Prevent @hello-pangea/dnd from capturing this
+    // CRITICAL: Stop all propagation to prevent @hello-pangea/dnd from capturing
+    e.stopPropagation()
+    e.nativeEvent.stopImmediatePropagation()
+    
+    // Set drag data
     e.dataTransfer.setData('text/plain', link.id)
-    e.dataTransfer.setData('application/json', JSON.stringify({ linkId: link.id, title: link.title }))
+    e.dataTransfer.setData('application/x-link-id', link.id)
     e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.dropEffect = 'move'
+    
+    // Create a custom drag image
+    const dragImage = document.createElement('div')
+    dragImage.textContent = `📁 ${link.title?.substring(0, 30) || 'Link'}...`
+    dragImage.style.cssText = 'position: absolute; top: -1000px; padding: 8px 12px; background: #3b82f6; color: white; border-radius: 8px; font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.3);'
+    document.body.appendChild(dragImage)
+    e.dataTransfer.setDragImage(dragImage, 0, 0)
+    setTimeout(() => document.body.removeChild(dragImage), 0)
+    
     setIsDraggingToProject(true)
     console.log('📦 [DragToProject] Started dragging link:', link.id, link.title)
   }
 
-  const handleProjectDragEnd = (e: React.DragEvent) => {
+  const handleProjectDragEnd = (_e: React.DragEvent) => {
     setIsDraggingToProject(false)
     console.log('📦 [DragToProject] Drag ended for link:', link.id)
   }
@@ -169,10 +183,13 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             {/* ✅ Drag Handle for moving to project (native HTML5 drag) */}
             {collections.length > 0 && (
               <div
-                draggable={true}
+                draggable
                 onDragStart={handleProjectDragStart}
                 onDragEnd={handleProjectDragEnd}
-                className={`cursor-grab active:cursor-grabbing p-1 hover:bg-green-100 rounded transition-colors touch-manipulation ${isDraggingToProject ? 'bg-green-200 scale-110' : ''}`}
+                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                data-rbd-drag-handle-context-id="disabled"
+                className={`cursor-grab active:cursor-grabbing p-1.5 hover:bg-green-100 rounded transition-colors touch-manipulation select-none ${isDraggingToProject ? 'bg-green-200 scale-110' : ''}`}
                 title="Drag to a project in the sidebar"
               >
                 <FolderInput className={`w-4 h-4 ${isDraggingToProject ? 'text-green-600' : 'text-green-500 hover:text-green-600'}`} />
@@ -469,10 +486,13 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         {/* ✅ Drag Handle for moving to project (native HTML5 drag) */}
         {collections.length > 0 && (
           <div
-            draggable={true}
+            draggable
             onDragStart={handleProjectDragStart}
             onDragEnd={handleProjectDragEnd}
-            className={`cursor-grab active:cursor-grabbing p-1 hover:bg-green-100 rounded transition-colors touch-manipulation mt-0.5 sm:mt-1 ${isDraggingToProject ? 'bg-green-200 scale-110' : ''}`}
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            data-rbd-drag-handle-context-id="disabled"
+            className={`cursor-grab active:cursor-grabbing p-1.5 hover:bg-green-100 rounded transition-colors touch-manipulation mt-0.5 sm:mt-1 select-none ${isDraggingToProject ? 'bg-green-200 scale-110' : ''}`}
             title="Drag to a project in the sidebar"
           >
             <FolderInput className={`w-4 h-4 ${isDraggingToProject ? 'text-green-600' : 'text-green-500 hover:text-green-600'}`} />
