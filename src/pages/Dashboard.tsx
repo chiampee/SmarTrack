@@ -563,6 +563,44 @@ export const Dashboard: React.FC = () => {
           toast.error('Failed to move link. Please try again.')
         }
         break
+      case 'quickEdit':
+        // Quick inline edit from accordion
+        try {
+          const link = links.find(l => l.id === linkId)
+          if (!link) break
+          
+          const oldCollectionId = link.collectionId
+          const newCollectionId = data?.collectionId
+          
+          const response = await makeRequest<Link>(`/api/links/${linkId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              title: data.title,
+              description: data.description,
+              category: data.category,
+              tags: data.tags,
+              collectionId: newCollectionId === null ? null : (newCollectionId || null),
+            }),
+          })
+          
+          // Update local state
+          setLinks(links.map(l => 
+            l.id === linkId ? { ...l, ...response, updatedAt: new Date(response.updatedAt) } : l
+          ))
+          
+          // Refresh collections if collection changed
+          const normalizedOld = oldCollectionId || null
+          const normalizedNew = response.collectionId || null
+          if (normalizedOld !== normalizedNew) {
+            refetchCollections()
+          }
+          
+          toast.success('Link updated!')
+        } catch (error) {
+          logger.error('Failed to quick edit link', { component: 'Dashboard', action: 'quickEdit', metadata: { linkId } }, error as Error)
+          toast.error('Failed to save changes. Please try again.')
+        }
+        break
     }
   }
 
