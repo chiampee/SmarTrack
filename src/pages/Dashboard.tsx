@@ -722,10 +722,16 @@ export const Dashboard: React.FC = () => {
 
     // Same position
     if (sourceIndex === destinationIndex && sourceDroppableId === destDroppableId) {
-      console.log('⚠️ Same position - no change needed')
+      console.log('⚠️ Same position - no change needed', {
+        sourceIndex,
+        destinationIndex,
+        message: 'Item dropped in the same position - no reorder needed'
+      })
       isReorderingRef.current = false
       return
     }
+    
+    console.log('✅ Different position detected - proceeding with reorder')
 
     // Different categories - not supported yet (only reorder within same category)
     if (sourceDroppableId !== destDroppableId) {
@@ -761,7 +767,13 @@ export const Dashboard: React.FC = () => {
     
     // Get category links
     const categoryLinks = filteredLinks.slice(categoryStart, categoryEnd + 1)
-    console.log('📚 Category links:', categoryLinks.map(l => l.title))
+    console.log('📚 Category links:', {
+      category,
+      count: categoryLinks.length,
+      titles: categoryLinks.map(l => l.title),
+      sourceLink: categoryLinks[sourceIndex]?.title,
+      destinationWillBeBefore: categoryLinks[destinationIndex]?.title
+    })
     
     // Verify indices are valid
     if (sourceIndex >= categoryLinks.length || destinationIndex >= categoryLinks.length) {
@@ -1367,8 +1379,8 @@ export const Dashboard: React.FC = () => {
                             </div>
                           </motion.div>
 
-                          {/* Links for this category - Droppable */}
-                          <Droppable droppableId={category} direction={viewMode === 'grid' ? 'horizontal' : 'vertical'}>
+                          {/* Links for this category - Droppable - always vertical for wrapped layouts */}
+                          <Droppable droppableId={category} direction="vertical">
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
