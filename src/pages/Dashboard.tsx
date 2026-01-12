@@ -299,21 +299,59 @@ export const Dashboard: React.FC = () => {
 
   // Filter links based on search and filters
   useEffect(() => {
-    console.log('🔍 useEffect: Recalculating filteredLinks from links array')
+    console.log('🔍 useEffect: Recalculating filteredLinks from links array', {
+      selectedCollectionId,
+      activeFilterId,
+      searchQuery,
+      totalLinks: links.length
+    })
     
-    // If a collection is selected, don't apply other filters
-    if (selectedCollectionId) {
-      return
-    }
-
-    // Don't apply default filtering if viewing archived (let URL param handler do it)
-    if (activeFilterId === 'archived') {
-      return
-    }
-
     let filtered = links
 
-    // Exclude archived links from default view (unless explicitly viewing archived)
+    // Collection filter (takes precedence)
+    if (selectedCollectionId) {
+      filtered = filtered.filter(link => link.collectionId === selectedCollectionId && !link.isArchived)
+      setFilteredLinks(filtered)
+      return
+    }
+
+    // Special filters
+    if (activeFilterId) {
+      switch (activeFilterId) {
+        case 'favorites':
+          filtered = filtered.filter(link => link.isFavorite && !link.isArchived)
+          break
+        case 'recent': {
+          const sevenDaysAgo = new Date()
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+          filtered = filtered
+            .filter(link => new Date(link.createdAt) >= sevenDaysAgo && !link.isArchived)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          break
+        }
+        case 'archived':
+          filtered = filtered.filter(link => link.isArchived)
+          break
+        default:
+          // Exclude archived links from default view
+          filtered = filtered.filter(link => !link.isArchived)
+      }
+      
+      // Apply search even with special filters
+      if (searchQuery && activeFilterId !== 'recent') {
+        filtered = filtered.filter(link => 
+          link.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          link.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          link.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          link.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+        )
+      }
+      
+      setFilteredLinks(filtered)
+      return
+    }
+
+    // Default view: exclude archived
     filtered = filtered.filter(link => !link.isArchived)
 
     // Search filter
@@ -451,16 +489,14 @@ export const Dashboard: React.FC = () => {
         }),
       })
       
-      // ✅ FIXED: Use response from server to ensure data consistency
-      setLinks(links.map(l => 
+      // ✅ Update links array - useEffect will automatically recalculate filteredLinks
+      setLinks(links.map(l =>
         l.id === linkId ? { ...l, ...response, updatedAt: new Date(response.updatedAt) } : l
       ))
-      
-      // ✅ Refresh filtered links to reflect changes
-      setFilteredLinks(filteredLinks.map(l => 
-        l.id === linkId ? { ...l, ...response, updatedAt: new Date(response.updatedAt) } : l
-      ))
-      
+
+      // Close the edit modal
+      setEditingLink(null)
+
       toast.success('Link updated successfully!')
     } catch (error) {
       logger.error('Failed to update link', { component: 'Dashboard', action: 'updateLink', metadata: { linkId } }, error as Error)
@@ -749,11 +785,9 @@ export const Dashboard: React.FC = () => {
       
       toast.success('Link added to collection!')
       
-      // Refresh links to get updated data
+      // Refresh links to get updated data - useEffect will handle filteredLinks
       const refreshedLinks = await getLinks()
-      
       setLinks(refreshedLinks)
-      setFilteredLinks(refreshedLinks)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error('Failed to add link to collection:', errorMessage, error)
@@ -777,10 +811,9 @@ export const Dashboard: React.FC = () => {
           isArchived: linkData.isArchived,
         }),
       })
-      // Refresh links from backend to ensure consistency
+      // Refresh links from backend - useEffect will handle filteredLinks based on active view
       const refreshedLinks = await getLinks()
       setLinks(refreshedLinks)
-      setFilteredLinks(refreshedLinks)
       toast.success('Link added successfully!')
       setShowAddModal(false) // Close modal on success
     } catch (error) {
