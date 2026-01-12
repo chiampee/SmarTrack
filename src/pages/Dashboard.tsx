@@ -8,6 +8,7 @@ import { LinkCard } from '../components/LinkCard'
 import { SearchAutocomplete } from '../components/SearchAutocomplete'
 import { AddLinkModal } from '../components/AddLinkModal'
 import { EditLinkModal } from '../components/EditLinkModal'
+import { LinkPreviewModal } from '../components/LinkPreviewModal'
 import { CreateCollectionModal } from '../components/CreateCollectionModal'
 import { FiltersDropdown } from '../components/FiltersDropdown'
 import { useBackendApi } from '../hooks/useBackendApi'
@@ -30,6 +31,7 @@ export const Dashboard: React.FC = () => {
   const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set())
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingLink, setEditingLink] = useState<Link | null>(null)
+  const [previewLink, setPreviewLink] = useState<Link | null>(null)
   const [showCreateCollectionModal, setShowCreateCollectionModal] = useState(false)
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null)
   const [activeFilterId, setActiveFilterId] = useState<string | null>(null)
@@ -1499,7 +1501,7 @@ export const Dashboard: React.FC = () => {
                                           onSelect={() => toggleSelection(link.id)}
                                           onAction={handleLinkAction}
                                           collections={collections}
-                                          onCardClick={() => setEditingLink(link)}
+                                          onCardClick={() => setPreviewLink(link)}
                                           dragHandleProps={provided.dragHandleProps}
                                         />
                                         {snapshot.isDragging && (
@@ -1534,6 +1536,29 @@ export const Dashboard: React.FC = () => {
         onSave={handleAddLink}
         collections={collections}
         existingCategories={Array.from(new Set(links.map(l => l.category).filter(Boolean)))}
+      />
+
+      {/* Link Preview Modal */}
+      <LinkPreviewModal
+        link={previewLink}
+        isOpen={!!previewLink}
+        onClose={() => setPreviewLink(null)}
+        onEdit={() => {
+          setEditingLink(previewLink)
+          setPreviewLink(null)
+        }}
+        onAction={(action) => {
+          if (previewLink) {
+            handleLinkAction(previewLink.id, action)
+            // Update the preview link state to reflect changes
+            if (action === 'toggleFavorite') {
+              setPreviewLink({ ...previewLink, isFavorite: !previewLink.isFavorite })
+            } else if (action === 'toggleArchive') {
+              setPreviewLink({ ...previewLink, isArchived: !previewLink.isArchived })
+            }
+          }
+        }}
+        collections={collections}
       />
 
       {/* Edit Link Modal */}

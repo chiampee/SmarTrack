@@ -13,7 +13,8 @@ import {
   GripVertical,
   FolderPlus,
   Clock,
-  Globe
+  Globe,
+  StickyNote
 } from 'lucide-react'
 import { Link, Collection } from '../types/Link'
 
@@ -177,6 +178,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               <h3 className="font-medium text-gray-900 truncate text-sm">
                 {link.title}
               </h3>
+              {link.description && <span title="Has notes"><StickyNote className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" /></span>}
               {link.isFavorite && <Star className="w-3.5 h-3.5 text-amber-400 fill-current flex-shrink-0" />}
               {link.isArchived && <Archive className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />}
             </div>
@@ -403,11 +405,16 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
           {link.title}
         </h3>
 
-        {/* Description */}
+        {/* Note/Description */}
         {link.description && (
-          <p className="text-xs text-gray-500 line-clamp-2 mb-3">
-            {link.description}
-          </p>
+          <div className="mb-3 p-2 bg-amber-50/70 border border-amber-100 rounded-lg">
+            <div className="flex items-start gap-1.5">
+              <StickyNote className="w-3 h-3 text-amber-500 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-amber-800 line-clamp-2 leading-relaxed">
+                {link.description}
+              </p>
+            </div>
+          </div>
         )}
 
         {/* Tags Row */}
