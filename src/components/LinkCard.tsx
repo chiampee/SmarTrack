@@ -129,16 +129,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         {/* ✅ MOBILE RESPONSIVE: Selection checkbox with better touch targets */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-1">
-            {/* Drag Handle */}
-            {dragHandleProps && (
-              <div
-                {...dragHandleProps}
-                className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded transition-colors touch-manipulation"
-                title="Drag to reorder"
-              >
-                <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-              </div>
-            )}
+            {/* Drag Handle - disabled in grid view (drag works best in list view) */}
             <label className="flex items-center cursor-pointer group touch-manipulation">
               <input
                 type="checkbox"

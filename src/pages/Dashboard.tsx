@@ -697,6 +697,12 @@ export const Dashboard: React.FC = () => {
   // Handle drag and drop reordering
   const handleDragDropEnd = async (result: DropResult) => {
     console.log('🎯 DROP EVENT:', result)
+    console.log('🔍 Current filteredLinks count:', filteredLinks.length)
+    console.log('🔍 Grouped by category:', Object.keys(filteredLinks.reduce((acc, link) => {
+      const cat = link.category || 'Uncategorized'
+      acc[cat] = (acc[cat] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)))
     
     // Set reordering flag to prevent useEffect from interfering
     isReorderingRef.current = true
@@ -717,7 +723,8 @@ export const Dashboard: React.FC = () => {
       sourceIndex, 
       destinationIndex, 
       sourceCategory: sourceDroppableId, 
-      destCategory: destDroppableId 
+      destCategory: destDroppableId,
+      draggableId: result.draggableId
     })
 
     // Same position
@@ -1379,17 +1386,13 @@ export const Dashboard: React.FC = () => {
                             </div>
                           </motion.div>
 
-                          {/* Links for this category - Droppable - always vertical for wrapped layouts */}
+                          {/* Links for this category - Droppable - simple vertical list */}
                           <Droppable droppableId={category} direction="vertical">
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
-                                className={`${
-                                  viewMode === 'grid'
-                                    ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-4'
-                                    : 'flex flex-col gap-2 sm:gap-4'
-                                } ${snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2 border-2 border-blue-300' : ''}`}
+                                className={`flex flex-col gap-4 ${snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2 border-2 border-blue-300' : ''}`}
                                 style={{
                                   minHeight: categoryLinks.length === 0 ? '100px' : 'auto',
                                 }}
