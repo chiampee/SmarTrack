@@ -113,10 +113,18 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       target.closest('textarea') ||
       target.closest('select') ||
       target.closest('[data-drag-handle]') ||
+      target.closest('[data-expand-toggle]') ||
       target.tagName === 'A'
     ) {
       return
     }
+    // Primary action: open the link
+    window.open(link.url, '_blank', 'noopener,noreferrer')
+    handleAction('click') // Track click
+  }
+
+  const toggleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation()
     if (!isEditing) {
       setIsExpanded(!isExpanded)
     }
@@ -208,9 +216,14 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             <Clock className="w-3 h-3" />{formatDate(link.createdAt)}
           </div>
 
-          <div className="flex-shrink-0">
-            {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-          </div>
+          <button 
+            data-expand-toggle
+            onClick={toggleExpand}
+            className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors"
+            title={isExpanded ? "Collapse" : "Expand details"}
+          >
+            {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+          </button>
         </div>
 
         {/* Expanded Content */}
@@ -336,7 +349,14 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               <div className={`transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                 <input type="checkbox" checked={isSelected} onChange={onSelect} className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer" onClick={(e) => e.stopPropagation()} />
               </div>
-              {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+              <button 
+                data-expand-toggle
+                onClick={toggleExpand}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title={isExpanded ? "Collapse" : "Expand details"}
+              >
+                {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+              </button>
             </div>
           </div>
 
@@ -363,7 +383,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   {link.isFavorite && <Star className="w-3.5 h-3.5 text-amber-400 fill-current" />}
                   {link.isArchived && <Archive className="w-3.5 h-3.5 text-gray-400" />}
                 </div>
-                <div className="text-xs text-blue-500 font-medium">Click to expand</div>
+                <div className="text-xs text-blue-500 font-medium">Click to open →</div>
               </div>
             </>
           )}
