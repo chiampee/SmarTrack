@@ -1483,10 +1483,9 @@ class SmarTrackPopup {
       await this.saveLastCategory(linkData.category);
       await this.saveLink(linkData, token);
       
-      // Success
-      this.showNotification('Saved', 'Link added to SmarTrack');
+      // Success - show toast only (no duplicate Chrome notification)
       document.body.classList.add('toast-only');
-      this.showToast('Link added to SmarTrack', 'success');
+      this.showToast('✓ Link saved to SmarTrack', 'success');
       
       setTimeout(() => {
         window.close();
@@ -1547,9 +1546,8 @@ class SmarTrackPopup {
     }
     
     if (isDuplicate) {
-      this.showNotification('Duplicate', 'Link already exists in SmarTrack');
       document.body.classList.add('toast-only');
-      this.showToast('Link already exists!', 'error');
+      this.showToast('⚠️ Link already saved', 'error');
       setTimeout(() => window.close(), CONSTANTS.AUTO_CLOSE_DELAY);
     } else {
       this.showStatus(`❌ ${userMessage}`, 'error');
