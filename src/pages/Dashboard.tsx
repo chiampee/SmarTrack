@@ -419,10 +419,18 @@ export const Dashboard: React.FC = () => {
       }
       case 'delete':
         try {
+          const linkToDelete = links.find(l => l.id === linkId)
           await makeRequest(`/api/links/${linkId}`, {
             method: 'DELETE',
           })
           setLinks(links.filter(l => l.id !== linkId))
+          
+          // If deleted link was in a collection, refresh collections to update counts
+          if (linkToDelete?.collectionId) {
+            const cols = await makeRequest<Collection[]>('/api/collections')
+            setCollections(cols || [])
+          }
+          
           toast.success('Link deleted')
         } catch (error) {
           logger.error('Failed to delete link', { component: 'Dashboard', action: 'deleteLink', metadata: { linkId } }, error as Error)
@@ -493,6 +501,12 @@ export const Dashboard: React.FC = () => {
       setLinks(links.map(l =>
         l.id === linkId ? { ...l, ...response, updatedAt: new Date(response.updatedAt) } : l
       ))
+
+      // ✅ If collectionId was updated, refetch collections to update counts in sidebar
+      if (updates.collectionId !== undefined) {
+        const cols = await makeRequest<Collection[]>('/api/collections')
+        setCollections(cols || [])
+      }
 
       // Close the edit modal
       setEditingLink(null)
@@ -788,6 +802,10 @@ export const Dashboard: React.FC = () => {
       // Refresh links to get updated data - useEffect will handle filteredLinks
       const refreshedLinks = await getLinks()
       setLinks(refreshedLinks)
+      
+      // Refresh collections to update counts in sidebar
+      const cols = await makeRequest<Collection[]>('/api/collections')
+      setCollections(cols || [])
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error('Failed to add link to collection:', errorMessage, error)
@@ -809,11 +827,19 @@ export const Dashboard: React.FC = () => {
           contentType: linkData.contentType,
           isFavorite: linkData.isFavorite,
           isArchived: linkData.isArchived,
+          ...(linkData.collectionId && { collectionId: linkData.collectionId }),
         }),
       })
       // Refresh links from backend - useEffect will handle filteredLinks based on active view
       const refreshedLinks = await getLinks()
       setLinks(refreshedLinks)
+      
+      // If link was added to a collection, refresh collections to update counts
+      if (linkData.collectionId) {
+        const cols = await makeRequest<Collection[]>('/api/collections')
+        setCollections(cols || [])
+      }
+      
       toast.success('Link added successfully!')
       setShowAddModal(false) // Close modal on success
     } catch (error) {
@@ -1219,6 +1245,9 @@ export const Dashboard: React.FC = () => {
                             try {
                               setLoading(true)
                               const linkIds = Array.from(selectedLinks)
+                              const deletedLinks = links.filter(l => selectedLinks.has(l.id))
+                              const hadCollectionLinks = deletedLinks.some(l => l.collectionId)
+                              
                               await Promise.all(
                                 linkIds.map(linkId => 
                                   makeRequest(`/api/links/${linkId}`, {
@@ -1228,6 +1257,13 @@ export const Dashboard: React.FC = () => {
                               )
                               setLinks(links.filter(l => !selectedLinks.has(l.id)))
                               clearSelection()
+                              
+                              // If any deleted links were in collections, refresh collection counts
+                              if (hadCollectionLinks) {
+                                const cols = await makeRequest<Collection[]>('/api/collections')
+                                setCollections(cols || [])
+                              }
+                              
                               toast.success(`${linkIds.length} link(s) deleted successfully`)
                             } catch (error) {
                               const errorMessage = error instanceof Error ? error.message : String(error)
