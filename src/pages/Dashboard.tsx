@@ -14,7 +14,6 @@ import { useBackendApi } from '../hooks/useBackendApi'
 import { useBulkOperations } from '../hooks/useBulkOperations'
 import { useToast } from '../components/Toast'
 import { useCategories } from '../context/CategoriesContext'
-import { useDragDrop } from '../context/DragDropContext'
 import { Link, Collection, Category } from '../types/Link'
 import { logger } from '../utils/logger'
 import { cacheManager } from '../utils/cacheManager'
@@ -50,7 +49,6 @@ export const Dashboard: React.FC = () => {
   const [currentCategoryName, setCurrentCategoryName] = useState<string | null>(null)
   const [searchParams] = useSearchParams()
   const { isMobile, prefersReducedMotion, animationConfig } = useMobileOptimizations()
-  const { setDropHandler } = useDragDrop()
 
   // Check if we should redirect to analytics after login
   useEffect(() => {
@@ -962,37 +960,6 @@ export const Dashboard: React.FC = () => {
     toast.success('Link reordered!')
   }
 
-  // Handle drop on collection (drag from dashboard to sidebar)
-  const handleDropOnCollection = useCallback(async (collectionId: string, linkId: string) => {
-    try {
-      await makeRequest(`/api/links/${linkId}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          collectionId: collectionId,
-        }),
-      })
-
-      // Optimistically update local state
-      setLinks(prevLinks => prevLinks.map(l => 
-        l.id === linkId ? { ...l, collectionId } : l
-      ))
-      
-      toast.success('Link added to project!')
-      
-      // Refresh collections to update counts in sidebar
-      refetchCollections()
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error('Failed to add link to collection:', errorMessage, error)
-      toast.error('Failed to add link to project. Please try again.')
-    }
-  }, [makeRequest, toast, refetchCollections])
-
-  // ✅ Register drag-drop handler with context for Sidebar to use
-  useEffect(() => {
-    setDropHandler(handleDropOnCollection)
-    return () => setDropHandler(null)
-  }, [handleDropOnCollection, setDropHandler])
 
   // Handle add link
   const handleAddLink = async (linkData: Omit<Link, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'clickCount'>) => {

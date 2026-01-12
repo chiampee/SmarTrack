@@ -10,7 +10,6 @@ import {
   Copy,
   Folder,
   GripVertical,
-  FolderPlus,
   Clock,
   Globe,
   StickyNote,
@@ -29,8 +28,6 @@ interface LinkCardProps {
   isSelected: boolean
   onSelect: () => void
   onAction: (linkId: string, action: string, data?: any) => void
-  onDragStart?: (e: React.DragEvent) => void
-  onDragEnd?: (e: React.DragEvent) => void
   collections?: Collection[]
   onCardClick?: () => void
   dragHandleProps?: any
@@ -42,13 +39,10 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   isSelected, 
   onSelect, 
   onAction,
-  onDragStart: _onDragStart,
-  onDragEnd: _onDragEnd,
   collections = [],
   onCardClick,
   dragHandleProps
 }) => {
-  const [isDraggingToProject, setIsDraggingToProject] = useState(false)
   const [copied, setCopied] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -110,30 +104,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     setEditTags(currentTags.join(', '))
   }
 
-  // Native HTML5 drag handlers for dragging to sidebar projects
-  const handleProjectDragStart = (e: React.DragEvent) => {
-    e.stopPropagation()
-    e.nativeEvent.stopImmediatePropagation()
-    
-    e.dataTransfer.setData('text/plain', link.id)
-    e.dataTransfer.setData('application/x-link-id', link.id)
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.dropEffect = 'move'
-    
-    const dragImage = document.createElement('div')
-    dragImage.textContent = `📁 ${link.title?.substring(0, 30) || 'Link'}...`
-    dragImage.style.cssText = 'position: absolute; top: -1000px; padding: 8px 16px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: white; border-radius: 8px; font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.3);'
-    document.body.appendChild(dragImage)
-    e.dataTransfer.setDragImage(dragImage, 0, 0)
-    setTimeout(() => document.body.removeChild(dragImage), 0)
-    
-    setIsDraggingToProject(true)
-  }
-
-  const handleProjectDragEnd = (_e: React.DragEvent) => {
-    setIsDraggingToProject(false)
-  }
-
   const handleCardClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement
     if (
@@ -191,7 +161,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       <div 
         className={`group bg-white rounded-xl border transition-all duration-200 cursor-pointer relative ${
           isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200 hover:shadow-md hover:border-blue-200'
-        } ${isDraggingToProject ? 'ring-2 ring-purple-500 opacity-70 scale-[0.98]' : ''}`}
+        }`}
         role="article"
       >
         {/* Main Row */}
@@ -250,97 +220,49 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               {isEditing ? (
                 /* ===== EDIT MODE ===== */
                 <>
-                  {/* Title */}
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Title</label>
-                    <input
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      onClick={(e) => e.stopPropagation()}
-                    />
+                    <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onClick={(e) => e.stopPropagation()} />
                   </div>
 
-                  {/* Notes */}
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Notes</label>
-                    <textarea
-                      value={editDescription}
-                      onChange={(e) => setEditDescription(e.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                      placeholder="Add notes..."
-                      onClick={(e) => e.stopPropagation()}
-                    />
+                    <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none" placeholder="Add notes..." onClick={(e) => e.stopPropagation()} />
                   </div>
 
-                  {/* Category & Project Row */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium text-gray-600 mb-1 block">Category</label>
-                      <input
-                        type="text"
-                        value={editCategory}
-                        onChange={(e) => setEditCategory(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="e.g. tools, research"
-                        onClick={(e) => e.stopPropagation()}
-                      />
+                      <input type="text" value={editCategory} onChange={(e) => setEditCategory(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. tools, research" onClick={(e) => e.stopPropagation()} />
                     </div>
                     <div>
                       <label className="text-xs font-medium text-gray-600 mb-1 block">Project</label>
-                      <select
-                        value={editCollectionId}
-                        onChange={(e) => setEditCollectionId(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <select value={editCollectionId} onChange={(e) => setEditCollectionId(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white" onClick={(e) => e.stopPropagation()}>
                         <option value="">None</option>
-                        {collections.map(c => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
+                        {collections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
                     </div>
                   </div>
 
-                  {/* Tags */}
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Tags</label>
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {currentTags.map((tag, i) => (
                         <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full flex items-center gap-1">
                           {tag}
-                          <button onClick={(e) => { e.stopPropagation(); removeTag(tag) }} className="hover:text-red-500">
-                            <X className="w-3 h-3" />
-                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); removeTag(tag) }} className="hover:text-red-500"><X className="w-3 h-3" /></button>
                         </span>
                       ))}
                     </div>
                     <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newTag}
-                        onChange={(e) => setNewTag(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }}
-                        className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Add tag..."
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <button onClick={(e) => { e.stopPropagation(); addTag() }} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg">
-                        <Plus className="w-4 h-4" />
-                      </button>
+                      <input type="text" value={newTag} onChange={(e) => setNewTag(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }} className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Add tag..." onClick={(e) => e.stopPropagation()} />
+                      <button onClick={(e) => { e.stopPropagation(); addTag() }} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg"><Plus className="w-4 h-4" /></button>
                     </div>
                   </div>
 
-                  {/* Save/Cancel */}
                   <div className="flex items-center gap-2 pt-2">
-                    <button onClick={(e) => { e.stopPropagation(); saveEdits() }} className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg">
-                      <Save className="w-4 h-4" /> Save
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); cancelEditing() }} className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg">
-                      <X className="w-4 h-4" /> Cancel
-                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); saveEdits() }} className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg"><Save className="w-4 h-4" /> Save</button>
+                    <button onClick={(e) => { e.stopPropagation(); cancelEditing() }} className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg"><X className="w-4 h-4" /> Cancel</button>
                   </div>
                 </>
               ) : (
@@ -348,65 +270,36 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 <>
                   {link.description && (
                     <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
-                      <div className="flex items-center gap-2 text-amber-700 text-xs font-medium mb-1">
-                        <StickyNote className="w-3.5 h-3.5" /> Notes
-                      </div>
+                      <div className="flex items-center gap-2 text-amber-700 text-xs font-medium mb-1"><StickyNote className="w-3.5 h-3.5" /> Notes</div>
                       <p className="text-sm text-gray-700 leading-relaxed">{link.description}</p>
                     </div>
                   )}
 
                   <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                     <p className="text-xs text-gray-600 truncate flex-1">{link.url}</p>
-                    <button onClick={(e) => { e.stopPropagation(); copyToClipboard() }} className={`p-1.5 rounded transition-colors ${copied ? 'bg-green-100 text-green-600' : 'hover:bg-gray-200 text-gray-500'}`}>
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); copyToClipboard() }} className={`p-1.5 rounded transition-colors ${copied ? 'bg-green-100 text-green-600' : 'hover:bg-gray-200 text-gray-500'}`}><Copy className="w-3.5 h-3.5" /></button>
                     {copied && <span className="text-xs text-green-600">Copied!</span>}
                   </div>
 
                   <div className="flex flex-wrap gap-2 text-xs">
-                    <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-gray-600">
-                      <Clock className="w-3 h-3" />{formatFullDate(link.createdAt)}
-                    </div>
-                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-full text-blue-600">
-                      <MousePointer className="w-3 h-3" />{link.clickCount || 0} clicks
-                    </div>
+                    <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-gray-600"><Clock className="w-3 h-3" />{formatFullDate(link.createdAt)}</div>
+                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-full text-blue-600"><MousePointer className="w-3 h-3" />{link.clickCount || 0} clicks</div>
                   </div>
 
                   {link.tags && link.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
-                      {link.tags.map((tag, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full flex items-center gap-1">
-                          <Tag className="w-3 h-3" />{tag}
-                        </span>
-                      ))}
+                      {link.tags.map((tag, i) => <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full flex items-center gap-1"><Tag className="w-3 h-3" />{tag}</span>)}
                     </div>
                   )}
 
                   <div className="flex items-center gap-2 pt-2 flex-wrap">
-                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg" onClick={(e) => e.stopPropagation()}>
-                      <ExternalLink className="w-3.5 h-3.5" /> Open
-                    </a>
-                    <button onClick={(e) => { e.stopPropagation(); handleAction('toggleFavorite') }} className={`p-1.5 rounded-lg transition-colors ${link.isFavorite ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                      <Star className={`w-4 h-4 ${link.isFavorite ? 'fill-current' : ''}`} />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleAction('toggleArchive') }} className={`p-1.5 rounded-lg transition-colors ${link.isArchived ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                      <Archive className="w-4 h-4" />
-                    </button>
-                    {collections.length > 0 && (
-                      <div draggable onDragStart={handleProjectDragStart} onDragEnd={handleProjectDragEnd} onMouseDown={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} data-drag-handle data-rbd-drag-handle-context-id="disabled" className={`p-1.5 bg-gray-100 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-lg cursor-grab transition-colors ${isDraggingToProject ? 'bg-purple-100 text-purple-600' : ''}`} title="Drag to project">
-                        <FolderPlus className="w-4 h-4" />
-                      </div>
-                    )}
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg" onClick={(e) => e.stopPropagation()}><ExternalLink className="w-3.5 h-3.5" /> Open</a>
+                    <button onClick={(e) => { e.stopPropagation(); handleAction('toggleFavorite') }} className={`p-1.5 rounded-lg transition-colors ${link.isFavorite ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Star className={`w-4 h-4 ${link.isFavorite ? 'fill-current' : ''}`} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); handleAction('toggleArchive') }} className={`p-1.5 rounded-lg transition-colors ${link.isArchived ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Archive className="w-4 h-4" /></button>
                     <div className="flex-1" />
-                    <button onClick={(e) => { e.stopPropagation(); startEditing() }} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg">
-                      <Edit className="w-3.5 h-3.5" /> Edit
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); onCardClick?.() }} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg" title="Full edit">
-                      <Edit className="w-3.5 h-3.5" /> Full
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleAction('delete') }} className="p-1.5 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); startEditing() }} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg"><Edit className="w-3.5 h-3.5" /> Edit</button>
+                    <button onClick={(e) => { e.stopPropagation(); onCardClick?.() }} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg" title="Full edit"><Edit className="w-3.5 h-3.5" /> Full</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleAction('delete') }} className="p-1.5 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </>
               )}
@@ -422,7 +315,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     <div 
       className={`group bg-white rounded-xl border transition-all duration-200 cursor-pointer relative overflow-hidden ${
         isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200 hover:shadow-lg hover:border-blue-200'
-      } ${isDraggingToProject ? 'ring-2 ring-purple-500 opacity-70 scale-[0.98]' : ''} ${!isExpanded ? 'hover:-translate-y-0.5' : ''}`}
+      } ${!isExpanded ? 'hover:-translate-y-0.5' : ''}`}
       role="article"
     >
       <div onClick={handleCardClick}>
@@ -562,9 +455,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   <a href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg" onClick={(e) => e.stopPropagation()}><ExternalLink className="w-3.5 h-3.5" /> Open</a>
                   <button onClick={(e) => { e.stopPropagation(); handleAction('toggleFavorite') }} className={`p-1.5 rounded-lg transition-colors ${link.isFavorite ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Star className={`w-4 h-4 ${link.isFavorite ? 'fill-current' : ''}`} /></button>
                   <button onClick={(e) => { e.stopPropagation(); handleAction('toggleArchive') }} className={`p-1.5 rounded-lg transition-colors ${link.isArchived ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Archive className="w-4 h-4" /></button>
-                  {collections.length > 0 && (
-                    <div draggable onDragStart={handleProjectDragStart} onDragEnd={handleProjectDragEnd} onMouseDown={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} data-drag-handle data-rbd-drag-handle-context-id="disabled" className={`p-1.5 bg-gray-100 text-gray-600 hover:bg-purple-50 hover:text-purple-600 rounded-lg cursor-grab transition-colors ${isDraggingToProject ? 'bg-purple-100 text-purple-600' : ''}`}><FolderPlus className="w-4 h-4" /></div>
-                  )}
                   <div className="flex-1" />
                   <button onClick={(e) => { e.stopPropagation(); startEditing() }} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg"><Edit className="w-3.5 h-3.5" /> Edit</button>
                   <button onClick={(e) => { e.stopPropagation(); onCardClick?.() }} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg" title="Open full edit modal"><Edit className="w-3.5 h-3.5" /> Full</button>

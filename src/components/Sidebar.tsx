@@ -4,7 +4,6 @@ import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, S
 import { useAuth0 } from '@auth0/auth0-react'
 import { useBackendApi } from '../hooks/useBackendApi'
 import { isAppError, getUserFriendlyMessage } from '../utils/errorHandler'
-import { useDragDrop } from '../context/DragDropContext'
 
 interface Category {
   id: string
@@ -22,53 +21,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
   const location = useLocation()
   const { user, isAuthenticated, logout } = useAuth0()
   const { makeRequest } = useBackendApi()
-  const { onDropOnCollection } = useDragDrop()
   const [collections, setCollections] = useState<Array<{ id: string; name: string; linkCount?: number }>>([])
-  const [dragOverCollectionId, setDragOverCollectionId] = useState<string | null>(null)
-
-  // ✅ Drag and drop handlers for collections
-  const handleDragOver = (e: React.DragEvent, collectionId: string) => {
-    e.preventDefault()
-    e.stopPropagation()
-    e.dataTransfer.dropEffect = 'move'
-    if (dragOverCollectionId !== collectionId) {
-      console.log('📁 [Sidebar] Drag over collection:', collectionId)
-    }
-    setDragOverCollectionId(collectionId)
-  }
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    // Only reset if we're leaving the collection element, not just moving between child elements
-    const relatedTarget = e.relatedTarget as HTMLElement
-    if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
-      console.log('📁 [Sidebar] Drag leave')
-      setDragOverCollectionId(null)
-    }
-  }
-
-  const handleDrop = (e: React.DragEvent, collectionId: string) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragOverCollectionId(null)
-    
-    // Try multiple data formats
-    let linkId = e.dataTransfer.getData('application/x-link-id')
-    if (!linkId) {
-      linkId = e.dataTransfer.getData('text/plain')
-    }
-    
-    console.log('📁 [Sidebar] Drop event - linkId:', linkId, 'collectionId:', collectionId, 'hasHandler:', !!onDropOnCollection)
-    console.log('📁 [Sidebar] Available types:', e.dataTransfer.types)
-    
-    if (linkId && onDropOnCollection) {
-      console.log('📁 [Sidebar] Calling onDropOnCollection')
-      onDropOnCollection(collectionId, linkId)
-    } else {
-      console.warn('📁 [Sidebar] Drop failed - missing linkId or handler', { linkId, hasHandler: !!onDropOnCollection })
-    }
-  }
 
   useEffect(() => {
     let isMounted = true
@@ -297,31 +250,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                     {collections.map((c) => {
                       const to = `/?collection=${encodeURIComponent(c.id)}`
                       const active = isActivePath(to)
-                      const isDragOver = dragOverCollectionId === c.id
                       return (
                         <div 
                           key={c.id} 
                           className={`group flex items-center gap-2 px-3 py-3 sm:py-2 rounded-lg text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 ${
-                            isDragOver 
-                              ? 'bg-gradient-to-r from-blue-100 to-purple-100 border-2 border-dashed border-blue-500 text-blue-700 shadow-lg scale-[1.02]' 
-                              : active 
-                                ? 'bg-blue-50 text-blue-700 border border-blue-200' 
-                                : 'text-gray-700 hover:bg-gray-100'
+                            active 
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                              : 'text-gray-700 hover:bg-gray-100'
                           }`}
-                          onDragOver={(e) => handleDragOver(e, c.id)}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, c.id)}
                         >
-                          {/* ✅ Drop indicator */}
-                          {isDragOver && (
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-full animate-pulse" />
-                          )}
                           <Link to={to} onClick={onClose} className="flex items-center gap-3 flex-1 min-w-0 touch-manipulation">
-                            <Library className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${isDragOver ? 'text-blue-600 animate-bounce' : ''}`} />
+                            <Library className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
                             <span className="flex-1 text-left truncate text-base sm:text-sm font-medium">
-                              {isDragOver ? `Drop to add to "${c.name}"` : c.name}
+                              {c.name}
                             </span>
-                            {typeof c.linkCount === 'number' && !isDragOver && (
+                            {typeof c.linkCount === 'number' && (
                               <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
                                 active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
                               }`}>
@@ -329,24 +272,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                               </span>
                             )}
                           </Link>
-                          {!isDragOver && (
-                            <>
-                              <button
-                                aria-label="Rename"
-                                className="opacity-0 group-hover:opacity-100 sm:opacity-0 p-2 sm:p-1 rounded hover:bg-gray-200 active:bg-gray-300 text-gray-600 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center touch-manipulation"
-                                onClick={() => renameCollection(c.id, c.name)}
-                              >
-                                <Edit2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                              </button>
-                              <button
-                                aria-label="Delete"
-                                className="opacity-0 group-hover:opacity-100 sm:opacity-0 p-2 sm:p-1 rounded hover:bg-red-100 active:bg-red-200 text-red-600 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center touch-manipulation"
-                                onClick={() => deleteCollection(c.id, c.name)}
-                              >
-                                <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                              </button>
-                            </>
-                          )}
+                          <button
+                            aria-label="Rename"
+                            className="opacity-0 group-hover:opacity-100 sm:opacity-0 p-2 sm:p-1 rounded hover:bg-gray-200 active:bg-gray-300 text-gray-600 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center touch-manipulation"
+                            onClick={() => renameCollection(c.id, c.name)}
+                          >
+                            <Edit2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                          </button>
+                          <button
+                            aria-label="Delete"
+                            className="opacity-0 group-hover:opacity-100 sm:opacity-0 p-2 sm:p-1 rounded hover:bg-red-100 active:bg-red-200 text-red-600 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center touch-manipulation"
+                            onClick={() => deleteCollection(c.id, c.name)}
+                          >
+                            <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                          </button>
                         </div>
                       )
                     })}
