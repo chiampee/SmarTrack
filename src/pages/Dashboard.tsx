@@ -281,6 +281,7 @@ export const Dashboard: React.FC = () => {
   const refetchCollectionsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isRefetchingCollectionsRef = useRef(false)
   const isReorderingRef = useRef(false) // Prevent useEffect from overriding manual reorder
+  const isDraggingRef = useRef(false) // Prevent array updates during active drag
   
   const refetchCollections = useCallback(() => {
     // Clear any pending refetch
@@ -336,9 +337,12 @@ export const Dashboard: React.FC = () => {
 
   // Filter links based on search and filters
   useEffect(() => {
-    // Skip if we're manually reordering
-    if (isReorderingRef.current) {
-      console.log('⏭️ Skipping useEffect - manual reorder in progress')
+    // Skip if we're manually reordering OR actively dragging
+    if (isReorderingRef.current || isDraggingRef.current) {
+      console.log('⏭️ Skipping useEffect -', {
+        isDragging: isDraggingRef.current,
+        isReordering: isReorderingRef.current
+      })
       return
     }
     
@@ -696,8 +700,17 @@ export const Dashboard: React.FC = () => {
     // Cleanup if needed
   }
 
+  // Handle drag start - lock the arrays
+  const handleDragStart = () => {
+    console.log('🎬 DRAG START: Locking arrays to prevent recalculation')
+    isDraggingRef.current = true
+  }
+
   // Handle drag and drop reordering
   const handleDragDropEnd = async (result: DropResult) => {
+    // Reset dragging flag immediately
+    isDraggingRef.current = false
+    
     console.log('🎯 DROP EVENT:', result)
     console.log('🔍 Current filteredLinks count:', filteredLinks.length)
     console.log('🔍 Grouped by category:', Object.keys(filteredLinks.reduce((acc, link) => {
@@ -1364,7 +1377,7 @@ export const Dashboard: React.FC = () => {
                 )}
                 
                 {/* Group by Category */}
-                <DragDropContext onDragEnd={handleDragDropEnd}>
+                <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragDropEnd}>
                 {(() => {
                   // Group links by category
                   const groupedLinks = filteredLinks.reduce((acc, link) => {
