@@ -5,6 +5,7 @@ import { LoginPage } from './pages/LoginPage'
 import { FAQPage } from './pages/FAQPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { TermsPage } from './pages/TermsPage'
+import { LegalCenterPage } from './pages/LegalCenterPage'
 import { DocsPage } from './pages/DocsPage'
 import { Dashboard } from './pages/Dashboard'
 import { Settings } from './pages/Settings'
@@ -13,9 +14,10 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { Layout } from './components/Layout'
 import { LoadingSpinner } from './components/LoadingSpinner'
 import { CategoriesProvider } from './context/CategoriesContext'
+import { Navigate } from 'react-router-dom'
 
 // Public routes accessible without authentication
-const publicRoutes = ['/faq', '/privacy', '/terms', '/docs']
+const publicRoutes = ['/faq', '/privacy', '/terms', '/legal', '/docs']
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth0()
@@ -33,8 +35,9 @@ function App() {
     return (
       <Routes>
         <Route path="/faq" element={<FAQPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/legal" element={<LegalCenterPage />} />
+        <Route path="/privacy" element={<Navigate to="/legal" replace />} />
+        <Route path="/terms" element={<Navigate to="/legal" replace />} />
         <Route path="/docs" element={<DocsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

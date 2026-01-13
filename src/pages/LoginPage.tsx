@@ -453,8 +453,7 @@ export const LoginPage: React.FC = () => {
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-8 text-sm text-slate-500">
               <Link to="/docs" className="hover:text-slate-900 transition-colors">Docs</Link>
               <Link to="/faq" className="hover:text-slate-900 transition-colors">FAQ</Link>
-              <Link to="/privacy" className="hover:text-slate-900 transition-colors">Privacy</Link>
-              <Link to="/terms" className="hover:text-slate-900 transition-colors">Terms</Link>
+              <Link to="/legal" className="hover:text-slate-900 transition-colors">Legal</Link>
               <a href="mailto:support@smartrack.app" className="hover:text-slate-900 transition-colors">Contact</a>
             </div>
             {/* Copyright */}
