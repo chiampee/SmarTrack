@@ -12,7 +12,8 @@ import {
   ExternalLink,
   ArrowLeft,
   Lock,
-  Database
+  Database,
+  Settings as SettingsIcon
 } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { motion } from 'framer-motion'
@@ -64,7 +65,7 @@ export const Settings: React.FC = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-white py-4 sm:py-6 lg:py-8 px-4 sm:px-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 py-4 sm:py-6 lg:py-8 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
@@ -76,14 +77,19 @@ export const Settings: React.FC = () => {
             <span className="text-sm font-medium">Back to Dashboard</span>
           </button>
           
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1.5">Settings</h1>
-            <p className="text-sm sm:text-base text-slate-600">Manage your account settings and preferences</p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+              <SettingsIcon className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Settings</h1>
+              <p className="text-sm sm:text-base text-slate-600 mt-0.5">Manage your account settings and preferences</p>
+            </div>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-6 overflow-hidden">
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm mb-6 overflow-hidden">
           <div className="flex border-b border-slate-200 overflow-x-auto">
             {tabs.map((tab) => {
               const Icon = tab.icon
@@ -93,7 +99,7 @@ export const Settings: React.FC = () => {
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`flex items-center gap-2 px-4 sm:px-6 py-3.5 sm:py-4 text-sm font-medium transition-all whitespace-nowrap relative ${
                     activeTab === tab.id
-                      ? 'text-blue-600'
+                      ? 'text-blue-600 bg-blue-50'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
@@ -118,7 +124,7 @@ export const Settings: React.FC = () => {
               >
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Profile Information</h3>
-                  <div className="space-y-4">
+                  <div className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
                         Display Name
@@ -162,12 +168,15 @@ export const Settings: React.FC = () => {
                 {/* Account Security */}
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Account Security</h3>
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 sm:p-5">
+                  <div className="bg-white border border-slate-200 rounded-lg p-5">
                     <div className="flex items-start gap-3">
-                      <Lock className="w-5 h-5 text-slate-600 flex-shrink-0 mt-0.5" />
+                      <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Lock className="w-5 h-5 text-slate-600" />
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-slate-700 mb-3">
-                          Your account is secured through Auth0 authentication. Password and security settings are managed in your Auth0 account.
+                        <h4 className="font-semibold text-slate-900 mb-1">Auth0 Authentication</h4>
+                        <p className="text-sm text-slate-600 mb-3">
+                          Your account is secured through Auth0. Password and security settings are managed in your Auth0 account.
                         </p>
                         <a
                           href="https://manage.auth0.com"
@@ -186,10 +195,10 @@ export const Settings: React.FC = () => {
                 {/* Account Actions */}
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Account Actions</h3>
-                  <div className="space-y-3">
+                  <div className="bg-white border border-slate-200 rounded-lg p-5">
                     <button
                       onClick={() => logout()}
-                      className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 font-medium"
+                      className="px-5 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-2 font-medium"
                     >
                       <LogOut className="w-4 h-4" />
                       Sign Out
@@ -200,9 +209,11 @@ export const Settings: React.FC = () => {
                 {/* Danger Zone */}
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Danger Zone</h3>
-                  <div className="bg-white border-2 border-red-200 rounded-lg p-4 sm:p-5">
+                  <div className="bg-white border-2 border-red-200 rounded-lg p-5">
                     <div className="flex items-start gap-3">
-                      <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-slate-900 mb-1">Permanently Delete All Links</h4>
                         <p className="text-sm text-slate-600 mb-4">
@@ -308,7 +319,7 @@ export const Settings: React.FC = () => {
 
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Export Data</h3>
-                  <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5">
+                  <div className="bg-white border border-slate-200 rounded-lg p-5">
                     <p className="text-sm text-slate-600 mb-4">
                       Download all your research links as a JSON file for backup or migration.
                     </p>
@@ -338,7 +349,7 @@ export const Settings: React.FC = () => {
                     <h3 className="text-base sm:text-lg font-semibold text-slate-900">Display Settings</h3>
                     <span className="px-2 py-0.5 text-xs font-medium text-slate-500 bg-slate-100 rounded-full">Coming Soon</span>
                   </div>
-                  <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 space-y-4 opacity-60 pointer-events-none">
+                  <div className="bg-white border border-slate-200 rounded-lg p-5 space-y-4 opacity-60 pointer-events-none">
                     <div className="flex items-center justify-between py-3 border-b border-slate-200">
                       <div>
                         <p className="font-medium text-slate-900">Dark Mode</p>
@@ -363,7 +374,7 @@ export const Settings: React.FC = () => {
 
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Default Settings</h3>
-                  <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 space-y-4">
+                  <div className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
                         Default View Mode
