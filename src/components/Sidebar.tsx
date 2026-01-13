@@ -22,6 +22,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
   const { user, isAuthenticated, logout } = useAuth0()
   const { makeRequest } = useBackendApi()
   const [collections, setCollections] = useState<Array<{ id: string; name: string; linkCount?: number }>>([])
+  const [isProjectsExpanded, setIsProjectsExpanded] = useState(true)
+  const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(true)
 
   useEffect(() => {
     let isMounted = true
@@ -235,10 +237,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               {collections.length > 0 && (
                 <div className="mt-4">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">My Projects</h4>
+                    <button
+                      onClick={() => setIsProjectsExpanded(!isProjectsExpanded)}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-700 transition-colors group"
+                    >
+                      {isProjectsExpanded ? (
+                        <ChevronDown className="w-3 h-3 group-hover:text-gray-700" />
+                      ) : (
+                        <ChevronUp className="w-3 h-3 group-hover:text-gray-700" />
+                      )}
+                      <span>My Projects</span>
+                    </button>
                     <Link to="/?createCollection=1" onClick={onClose} className="text-xs text-blue-600 hover:underline">+ New</Link>
                   </div>
-                  <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                  {isProjectsExpanded && (
+                    <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                     {collections.map((c) => {
                       const to = `/?collection=${encodeURIComponent(c.id)}`
                       const active = isActivePath(to)
@@ -281,7 +294,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                         </div>
                       )
                     })}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
               {collections.length === 0 && (
@@ -294,8 +308,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
             {/* ✅ MOBILE RESPONSIVE: Categories Section with better touch targets */}
             {categories.length > 0 && (
               <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-200">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">Categories</h3>
-                <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                <button
+                  onClick={() => setIsCategoriesExpanded(!isCategoriesExpanded)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2 hover:text-gray-700 transition-colors group w-full text-left"
+                >
+                  {isCategoriesExpanded ? (
+                    <ChevronDown className="w-3 h-3 group-hover:text-gray-700" />
+                  ) : (
+                    <ChevronUp className="w-3 h-3 group-hover:text-gray-700" />
+                  )}
+                  <span>Categories</span>
+                </button>
+                {isCategoriesExpanded && (
+                  <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                   {categories.map((category, index) => {
                     const getIcon = () => {
                       const name = category.name.toLowerCase()
@@ -355,7 +380,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       </div>
                     )
                   })}
-                </div>
+                  </div>
+                )}
               </div>
             )}
 
