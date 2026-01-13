@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List, Download, Archive, Chrome, Link as LinkIcon, Folder, Tag, TrendingUp, Clock, BookOpen, BarChart3, ArrowRight, ChevronDown } from 'lucide-react'
+import { Plus, Grid, List, Download, Archive, Chrome, Link as LinkIcon, Folder, Tag, TrendingUp, Clock, BookOpen, BarChart3, ArrowRight, ChevronDown, ArrowLeft } from 'lucide-react'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { useExtensionDetection } from '../hooks/useExtensionDetection'
 import { LinkCard } from '../components/LinkCard'
