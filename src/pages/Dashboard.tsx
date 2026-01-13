@@ -1009,8 +1009,8 @@ export const Dashboard: React.FC = () => {
             transition={{ duration: animationConfig.duration, ease: "easeOut" }}
             className="mb-8"
           >
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">Dashboard Overview</h1>
-            <p className="text-lg text-slate-600">Your knowledge library at a glance</p>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">Your Knowledge Library</h1>
+            <p className="text-lg text-slate-600">Quick overview of your saved research, collections, and activity</p>
           </motion.div>
 
           {/* Stats Cards */}
@@ -1024,30 +1024,47 @@ export const Dashboard: React.FC = () => {
             {/* Total Links */}
             <motion.div
               whileHover={{ y: -4, scale: 1.02 }}
-              className="relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl border border-blue-200/60 p-6 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group"
+              className="relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl border border-blue-200/60 p-6 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer"
+              onClick={() => {
+                setSearchQuery('')
+                handleCollectionSelect('all')
+                setFilters({ category: '', dateRange: 'all_time', tags: [], contentType: '' })
+                setActiveFilterId(null)
+              }}
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/20 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-blue-300/30 transition-colors" />
               <div className="relative">
                 <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform duration-300">
                   <LinkIcon className="w-7 h-7 text-white" />
                 </div>
-                <div className="text-4xl font-extrabold text-slate-900 mb-2">{links.length}</div>
-                <div className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Total Links</div>
+                <div className="text-4xl font-extrabold text-slate-900 mb-1">{links.filter(l => !l.isArchived).length}</div>
+                <div className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-1">Saved Links</div>
+                <div className="text-xs text-slate-500">Click to view all</div>
               </div>
             </motion.div>
 
             {/* Collections */}
             <motion.div
               whileHover={{ y: -4, scale: 1.02 }}
-              className="relative bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-2xl border border-purple-200/60 p-6 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group"
+              className="relative bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-2xl border border-purple-200/60 p-6 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer"
+              onClick={() => {
+                if (collections.length > 0) {
+                  handleCollectionSelect(collections[0].id)
+                } else {
+                  setShowCreateCollectionModal(true)
+                }
+              }}
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200/20 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-purple-300/30 transition-colors" />
               <div className="relative">
                 <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Folder className="w-7 h-7 text-white" />
                 </div>
-                <div className="text-4xl font-extrabold text-slate-900 mb-2">{collections.length}</div>
-                <div className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Collections</div>
+                <div className="text-4xl font-extrabold text-slate-900 mb-1">{collections.length}</div>
+                <div className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-1">Collections</div>
+                <div className="text-xs text-slate-500">
+                  {collections.length === 0 ? 'Create your first' : 'Organize your links'}
+                </div>
               </div>
             </motion.div>
 
@@ -1061,8 +1078,9 @@ export const Dashboard: React.FC = () => {
                 <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Tag className="w-7 h-7 text-white" />
                 </div>
-                <div className="text-4xl font-extrabold text-slate-900 mb-2">{categories.length}</div>
-                <div className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Categories</div>
+                <div className="text-4xl font-extrabold text-slate-900 mb-1">{categories.length}</div>
+                <div className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-1">Categories</div>
+                <div className="text-xs text-slate-500">Auto-organized topics</div>
               </div>
             </motion.div>
 
@@ -1076,14 +1094,15 @@ export const Dashboard: React.FC = () => {
                 <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform duration-300">
                   <TrendingUp className="w-7 h-7 text-white" />
                 </div>
-                <div className="text-4xl font-extrabold text-slate-900 mb-2">
+                <div className="text-4xl font-extrabold text-slate-900 mb-1">
                   {links.filter(l => {
                     const sevenDaysAgo = new Date()
                     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-                    return new Date(l.createdAt) >= sevenDaysAgo
+                    return new Date(l.createdAt) >= sevenDaysAgo && !l.isArchived
                   }).length}
                 </div>
-                <div className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Last 7 Days</div>
+                <div className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-1">This Week</div>
+                <div className="text-xs text-slate-500">New links added</div>
               </div>
             </motion.div>
           </motion.div>
@@ -1100,25 +1119,30 @@ export const Dashboard: React.FC = () => {
                 transition={{ delay: shouldAnimate ? 0.2 : 0, duration: animationConfig.duration, ease: "easeOut" }}
                 className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden"
               >
-                <div className="px-6 py-5 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200/80 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                      <Clock className="w-5 h-5 text-blue-600" />
+                <div className="px-6 py-5 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200/80">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <Clock className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-slate-900">Recent Links</h2>
+                        <p className="text-xs text-slate-500 mt-0.5">Your latest saved research</p>
+                      </div>
                     </div>
-                    <h2 className="text-xl font-bold text-slate-900">Recent Links</h2>
+                    <button
+                      onClick={() => {
+                        setSearchQuery('')
+                        handleCollectionSelect('all')
+                        setFilters({ category: '', dateRange: 'all_time', tags: [], contentType: '' })
+                        setActiveFilterId(null)
+                      }}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+                    >
+                      View All
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      setSearchQuery('')
-                      handleCollectionSelect('all')
-                      setFilters({ category: '', dateRange: 'all_time', tags: [], contentType: '' })
-                      setActiveFilterId(null)
-                    }}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
-                  >
-                    View All
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
                 </div>
                 <div className="p-6">
                   {loading && links.length === 0 ? (
@@ -1193,19 +1217,24 @@ export const Dashboard: React.FC = () => {
                   transition={{ delay: shouldAnimate ? 0.3 : 0, duration: animationConfig.duration, ease: "easeOut" }}
                   className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden"
                 >
-                  <div className="px-6 py-5 bg-gradient-to-r from-purple-50 to-white border-b border-slate-200/80 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                        <Folder className="w-5 h-5 text-purple-600" />
+                  <div className="px-6 py-5 bg-gradient-to-r from-purple-50 to-white border-b border-slate-200/80">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                          <Folder className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <h2 className="text-xl font-bold text-slate-900">Collections</h2>
+                          <p className="text-xs text-slate-500 mt-0.5">Organize links by project or topic</p>
+                        </div>
                       </div>
-                      <h2 className="text-xl font-bold text-slate-900">Collections</h2>
+                      <button
+                        onClick={() => setShowCreateCollectionModal(true)}
+                        className="text-sm text-purple-600 hover:text-purple-700 font-semibold px-3 py-1.5 rounded-lg hover:bg-purple-50 transition-colors"
+                      >
+                        + New
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setShowCreateCollectionModal(true)}
-                      className="text-sm text-purple-600 hover:text-purple-700 font-semibold px-3 py-1.5 rounded-lg hover:bg-purple-50 transition-colors"
-                    >
-                      + New
-                    </button>
                   </div>
                   <div className="p-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1245,11 +1274,16 @@ export const Dashboard: React.FC = () => {
                 transition={{ delay: shouldAnimate ? 0.2 : 0, duration: animationConfig.duration, ease: "easeOut" }}
                 className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden"
               >
-                <div className="px-6 py-5 bg-gradient-to-r from-emerald-50 to-white border-b border-slate-200/80 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-                    <BarChart3 className="w-5 h-5 text-emerald-600" />
+                <div className="px-6 py-5 bg-gradient-to-r from-emerald-50 to-white border-b border-slate-200/80">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                      <BarChart3 className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-900">Usage & Limits</h2>
+                      <p className="text-xs text-slate-500 mt-0.5">Track your storage and link usage</p>
+                    </div>
                   </div>
-                  <h2 className="text-xl font-bold text-slate-900">Usage & Limits</h2>
                 </div>
                 <div className="p-6">
                   <UsageStats />
@@ -1266,7 +1300,7 @@ export const Dashboard: React.FC = () => {
               >
                 <div className="px-6 py-5 border-b border-slate-200/80">
                   <h2 className="text-xl font-bold text-slate-900">Quick Actions</h2>
-                  <p className="text-sm text-slate-600 mt-1">Common tasks at your fingertips</p>
+                  <p className="text-xs text-slate-500 mt-1">Get started with common tasks</p>
                 </div>
                 <div className="p-6 space-y-3">
                   <motion.button
