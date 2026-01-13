@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { motion } from 'framer-motion'
@@ -110,7 +110,6 @@ const termsSections = [
 export const LegalCenterPage: React.FC = () => {
   const navigate = useNavigate()
   const { loginWithRedirect } = useAuth0()
-  const [activeTab, setActiveTab] = useState<'privacy' | 'terms'>('privacy')
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -185,175 +184,152 @@ export const LegalCenterPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Tab Navigation */}
-      <section className="bg-white border-b border-slate-200 sticky top-14 sm:top-16 z-40">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex border-b border-slate-200">
-            <button
-              onClick={() => setActiveTab('privacy')}
-              className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all ${
-                activeTab === 'privacy'
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>Part I: Privacy</span>
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('terms')}
-              className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base font-semibold transition-all ${
-                activeTab === 'terms'
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>Part II: Terms</span>
-              </div>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Content */}
+      {/* Content - All sections in one scrollable page */}
       <section className="py-8 sm:py-12 md:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Privacy Tab Content */}
-          {activeTab === 'privacy' && (
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={staggerContainer}
-              className="space-y-6 sm:space-y-8 md:space-y-12"
-            >
-              {privacySections.map((section, index) => {
-                const Icon = section.icon
-                return (
-                  <motion.div
-                    key={index}
-                    variants={fadeInUp}
-                    transition={{ duration: 0.5, delay: index * 0.03 }}
-                    className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-5 sm:p-6 md:p-8"
-                  >
-                    <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-50 rounded-lg sm:rounded-xl flex items-center justify-center text-blue-600">
-                        <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </div>
-                      <h2 className="text-lg sm:text-xl font-bold text-slate-900">{section.title}</h2>
-                    </div>
-                    <div className="prose prose-slate max-w-none">
-                      {section.content.split('\n\n').map((paragraph, pIndex) => (
-                        <p key={pIndex} className="text-sm sm:text-base text-slate-600 leading-relaxed whitespace-pre-line mb-3 sm:mb-4 last:mb-0">
-                          {paragraph.split('**').map((part, i) => 
-                            i % 2 === 1 ? <strong key={i} className="text-slate-900 font-semibold">{part}</strong> : part
-                          )}
-                        </p>
-                      ))}
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </motion.div>
-          )}
-
-          {/* Terms Tab Content */}
-          {activeTab === 'terms' && (
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={staggerContainer}
-              className="space-y-6 sm:space-y-8 md:space-y-12"
-            >
-              {termsSections.map((section, index) => {
-                const Icon = section.icon
-                return (
-                  <motion.div
-                    key={index}
-                    variants={fadeInUp}
-                    transition={{ duration: 0.5, delay: index * 0.03 }}
-                    className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-5 sm:p-6 md:p-8"
-                  >
-                    <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-50 rounded-lg sm:rounded-xl flex items-center justify-center text-purple-600">
-                        <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </div>
-                      <h2 className="text-lg sm:text-xl font-bold text-slate-900">{section.title}</h2>
-                    </div>
-                    <div className="prose prose-slate max-w-none">
-                      {section.content.split('\n\n').map((paragraph, pIndex) => (
-                        <p key={pIndex} className="text-sm sm:text-base text-slate-600 leading-relaxed whitespace-pre-line mb-3 sm:mb-4 last:mb-0">
-                          {paragraph.split('**').map((part, i) => 
-                            i % 2 === 1 ? <strong key={i} className="text-slate-900 font-semibold">{part}</strong> : part
-                          )}
-                        </p>
-                      ))}
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </motion.div>
-          )}
-
-          {/* Part III: Chrome Web Store Data Disclosure */}
           <motion.div
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeInUp}
-            className="mt-12 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200 p-5 sm:p-6 md:p-8"
+            animate="visible"
+            variants={staggerContainer}
+            className="space-y-6 sm:space-y-8 md:space-y-12"
           >
-            <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-amber-50 rounded-lg sm:rounded-xl flex items-center justify-center text-amber-600">
-                <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+            {/* Part I Header */}
+            <motion.div
+              variants={fadeInUp}
+              className="bg-blue-50 rounded-xl sm:rounded-2xl border-2 border-blue-200 p-5 sm:p-6 md:p-8"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                  <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">PART I: DATA HANDLING & PRIVACY PRACTICES</h2>
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900">Part III: Chrome Web Store Data Disclosure</h2>
-            </div>
-            <div className="space-y-3 text-sm sm:text-base text-slate-600">
-              <p><strong className="text-slate-900">Summary for Extension Reviewers:</strong></p>
-              <p><strong className="text-slate-900">Single Purpose:</strong> SmarTrack allows users to save and organize web content into a personal library.</p>
-              <p><strong className="text-slate-900">Data Usage:</strong> Metadata and text are only accessed when the user clicks "Save." Data is synchronized to a secure backend for cross-device access.</p>
-              <p><strong className="text-slate-900">Privacy Commitment:</strong> No tracking of browsing history; no use of remote code; no selling of data.</p>
-            </div>
-          </motion.div>
+            </motion.div>
 
-          {/* Part IV: Contact */}
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeInUp}
-            className="mt-8 bg-blue-50 rounded-xl sm:rounded-2xl border border-blue-100 p-5 sm:p-6 md:p-8 text-center"
-          >
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <Mail className="w-6 h-6 text-blue-600" />
-            </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Part IV: Contact</h2>
-            <p className="text-slate-600 mb-4">
-              For inquiries regarding these practices or terms, please contact:
-            </p>
-            <div className="space-y-2">
-              <div>
-                <strong className="text-slate-900">SmarTrack Legal Team</strong>
+            {/* Privacy Sections */}
+            {privacySections.map((section, index) => {
+              const Icon = section.icon
+              return (
+                <motion.div
+                  key={`privacy-${index}`}
+                  variants={fadeInUp}
+                  transition={{ duration: 0.5, delay: index * 0.03 }}
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-5 sm:p-6 md:p-8"
+                >
+                  <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-50 rounded-lg sm:rounded-xl flex items-center justify-center text-blue-600">
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </div>
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900">{section.title}</h2>
+                  </div>
+                  <div className="prose prose-slate max-w-none">
+                    {section.content.split('\n\n').map((paragraph, pIndex) => (
+                      <p key={pIndex} className="text-sm sm:text-base text-slate-600 leading-relaxed whitespace-pre-line mb-3 sm:mb-4 last:mb-0">
+                        {paragraph.split('**').map((part, i) => 
+                          i % 2 === 1 ? <strong key={i} className="text-slate-900 font-semibold">{part}</strong> : part
+                        )}
+                      </p>
+                    ))}
+                  </div>
+                </motion.div>
+              )
+            })}
+
+            {/* Part II Header */}
+            <motion.div
+              variants={fadeInUp}
+              className="bg-purple-50 rounded-xl sm:rounded-2xl border-2 border-purple-200 p-5 sm:p-6 md:p-8 mt-12"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600">
+                  <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">PART II: TERMS OF SERVICE & DISCLAIMERS</h2>
               </div>
-              <a 
-                href="mailto:privacy@smartrack.app"
-                className="text-blue-600 hover:text-blue-700 font-semibold block"
-              >
-                privacy@smartrack.app
-              </a>
-              <a 
-                href="https://smar-track.vercel.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-700 font-semibold block"
-              >
-                smar-track.vercel.app
-              </a>
-            </div>
+            </motion.div>
+
+            {/* Terms Sections */}
+            {termsSections.map((section, index) => {
+              const Icon = section.icon
+              return (
+                <motion.div
+                  key={`terms-${index}`}
+                  variants={fadeInUp}
+                  transition={{ duration: 0.5, delay: index * 0.03 }}
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-5 sm:p-6 md:p-8"
+                >
+                  <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-50 rounded-lg sm:rounded-xl flex items-center justify-center text-purple-600">
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </div>
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900">{section.title}</h2>
+                  </div>
+                  <div className="prose prose-slate max-w-none">
+                    {section.content.split('\n\n').map((paragraph, pIndex) => (
+                      <p key={pIndex} className="text-sm sm:text-base text-slate-600 leading-relaxed whitespace-pre-line mb-3 sm:mb-4 last:mb-0">
+                        {paragraph.split('**').map((part, i) => 
+                          i % 2 === 1 ? <strong key={i} className="text-slate-900 font-semibold">{part}</strong> : part
+                        )}
+                      </p>
+                    ))}
+                  </div>
+                </motion.div>
+              )
+            })}
+
+            {/* Part III: Chrome Web Store Data Disclosure */}
+            <motion.div
+              variants={fadeInUp}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="mt-12 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200 p-5 sm:p-6 md:p-8"
+            >
+              <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-amber-50 rounded-lg sm:rounded-xl flex items-center justify-center text-amber-600">
+                  <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900">Part III: Chrome Web Store Data Disclosure</h2>
+              </div>
+              <div className="space-y-3 text-sm sm:text-base text-slate-600">
+                <p><strong className="text-slate-900">Summary for Extension Reviewers:</strong></p>
+                <p><strong className="text-slate-900">Single Purpose:</strong> SmarTrack allows users to save and organize web content into a personal library.</p>
+                <p><strong className="text-slate-900">Data Usage:</strong> Metadata and text are only accessed when the user clicks "Save." Data is synchronized to a secure backend for cross-device access.</p>
+                <p><strong className="text-slate-900">Privacy Commitment:</strong> No tracking of browsing history; no use of remote code; no selling of data.</p>
+              </div>
+            </motion.div>
+
+            {/* Part IV: Contact */}
+            <motion.div
+              variants={fadeInUp}
+              transition={{ duration: 0.5, delay: 0.25 }}
+              className="mt-8 bg-blue-50 rounded-xl sm:rounded-2xl border border-blue-100 p-5 sm:p-6 md:p-8 text-center"
+            >
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Mail className="w-6 h-6 text-blue-600" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Part IV: Contact</h2>
+              <p className="text-slate-600 mb-4">
+                For inquiries regarding these practices or terms, please contact:
+              </p>
+              <div className="space-y-2">
+                <div>
+                  <strong className="text-slate-900">SmarTrack Legal Team</strong>
+                </div>
+                <a 
+                  href="mailto:privacy@smartrack.app"
+                  className="text-blue-600 hover:text-blue-700 font-semibold block"
+                >
+                  privacy@smartrack.app
+                </a>
+                <a 
+                  href="https://smar-track.vercel.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-700 font-semibold block"
+                >
+                  smar-track.vercel.app
+                </a>
+              </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
