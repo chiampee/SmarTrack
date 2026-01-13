@@ -1033,7 +1033,7 @@ export const Dashboard: React.FC = () => {
             <div className="flex items-center gap-0.5 bg-gray-50 rounded-lg p-0.5 border border-gray-200">
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-2 md:px-3 py-2 md:py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1 md:gap-1.5 min-h-[40px] md:min-h-0 touch-manipulation ${
+                className={`px-3 sm:px-2 md:px-3 py-2 md:py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1.5 md:gap-1.5 min-h-[40px] md:min-h-0 touch-manipulation ${
                   viewMode === 'list' 
                     ? 'bg-white text-blue-600 shadow-sm' 
                     : 'text-gray-600 hover:text-gray-900'
@@ -1041,12 +1041,13 @@ export const Dashboard: React.FC = () => {
                 aria-label="List view"
                 aria-pressed={viewMode === 'list'}
               >
-                <List className="w-4 h-4" />
+                <List className="w-4 h-4 sm:w-4 sm:h-4" />
+                <span className="sm:hidden">List</span>
                 <span className="hidden sm:inline">List</span>
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`px-2 md:px-3 py-2 md:py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1 md:gap-1.5 min-h-[40px] md:min-h-0 touch-manipulation ${
+                className={`px-3 sm:px-2 md:px-3 py-2 md:py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1.5 md:gap-1.5 min-h-[40px] md:min-h-0 touch-manipulation ${
                   viewMode === 'grid' 
                     ? 'bg-white text-blue-600 shadow-sm' 
                     : 'text-gray-600 hover:text-gray-900'
@@ -1054,7 +1055,8 @@ export const Dashboard: React.FC = () => {
                 aria-label="Grid view"
                 aria-pressed={viewMode === 'grid'}
               >
-                <Grid className="w-4 h-4" />
+                <Grid className="w-4 h-4 sm:w-4 sm:h-4" />
+                <span className="sm:hidden">Grid</span>
                 <span className="hidden sm:inline">Grid</span>
               </button>
             </div>
@@ -1353,7 +1355,10 @@ export const Dashboard: React.FC = () => {
                           </motion.div>
 
                           {/* Links for this category */}
-                          <div className="flex flex-col gap-4">
+                          <div className={viewMode === 'grid' 
+                            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6' 
+                            : 'flex flex-col gap-4'
+                          }>
                             {categoryLinks.map((link) => (
                               <LinkCard
                                 key={link.id}
