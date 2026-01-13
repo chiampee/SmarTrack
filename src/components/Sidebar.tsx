@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, Star, Clock, Archive, Library, Edit2, Trash2, Home } from 'lucide-react'
+import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, Star, Clock, Archive, Library, Edit2, Trash2, Home, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useBackendApi } from '../hooks/useBackendApi'
 import { isAppError, getUserFriendlyMessage } from '../utils/errorHandler'
