@@ -13,13 +13,16 @@ import {
   ArrowLeft,
   Lock,
   Database,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Chrome,
+  CheckCircle2
 } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { motion } from 'framer-motion'
 import { UsageStats } from '../components/UsageStats'
 import { useBackendApi } from '../hooks/useBackendApi'
 import { useToast } from '../components/Toast'
+import { useExtensionDetection } from '../hooks/useExtensionDetection'
 
 export const Settings: React.FC = () => {
   const { user, logout } = useAuth0()
@@ -30,6 +33,15 @@ export const Settings: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [confirmText, setConfirmText] = useState('')
+  const isExtensionInstalled = useExtensionDetection()
+
+  const handleDownloadExtension = () => {
+    const linkElement = document.createElement('a')
+    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.0.zip')
+    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.0.zip')
+    linkElement.click()
+    toast.success('Extension download started!')
+  }
 
   const handleDeleteAll = async () => {
     if (confirmText !== 'DELETE') {
@@ -155,6 +167,53 @@ export const Settings: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Extension Download */}
+                {!isExtensionInstalled && (
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Browser Extension</h3>
+                    <div className="bg-white border border-slate-200 rounded-lg p-5">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Chrome className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-slate-900 mb-1">Install SmarTrack Extension</h4>
+                          <p className="text-sm text-slate-600 mb-4">
+                            Get the full power of SmarTrack! Save any webpage with one click, extract content automatically, and access your library from anywhere.
+                          </p>
+                          <button
+                            onClick={handleDownloadExtension}
+                            className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download Extension
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Extension Installed Status */}
+                {isExtensionInstalled && (
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Browser Extension</h3>
+                    <div className="bg-white border border-green-200 rounded-lg p-5">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <CheckCircle2 className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-slate-900 mb-1">Extension Installed</h4>
+                          <p className="text-sm text-slate-600">
+                            The SmarTrack extension is installed and active. You can save webpages directly from your browser.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 
