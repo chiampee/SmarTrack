@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X, Chrome, Download, CheckCircle2, ArrowRight, Sparkles, FileArchive, Settings, FolderOpen } from 'lucide-react'
+import { X, Chrome, Download, CheckCircle2, ArrowRight, Sparkles, FileArchive, Settings, FolderOpen, Copy, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface ExtensionInstallModalProps {
@@ -16,6 +16,7 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
   const [currentStep, setCurrentStep] = useState(0)
   const [dontShowAgain, setDontShowAgain] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
+  const [urlCopied, setUrlCopied] = useState(false)
 
   const steps = [
     {
@@ -61,22 +62,33 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
     }, 800)
   }
 
+  const [showManualInstructions, setShowManualInstructions] = useState(false)
+
   const handleOpenExtensionsAndNext = () => {
+    // Chrome:// URLs cannot be opened from web pages due to browser security
+    // Try to open it (may work in some contexts), but provide manual fallback
     try {
-      const newWindow = window.open('chrome://extensions/', '_blank')
-      
-      if (!newWindow) {
-        const link = document.createElement('a')
-        link.href = 'chrome://extensions/'
-        link.target = '_blank'
-        link.rel = 'noopener noreferrer'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-      }
+      window.open('chrome://extensions/', '_blank')
     } catch (error) {
-      console.error('Failed to open Chrome extensions page:', error)
-      // Better error handling - could show a toast or inline message
+      // Expected to fail in most cases
+    }
+  }
+
+  const copyExtensionsUrl = async () => {
+    try {
+      await navigator.clipboard.writeText('chrome://extensions/')
+      setUrlCopied(true)
+      setTimeout(() => setUrlCopied(false), 2000)
+    } catch (error) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = 'chrome://extensions/'
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setUrlCopied(true)
+      setTimeout(() => setUrlCopied(false), 2000)
     }
   }
 
@@ -292,16 +304,62 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
                         {/* Action Button for Step 2 */}
                         {step.number === 2 && isActive && (
                           <div className="space-y-3">
-                            <motion.button
-                              onClick={handleOpenExtensionsAndNext}
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              className="w-full px-6 py-3.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:bg-indigo-800 transition-colors flex items-center justify-center gap-2.5 text-sm sm:text-base font-semibold shadow-lg hover:shadow-xl"
-                            >
-                              <Chrome className="w-5 h-5" />
-                              Open Extensions Page
-                              <ArrowRight className="w-4 h-4" />
-                            </motion.button>
+                            <div className="flex flex-col sm:flex-row gap-2.5">
+                              <motion.button
+                                onClick={handleOpenExtensionsAndNext}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="flex-1 px-6 py-3.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:bg-indigo-800 transition-colors flex items-center justify-center gap-2.5 text-sm sm:text-base font-semibold shadow-lg hover:shadow-xl"
+                              >
+                                <Chrome className="w-5 h-5" />
+                                Try Opening Extensions Page
+                                <ArrowRight className="w-4 h-4" />
+                              </motion.button>
+                              <motion.button
+                                onClick={copyExtensionsUrl}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className={`px-4 sm:px-6 py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base font-semibold shadow-md ${
+                                  urlCopied
+                                    ? 'bg-green-600 text-white hover:bg-green-700'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                                }`}
+                              >
+                                {urlCopied ? (
+                                  <>
+                                    <Check className="w-5 h-5" />
+                                    <span className="hidden sm:inline">Copied!</span>
+                                    <span className="sm:hidden">Copied!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-5 h-5" />
+                                    <span className="hidden sm:inline">Copy URL</span>
+                                    <span className="sm:hidden">Copy</span>
+                                  </>
+                                )}
+                              </motion.button>
+                            </div>
+                            
+                            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                              <p className="font-semibold text-amber-900 mb-2 text-sm sm:text-base flex items-center gap-2">
+                                <span>⚠️</span>
+                                Can't open automatically?
+                              </p>
+                              <p className="text-sm text-amber-800 mb-3">
+                                Due to browser security, we can't open the extensions page directly. Please:
+                              </p>
+                              <ol className="space-y-2 text-sm text-amber-800">
+                                <li className="flex items-start gap-2">
+                                  <span className="font-bold">1.</span>
+                                  <span>Click "Copy URL" above, or manually type <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">chrome://extensions/</code> in your address bar</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <span className="font-bold">2.</span>
+                                  <span>Press Enter to navigate</span>
+                                </li>
+                              </ol>
+                            </div>
                             
                             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                               <p className="font-semibold text-blue-900 mb-3 text-sm sm:text-base">After opening, complete these steps:</p>
