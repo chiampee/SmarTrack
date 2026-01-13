@@ -195,18 +195,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">Projects</h3>
               <div className="space-y-1">
                 <Link
-                  to="/?"
-                  onClick={onClose}
-                  className={`flex items-center gap-3 px-3 py-3.5 sm:py-2.5 rounded-lg text-sm sm:text-sm transition-all min-h-[44px] sm:min-h-0 touch-manipulation ${
-                    isActivePath('/?')
-                      ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 shadow-sm'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <Library className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                  <span className="font-medium text-base sm:text-sm">Show All Links</span>
-                </Link>
-                <Link
                   to="/?filter=favorites"
                   onClick={onClose}
                   className={`flex items-center gap-3 px-3 py-3.5 sm:py-2.5 rounded-lg text-sm sm:text-sm transition-all min-h-[44px] sm:min-h-0 touch-manipulation ${
