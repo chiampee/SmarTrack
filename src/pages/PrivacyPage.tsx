@@ -23,188 +23,86 @@ const staggerContainer = {
 const sections = [
   {
     icon: Eye,
-    title: 'Information We Collect',
-    content: `We collect only the minimum information necessary to provide our service:
+    title: '1. Data Collection and Categories',
+    content: `We adhere to the principle of data minimization. We only collect information that is strictly necessary to provide the Service's functionality.
 
-**Personally Identifiable Information**
-• Email address (collected via Auth0/Google OAuth for authentication)
-• Optional display name (if you choose to provide one)
+**A. Information You Provide Directly**
 
-**Authentication Information**
-• Auth0 authentication tokens stored locally in your browser
-• These tokens enable you to remain logged in across browser sessions
-• Passwords are handled entirely by Auth0 (Google), never stored by us
+**Account Information:** When you authenticate via Auth0, we receive your email address and profile identifiers. This is used solely for session management and to associate your saved data with your account.
 
-**Location Information**
-• IP addresses are automatically collected by our backend server for API requests
-• IP addresses are used for security (fraud prevention, rate limiting) and standard web server logging
-• We do NOT collect GPS coordinates, precise location data, or location from your device
+**User-Generated Content:** This includes URLs, page titles, text snippets, and categories that you explicitly choose to save via the Extension.
 
-**Website Content**
-• URLs of pages you explicitly choose to save
-• Page titles, descriptions, and extracted text content from saved pages
-• Page metadata (Open Graph tags, article information, favicons)
-• User-selected text if you highlight content before saving
-• Categories, tags, and notes you add to saved content
-• AI-generated summaries of your saved content
+**B. Information Collected via Browser Permissions**
 
-**Usage Data**
-• Basic aggregate analytics (anonymized page views, feature usage)
-• Error logs for debugging and service improvement
-• We do NOT track your browsing history, pages you don't save, clicks, keystrokes, or scroll behavior
+To function, the SmarTrack Extension requires specific permissions. Our legal justification for these permissions is the Performance of a Contract (providing you the features you requested):
 
-**Data We Do NOT Collect**
-• Health information
-• Financial or payment information
-• Personal communications (emails, texts, chat messages)
-• Browsing history (we only save pages you explicitly choose to save)
-• User activity monitoring (no tracking of clicks, mouse position, scroll, or keystrokes)`
-  },
-  {
-    icon: Database,
-    title: 'How We Use Your Data',
-    content: `Your data is used exclusively for SmarTrack's single purpose: enabling you to save, organize, and retrieve web content in a searchable knowledge library.
+**Active Tab Interaction (activeTab):** Used to read the current page's metadata and DOM only upon a manual trigger (clicking the icon).
 
-**Primary Uses:**
-• **Provide the Service** - Store and organize your saved content in your personal library
-• **Authentication** - Manage your account access and session security
-• **AI Processing** - Generate summaries and automatic categorizations of your saved content
-• **Sync** - Keep your library accessible and synchronized across devices
-• **Offline Functionality** - Queue saves when offline and sync when connectivity returns
-• **Performance** - Cache data locally for fast access and instant searching
-• **Support** - Help you troubleshoot issues when you contact us
+**Local Data Management (storage):** Used to cache your preferences and maintain an offline queue to prevent data loss.
 
-**Data Sharing:**
-• **Auth0 (Google)** - We use Auth0 for authentication services (approved use case for authentication providers)
-• **No Third-Party Sales** - We do not sell, rent, or transfer your data to third parties
-• **No Data Brokers** - We do not share your data with data brokers or advertising networks
-• **No Unrelated Uses** - We do not use your data for purposes unrelated to knowledge management
+**DOM Processing (scripting):** Used to inject local scripts to extract "clean" text (removing ads/navigation) and to capture text you have highlighted.
 
-**We Never:**
-• Sell your data to third parties
-• Use your content for advertising or marketing
-• Share your data with data brokers
-• Train AI models on your personal content
-• Use your data to determine creditworthiness or for lending purposes
-• Use your data for purposes unrelated to SmarTrack's single purpose`
-  },
-  {
-    icon: Lock,
-    title: 'Data Security',
-    content: `We implement industry-standard security measures to protect your data:
+**System Feedback (notifications):** Used to provide non-intrusive status updates on save/sync operations.
 
-• **Encryption in Transit** - All data transmitted via HTTPS/TLS encryption
-• **Encryption at Rest** - All stored data is encrypted using industry-standard methods
-• **Secure Infrastructure** - Data stored on secure servers operated by industry-leading cloud providers
-• **Access Controls** - Role-based access controls and audit logs ensure only authorized access
-• **Authentication** - Secure OAuth 2.0 authentication through Auth0 (Google), a trusted identity provider
-• **Token Security** - Authentication tokens stored locally using Chrome's secure storage API
-• **Password Security** - Your password is never stored by us; authentication is handled entirely by Auth0
-
-**Third-Party Services:**
-• **Auth0 (Google)** - Handles all authentication and password management according to their security standards
-• **Backend API** - All API communications use HTTPS with proper certificate validation
-• **No Remote Code** - All extension code is bundled locally; no external scripts or dynamic code execution`
-  },
-  {
-    icon: Globe,
-    title: 'Data Storage',
-    content: `**Storage Location**
-Your data is stored on secure servers operated by industry-leading cloud providers. Authentication is handled by Auth0 (Google), which stores authentication credentials according to their privacy policy.
-
-**Local Storage**
-Some data is stored locally in your browser using Chrome's storage API:
-• Authentication tokens (for session management)
-• User preferences and settings
-• Offline queue of pending saves
-• Cached links for fast access
-
-**Server Storage**
-Data stored on our backend servers includes:
-• Your saved links and associated metadata
-• Categories, tags, and notes you create
-• AI-generated summaries
-• IP addresses from API requests (for security and logging)
-
-**Data Retention**
-• Active accounts: Data retained while account is active
-• Deleted content: Permanently removed within 30 days
-• Closed accounts: All data deleted within 30 days
-• IP addresses: Retained in server logs for security purposes, automatically purged according to standard retention policies`
-  },
-  {
-    icon: UserCheck,
-    title: 'Your Rights',
-    content: `You have full control over your data:
-
-• **Access** - View all data we have about you (Settings → Export)
-• **Portability** - Export your data as JSON or Markdown anytime
-• **Correction** - Edit or update your saved content
-• **Deletion** - Delete individual items or your entire account
-• **Restriction** - Contact us to limit how we process your data
-
-We comply with applicable data protection laws. We do not sell personal information.`
+**Broad Host Permissions (https://*/*):** Required for the Service to function as a universal research tool across any website and to facilitate secure communication with our API (smartrack-back.onrender.com).`
   },
   {
     icon: Shield,
-    title: 'Browser Extension Permissions',
-    content: `The SmarTrack extension requests only the permissions necessary for its core functionality:
+    title: '2. Chrome Web Store Compliance & Security',
+    content: `**2.1 Remote Code Declaration**
 
-**Required Permissions:**
+The Company strictly prohibits the use of remote code. All executable logic is bundled locally within the Extension package. We do not use eval(), dynamic imports, or external scripts. This ensures the Service remains secure and verifiable by third-party reviewers.
 
-• **activeTab** - Access the current tab only when you explicitly click the extension icon. Used to:
-  - Extract page title, URL, and description from the DOM
-  - Capture user-selected text if you highlight content before saving
-  - Extract favicon and Open Graph metadata for visual identification
-  - Verify the page is fully loaded before saving
+**2.2 No Background Tracking**
 
-• **storage** - Store data locally in your browser. Used to:
-  - Securely store Auth0 authentication tokens for session management
-  - Maintain an offline queue for saves when the backend is unreachable
-  - Store user preferences (categories, notification settings)
-  - Cache saved links locally for fast access and offline viewing
-
-• **scripting** - Inject content scripts to extract page information. Used to:
-  - Access the page DOM to read Open Graph tags and meta descriptions
-  - Extract clean text content by bypassing ads and navigation clutter
-  - Capture user-selected text from the page
-  - Access content within iframes when necessary for complete context
-
-• **notifications** - Provide user feedback. Used to:
-  - Notify you when a link has been successfully saved
-  - Alert you if a save operation fails (network error, authentication issue)
-  - Notify you when offline saves are successfully synced
-
-• **Host Permissions (https://*/* and http://*/*)** - Universal compatibility. Used to:
-  - Enable saving links from any website you visit
-  - Extract page content, metadata, and DOM elements from saved pages
-  - Communicate with our secure backend API for data storage
-  - Enable seamless navigation to your SmarTrack dashboard
-
-**Remote Code:**
-• **No Remote Code** - All executable code is bundled locally within the extension package. We do not use external scripts, eval(), or dynamically loaded code. All network requests are standard HTTPS API calls for data storage, not code execution.
-
-**Privacy Protections:**
-• The extension only activates when you explicitly click the extension icon
-• Page content is only accessed for the specific tab you choose to save
-• We do NOT access tabs in the background without your interaction
-• We do NOT track your browsing history or pages you don't save
-• We do NOT monitor clicks, keystrokes, scroll behavior, or other user activity`
+The Service does not collect browsing history, monitor keystrokes, track scroll behavior, or utilize background processes to monitor user activity on pages that are not explicitly saved.`
   },
   {
-    icon: Trash2,
-    title: 'Data Deletion',
-    content: `**Delete Individual Items**
-Remove any saved link from your dashboard at any time.
+    icon: Globe,
+    title: '3. Third-Party Services and Data Transfers',
+    content: `We do not sell your personal data. To provide the Service, we share limited data with the following sub-processors:
 
-**Delete All Data**
-Go to Settings → Account → Delete All Data to remove all saved content while keeping your account.
+**Authentication:** Auth0 (Identity management)
 
-**Delete Account**
-Go to Settings → Account → Delete Account to permanently delete your account and all associated data.
+**Hosting & Infrastructure:** Render (Backend API) and Vercel (Frontend Dashboard)
 
-**Complete Purge**
-Upon account deletion, all data is permanently removed from our systems within 30 days, including backups.`
+**Database:** Our secure cloud database where your encrypted research is stored
+
+All data transfers are conducted via TLS 1.3 (HTTPS) encryption.`
+  },
+  {
+    icon: Database,
+    title: '4. Data Retention and Termination',
+    content: `**Retention:** We retain your saved content as long as your account is active.
+
+**User-Initiated Deletion:** You may delete individual items or clear your entire library at any time. This action is irreversible on our live servers.
+
+**Account Deletion:** Upon account deletion through the Settings menu, all associated PII (Personally Identifiable Information) and saved content are flagged for immediate removal.
+
+**Hard Purge:** We perform a complete purge of all data, including encrypted backups, within thirty (30) days of account termination.`
+  },
+  {
+    icon: UserCheck,
+    title: '5. Your Legal Rights',
+    content: `Depending on your location, you may have the following rights regarding your data:
+
+**Right to Access/Portability:** Request a copy of your data in a structured, machine-readable format (JSON/Markdown).
+
+**Right to Rectification:** Correct inaccurate data in your dashboard.
+
+**Right to Object:** Withdraw consent for data processing at any time (resulting in the termination of Service).
+
+**Right to Erasure:** The "Right to be Forgotten" as outlined in Section 4.`
+  },
+  {
+    icon: Lock,
+    title: '6. Children\'s Privacy',
+    content: `Our Service is not intended for use by individuals under the age of 13. We do not knowingly collect personal information from children. If we become aware of such collection, we will take immediate steps to delete the data.`
+  },
+  {
+    icon: Mail,
+    title: '7. Changes to This Policy',
+    content: `We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date. You are advised to review this Privacy Policy periodically for any changes.`
   }
 ]
 
@@ -272,21 +170,28 @@ export const PrivacyPage: React.FC = () => {
               variants={fadeInUp}
               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-3 sm:mb-4"
             >
-              Your Privacy Matters
+              Privacy Policy
             </motion.h1>
             
             <motion.p
               variants={fadeInUp}
               className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto mb-3 sm:mb-4 px-2"
             >
-              We believe in transparency. Here's exactly how we handle your data—no legal jargon, just clear answers.
+              This Privacy Policy describes how SmarTrack ("Company", "we", "us", or "our") collects, uses, and discloses your information when you use the SmarTrack Browser Extension and the SmarTrack Dashboard (collectively, the "Service").
+            </motion.p>
+            
+            <motion.p
+              variants={fadeInUp}
+              className="text-sm text-slate-500 max-w-2xl mx-auto mb-3 sm:mb-4 px-2"
+            >
+              By installing the Extension or using the Service, you agree to the collection and use of information in accordance with this Privacy Policy.
             </motion.p>
 
             <motion.p
               variants={fadeInUp}
               className="text-xs sm:text-sm text-slate-500"
             >
-              Last updated: January 11, 2026
+              Last updated: January 13, 2026
             </motion.p>
           </motion.div>
         </div>
@@ -337,16 +242,29 @@ export const PrivacyPage: React.FC = () => {
             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
               <Mail className="w-6 h-6 text-blue-600" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Questions About Privacy?</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">8. Contact Us</h2>
             <p className="text-slate-600 mb-4">
-              We're happy to answer any questions about how we handle your data.
+              If you have any questions about this Privacy Policy or our data practices, please contact us at:
             </p>
-            <a 
-              href="mailto:privacy@smartrack.app"
-              className="text-blue-600 hover:text-blue-700 font-semibold"
-            >
-              privacy@smartrack.app
-            </a>
+            <div className="space-y-2">
+              <div>
+                <strong className="text-slate-900">SmarTrack Privacy Team</strong>
+              </div>
+              <a 
+                href="mailto:privacy@smartrack.app"
+                className="text-blue-600 hover:text-blue-700 font-semibold block"
+              >
+                privacy@smartrack.app
+              </a>
+              <a 
+                href="https://smar-track.vercel.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-700 font-semibold block"
+              >
+                smar-track.vercel.app
+              </a>
+            </div>
           </motion.div>
         </div>
       </section>
