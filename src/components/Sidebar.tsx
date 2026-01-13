@@ -238,7 +238,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                     <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">My Projects</h4>
                     <Link to="/?createCollection=1" onClick={onClose} className="text-xs text-blue-600 hover:underline">+ New</Link>
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                     {collections.map((c) => {
                       const to = `/?collection=${encodeURIComponent(c.id)}`
                       const active = isActivePath(to)
@@ -295,7 +295,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
             {categories.length > 0 && (
               <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-200">
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">Categories</h3>
-                <div className="space-y-1">
+                <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                   {categories.map((category, index) => {
                     const getIcon = () => {
                       const name = category.name.toLowerCase()
