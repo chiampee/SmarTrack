@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Plus, Grid, List, Download, Archive, Chrome } from 'lucide-react'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
+import { useExtensionDetection } from '../hooks/useExtensionDetection'
 import { LinkCard } from '../components/LinkCard'
 import { SearchAutocomplete } from '../components/SearchAutocomplete'
 import { AddLinkModal } from '../components/AddLinkModal'
@@ -48,6 +49,7 @@ export const Dashboard: React.FC = () => {
   const [currentCategoryName, setCurrentCategoryName] = useState<string | null>(null)
   const [searchParams] = useSearchParams()
   const { isMobile, prefersReducedMotion, animationConfig } = useMobileOptimizations()
+  const isExtensionInstalled = useExtensionDetection()
 
   // Check if we should redirect to analytics after login
   useEffect(() => {
@@ -930,16 +932,18 @@ export const Dashboard: React.FC = () => {
                 <span className="sm:hidden md:inline">Export</span>
               </button>
 
-              <button 
-                onClick={handleDownloadExtension}
-                className="flex-1 sm:flex-initial px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-lg hover:from-indigo-700 hover:to-indigo-800 active:from-indigo-800 transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-0 touch-manipulation"
-                aria-label="Download Chrome extension"
-                title="Download SmarTrack Chrome Extension"
-              >
-                <Chrome className="w-4 h-4 flex-shrink-0" />
-                <span className="sm:hidden md:inline">Extension</span>
-                <span className="hidden sm:inline md:hidden">Ext</span>
-              </button>
+              {!isExtensionInstalled && (
+                <button 
+                  onClick={handleDownloadExtension}
+                  className="flex-1 sm:flex-initial px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-lg hover:from-indigo-700 hover:to-indigo-800 active:from-indigo-800 transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-0 touch-manipulation"
+                  aria-label="Download Chrome extension"
+                  title="Download SmarTrack Chrome Extension"
+                >
+                  <Chrome className="w-4 h-4 flex-shrink-0" />
+                  <span className="sm:hidden md:inline">Extension</span>
+                  <span className="hidden sm:inline md:hidden">Ext</span>
+                </button>
+              )}
             </div>
           </div>
         </motion.div>
