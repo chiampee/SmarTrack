@@ -211,7 +211,7 @@ export const Settings: React.FC = () => {
                   </div>
                   <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5">
                     <button
-                      onClick={() => logout({ returnTo: window.location.origin })}
+                      onClick={() => logout()}
                       className="w-full sm:w-auto px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 active:bg-red-800 transition-colors flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
                     >
                       <LogOut className="w-4 h-4" />
