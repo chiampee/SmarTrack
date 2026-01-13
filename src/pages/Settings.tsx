@@ -64,28 +64,21 @@ export const Settings: React.FC = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-white py-6 sm:py-8 px-4">
-      <div className="max-w-5xl mx-auto">
-        {/* Header with Back Button */}
+    <div className="min-h-screen bg-white py-4 sm:py-6 lg:py-8 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
         <div className="mb-6 sm:mb-8">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 transition-colors group"
+            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-5 sm:mb-6 transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium">Back to Dashboard</span>
           </button>
           
-          <div className="flex items-center gap-3 mb-2">
-            <img 
-              src="/logo.svg" 
-              alt="SmarTrack" 
-              className="h-10 sm:h-12 w-auto"
-            />
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Settings</h1>
-              <p className="text-sm sm:text-base text-slate-600 mt-0.5">Manage your account settings and preferences</p>
-            </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1.5">Settings</h1>
+            <p className="text-sm sm:text-base text-slate-600">Manage your account settings and preferences</p>
           </div>
         </div>
 
@@ -98,7 +91,7 @@ export const Settings: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium transition-all whitespace-nowrap relative ${
+                  className={`flex items-center gap-2 px-4 sm:px-6 py-3.5 sm:py-4 text-sm font-medium transition-all whitespace-nowrap relative ${
                     activeTab === tab.id
                       ? 'text-blue-600'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -124,8 +117,8 @@ export const Settings: React.FC = () => {
                 className="space-y-6"
               >
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Profile Information</h3>
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Profile Information</h3>
+                  <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
                         Display Name
@@ -168,8 +161,8 @@ export const Settings: React.FC = () => {
               >
                 {/* Account Security */}
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Account Security</h3>
-                  <div className="bg-white border border-slate-200 rounded-xl p-5">
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Account Security</h3>
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 sm:p-5">
                     <div className="flex items-start gap-3">
                       <Lock className="w-5 h-5 text-slate-600 flex-shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
@@ -192,11 +185,11 @@ export const Settings: React.FC = () => {
 
                 {/* Account Actions */}
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Account Actions</h3>
-                  <div className="bg-white border border-slate-200 rounded-xl p-5">
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Account Actions</h3>
+                  <div className="space-y-3">
                     <button
                       onClick={() => logout()}
-                      className="px-5 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-2 font-medium"
+                      className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 font-medium"
                     >
                       <LogOut className="w-4 h-4" />
                       Sign Out
@@ -206,8 +199,8 @@ export const Settings: React.FC = () => {
 
                 {/* Danger Zone */}
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Danger Zone</h3>
-                  <div className="bg-white border-2 border-red-200 rounded-xl p-5">
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Danger Zone</h3>
+                  <div className="bg-white border-2 border-red-200 rounded-lg p-4 sm:p-5">
                     <div className="flex items-start gap-3">
                       <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
@@ -272,21 +265,21 @@ export const Settings: React.FC = () => {
                 className="space-y-6"
               >
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Usage & Limits</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Usage & Limits</h3>
                   <UsageStats />
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Plan Information</h3>
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Plan Information</h3>
+                  <div className="bg-white border border-slate-200 rounded-lg p-5 sm:p-6">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-5 gap-3">
                       <div>
-                        <h4 className="text-xl font-bold text-slate-900">Free Plan</h4>
+                        <h4 className="text-lg sm:text-xl font-bold text-slate-900">Free Plan</h4>
                         <p className="text-sm text-slate-600 mt-1">
                           Current subscription tier
                         </p>
                       </div>
-                      <div className="px-4 py-1.5 bg-blue-600 text-white rounded-full text-sm font-semibold">
+                      <div className="px-3 sm:px-4 py-1.5 bg-blue-600 text-white rounded-full text-xs sm:text-sm font-semibold">
                         Active
                       </div>
                     </div>
@@ -314,8 +307,8 @@ export const Settings: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Export Data</h3>
-                  <div className="bg-white border border-slate-200 rounded-xl p-5">
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Export Data</h3>
+                  <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5">
                     <p className="text-sm text-slate-600 mb-4">
                       Download all your research links as a JSON file for backup or migration.
                     </p>
@@ -342,16 +335,16 @@ export const Settings: React.FC = () => {
               >
                 <div>
                   <div className="flex items-center gap-2 mb-4">
-                    <h3 className="text-lg font-semibold text-slate-900">Display Settings</h3>
+                    <h3 className="text-base sm:text-lg font-semibold text-slate-900">Display Settings</h3>
                     <span className="px-2 py-0.5 text-xs font-medium text-slate-500 bg-slate-100 rounded-full">Coming Soon</span>
                   </div>
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 opacity-60">
+                  <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 space-y-4 opacity-60 pointer-events-none">
                     <div className="flex items-center justify-between py-3 border-b border-slate-200">
                       <div>
                         <p className="font-medium text-slate-900">Dark Mode</p>
                         <p className="text-sm text-slate-500">Switch to dark theme</p>
                       </div>
-                      <div className="bg-slate-300 w-12 h-6 rounded-full relative cursor-not-allowed">
+                      <div className="bg-slate-300 w-12 h-6 rounded-full relative">
                         <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition"></div>
                       </div>
                     </div>
@@ -361,7 +354,7 @@ export const Settings: React.FC = () => {
                         <p className="font-medium text-slate-900">Compact View</p>
                         <p className="text-sm text-slate-500">Reduce spacing and padding</p>
                       </div>
-                      <div className="bg-blue-600 w-12 h-6 rounded-full relative cursor-not-allowed">
+                      <div className="bg-blue-600 w-12 h-6 rounded-full relative">
                         <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition"></div>
                       </div>
                     </div>
@@ -369,8 +362,8 @@ export const Settings: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Default Settings</h3>
-                  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Default Settings</h3>
+                  <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
                         Default View Mode
@@ -395,7 +388,7 @@ export const Settings: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end pt-2">
                   <button className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium">
                     <Save className="w-4 h-4" />
                     Save Preferences
