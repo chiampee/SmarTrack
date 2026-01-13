@@ -2,7 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Chrome, Shield, Eye, Database, Lock, UserCheck, Globe, Trash2, Mail } from 'lucide-react'
+import { ArrowLeft, Chrome, Shield, Eye, Database, Lock, UserCheck, Globe, Mail } from 'lucide-react'
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
