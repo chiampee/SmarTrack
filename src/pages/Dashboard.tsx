@@ -196,6 +196,14 @@ export const Dashboard: React.FC = () => {
       localStorage.setItem('dashboard:lastView', location.search || '?')
     } catch (_) { void 0 }
 
+    // If there are any URL params OR if URL is exactly "/?" (Show All Links), show links view
+    if (filter || collection || categoryParam || location.search === '?') {
+      setShowAllLinks(true)
+    } else {
+      // No params - show dashboard summary
+      setShowAllLinks(false)
+    }
+
     if (!filter && !collection && !categoryParam) {
       setSelectedCollectionId(null)
       setActiveFilterId(null)
