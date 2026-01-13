@@ -50,8 +50,27 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
   }
 
   const handleOpenExtensionsAndNext = () => {
-    window.open('chrome://extensions/', '_blank')
-    setCurrentStep(1)
+    // Open Chrome extensions page
+    // chrome:// URLs can be opened from user interactions in Chrome
+    try {
+      // Primary method: window.open
+      const newWindow = window.open('chrome://extensions/', '_blank')
+      
+      // If that doesn't work, try alternative method
+      if (!newWindow) {
+        const link = document.createElement('a')
+        link.href = 'chrome://extensions/'
+        link.target = '_blank'
+        link.rel = 'noopener noreferrer'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+    } catch (error) {
+      console.error('Failed to open Chrome extensions page:', error)
+      // Show user instructions if automatic opening fails
+      alert('Please manually navigate to chrome://extensions/ in a new tab')
+    }
   }
 
   if (!isOpen) return null
