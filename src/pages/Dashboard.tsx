@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List, Download, Archive, Chrome } from 'lucide-react'
+import { Plus, Grid, List, Download, Archive, Chrome, Link as LinkIcon, Folder, Tag, TrendingUp, Clock, BookOpen, BarChart3, ArrowRight } from 'lucide-react'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { useExtensionDetection } from '../hooks/useExtensionDetection'
 import { LinkCard } from '../components/LinkCard'
@@ -998,70 +998,270 @@ export const Dashboard: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* ✅ SECONDARY HEADER: Collection info and view controls */}
-        <motion.div
-          initial={shouldAnimate ? "hidden" : "visible"}
-          animate="visible"
-          variants={fadeInUp}
-          transition={{ delay: shouldAnimate ? 0.05 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-          className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-3 mb-3 md:mb-6 px-2"
-        >
-          {/* Left: Collection Title and Stats - mobile optimized */}
-          <div className="flex items-center gap-2 md:gap-3 flex-wrap w-full md:w-auto">
-            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-1.5 md:gap-2">
-              <Archive className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
-              <span className="truncate">
-                {selectedCollectionId 
-                  ? collections.find(c => c.id === selectedCollectionId)?.name || 'Collection'
-                  : activeFilterId === 'favorites'
-                    ? 'Favorites'
-                    : activeFilterId === 'archived'
-                      ? 'Archived'
-                      : 'All Links'}
-              </span>
-            </h2>
-            <div className="flex items-center gap-2">
-              <span className="px-2 md:px-2.5 py-0.5 md:py-1 text-xs font-semibold text-blue-700 bg-blue-50 rounded-full border border-blue-200">
-                {filteredLinksCount} {filteredLinksCount === 1 ? 'link' : 'links'}
-              </span>
+        {/* Dashboard Summary */}
+        <div className="space-y-6 mb-8">
+          {/* Welcome Header */}
+          <motion.div
+            initial={shouldAnimate ? "hidden" : "visible"}
+            animate="visible"
+            variants={fadeInUp}
+            transition={{ duration: animationConfig.duration, ease: "easeOut" }}
+            className="mb-6"
+          >
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Dashboard Overview</h1>
+            <p className="text-slate-600">Your knowledge library at a glance</p>
+          </motion.div>
+
+          {/* Stats Cards */}
+          <motion.div
+            initial={shouldAnimate ? "hidden" : "visible"}
+            animate="visible"
+            variants={fadeInUp}
+            transition={{ delay: shouldAnimate ? 0.1 : 0, duration: animationConfig.duration, ease: "easeOut" }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+          >
+            {/* Total Links */}
+            <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <LinkIcon className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-slate-900 mb-1">{links.length}</div>
+              <div className="text-sm text-slate-600">Total Links</div>
+            </div>
+
+            {/* Collections */}
+            <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <Folder className="w-6 h-6 text-purple-600" />
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-slate-900 mb-1">{collections.length}</div>
+              <div className="text-sm text-slate-600">Collections</div>
+            </div>
+
+            {/* Categories */}
+            <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Tag className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-slate-900 mb-1">{categories.length}</div>
+              <div className="text-sm text-slate-600">Categories</div>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-orange-600" />
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-slate-900 mb-1">
+                {links.filter(l => {
+                  const sevenDaysAgo = new Date()
+                  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+                  return new Date(l.createdAt) >= sevenDaysAgo
+                }).length}
+              </div>
+              <div className="text-sm text-slate-600">Last 7 Days</div>
+            </div>
+          </motion.div>
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Recent Links & Quick Actions */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Recent Links */}
+              <motion.div
+                initial={shouldAnimate ? "hidden" : "visible"}
+                animate="visible"
+                variants={fadeInUp}
+                transition={{ delay: shouldAnimate ? 0.2 : 0, duration: animationConfig.duration, ease: "easeOut" }}
+                className="bg-white rounded-lg border border-slate-200 shadow-sm"
+              >
+                <div className="p-5 border-b border-slate-200 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-slate-600" />
+                    <h2 className="text-lg font-semibold text-slate-900">Recent Links</h2>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSearchQuery('')
+                      handleCollectionSelect('all')
+                      setFilters({ category: '', dateRange: 'all_time', tags: [], contentType: '' })
+                      setActiveFilterId(null)
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                  >
+                    View All
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="p-5">
+                  {loading && links.length === 0 ? (
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="animate-pulse">
+                          <div className="h-4 bg-slate-200 rounded w-3/4 mb-2" />
+                          <div className="h-3 bg-slate-100 rounded w-1/2" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : links.length === 0 ? (
+                    <div className="text-center py-8">
+                      <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <p className="text-slate-600 mb-4">No links yet</p>
+                      <button
+                        onClick={() => setShowAddModal(true)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                      >
+                        Add Your First Link
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {links
+                        .filter(l => !l.isArchived)
+                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                        .slice(0, 5)
+                        .map((link) => (
+                          <div
+                            key={link.id}
+                            className="p-3 rounded-lg border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+                            onClick={() => {
+                              setEditingLink(link)
+                            }}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-medium text-slate-900 truncate mb-1">{link.title || 'Untitled'}</h3>
+                                <p className="text-sm text-slate-600 truncate">{link.url}</p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <span className="text-xs text-slate-500">
+                                    {new Date(link.createdAt).toLocaleDateString()}
+                                  </span>
+                                  {link.category && (
+                                    <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">
+                                      {link.category}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Collections Overview */}
+              {collections.length > 0 && (
+                <motion.div
+                  initial={shouldAnimate ? "hidden" : "visible"}
+                  animate="visible"
+                  variants={fadeInUp}
+                  transition={{ delay: shouldAnimate ? 0.3 : 0, duration: animationConfig.duration, ease: "easeOut" }}
+                  className="bg-white rounded-lg border border-slate-200 shadow-sm"
+                >
+                  <div className="p-5 border-b border-slate-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Folder className="w-5 h-5 text-slate-600" />
+                      <h2 className="text-lg font-semibold text-slate-900">Collections</h2>
+                    </div>
+                    <button
+                      onClick={() => setShowCreateCollectionModal(true)}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      + New
+                    </button>
+                  </div>
+                  <div className="p-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {collections.slice(0, 4).map((collection) => {
+                        const collectionLinks = links.filter(l => l.collectionId === collection.id)
+                        return (
+                          <div
+                            key={collection.id}
+                            onClick={() => handleCollectionSelect(collection.id)}
+                            className="p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-colors cursor-pointer"
+                          >
+                            <div className="font-medium text-slate-900 mb-1">{collection.name}</div>
+                            <div className="text-sm text-slate-600">{collectionLinks.length} links</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Right Column - Usage Stats & Quick Actions */}
+            <div className="space-y-6">
+              {/* Usage Stats */}
+              <motion.div
+                initial={shouldAnimate ? "hidden" : "visible"}
+                animate="visible"
+                variants={fadeInUp}
+                transition={{ delay: shouldAnimate ? 0.2 : 0, duration: animationConfig.duration, ease: "easeOut" }}
+                className="bg-white rounded-lg border border-slate-200 shadow-sm"
+              >
+                <div className="p-5 border-b border-slate-200 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-slate-600" />
+                  <h2 className="text-lg font-semibold text-slate-900">Usage & Limits</h2>
+                </div>
+                <div className="p-5">
+                  <UsageStats />
+                </div>
+              </motion.div>
+
+              {/* Quick Actions */}
+              <motion.div
+                initial={shouldAnimate ? "hidden" : "visible"}
+                animate="visible"
+                variants={fadeInUp}
+                transition={{ delay: shouldAnimate ? 0.3 : 0, duration: animationConfig.duration, ease: "easeOut" }}
+                className="bg-white rounded-lg border border-slate-200 shadow-sm"
+              >
+                <div className="p-5 border-b border-slate-200">
+                  <h2 className="text-lg font-semibold text-slate-900">Quick Actions</h2>
+                </div>
+                <div className="p-5 space-y-2">
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add New Link
+                  </button>
+                  <button
+                    onClick={() => setShowCreateCollectionModal(true)}
+                    className="w-full px-4 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 font-medium"
+                  >
+                    <Folder className="w-4 h-4" />
+                    Create Collection
+                  </button>
+                  {!isExtensionInstalled && (
+                    <button
+                      onClick={handleExtensionInstallClick}
+                      className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                    >
+                      <Chrome className="w-4 h-4" />
+                      Install Extension
+                    </button>
+                  )}
+                </div>
+              </motion.div>
             </div>
           </div>
+        </div>
 
-          {/* Right: View Controls - mobile optimized */}
-          <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto justify-between md:justify-end">
-            {/* View Toggle - optimized for touch */}
-            <div className="flex items-center gap-0.5 bg-gray-50 rounded-lg p-0.5 border border-gray-200">
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-2 md:px-3 py-2 md:py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1 md:gap-1.5 min-h-[40px] md:min-h-0 touch-manipulation ${
-                  viewMode === 'list' 
-                    ? 'bg-white text-blue-600 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-                aria-label="List view"
-                aria-pressed={viewMode === 'list'}
-              >
-                <List className="w-4 h-4" />
-                <span className="hidden sm:inline">List</span>
-              </button>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`px-2 md:px-3 py-2 md:py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1 md:gap-1.5 min-h-[40px] md:min-h-0 touch-manipulation ${
-                  viewMode === 'grid' 
-                    ? 'bg-white text-blue-600 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-                aria-label="Grid view"
-                aria-pressed={viewMode === 'grid'}
-              >
-                <Grid className="w-4 h-4" />
-                <span className="hidden sm:inline">Grid</span>
-              </button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Main Content */}
+        {/* Main Content - Links View (Hidden by default, can be shown via navigation) */}
         <motion.div
           initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
