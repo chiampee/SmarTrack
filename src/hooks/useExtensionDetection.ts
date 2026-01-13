@@ -21,6 +21,7 @@ export const useExtensionDetection = (): boolean => {
       return new Promise<boolean>((resolve) => {
         const messageId = `extension-check-${Date.now()}-${Math.random()}`
         let resolved = false
+        let timeoutId: NodeJS.Timeout | null = null
 
         const handleMessage = (event: MessageEvent) => {
           // Security: Only accept messages from same origin
@@ -46,6 +47,10 @@ export const useExtensionDetection = (): boolean => {
             window.removeEventListener('message', messageListener)
             messageListener = null
           }
+          if (timeoutId) {
+            clearTimeout(timeoutId)
+            timeoutId = null
+          }
         }
 
         messageListener = handleMessage
@@ -61,7 +66,7 @@ export const useExtensionDetection = (): boolean => {
         )
 
         // Timeout after 2 seconds (give extension time to respond)
-        const timeoutId = setTimeout(() => {
+        timeoutId = setTimeout(() => {
           if (!resolved) {
             resolved = true
             cleanup()
