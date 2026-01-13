@@ -62,8 +62,6 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
     }, 800)
   }
 
-  const [showManualInstructions, setShowManualInstructions] = useState(false)
-
   const handleOpenExtensionsAndNext = () => {
     // Chrome:// URLs cannot be opened from web pages due to browser security
     // Try to open it (may work in some contexts), but provide manual fallback
