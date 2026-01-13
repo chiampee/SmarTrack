@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X, Chrome, Download, FileArchive, Settings, CheckCircle2, ArrowRight } from 'lucide-react'
+import { X, Chrome, Download, CheckCircle2, ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface ExtensionInstallModalProps {
