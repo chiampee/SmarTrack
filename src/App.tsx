@@ -6,6 +6,7 @@ import { FAQPage } from './pages/FAQPage'
 import { LegalCenterPage } from './pages/LegalCenterPage'
 import { DocsPage } from './pages/DocsPage'
 import { Dashboard } from './pages/Dashboard'
+import { MainPage } from './pages/MainPage'
 import { Settings } from './pages/Settings'
 import { AdminAnalytics } from './pages/AdminAnalytics'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -50,7 +51,8 @@ function App() {
     <CategoriesProvider>
       <Layout>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<MainPage />} />
+          <Route path="/main" element={<MainPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/analytics" element={<AdminAnalytics />} />

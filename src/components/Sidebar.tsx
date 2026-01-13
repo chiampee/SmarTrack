@@ -176,17 +176,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
 
           {/* ✅ MOBILE RESPONSIVE: Navigation with better touch targets */}
           <nav className="flex-1 p-4 sm:p-6 space-y-1 sm:space-y-2 overflow-y-auto">
-            {/* Main - always show as inactive (no active state) */}
+            {/* Main */}
             <Link
-              to="/"
+              to="/main"
               onClick={onClose}
               className={`flex items-center gap-3 px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation ${
-                location.pathname === '/' && !location.search
+                location.pathname === '/main' || location.pathname === '/'
                   ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50'
               }`}
             >
-              <Home className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/' && !location.search ? 'text-blue-600' : 'text-gray-500'}`} />
+              <Home className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/main' || location.pathname === '/' ? 'text-blue-600' : 'text-gray-500'}`} />
               <span className="font-medium text-base sm:text-sm">Main</span>
             </Link>
 
