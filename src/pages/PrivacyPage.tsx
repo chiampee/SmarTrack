@@ -250,11 +250,11 @@ export const PrivacyPage: React.FC = () => {
               <div>
                 <strong className="text-slate-900">SmarTrack Privacy Team</strong>
               </div>
-              <a 
-                href="mailto:privacy@smartrack.app"
+              <a
+                href="mailto:smart.track.appp@gmail.com"
                 className="text-blue-600 hover:text-blue-700 font-semibold block"
               >
-                privacy@smartrack.app
+                smart.track.appp@gmail.com
               </a>
               <a 
                 href="https://smar-track.vercel.app"
