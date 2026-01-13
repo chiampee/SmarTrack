@@ -220,11 +220,11 @@ export const LoginPage: React.FC = () => {
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.98 }}
-                onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => loginWithRedirect()}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 text-slate-700 font-semibold rounded-xl border border-slate-200 hover:border-slate-300 transition-all text-base sm:text-lg"
               >
-                See Demo
-                <ArrowRight className="w-5 h-5" />
+                <LogIn className="w-5 h-5" />
+                Sign In
               </motion.button>
             </motion.div>
 
@@ -235,7 +235,7 @@ export const LoginPage: React.FC = () => {
               className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-slate-500"
             >
               {[
-                { text: 'Free forever', icon: CheckCircle2 },
+                { text: 'Instant setup', icon: CheckCircle2 },
                 { text: 'No credit card', icon: CheckCircle2 },
                 { text: 'Privacy-first', icon: CheckCircle2 }
               ].map((item) => (
