@@ -12,6 +12,7 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { Layout } from './components/Layout'
 import { LoadingSpinner } from './components/LoadingSpinner'
 import { CategoriesProvider } from './context/CategoriesContext'
+import { useTestMode } from './context/TestModeContext'
 import { Navigate } from 'react-router-dom'
 
 // Public routes accessible without authentication
@@ -19,12 +20,16 @@ const publicRoutes = ['/faq', '/privacy', '/terms', '/legal', '/docs']
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth0()
+  const { isTestMode, testUser } = useTestMode()
   const location = useLocation()
 
   // Check if current route is public
   const isPublicRoute = publicRoutes.some(route => location.pathname.startsWith(route))
 
-  if (isLoading) {
+  // In test mode, consider user as authenticated
+  const effectiveIsAuthenticated = isTestMode || isAuthenticated
+
+  if (isLoading && !isTestMode) {
     return <LoadingSpinner />
   }
 
@@ -42,7 +47,8 @@ function App() {
     )
   }
 
-  if (!isAuthenticated) {
+  // Show login page if not authenticated and not in test mode
+  if (!effectiveIsAuthenticated) {
     return <LoginPage />
   }
 

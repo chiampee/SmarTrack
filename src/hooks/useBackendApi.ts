@@ -4,6 +4,7 @@ import { parseError, logError, withErrorHandling, ErrorType } from '../utils/err
 import { validateApiResponse } from '../utils/validation'
 import { Link } from '../types/Link'
 import { jwtDecode } from 'jwt-decode'
+import { useTestMode } from '../context/TestModeContext'
 
 interface JWTPayload {
   exp: number
@@ -70,13 +71,40 @@ const isTokenExpired = (token: string, bufferSeconds: number = 300): boolean => 
   }
 }
 
+// Generate a test token for test mode
+const generateTestToken = (): string => {
+  // Create a simple test token (base64 encoded JSON)
+  const testPayload = {
+    sub: 'test-user-123',
+    email: 'test@smartrack.app',
+    exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours
+    iat: Math.floor(Date.now() / 1000),
+    aud: 'test-audience',
+    iss: 'test-issuer'
+  }
+  // Simple base64 encoding (not a real JWT, but backend can recognize it)
+  const header = btoa(JSON.stringify({ alg: 'none', typ: 'JWT' }))
+  const payload = btoa(JSON.stringify(testPayload))
+  return `TEST.${header}.${payload}`
+}
+
 export const useBackendApi = () => {
   const { getAccessTokenSilently, isAuthenticated } = useAuth0()
+  const { isTestMode } = useTestMode()
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     const fetchToken = async () => {
+      // In test mode, use test token
+      if (isTestMode) {
+        const testToken = generateTestToken()
+        setToken(testToken)
+        localStorage.setItem('authToken', testToken)
+        console.log('[TEST MODE] Using test token for API calls')
+        return
+      }
+
       if (isAuthenticated) {
         try {
           // Check if existing token is still valid
@@ -115,7 +143,7 @@ export const useBackendApi = () => {
       }
     }
     fetchToken()
-  }, [isAuthenticated, getAccessTokenSilently])
+  }, [isAuthenticated, getAccessTokenSilently, isTestMode])
   
   // Auto-refresh token before expiration
   useEffect(() => {
@@ -179,29 +207,43 @@ export const useBackendApi = () => {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> => {
-    // If authenticated but token not yet loaded, try to fetch it
-    let requestToken = token
-    if (!requestToken && isAuthenticated) {
-      try {
-        // Always request email scope to ensure email is in token
-        requestToken = await getAccessTokenSilently({
-          authorizationParams: {
-            scope: 'openid profile email',
-          }
-        })
-        setToken(requestToken)
-        localStorage.setItem('authToken', requestToken)
-      } catch (error) {
-        // If we can't get token even though authenticated, this might be temporary
-        // Don't log "Authentication required" errors - they're expected during initialization
-        const authError = parseError(new Error('Authentication required'))
-        authError.suppressLogging = true // Suppress logging for this expected error
-        throw authError
+    let requestToken: string | null = null
+
+    // In test mode, use test token and add test headers
+    if (isTestMode) {
+      const testToken = generateTestToken()
+      options.headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${testToken}`,
+        'X-Test-Mode': 'true',
+        'X-Test-User-Id': 'test-user-123',
+        'Content-Type': 'application/json',
       }
-    }
-    
-    // Check if token is expired or expiring soon
-    if (requestToken && isTokenExpired(requestToken)) {
+      requestToken = testToken
+    } else {
+      // If authenticated but token not yet loaded, try to fetch it
+      requestToken = token
+      if (!requestToken && isAuthenticated) {
+        try {
+          // Always request email scope to ensure email is in token
+          requestToken = await getAccessTokenSilently({
+            authorizationParams: {
+              scope: 'openid profile email',
+            }
+          })
+          setToken(requestToken)
+          localStorage.setItem('authToken', requestToken)
+        } catch (error) {
+          // If we can't get token even though authenticated, this might be temporary
+          // Don't log "Authentication required" errors - they're expected during initialization
+          const authError = parseError(new Error('Authentication required'))
+          authError.suppressLogging = true // Suppress logging for this expected error
+          throw authError
+        }
+      }
+      
+      // Check if token is expired or expiring soon (skip for test mode)
+      if (requestToken && isTokenExpired(requestToken)) {
       console.warn('[AUTH WARNING] Token expired or expiring soon, refreshing before request')
       console.warn('[AUTH WARNING] Endpoint:', endpoint)
       try {
@@ -223,6 +265,7 @@ export const useBackendApi = () => {
         console.error('[AUTH ERROR] Error:', error)
         console.error('[AUTH ERROR] Will attempt request with expired token (backend will reject)')
         // Continue with expired token - backend will reject it and we'll handle the error
+      }
       }
     }
 
@@ -248,7 +291,7 @@ export const useBackendApi = () => {
       const response = await fetch(url, {
         ...options,
         headers: {
-          'Authorization': `Bearer ${requestToken}`,
+          ...(isTestMode ? {} : { 'Authorization': `Bearer ${requestToken}` }),
           'Content-Type': 'application/json',
           ...options.headers,
         },
