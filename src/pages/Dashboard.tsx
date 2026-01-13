@@ -36,6 +36,7 @@ export const Dashboard: React.FC = () => {
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null)
   const [expandedCollections, setExpandedCollections] = useState<Set<string>>(new Set())
   const [activeFilterId, setActiveFilterId] = useState<string | null>(null)
+  const [showAllLinks, setShowAllLinks] = useState(false)
   const [filters, setFilters] = useState({
     category: '',
     dateRange: 'all_time' as 'today' | 'last_week' | 'last_month' | 'last_year' | 'all_time',
@@ -921,7 +922,8 @@ export const Dashboard: React.FC = () => {
           </motion.div>
         )}
 
-        {/* ✅ UNIFIED TOOLBAR: Single bar with all controls */}
+        {/* ✅ UNIFIED TOOLBAR: Single bar with all controls - Shown when viewing all links */}
+        {showAllLinks && (
         <motion.div
           initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
@@ -999,8 +1001,10 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
         </motion.div>
+        )}
 
-        {/* Dashboard Summary */}
+        {/* Dashboard Summary - Hidden when showing all links */}
+        {!showAllLinks && (
         <div className="space-y-6 mb-8">
           {/* Welcome Header */}
           <motion.div
@@ -1025,6 +1029,7 @@ export const Dashboard: React.FC = () => {
             <div
               className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => {
+                setShowAllLinks(true)
                 setSearchQuery('')
                 handleCollectionSelect('all')
                 setFilters({ category: '', dateRange: 'all_time', tags: [], contentType: '' })
@@ -1188,15 +1193,31 @@ export const Dashboard: React.FC = () => {
             </div>
           </motion.div>
         </div>
+        )}
 
-        {/* Main Content - Links View (Hidden by default, can be shown via navigation) */}
-        <motion.div
-          initial={shouldAnimate ? "hidden" : "visible"}
-          animate="visible"
-          variants={fadeInUp}
-          transition={{ delay: shouldAnimate ? 0.2 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-          className="grid grid-cols-1 gap-6 sm:gap-8"
-        >
+        {/* All Links View - Shown when showAllLinks is true */}
+        {showAllLinks && (
+          <motion.div
+            initial={shouldAnimate ? "hidden" : "visible"}
+            animate="visible"
+            variants={fadeInUp}
+            transition={{ duration: animationConfig.duration, ease: "easeOut" }}
+            className="mb-8"
+          >
+            {/* Header with Back button */}
+            <div className="mb-6 flex items-center justify-between">
+              <button
+                onClick={() => setShowAllLinks(false)}
+                className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="text-sm font-medium">Back to Dashboard</span>
+              </button>
+              <h2 className="text-xl font-bold text-slate-900">All Links</h2>
+              <div className="w-32"></div> {/* Spacer for centering */}
+            </div>
+            
+            <div className="grid grid-cols-1 gap-6 sm:gap-8">
           {/* Content */}
           <motion.div>
             {/* Links Section */}
@@ -1503,8 +1524,9 @@ export const Dashboard: React.FC = () => {
               </motion.div>
             )}
           </motion.div>
-        </motion.div>
-      </div>
+            </div>
+          </motion.div>
+        )}
 
       {/* Add Link Modal */}
       <AddLinkModal
@@ -1544,6 +1566,7 @@ export const Dashboard: React.FC = () => {
         }}
         onCreate={handleCreateCollection}
       />
+      </div>
     </div>
   )
 }
