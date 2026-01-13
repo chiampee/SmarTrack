@@ -19,37 +19,21 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
   const steps = [
     {
       number: 1,
-      title: 'Download the Extension',
-      description: 'Click the download button below to get the SmarTrack extension file.',
+      title: 'Download & Extract',
+      description: 'Click below to download, then extract the ZIP file to any folder on your computer.',
       icon: Download,
-      action: onDownload
+      action: onDownload,
+      combined: true
     },
     {
       number: 2,
-      title: 'Extract the ZIP File',
-      description: 'Locate the downloaded file and extract it to a folder on your computer.',
-      icon: FileArchive
-    },
-    {
-      number: 3,
-      title: 'Open Chrome Extensions Page',
-      description: 'Open a new tab and navigate to chrome://extensions/ or click the button below.',
+      title: 'Install in Chrome',
+      description: 'Click "Open Extensions Page" below, enable Developer Mode (top-right toggle), then click "Load unpacked" and select the extracted folder.',
       icon: Chrome,
       action: () => {
         window.open('chrome://extensions/', '_blank')
-      }
-    },
-    {
-      number: 4,
-      title: 'Enable Developer Mode',
-      description: 'Toggle the "Developer mode" switch in the top-right corner of the extensions page.',
-      icon: Settings
-    },
-    {
-      number: 5,
-      title: 'Load the Extension',
-      description: 'Click "Load unpacked" and select the folder where you extracted the extension.',
-      icon: CheckCircle2
+      },
+      combined: true
     }
   ]
 
@@ -62,6 +46,11 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
 
   const handleDownloadAndNext = () => {
     onDownload()
+    setCurrentStep(1)
+  }
+
+  const handleOpenExtensionsAndNext = () => {
+    window.open('chrome://extensions/', '_blank')
     setCurrentStep(1)
   }
 
@@ -126,7 +115,10 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
 
             {/* Step-by-Step Instructions */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Installation Steps</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Quick Installation</h3>
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">2 simple steps</span>
+              </div>
               
               {steps.map((step, index) => {
                 const Icon = step.icon
@@ -205,27 +197,34 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
                         {step.number === 1 && isActive && (
                           <button
                             onClick={handleDownloadAndNext}
-                            className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm font-medium"
+                            className="mt-3 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm font-semibold shadow-md"
                           >
-                            <Download className="w-4 h-4" />
+                            <Download className="w-5 h-5" />
                             Download Extension
                             <ArrowRight className="w-4 h-4" />
                           </button>
                         )}
 
-                        {/* Action Button for Step 3 */}
-                        {step.number === 3 && isActive && (
-                          <button
-                            onClick={() => {
-                              step.action?.()
-                              setCurrentStep(4)
-                            }}
-                            className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm font-medium"
-                          >
-                            <Chrome className="w-4 h-4" />
-                            Open Extensions Page
-                            <ArrowRight className="w-4 h-4" />
-                          </button>
+                        {/* Action Button for Step 2 */}
+                        {step.number === 2 && isActive && (
+                          <div className="mt-3 space-y-3">
+                            <button
+                              onClick={handleOpenExtensionsAndNext}
+                              className="w-full px-5 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 text-sm font-semibold shadow-md"
+                            >
+                              <Chrome className="w-5 h-5" />
+                              Open Extensions Page
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                            <div className="text-xs text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                              <p className="font-semibold text-blue-900 mb-2">Then do these 3 quick actions:</p>
+                              <ol className="list-decimal list-inside space-y-1.5 text-blue-800">
+                                <li>Toggle <strong>"Developer mode"</strong> (top-right switch)</li>
+                                <li>Click <strong>"Load unpacked"</strong> button</li>
+                                <li>Select the folder you extracted</li>
+                              </ol>
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -253,29 +252,20 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
               </div>
 
               <div className="flex items-center gap-3">
-                {currentStep > 0 && (
+                {currentStep === 0 && (
                   <button
-                    onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-                    className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                    onClick={() => setCurrentStep(1)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm font-medium"
                   >
-                    Previous
-                  </button>
-                )}
-                {currentStep < steps.length - 1 && currentStep !== 0 && (
-                  <button
-                    onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm font-medium"
-                  >
-                    Next
-                    <ArrowRight className="w-4 h-4" />
+                    Already downloaded? Skip to Step 2 →
                   </button>
                 )}
                 {currentStep === steps.length - 1 && (
                   <button
                     onClick={handleClose}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 text-sm font-medium"
+                    className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 text-sm font-semibold shadow-md"
                   >
-                    Got it!
+                    All Set!
                     <CheckCircle2 className="w-4 h-4" />
                   </button>
                 )}
