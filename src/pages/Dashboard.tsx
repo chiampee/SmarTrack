@@ -19,6 +19,7 @@ import { Link, Collection, Category } from '../types/Link'
 import { logger } from '../utils/logger'
 import { cacheManager } from '../utils/cacheManager'
 import { DashboardSkeleton } from '../components/LoadingSkeleton'
+import { UsageStats } from '../components/UsageStats'
 
 export const Dashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
