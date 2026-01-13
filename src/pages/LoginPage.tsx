@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Chrome, FileText, FolderTree, Search, ArrowRight, CheckCircle2, LogIn, BookOpen, ExternalLink, Sparkles, Menu, X, ChevronUp } from 'lucide-react'
+import { Chrome, FileText, FolderTree, Search, ArrowRight, CheckCircle2, LogIn, BookOpen, ExternalLink, Sparkles, ChevronUp } from 'lucide-react'
 import { DashboardPreview } from '../components/DashboardPreview'
 import { ExtensionPreview } from '../components/ExtensionPreview'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
@@ -98,36 +98,12 @@ export const LoginPage: React.FC = () => {
   const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0()
   const navigate = useNavigate()
   const { prefersReducedMotion } = useMobileOptimizations()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       navigate('/dashboard', { replace: true })
     }
   }, [isAuthenticated, isLoading, navigate])
-
-  // Close mobile menu on resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setMobileMenuOpen(false)
-      }
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
-  // Lock body scroll when mobile menu is open
-  useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.classList.add('menu-open')
-    } else {
-      document.body.classList.remove('menu-open')
-    }
-    return () => {
-      document.body.classList.remove('menu-open')
-    }
-  }, [mobileMenuOpen])
 
   if (isLoading) {
     return (
@@ -149,13 +125,6 @@ export const LoginPage: React.FC = () => {
   }
 
   const shouldAnimate = !prefersReducedMotion
-
-  const navItems = [
-    { label: 'Features', action: () => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }) },
-    { label: 'Demo', action: () => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' }) },
-    { label: 'Docs', link: '/docs' },
-    { label: 'FAQ', link: '/faq' },
-  ]
 
   return (
     <div className="min-h-screen bg-white">
@@ -182,95 +151,16 @@ export const LoginPage: React.FC = () => {
               className="h-7 sm:h-8 w-auto cursor-pointer" 
             />
             
-            {/* Desktop Navigation Links */}
-            <div className="hidden md:flex items-center gap-6 lg:gap-8">
-              {navItems.map((item) => (
-                item.link ? (
-                  <Link
-                    key={item.label}
-                    to={item.link}
-                    className="text-sm text-slate-600 hover:text-slate-900 transition-colors font-medium"
-                  >
-                    {item.label}
-                  </Link>
-                ) : (
-                  <button
-                    key={item.label}
-                    onClick={item.action}
-                    className="text-sm text-slate-600 hover:text-slate-900 transition-colors font-medium"
-                  >
-                    {item.label}
-                  </button>
-                )
-              ))}
-            </div>
-            
-            <div className="flex items-center gap-2 sm:gap-3">
-              {/* Sign In Button - Desktop */}
-              <button
-                onClick={() => loginWithRedirect()}
-                className="hidden sm:inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-semibold text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300 rounded-xl transition-all"
-              >
-                <LogIn className="w-4 h-4" />
-                Sign In
-              </button>
-
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 text-slate-600 hover:text-slate-900 transition-colors"
-              >
-                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </button>
-            </div>
+            {/* Sign In Button */}
+            <button
+              onClick={() => loginWithRedirect()}
+              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-semibold text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300 rounded-xl transition-all"
+            >
+              <LogIn className="w-4 h-4" />
+              Sign In
+            </button>
           </div>
         </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="md:hidden border-t border-slate-200/80 bg-white"
-            >
-              <div className="px-4 py-4 space-y-1">
-                {navItems.map((item) => (
-                  item.link ? (
-                    <Link
-                      key={item.label}
-                      to={item.link}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium"
-                    >
-                      {item.label}
-                    </Link>
-                  ) : (
-                    <button
-                      key={item.label}
-                      onClick={() => {
-                        item.action?.()
-                        setMobileMenuOpen(false)
-                      }}
-                      className="block w-full text-left px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium"
-                    >
-                      {item.label}
-                    </button>
-                  )
-                ))}
-                <button
-                  onClick={() => loginWithRedirect()}
-                  className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl font-semibold"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Sign In
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </motion.nav>
 
       {/* Hero Section */}
