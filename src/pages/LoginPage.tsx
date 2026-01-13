@@ -2,10 +2,45 @@ import React, { useEffect, useState } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Chrome, FileText, FolderTree, Search, ArrowRight, CheckCircle2, LogIn, BookOpen, ExternalLink, Sparkles, Menu, X } from 'lucide-react'
+import { Chrome, FileText, FolderTree, Search, ArrowRight, CheckCircle2, LogIn, BookOpen, ExternalLink, Sparkles, Menu, X, ChevronUp } from 'lucide-react'
 import { DashboardPreview } from '../components/DashboardPreview'
 import { ExtensionPreview } from '../components/ExtensionPreview'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
+
+// Scroll to Top Button Component
+const ScrollToTopButton: React.FC = () => {
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    const toggleVisibility = () => {
+      setIsVisible(window.scrollY > 500)
+    }
+    window.addEventListener('scroll', toggleVisibility, { passive: true })
+    return () => window.removeEventListener('scroll', toggleVisibility)
+  }, [])
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  return (
+    <AnimatePresence>
+      {isVisible && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: 20 }}
+          transition={{ duration: 0.2 }}
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-40 p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-lg shadow-blue-600/30 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:hidden"
+          aria-label="Scroll to top"
+        >
+          <ChevronUp className="w-5 h-5" />
+        </motion.button>
+      )}
+    </AnimatePresence>
+  )
+}
 
 // Animation variants for scroll reveal
 const fadeInUp = {
@@ -82,6 +117,18 @@ export const LoginPage: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.classList.add('menu-open')
+    } else {
+      document.body.classList.remove('menu-open')
+    }
+    return () => {
+      document.body.classList.remove('menu-open')
+    }
+  }, [mobileMenuOpen])
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -112,6 +159,14 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Skip to Content Link for Accessibility */}
+      <a href="#main-content" className="skip-to-content">
+        Skip to main content
+      </a>
+
+      {/* Scroll to Top Button - Mobile Only */}
+      <ScrollToTopButton />
+
       {/* Top Navigation */}
       <motion.nav
         initial={{ opacity: 0, y: -20 }}
@@ -219,7 +274,7 @@ export const LoginPage: React.FC = () => {
       </motion.nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section id="main-content" className="relative overflow-hidden" tabIndex={-1}>
         <div className="absolute inset-0 bg-gradient-to-b from-blue-50/50 via-white to-white pointer-events-none" />
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20 lg:py-28">
