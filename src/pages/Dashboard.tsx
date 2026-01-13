@@ -9,6 +9,7 @@ import { SearchAutocomplete } from '../components/SearchAutocomplete'
 import { AddLinkModal } from '../components/AddLinkModal'
 import { EditLinkModal } from '../components/EditLinkModal'
 import { CreateCollectionModal } from '../components/CreateCollectionModal'
+import { ExtensionInstallModal } from '../components/ExtensionInstallModal'
 import { FiltersDropdown } from '../components/FiltersDropdown'
 import { useBackendApi } from '../hooks/useBackendApi'
 import { useBulkOperations } from '../hooks/useBulkOperations'
@@ -30,6 +31,7 @@ export const Dashboard: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingLink, setEditingLink] = useState<Link | null>(null)
   const [showCreateCollectionModal, setShowCreateCollectionModal] = useState(false)
+  const [showExtensionInstallModal, setShowExtensionInstallModal] = useState(false)
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null)
   const [activeFilterId, setActiveFilterId] = useState<string | null>(null)
   const [filters, setFilters] = useState({
@@ -50,6 +52,21 @@ export const Dashboard: React.FC = () => {
   const [searchParams] = useSearchParams()
   const { isMobile, prefersReducedMotion, animationConfig } = useMobileOptimizations()
   const isExtensionInstalled = useExtensionDetection()
+
+  // Show extension install modal for first-time users
+  useEffect(() => {
+    if (!isExtensionInstalled && isAuthenticated) {
+      // Check if user has dismissed the modal
+      const dismissed = localStorage.getItem('smartrack-extension-install-dismissed')
+      if (!dismissed) {
+        // Show modal after a short delay to let detection complete
+        const timer = setTimeout(() => {
+          setShowExtensionInstallModal(true)
+        }, 2000)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [isExtensionInstalled, isAuthenticated])
 
   // Check if we should redirect to analytics after login
   useEffect(() => {
@@ -835,6 +852,11 @@ export const Dashboard: React.FC = () => {
     toast.success('Extension download started!')
   }
 
+  // Handle extension install button click
+  const handleExtensionInstallClick = () => {
+    setShowExtensionInstallModal(true)
+  }
+
   // Animation variants - Optimized for mobile
   const fadeInUp = {
     hidden: { opacity: 0, y: animationConfig.movementDistance },
@@ -869,6 +891,34 @@ export const Dashboard: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 pb-4 sm:pb-0">
       <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-8">
         
+        {/* Extension Install Banner */}
+        {!isExtensionInstalled && isAuthenticated && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg shadow-lg"
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3 flex-1">
+                <Chrome className="w-6 h-6 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-lg mb-1">Install the SmarTrack Extension</h3>
+                  <p className="text-sm text-blue-100">
+                    Get the full power of SmarTrack! Save any webpage with one click, extract content automatically, and access your library from anywhere.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleExtensionInstallClick}
+                className="px-4 py-2 bg-white text-indigo-600 rounded-lg hover:bg-blue-50 transition-colors font-semibold text-sm whitespace-nowrap flex items-center gap-2"
+              >
+                <Chrome className="w-4 h-4" />
+                Get Started
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {/* ✅ UNIFIED TOOLBAR: Single bar with all controls */}
         <motion.div
           initial={shouldAnimate ? "hidden" : "visible"}
@@ -934,14 +984,14 @@ export const Dashboard: React.FC = () => {
 
               {!isExtensionInstalled && (
                 <button 
-                  onClick={handleDownloadExtension}
+                  onClick={handleExtensionInstallClick}
                   className="flex-1 sm:flex-initial px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-lg hover:from-indigo-700 hover:to-indigo-800 active:from-indigo-800 transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-0 touch-manipulation"
-                  aria-label="Download Chrome extension"
-                  title="Download SmarTrack Chrome Extension"
+                  aria-label="Install Chrome extension"
+                  title="Install SmarTrack Chrome Extension - Get step-by-step instructions"
                 >
                   <Chrome className="w-4 h-4 flex-shrink-0" />
-                  <span className="sm:hidden md:inline">Extension</span>
-                  <span className="hidden sm:inline md:hidden">Ext</span>
+                  <span className="sm:hidden md:inline">Install Extension</span>
+                  <span className="hidden sm:inline md:hidden">Install</span>
                 </button>
               )}
             </div>
@@ -1345,6 +1395,13 @@ export const Dashboard: React.FC = () => {
         link={editingLink}
         collections={collections}
         existingCategories={Array.from(new Set(links.map(l => l.category).filter(Boolean)))}
+      />
+
+      {/* Extension Install Modal */}
+      <ExtensionInstallModal
+        isOpen={showExtensionInstallModal}
+        onClose={() => setShowExtensionInstallModal(false)}
+        onDownload={handleDownloadExtension}
       />
 
       {/* Create Collection Modal */}
