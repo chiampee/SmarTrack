@@ -155,30 +155,30 @@ export const TermsPage: React.FC = () => {
         className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200"
       >
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <div className="flex items-center gap-2 sm:gap-4">
               <button
                 onClick={() => navigate('/')}
-                className="p-2 -ml-2 text-slate-500 hover:text-slate-900 transition-colors"
+                className="p-1.5 sm:p-2 -ml-1.5 sm:-ml-2 text-slate-500 hover:text-slate-900 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <img 
                 src="/logo.svg" 
                 alt="SmarTrack" 
-                className="h-7 w-auto cursor-pointer"
+                className="h-6 sm:h-7 w-auto cursor-pointer"
                 onClick={() => navigate('/')}
               />
             </div>
             
             <motion.button
-              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => loginWithRedirect()}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-600/20 transition-all"
+              className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl shadow-lg shadow-blue-600/20 transition-all"
             >
-              <Chrome className="w-4 h-4" />
-              Get Started Free
+              <Chrome className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Get Started Free</span>
+              <span className="sm:hidden">Start Free</span>
             </motion.button>
           </div>
         </div>
@@ -186,7 +186,7 @@ export const TermsPage: React.FC = () => {
 
       {/* Hero */}
       <section className="bg-white border-b border-slate-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 md:py-20">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -195,29 +195,29 @@ export const TermsPage: React.FC = () => {
           >
             <motion.div
               variants={fadeInUp}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-full text-sm text-blue-700 font-medium mb-6"
+              className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-50 border border-blue-100 rounded-full text-xs sm:text-sm text-blue-700 font-medium mb-4 sm:mb-6"
             >
-              <FileText className="w-4 h-4" />
+              <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Terms of Service
             </motion.div>
             
             <motion.h1
               variants={fadeInUp}
-              className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 mb-4"
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-3 sm:mb-4"
             >
               Terms of Service
             </motion.h1>
             
             <motion.p
               variants={fadeInUp}
-              className="text-lg text-slate-600 max-w-2xl mx-auto mb-4"
+              className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto mb-3 sm:mb-4 px-2"
             >
               Please read these terms carefully before using SmarTrack. By using our service, you agree to these terms.
             </motion.p>
 
             <motion.p
               variants={fadeInUp}
-              className="text-sm text-slate-500"
+              className="text-xs sm:text-sm text-slate-500"
             >
               Last updated: January 1, 2026
             </motion.p>
@@ -226,8 +226,8 @@ export const TermsPage: React.FC = () => {
       </section>
 
       {/* Content */}
-      <section className="py-12 sm:py-16">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+      <section className="py-8 sm:py-12 md:py-16">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8 md:space-y-12">
           {sections.map((section, index) => {
             const Icon = section.icon
             return (
@@ -235,20 +235,20 @@ export const TermsPage: React.FC = () => {
                 key={index}
                 initial="hidden"
                 whileInView="visible"
-                viewport={{ once: true, margin: "-50px" }}
+                viewport={{ once: true, margin: "-30px" }}
                 variants={fadeInUp}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-                className="bg-white rounded-2xl border border-slate-200 p-8"
+                transition={{ duration: 0.5, delay: index * 0.03 }}
+                className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-5 sm:p-6 md:p-8"
               >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                    <Icon className="w-5 h-5" />
+                <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-50 rounded-lg sm:rounded-xl flex items-center justify-center text-blue-600">
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <h2 className="text-xl font-bold text-slate-900">{section.title}</h2>
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900">{section.title}</h2>
                 </div>
                 <div className="prose prose-slate max-w-none">
                   {section.content.split('\n\n').map((paragraph, pIndex) => (
-                    <p key={pIndex} className="text-slate-600 leading-relaxed whitespace-pre-line mb-4 last:mb-0">
+                    <p key={pIndex} className="text-sm sm:text-base text-slate-600 leading-relaxed whitespace-pre-line mb-3 sm:mb-4 last:mb-0">
                       {paragraph.split('**').map((part, i) => 
                         i % 2 === 1 ? <strong key={i} className="text-slate-900 font-semibold">{part}</strong> : part
                       )}

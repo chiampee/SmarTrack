@@ -242,30 +242,30 @@ export const FAQPage: React.FC = () => {
         className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200"
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <div className="flex items-center gap-2 sm:gap-4">
               <button
                 onClick={() => navigate('/')}
-                className="p-2 -ml-2 text-slate-500 hover:text-slate-900 transition-colors"
+                className="p-1.5 sm:p-2 -ml-1.5 sm:-ml-2 text-slate-500 hover:text-slate-900 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <img 
                 src="/logo.svg" 
                 alt="SmarTrack" 
-                className="h-7 w-auto cursor-pointer"
+                className="h-6 sm:h-7 w-auto cursor-pointer"
                 onClick={() => navigate('/')}
               />
             </div>
             
             <motion.button
-              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => loginWithRedirect()}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-600/20 transition-all"
+              className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl shadow-lg shadow-blue-600/20 transition-all"
             >
-              <Chrome className="w-4 h-4" />
-              Get Started Free
+              <Chrome className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Get Started Free</span>
+              <span className="sm:hidden">Start Free</span>
             </motion.button>
           </div>
         </div>
@@ -273,7 +273,7 @@ export const FAQPage: React.FC = () => {
 
       {/* Hero Section */}
       <section className="bg-white border-b border-slate-200">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 md:py-20">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -282,22 +282,22 @@ export const FAQPage: React.FC = () => {
           >
             <motion.div
               variants={fadeInUp}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-full text-sm text-blue-700 font-medium mb-6"
+              className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-50 border border-blue-100 rounded-full text-xs sm:text-sm text-blue-700 font-medium mb-4 sm:mb-6"
             >
-              <HelpCircle className="w-4 h-4" />
+              <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Help Center
             </motion.div>
             
             <motion.h1
               variants={fadeInUp}
-              className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 mb-4"
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-3 sm:mb-4"
             >
               Frequently Asked Questions
             </motion.h1>
             
             <motion.p
               variants={fadeInUp}
-              className="text-lg text-slate-600 max-w-2xl mx-auto mb-8"
+              className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto mb-6 sm:mb-8 px-2"
             >
               Everything you need to know about SmarTrack. Can't find what you're looking for? Reach out to our team.
             </motion.p>
@@ -307,13 +307,13 @@ export const FAQPage: React.FC = () => {
               variants={fadeInUp}
               className="max-w-xl mx-auto relative"
             >
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 sm:w-5 h-4 sm:h-5 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search questions..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl text-slate-900 placeholder-slate-400 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </motion.div>
           </motion.div>
@@ -321,18 +321,18 @@ export const FAQPage: React.FC = () => {
       </section>
 
       {/* Quick Navigation */}
-      <section className="bg-white border-b border-slate-200 sticky top-16 z-40">
+      <section className="bg-white border-b border-slate-200 sticky top-14 sm:top-16 z-40">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-2 py-2 sm:py-3 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
             {faqCategories.map((cat) => {
               const Icon = cat.icon
               return (
                 <button
                   key={cat.id}
                   onClick={() => document.getElementById(cat.id)?.scrollIntoView({ behavior: 'smooth' })}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium whitespace-nowrap transition-colors"
+                  className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-colors"
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   {cat.title}
                 </button>
               )

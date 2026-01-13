@@ -415,14 +415,14 @@ const CodeBlock: React.FC<{ children: string }> = ({ children }) => {
   }
 
   return (
-    <div className="relative bg-slate-900 rounded-xl p-4 my-4">
+    <div className="relative bg-slate-900 rounded-lg sm:rounded-xl p-3 sm:p-4 my-3 sm:my-4 overflow-x-auto">
       <button
         onClick={handleCopy}
-        className="absolute top-3 right-3 p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+        className="absolute top-2 right-2 sm:top-3 sm:right-3 p-1.5 sm:p-2 bg-slate-800 hover:bg-slate-700 rounded-md sm:rounded-lg text-slate-400 hover:text-white transition-colors"
       >
-        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+        {copied ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
       </button>
-      <code className="text-sm text-slate-300 font-mono">{children}</code>
+      <code className="text-xs sm:text-sm text-slate-300 font-mono">{children}</code>
     </div>
   )
 }
@@ -432,14 +432,14 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
   const lines = content.split('\n')
   
   return (
-    <div className="prose prose-slate max-w-none">
+    <div className="prose prose-slate max-w-none text-sm sm:text-base">
       {lines.map((line, index) => {
         // Headers
         if (line.startsWith('## ')) {
-          return <h2 key={index} className="text-xl font-bold text-slate-900 mt-8 mb-4 first:mt-0">{line.replace('## ', '')}</h2>
+          return <h2 key={index} className="text-lg sm:text-xl font-bold text-slate-900 mt-6 sm:mt-8 mb-3 sm:mb-4 first:mt-0">{line.replace('## ', '')}</h2>
         }
         if (line.startsWith('### ')) {
-          return <h3 key={index} className="text-lg font-semibold text-slate-800 mt-6 mb-3">{line.replace('### ', '')}</h3>
+          return <h3 key={index} className="text-base sm:text-lg font-semibold text-slate-800 mt-4 sm:mt-6 mb-2 sm:mb-3">{line.replace('### ', '')}</h3>
         }
         // Code blocks
         if (line.startsWith('```')) {
@@ -448,7 +448,7 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
         // Tables (simplified)
         if (line.startsWith('|')) {
           return (
-            <div key={index} className="font-mono text-sm text-slate-600 whitespace-pre my-1">
+            <div key={index} className="font-mono text-xs sm:text-sm text-slate-600 whitespace-pre my-1 overflow-x-auto">
               {line}
             </div>
           )
@@ -456,14 +456,14 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
         // List items
         if (line.startsWith('- ')) {
           return (
-            <li key={index} className="text-slate-600 ml-4 list-disc">
+            <li key={index} className="text-slate-600 ml-3 sm:ml-4 list-disc text-sm sm:text-base">
               {line.replace('- ', '')}
             </li>
           )
         }
         if (line.match(/^\d+\. /)) {
           return (
-            <li key={index} className="text-slate-600 ml-4 list-decimal">
+            <li key={index} className="text-slate-600 ml-3 sm:ml-4 list-decimal text-sm sm:text-base">
               {line.replace(/^\d+\. /, '')}
             </li>
           )
@@ -474,7 +474,7 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
         }
         // Regular paragraphs
         return (
-          <p key={index} className="text-slate-600 mb-3">
+          <p key={index} className="text-slate-600 mb-2 sm:mb-3 text-sm sm:text-base leading-relaxed">
             {line.split('**').map((part, i) => 
               i % 2 === 1 ? <strong key={i} className="text-slate-900 font-semibold">{part}</strong> : part
             )}
@@ -512,53 +512,82 @@ export const DocsPage: React.FC = () => {
         className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <div className="flex items-center gap-2 sm:gap-4">
               <button
                 onClick={() => navigate('/')}
-                className="p-2 -ml-2 text-slate-500 hover:text-slate-900 transition-colors"
+                className="p-1.5 sm:p-2 -ml-1.5 sm:-ml-2 text-slate-500 hover:text-slate-900 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <img 
                 src="/logo.svg" 
                 alt="SmarTrack" 
-                className="h-7 w-auto cursor-pointer"
+                className="h-6 sm:h-7 w-auto cursor-pointer"
                 onClick={() => navigate('/')}
               />
-              <span className="text-slate-300">|</span>
-              <span className="text-slate-600 font-medium">Documentation</span>
+              <span className="hidden sm:inline text-slate-300">|</span>
+              <span className="hidden sm:inline text-slate-600 font-medium">Documentation</span>
             </div>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Link
                 to="/faq"
-                className="text-sm text-slate-600 hover:text-slate-900 transition-colors font-medium"
+                className="hidden sm:inline text-sm text-slate-600 hover:text-slate-900 transition-colors font-medium"
               >
                 FAQ
               </Link>
               <motion.button
-                whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => loginWithRedirect()}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-600/20 transition-all"
+                className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl shadow-lg shadow-blue-600/20 transition-all"
               >
-                <Chrome className="w-4 h-4" />
-                Get Started Free
+                <Chrome className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Get Started Free</span>
+                <span className="sm:hidden">Start Free</span>
               </motion.button>
             </div>
           </div>
         </div>
       </motion.nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Mobile Section Selector */}
+        <div className="lg:hidden mb-4">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+            {docSections.map((section) => {
+              const Icon = section.icon
+              const colors = colorClasses[section.color]
+              const isActive = activeSection === section.id
+              
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => {
+                    setActiveSection(section.id)
+                    setActiveArticle(0)
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all ${
+                    isActive 
+                      ? `${colors.bg} ${colors.text} border ${colors.border}` 
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span>{section.title}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
         <div className="flex gap-8">
-          {/* Sidebar */}
+          {/* Sidebar - Desktop only */}
           <motion.aside
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="hidden lg:block w-64 flex-shrink-0"
+            className="hidden lg:block w-56 xl:w-64 flex-shrink-0"
           >
             <div className="sticky top-24 space-y-2">
               {docSections.map((section) => {
@@ -595,21 +624,21 @@ export const DocsPage: React.FC = () => {
             className="flex-1 min-w-0"
           >
             {/* Section Header */}
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClasses[currentSection.color].bg} ${colorClasses[currentSection.color].text}`}>
-                  <currentSection.icon className="w-5 h-5" />
+            <div className="mb-4 sm:mb-6 lg:mb-8">
+              <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center ${colorClasses[currentSection.color].bg} ${colorClasses[currentSection.color].text}`}>
+                  <currentSection.icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <h1 className="text-2xl font-bold text-slate-900">{currentSection.title}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{currentSection.title}</h1>
               </div>
               
               {/* Article tabs */}
-              <div className="flex gap-2 overflow-x-auto pb-2">
+              <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
                 {currentSection.articles.map((article, index) => (
                   <button
                     key={index}
                     onClick={() => setActiveArticle(index)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                       activeArticle === index
                         ? 'bg-blue-600 text-white'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -627,41 +656,41 @@ export const DocsPage: React.FC = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="bg-white rounded-2xl border border-slate-200 p-8"
+              className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-4 sm:p-6 md:p-8"
             >
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 mb-4 sm:mb-6">
                 {currentSection.articles[activeArticle].title}
               </h2>
               <ArticleContent content={currentSection.articles[activeArticle].content} />
             </motion.div>
 
             {/* Quick Links */}
-            <div className="mt-8 grid sm:grid-cols-2 gap-4">
+            <div className="mt-6 sm:mt-8 grid sm:grid-cols-2 gap-3 sm:gap-4">
               <Link
                 to="/faq"
-                className="flex items-center gap-4 p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors group"
+                className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors group"
               >
-                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
-                  <Zap className="w-5 h-5" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg sm:rounded-xl flex items-center justify-center text-blue-600">
+                  <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <div className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">FAQ</div>
-                  <div className="text-sm text-slate-500">Common questions answered</div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors text-sm sm:text-base">FAQ</div>
+                  <div className="text-xs sm:text-sm text-slate-500 truncate">Common questions</div>
                 </div>
-                <ExternalLink className="w-4 h-4 text-slate-400 ml-auto" />
+                <ExternalLink className="w-4 h-4 text-slate-400 flex-shrink-0" />
               </Link>
               <a
                 href="mailto:support@smartrack.app"
-                className="flex items-center gap-4 p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors group"
+                className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors group"
               >
-                <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
-                  <Command className="w-5 h-5" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-lg sm:rounded-xl flex items-center justify-center text-green-600">
+                  <Command className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <div className="font-semibold text-slate-900 group-hover:text-green-600 transition-colors">Get Support</div>
-                  <div className="text-sm text-slate-500">We're here to help</div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-slate-900 group-hover:text-green-600 transition-colors text-sm sm:text-base">Get Support</div>
+                  <div className="text-xs sm:text-sm text-slate-500 truncate">We're here to help</div>
                 </div>
-                <ExternalLink className="w-4 h-4 text-slate-400 ml-auto" />
+                <ExternalLink className="w-4 h-4 text-slate-400 flex-shrink-0" />
               </a>
             </div>
           </motion.main>
