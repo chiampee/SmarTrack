@@ -1000,17 +1000,17 @@ export const Dashboard: React.FC = () => {
         </motion.div>
 
         {/* Dashboard Summary */}
-        <div className="space-y-6 mb-8">
+        <div className="space-y-8 mb-12">
           {/* Welcome Header */}
           <motion.div
             initial={shouldAnimate ? "hidden" : "visible"}
             animate="visible"
             variants={fadeInUp}
             transition={{ duration: animationConfig.duration, ease: "easeOut" }}
-            className="mb-6"
+            className="mb-8"
           >
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Dashboard Overview</h1>
-            <p className="text-slate-600">Your knowledge library at a glance</p>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">Dashboard Overview</h1>
+            <p className="text-lg text-slate-600">Your knowledge library at a glance</p>
           </motion.div>
 
           {/* Stats Cards */}
@@ -1019,75 +1019,93 @@ export const Dashboard: React.FC = () => {
             animate="visible"
             variants={fadeInUp}
             transition={{ delay: shouldAnimate ? 0.1 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
           >
             {/* Total Links */}
-            <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <LinkIcon className="w-6 h-6 text-blue-600" />
+            <motion.div
+              whileHover={{ y: -4, scale: 1.02 }}
+              className="relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl border border-blue-200/60 p-6 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/20 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-blue-300/30 transition-colors" />
+              <div className="relative">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <LinkIcon className="w-7 h-7 text-white" />
                 </div>
+                <div className="text-4xl font-extrabold text-slate-900 mb-2">{links.length}</div>
+                <div className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Total Links</div>
               </div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">{links.length}</div>
-              <div className="text-sm text-slate-600">Total Links</div>
-            </div>
+            </motion.div>
 
             {/* Collections */}
-            <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <Folder className="w-6 h-6 text-purple-600" />
+            <motion.div
+              whileHover={{ y: -4, scale: 1.02 }}
+              className="relative bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-2xl border border-purple-200/60 p-6 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200/20 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-purple-300/30 transition-colors" />
+              <div className="relative">
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Folder className="w-7 h-7 text-white" />
                 </div>
+                <div className="text-4xl font-extrabold text-slate-900 mb-2">{collections.length}</div>
+                <div className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Collections</div>
               </div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">{collections.length}</div>
-              <div className="text-sm text-slate-600">Collections</div>
-            </div>
+            </motion.div>
 
             {/* Categories */}
-            <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Tag className="w-6 h-6 text-green-600" />
+            <motion.div
+              whileHover={{ y: -4, scale: 1.02 }}
+              className="relative bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl border border-emerald-200/60 p-6 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-200/20 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-emerald-300/30 transition-colors" />
+              <div className="relative">
+                <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Tag className="w-7 h-7 text-white" />
                 </div>
+                <div className="text-4xl font-extrabold text-slate-900 mb-2">{categories.length}</div>
+                <div className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Categories</div>
               </div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">{categories.length}</div>
-              <div className="text-sm text-slate-600">Categories</div>
-            </div>
+            </motion.div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-orange-600" />
+            <motion.div
+              whileHover={{ y: -4, scale: 1.02 }}
+              className="relative bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-2xl border border-orange-200/60 p-6 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200/20 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-orange-300/30 transition-colors" />
+              <div className="relative">
+                <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <TrendingUp className="w-7 h-7 text-white" />
                 </div>
+                <div className="text-4xl font-extrabold text-slate-900 mb-2">
+                  {links.filter(l => {
+                    const sevenDaysAgo = new Date()
+                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+                    return new Date(l.createdAt) >= sevenDaysAgo
+                  }).length}
+                </div>
+                <div className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Last 7 Days</div>
               </div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">
-                {links.filter(l => {
-                  const sevenDaysAgo = new Date()
-                  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-                  return new Date(l.createdAt) >= sevenDaysAgo
-                }).length}
-              </div>
-              <div className="text-sm text-slate-600">Last 7 Days</div>
-            </div>
+            </motion.div>
           </motion.div>
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Recent Links & Quick Actions */}
-            <div className="lg:col-span-2 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Recent Links & Collections */}
+            <div className="lg:col-span-2 space-y-8">
               {/* Recent Links */}
               <motion.div
                 initial={shouldAnimate ? "hidden" : "visible"}
                 animate="visible"
                 variants={fadeInUp}
                 transition={{ delay: shouldAnimate ? 0.2 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-                className="bg-white rounded-lg border border-slate-200 shadow-sm"
+                className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden"
               >
-                <div className="p-5 border-b border-slate-200 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-slate-600" />
-                    <h2 className="text-lg font-semibold text-slate-900">Recent Links</h2>
+                <div className="px-6 py-5 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200/80 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                      <Clock className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <h2 className="text-xl font-bold text-slate-900">Recent Links</h2>
                   </div>
                   <button
                     onClick={() => {
@@ -1096,29 +1114,32 @@ export const Dashboard: React.FC = () => {
                       setFilters({ category: '', dateRange: 'all_time', tags: [], contentType: '' })
                       setActiveFilterId(null)
                     }}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                    className="text-sm text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
                   >
                     View All
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="p-5">
+                <div className="p-6">
                   {loading && links.length === 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {[...Array(3)].map((_, i) => (
                         <div key={i} className="animate-pulse">
-                          <div className="h-4 bg-slate-200 rounded w-3/4 mb-2" />
-                          <div className="h-3 bg-slate-100 rounded w-1/2" />
+                          <div className="h-5 bg-slate-200 rounded-lg w-3/4 mb-2" />
+                          <div className="h-4 bg-slate-100 rounded-lg w-1/2" />
                         </div>
                       ))}
                     </div>
                   ) : links.length === 0 ? (
-                    <div className="text-center py-8">
-                      <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                      <p className="text-slate-600 mb-4">No links yet</p>
+                    <div className="text-center py-12">
+                      <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <BookOpen className="w-10 h-10 text-slate-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-900 mb-2">No links yet</h3>
+                      <p className="text-slate-600 mb-6 max-w-sm mx-auto">Start building your knowledge library by adding your first link</p>
                       <button
                         onClick={() => setShowAddModal(true)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl font-semibold"
                       >
                         Add Your First Link
                       </button>
@@ -1129,31 +1150,34 @@ export const Dashboard: React.FC = () => {
                         .filter(l => !l.isArchived)
                         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                         .slice(0, 5)
-                        .map((link) => (
-                          <div
+                        .map((link, index) => (
+                          <motion.div
                             key={link.id}
-                            className="p-3 rounded-lg border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+                            initial={shouldAnimate ? { opacity: 0, x: -20 } : { opacity: 1, x: 0 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: shouldAnimate ? 0.3 + index * 0.05 : 0 }}
+                            className="group p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-white transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md"
                             onClick={() => {
                               setEditingLink(link)
                             }}
                           >
-                            <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start justify-between gap-4">
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-medium text-slate-900 truncate mb-1">{link.title || 'Untitled'}</h3>
-                                <p className="text-sm text-slate-600 truncate">{link.url}</p>
-                                <div className="flex items-center gap-2 mt-2">
-                                  <span className="text-xs text-slate-500">
-                                    {new Date(link.createdAt).toLocaleDateString()}
+                                <h3 className="font-semibold text-slate-900 truncate mb-1.5 group-hover:text-blue-700 transition-colors">{link.title || 'Untitled'}</h3>
+                                <p className="text-sm text-slate-600 truncate mb-3">{link.url}</p>
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xs font-medium text-slate-500">
+                                    {new Date(link.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                   </span>
                                   {link.category && (
-                                    <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">
+                                    <span className="text-xs px-3 py-1 bg-slate-100 text-slate-700 rounded-full font-medium">
                                       {link.category}
                                     </span>
                                   )}
                                 </div>
                               </div>
                             </div>
-                          </div>
+                          </motion.div>
                         ))}
                     </div>
                   )}
@@ -1167,33 +1191,42 @@ export const Dashboard: React.FC = () => {
                   animate="visible"
                   variants={fadeInUp}
                   transition={{ delay: shouldAnimate ? 0.3 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-                  className="bg-white rounded-lg border border-slate-200 shadow-sm"
+                  className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden"
                 >
-                  <div className="p-5 border-b border-slate-200 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Folder className="w-5 h-5 text-slate-600" />
-                      <h2 className="text-lg font-semibold text-slate-900">Collections</h2>
+                  <div className="px-6 py-5 bg-gradient-to-r from-purple-50 to-white border-b border-slate-200/80 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                        <Folder className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <h2 className="text-xl font-bold text-slate-900">Collections</h2>
                     </div>
                     <button
                       onClick={() => setShowCreateCollectionModal(true)}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      className="text-sm text-purple-600 hover:text-purple-700 font-semibold px-3 py-1.5 rounded-lg hover:bg-purple-50 transition-colors"
                     >
                       + New
                     </button>
                   </div>
-                  <div className="p-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {collections.slice(0, 4).map((collection) => {
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {collections.slice(0, 4).map((collection, index) => {
                         const collectionLinks = links.filter(l => l.collectionId === collection.id)
                         return (
-                          <div
+                          <motion.div
                             key={collection.id}
+                            initial={shouldAnimate ? { opacity: 0, scale: 0.95 } : { opacity: 1, scale: 1 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: shouldAnimate ? 0.4 + index * 0.05 : 0 }}
+                            whileHover={{ scale: 1.02, y: -2 }}
                             onClick={() => handleCollectionSelect(collection.id)}
-                            className="p-3 rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-colors cursor-pointer"
+                            className="p-4 rounded-xl border border-slate-200 hover:border-purple-300 hover:bg-gradient-to-br hover:from-purple-50/50 hover:to-white transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md group"
                           >
-                            <div className="font-medium text-slate-900 mb-1">{collection.name}</div>
-                            <div className="text-sm text-slate-600">{collectionLinks.length} links</div>
-                          </div>
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="font-semibold text-slate-900 group-hover:text-purple-700 transition-colors">{collection.name}</div>
+                              <Folder className="w-4 h-4 text-purple-400 group-hover:text-purple-600 transition-colors" />
+                            </div>
+                            <div className="text-sm font-medium text-slate-600">{collectionLinks.length} {collectionLinks.length === 1 ? 'link' : 'links'}</div>
+                          </motion.div>
                         )
                       })}
                     </div>
@@ -1203,20 +1236,22 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Right Column - Usage Stats & Quick Actions */}
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Usage Stats */}
               <motion.div
                 initial={shouldAnimate ? "hidden" : "visible"}
                 animate="visible"
                 variants={fadeInUp}
                 transition={{ delay: shouldAnimate ? 0.2 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-                className="bg-white rounded-lg border border-slate-200 shadow-sm"
+                className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden"
               >
-                <div className="p-5 border-b border-slate-200 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-slate-600" />
-                  <h2 className="text-lg font-semibold text-slate-900">Usage & Limits</h2>
+                <div className="px-6 py-5 bg-gradient-to-r from-emerald-50 to-white border-b border-slate-200/80 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                    <BarChart3 className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-900">Usage & Limits</h2>
                 </div>
-                <div className="p-5">
+                <div className="p-6">
                   <UsageStats />
                 </div>
               </motion.div>
@@ -1227,34 +1262,41 @@ export const Dashboard: React.FC = () => {
                 animate="visible"
                 variants={fadeInUp}
                 transition={{ delay: shouldAnimate ? 0.3 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-                className="bg-white rounded-lg border border-slate-200 shadow-sm"
+                className="bg-gradient-to-br from-slate-50 to-white rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden"
               >
-                <div className="p-5 border-b border-slate-200">
-                  <h2 className="text-lg font-semibold text-slate-900">Quick Actions</h2>
+                <div className="px-6 py-5 border-b border-slate-200/80">
+                  <h2 className="text-xl font-bold text-slate-900">Quick Actions</h2>
+                  <p className="text-sm text-slate-600 mt-1">Common tasks at your fingertips</p>
                 </div>
-                <div className="p-5 space-y-2">
-                  <button
+                <div className="p-6 space-y-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => setShowAddModal(true)}
-                    className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                    className="w-full px-5 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2.5 font-semibold"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-5 h-5" />
                     Add New Link
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => setShowCreateCollectionModal(true)}
-                    className="w-full px-4 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 font-medium"
+                    className="w-full px-5 py-3.5 bg-white text-slate-700 border-2 border-slate-300 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2.5 font-semibold"
                   >
-                    <Folder className="w-4 h-4" />
+                    <Folder className="w-5 h-5" />
                     Create Collection
-                  </button>
+                  </motion.button>
                   {!isExtensionInstalled && (
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={handleExtensionInstallClick}
-                      className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                      className="w-full px-5 py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2.5 font-semibold"
                     >
-                      <Chrome className="w-4 h-4" />
+                      <Chrome className="w-5 h-5" />
                       Install Extension
-                    </button>
+                    </motion.button>
                   )}
                 </div>
               </motion.div>
