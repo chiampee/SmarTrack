@@ -2,16 +2,15 @@
 Authentication service
 """
 
-from fastapi import HTTPException, Depends, status, Request, Header
+from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Optional
 from jose import JWTError, jwt
 from jose.exceptions import ExpiredSignatureError, JWTClaimsError
 from core.config import settings
 import httpx
 import time
 
-security = HTTPBearer(auto_error=False)
+security = HTTPBearer()
 
 # In-memory cache for user emails (to avoid repeated userinfo calls)
 # Key: user_id, Value: {'email': str, 'cached_at': float}
@@ -121,33 +120,10 @@ def extract_email_from_payload(payload: dict) -> str:
     return None
 
 
-async def get_current_user(
-    request: Request,
-    x_test_mode: Optional[str] = Header(None, alias="X-Test-Mode"),
-    x_test_user_id: Optional[str] = Header(None, alias="X-Test-User-Id"),
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
-):
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Get current authenticated user with JWT signature verification"""
     import logging
     logger = logging.getLogger(__name__)
-    
-    # Check for test mode header
-    test_mode = x_test_mode and x_test_mode.lower() == 'true'
-    test_user_id = x_test_user_id or 'test-user-123'
-    
-    if test_mode:
-        logger.info(f"[TEST MODE] ✅ Test mode enabled for user: {test_user_id}")
-        return {
-            "sub": test_user_id,
-            "email": "test@smartrack.app",
-            "name": "Test User"
-        }
-    
-    if not credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required"
-        )
     
     try:
         token = credentials.credentials

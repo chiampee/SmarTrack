@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List, Download, Archive } from 'lucide-react'
+import { Plus, Grid, List, Download, Archive, Chrome } from 'lucide-react'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { LinkCard } from '../components/LinkCard'
 import { SearchAutocomplete } from '../components/SearchAutocomplete'
@@ -813,15 +813,24 @@ export const Dashboard: React.FC = () => {
   const handleExport = () => {
     const dataStr = JSON.stringify(filteredLinks, null, 2)
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
-    
+
     const exportFileDefaultName = `smartrack-links-${new Date().toISOString().split('T')[0]}.json`
-    
+
     const linkElement = document.createElement('a')
     linkElement.setAttribute('href', dataUri)
     linkElement.setAttribute('download', exportFileDefaultName)
     linkElement.click()
-    
+
     toast.success('Links exported successfully!')
+  }
+
+  // Handle extension download
+  const handleDownloadExtension = () => {
+    const linkElement = document.createElement('a')
+    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.0.zip')
+    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.0.zip')
+    linkElement.click()
+    toast.success('Extension download started!')
   }
 
   // Animation variants - Optimized for mobile
@@ -919,6 +928,17 @@ export const Dashboard: React.FC = () => {
               >
                 <Download className="w-4 h-4 flex-shrink-0" />
                 <span className="sm:hidden md:inline">Export</span>
+              </button>
+
+              <button 
+                onClick={handleDownloadExtension}
+                className="flex-1 sm:flex-initial px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-lg hover:from-indigo-700 hover:to-indigo-800 active:from-indigo-800 transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-0 touch-manipulation"
+                aria-label="Download Chrome extension"
+                title="Download SmarTrack Chrome Extension"
+              >
+                <Chrome className="w-4 h-4 flex-shrink-0" />
+                <span className="sm:hidden md:inline">Extension</span>
+                <span className="hidden sm:inline md:hidden">Ext</span>
               </button>
             </div>
           </div>

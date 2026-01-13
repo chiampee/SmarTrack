@@ -6,7 +6,6 @@ import { Auth0Provider } from '@auth0/auth0-react'
 import { BrowserRouter } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ToastProvider } from './components/Toast'
-import { TestModeProvider } from './context/TestModeContext'
 
 const auth0Domain = import.meta.env.VITE_AUTH0_DOMAIN
 const auth0ClientId = import.meta.env.VITE_AUTH0_CLIENT_ID
@@ -26,26 +25,24 @@ if (!auth0Domain || !auth0ClientId || !auth0Audience) {
     <React.StrictMode>
       <ErrorBoundary>
         <ToastProvider>
-          <TestModeProvider>
-            <Auth0Provider
-              domain={auth0Domain}
-              clientId={auth0ClientId}
-              authorizationParams={{
-                redirect_uri: window.location.origin + '/dashboard', // Redirect to dashboard after login
-                audience: auth0Audience,
-                scope: 'openid profile email'
+          <Auth0Provider
+            domain={auth0Domain}
+            clientId={auth0ClientId}
+            authorizationParams={{
+              redirect_uri: window.location.origin + '/dashboard', // Redirect to dashboard after login
+              audience: auth0Audience,
+              scope: 'openid profile email'
+            }}
+          >
+            <BrowserRouter
+              future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true
               }}
             >
-              <BrowserRouter
-                future={{
-                  v7_startTransition: true,
-                  v7_relativeSplatPath: true
-                }}
-              >
-                <App />
-              </BrowserRouter>
-            </Auth0Provider>
-          </TestModeProvider>
+              <App />
+            </BrowserRouter>
+          </Auth0Provider>
         </ToastProvider>
       </ErrorBoundary>
     </React.StrictMode>

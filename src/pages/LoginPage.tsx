@@ -6,7 +6,6 @@ import { Chrome, FileText, FolderTree, Search, ArrowRight, CheckCircle2, LogIn, 
 import { DashboardPreview } from '../components/DashboardPreview'
 import { ExtensionPreview } from '../components/ExtensionPreview'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
-import { useTestMode } from '../context/TestModeContext'
 
 // Scroll to Top Button Component
 const ScrollToTopButton: React.FC = () => {
@@ -99,7 +98,6 @@ export const LoginPage: React.FC = () => {
   const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0()
   const navigate = useNavigate()
   const { prefersReducedMotion } = useMobileOptimizations()
-  const { enableTestMode } = useTestMode()
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -234,7 +232,7 @@ export const LoginPage: React.FC = () => {
             <motion.div
               variants={staggerItem}
               transition={{ duration: 0.5 }}
-              className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-slate-500 mb-4"
+              className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-slate-500"
             >
               {[
                 { text: 'Instant setup', icon: CheckCircle2 },
@@ -246,23 +244,6 @@ export const LoginPage: React.FC = () => {
                   {item.text}
                 </span>
               ))}
-            </motion.div>
-
-            {/* Test Mode Button */}
-            <motion.div
-              variants={staggerItem}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="mt-4"
-            >
-              <button
-                onClick={() => {
-                  enableTestMode()
-                  navigate('/dashboard')
-                }}
-                className="text-xs text-slate-400 hover:text-slate-600 underline transition-colors"
-              >
-                Test Mode (Bypass Auth)
-              </button>
             </motion.div>
           </motion.div>
         </div>
