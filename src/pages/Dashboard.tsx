@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List, Download, Archive, Chrome, Link as LinkIcon, Folder, Tag, TrendingUp, Clock, BookOpen, BarChart3, ArrowRight, ChevronDown, ArrowLeft } from 'lucide-react'
+import { Plus, Grid, List, Download, Archive, Chrome } from 'lucide-react'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { useExtensionDetection } from '../hooks/useExtensionDetection'
 import { LinkCard } from '../components/LinkCard'
@@ -19,7 +19,6 @@ import { Link, Collection, Category } from '../types/Link'
 import { logger } from '../utils/logger'
 import { cacheManager } from '../utils/cacheManager'
 import { DashboardSkeleton } from '../components/LoadingSkeleton'
-import { UsageStats } from '../components/UsageStats'
 
 export const Dashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -34,9 +33,7 @@ export const Dashboard: React.FC = () => {
   const [showCreateCollectionModal, setShowCreateCollectionModal] = useState(false)
   const [showExtensionInstallModal, setShowExtensionInstallModal] = useState(false)
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null)
-  const [expandedCollections, setExpandedCollections] = useState<Set<string>>(new Set())
   const [activeFilterId, setActiveFilterId] = useState<string | null>(null)
-  const [showAllLinks, setShowAllLinks] = useState(false)
   const [filters, setFilters] = useState({
     category: '',
     dateRange: 'all_time' as 'today' | 'last_week' | 'last_month' | 'last_year' | 'all_time',
@@ -195,14 +192,6 @@ export const Dashboard: React.FC = () => {
     try {
       localStorage.setItem('dashboard:lastView', location.search || '?')
     } catch (_) { void 0 }
-
-    // If there are any URL params OR if URL is exactly "/?" (Show All Links), show links view
-    if (filter || collection || categoryParam || location.search === '?') {
-      setShowAllLinks(true)
-    } else {
-      // No params - show dashboard summary
-      setShowAllLinks(false)
-    }
 
     if (!filter && !collection && !categoryParam) {
       setSelectedCollectionId(null)
@@ -930,8 +919,7 @@ export const Dashboard: React.FC = () => {
           </motion.div>
         )}
 
-        {/* ✅ UNIFIED TOOLBAR: Single bar with all controls - Shown when viewing all links */}
-        {showAllLinks && (
+        {/* ✅ UNIFIED TOOLBAR: Single bar with all controls */}
         <motion.div
           initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
@@ -1009,223 +997,78 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
         </motion.div>
-        )}
 
-        {/* Dashboard Summary - Hidden when showing all links */}
-        {!showAllLinks && (
-        <div className="space-y-6 mb-8">
-          {/* Welcome Header */}
-          <motion.div
-            initial={shouldAnimate ? "hidden" : "visible"}
-            animate="visible"
-            variants={fadeInUp}
-            transition={{ duration: animationConfig.duration, ease: "easeOut" }}
-            className="mb-6"
-          >
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Dashboard</h1>
-          </motion.div>
-
-          {/* Stats Cards */}
-          <motion.div
-            initial={shouldAnimate ? "hidden" : "visible"}
-            animate="visible"
-            variants={fadeInUp}
-            transition={{ delay: shouldAnimate ? 0.1 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-4"
-          >
-            {/* Total Links */}
-            <div
-              className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => {
-                setShowAllLinks(true)
-                setSearchQuery('')
-                handleCollectionSelect('all')
-                setFilters({ category: '', dateRange: 'all_time', tags: [], contentType: '' })
-                setActiveFilterId(null)
-              }}
-            >
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
-                <LinkIcon className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">{links.filter(l => !l.isArchived).length}</div>
-              <div className="text-sm text-slate-600">Links</div>
+        {/* ✅ SECONDARY HEADER: Collection info and view controls */}
+        <motion.div
+          initial={shouldAnimate ? "hidden" : "visible"}
+          animate="visible"
+          variants={fadeInUp}
+          transition={{ delay: shouldAnimate ? 0.05 : 0, duration: animationConfig.duration, ease: "easeOut" }}
+          className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-3 mb-3 md:mb-6 px-2"
+        >
+          {/* Left: Collection Title and Stats - mobile optimized */}
+          <div className="flex items-center gap-2 md:gap-3 flex-wrap w-full md:w-auto">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-1.5 md:gap-2">
+              <Archive className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+              <span className="truncate">
+                {selectedCollectionId 
+                  ? collections.find(c => c.id === selectedCollectionId)?.name || 'Collection'
+                  : activeFilterId === 'favorites'
+                    ? 'Favorites'
+                    : activeFilterId === 'archived'
+                      ? 'Archived'
+                      : 'All Links'}
+              </span>
+            </h2>
+            <div className="flex items-center gap-2">
+              <span className="px-2 md:px-2.5 py-0.5 md:py-1 text-xs font-semibold text-blue-700 bg-blue-50 rounded-full border border-blue-200">
+                {filteredLinksCount} {filteredLinksCount === 1 ? 'link' : 'links'}
+              </span>
             </div>
+          </div>
 
-            {/* Collections */}
-            <div
-              className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => {
-                if (collections.length > 0) {
-                  handleCollectionSelect(collections[0].id)
-                } else {
-                  setShowCreateCollectionModal(true)
-                }
-              }}
-            >
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
-                <Folder className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">{collections.length}</div>
-              <div className="text-sm text-slate-600">Collections</div>
-            </div>
-
-            {/* Categories */}
-            <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
-                <Tag className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">{categories.length}</div>
-              <div className="text-sm text-slate-600">Categories</div>
-            </div>
-
-            {/* Recent Activity */}
-            <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">
-                {links.filter(l => {
-                  const sevenDaysAgo = new Date()
-                  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-                  return new Date(l.createdAt) >= sevenDaysAgo && !l.isArchived
-                }).length}
-              </div>
-              <div className="text-sm text-slate-600">This Week</div>
-            </div>
-          </motion.div>
-
-          {/* Collections Accordion */}
-          <motion.div
-            initial={shouldAnimate ? "hidden" : "visible"}
-            animate="visible"
-            variants={fadeInUp}
-            transition={{ delay: shouldAnimate ? 0.2 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-            className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden"
-          >
-            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-900">Collections</h2>
+          {/* Right: View Controls - mobile optimized */}
+          <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto justify-between md:justify-end">
+            {/* View Toggle - optimized for touch */}
+            <div className="flex items-center gap-0.5 bg-gray-50 rounded-lg p-0.5 border border-gray-200">
               <button
-                onClick={() => setShowCreateCollectionModal(true)}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                onClick={() => setViewMode('list')}
+                className={`px-2 md:px-3 py-2 md:py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1 md:gap-1.5 min-h-[40px] md:min-h-0 touch-manipulation ${
+                  viewMode === 'list' 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                aria-label="List view"
+                aria-pressed={viewMode === 'list'}
               >
-                + New
+                <List className="w-4 h-4" />
+                <span className="hidden sm:inline">List</span>
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`px-2 md:px-3 py-2 md:py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1 md:gap-1.5 min-h-[40px] md:min-h-0 touch-manipulation ${
+                  viewMode === 'grid' 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                aria-label="Grid view"
+                aria-pressed={viewMode === 'grid'}
+              >
+                <Grid className="w-4 h-4" />
+                <span className="hidden sm:inline">Grid</span>
               </button>
             </div>
-            <div className="divide-y divide-slate-200">
-              {collections.length === 0 ? (
-                <div className="p-5 text-center">
-                  <p className="text-slate-600 mb-4">No collections yet</p>
-                  <button
-                    onClick={() => setShowCreateCollectionModal(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                  >
-                    Create Collection
-                  </button>
-                </div>
-              ) : (
-                collections.map((collection) => {
-                  const collectionLinks = links.filter(l => l.collectionId === collection.id && !l.isArchived)
-                  const isExpanded = expandedCollections.has(collection.id)
-                  
-                  return (
-                    <div key={collection.id} className="border-b border-slate-200 last:border-b-0">
-                      <button
-                        onClick={() => {
-                          const newExpanded = new Set(expandedCollections)
-                          if (isExpanded) {
-                            newExpanded.delete(collection.id)
-                          } else {
-                            newExpanded.add(collection.id)
-                          }
-                          setExpandedCollections(newExpanded)
-                        }}
-                        className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-3 flex-1">
-                          <Folder className="w-5 h-5 text-blue-600" />
-                          <div>
-                            <div className="font-medium text-slate-900">{collection.name}</div>
-                            <div className="text-sm text-slate-600">{collectionLinks.length} {collectionLinks.length === 1 ? 'link' : 'links'}</div>
-                          </div>
-                        </div>
-                        <ChevronDown
-                          className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'transform rotate-180' : ''}`}
-                        />
-                      </button>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="px-5 pb-4"
-                        >
-                          <div className="space-y-2 pt-2">
-                            {collectionLinks.length === 0 ? (
-                              <p className="text-sm text-slate-500 py-2">No links in this collection</p>
-                            ) : (
-                              collectionLinks.map((link) => (
-                                <div
-                                  key={link.id}
-                                  onClick={() => setEditingLink(link)}
-                                  className="p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer"
-                                >
-                                  <div className="font-medium text-slate-900 truncate mb-1">{link.title || 'Untitled'}</div>
-                                  <p className="text-sm text-slate-600 truncate">{link.url}</p>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </motion.div>
-                      )}
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          </motion.div>
+          </div>
+        </motion.div>
 
-          {/* Usage Stats */}
-          <motion.div
-            initial={shouldAnimate ? "hidden" : "visible"}
-            animate="visible"
-            variants={fadeInUp}
-            transition={{ delay: shouldAnimate ? 0.3 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-            className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden"
-          >
-            <div className="px-5 py-4 border-b border-slate-200">
-              <h2 className="text-lg font-semibold text-slate-900">Usage & Limits</h2>
-            </div>
-            <div className="p-5">
-              <UsageStats />
-            </div>
-          </motion.div>
-        </div>
-        )}
-
-        {/* All Links View - Shown when showAllLinks is true */}
-        {showAllLinks && (
-          <motion.div
-            initial={shouldAnimate ? "hidden" : "visible"}
-            animate="visible"
-            variants={fadeInUp}
-            transition={{ duration: animationConfig.duration, ease: "easeOut" }}
-            className="mb-8"
-          >
-            {/* Header with Back button */}
-            <div className="mb-6 flex items-center justify-between">
-              <button
-                onClick={() => setShowAllLinks(false)}
-                className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm font-medium">Back to Dashboard</span>
-              </button>
-              <h2 className="text-xl font-bold text-slate-900">All Links</h2>
-              <div className="w-32"></div> {/* Spacer for centering */}
-            </div>
-            
-            <div className="grid grid-cols-1 gap-6 sm:gap-8">
+        {/* Main Content */}
+        <motion.div
+          initial={shouldAnimate ? "hidden" : "visible"}
+          animate="visible"
+          variants={fadeInUp}
+          transition={{ delay: shouldAnimate ? 0.2 : 0, duration: animationConfig.duration, ease: "easeOut" }}
+          className="grid grid-cols-1 gap-6 sm:gap-8"
+        >
           {/* Content */}
           <motion.div>
             {/* Links Section */}
@@ -1532,9 +1375,8 @@ export const Dashboard: React.FC = () => {
               </motion.div>
             )}
           </motion.div>
-            </div>
-          </motion.div>
-        )}
+        </motion.div>
+      </div>
 
       {/* Add Link Modal */}
       <AddLinkModal
@@ -1574,7 +1416,6 @@ export const Dashboard: React.FC = () => {
         }}
         onCreate={handleCreateCollection}
       />
-      </div>
     </div>
   )
 }
