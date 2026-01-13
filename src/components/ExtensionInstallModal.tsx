@@ -290,40 +290,29 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
                         {/* Action Button for Step 2 */}
                         {step.number === 2 && isActive && (
                           <div className="space-y-4">
-                            <div className="flex flex-col sm:flex-row gap-2.5">
-                              <motion.button
-                                onClick={() => setCurrentStep(0)}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="px-4 sm:px-5 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base font-medium border border-gray-300"
-                              >
-                                <ArrowRight className="w-4 h-4 rotate-180" />
-                                <span>Back to Step 1</span>
-                              </motion.button>
-                              <motion.button
-                                onClick={copyExtensionsUrl}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className={`flex-1 px-6 py-4 rounded-lg transition-colors flex items-center justify-center gap-3 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl ${
-                                  urlCopied
-                                    ? 'bg-green-600 text-white hover:bg-green-700'
-                                    : 'bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800'
-                                }`}
-                              >
-                                {urlCopied ? (
-                                  <>
-                                    <Check className="w-6 h-6" />
-                                    <span>URL Copied! Now follow the steps below</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-6 h-6" />
-                                    <span>Copy Extensions Page URL</span>
-                                    <ArrowRight className="w-5 h-5" />
-                                  </>
-                                )}
-                              </motion.button>
-                            </div>
+                            <motion.button
+                              onClick={copyExtensionsUrl}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              className={`w-full px-6 py-4 rounded-lg transition-colors flex items-center justify-center gap-3 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl ${
+                                urlCopied
+                                  ? 'bg-green-600 text-white hover:bg-green-700'
+                                  : 'bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800'
+                              }`}
+                            >
+                              {urlCopied ? (
+                                <>
+                                  <Check className="w-6 h-6" />
+                                  <span>URL Copied! Now follow the steps below</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-6 h-6" />
+                                  <span>Copy Extensions Page URL</span>
+                                  <ArrowRight className="w-5 h-5" />
+                                </>
+                              )}
+                            </motion.button>
                             
                             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                               <p className="font-semibold text-blue-900 mb-3 text-sm sm:text-base">Complete these steps:</p>
@@ -392,15 +381,26 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
                 </button>
               )}
               {currentStep === steps.length - 1 && (
-                <motion.button
-                  onClick={handleClose}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 transition-colors flex items-center gap-2 text-sm sm:text-base font-semibold shadow-md"
-                >
-                  All Set!
-                  <CheckCircle2 className="w-4 h-4" />
-                </motion.button>
+                <>
+                  <motion.button
+                    onClick={() => setCurrentStep(0)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="px-4 sm:px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base font-medium border border-gray-300"
+                  >
+                    <ArrowRight className="w-4 h-4 rotate-180" />
+                    <span>Back to Step 1</span>
+                  </motion.button>
+                  <motion.button
+                    onClick={handleClose}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 transition-colors flex items-center gap-2 text-sm sm:text-base font-semibold shadow-md"
+                  >
+                    All Set!
+                    <CheckCircle2 className="w-4 h-4" />
+                  </motion.button>
+                </>
               )}
             </div>
           </div>
