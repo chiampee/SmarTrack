@@ -12,8 +12,7 @@ import {
   ExternalLink,
   ArrowLeft,
   Lock,
-  Database,
-  FileJson
+  Database
 } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { motion } from 'framer-motion'
