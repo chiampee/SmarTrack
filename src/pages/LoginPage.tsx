@@ -99,7 +99,7 @@ export const LoginPage: React.FC = () => {
   const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0()
   const navigate = useNavigate()
   const { prefersReducedMotion } = useMobileOptimizations()
-  const { isTestMode, enableTestMode } = useTestMode()
+  const { enableTestMode } = useTestMode()
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {

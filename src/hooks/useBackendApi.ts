@@ -143,7 +143,7 @@ export const useBackendApi = () => {
       }
     }
     fetchToken()
-  }, [isAuthenticated, getAccessTokenSilently, isTestMode])
+  }, [isAuthenticated, getAccessTokenSilently, isTestMode]) // eslint-disable-line react-hooks/exhaustive-deps
   
   // Auto-refresh token before expiration
   useEffect(() => {
@@ -374,7 +374,7 @@ export const useBackendApi = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [token, isAuthenticated, getAccessTokenSilently])
+  }, [token, isAuthenticated, getAccessTokenSilently, isTestMode])
 
   // Health check
   const healthCheck = useCallback(async (): Promise<{ status: string; timestamp: string }> => {

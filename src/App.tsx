@@ -20,7 +20,7 @@ const publicRoutes = ['/faq', '/privacy', '/terms', '/legal', '/docs']
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth0()
-  const { isTestMode, testUser } = useTestMode()
+  const { isTestMode } = useTestMode()
   const location = useLocation()
 
   // Check if current route is public
