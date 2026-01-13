@@ -65,13 +65,13 @@ export const Settings: React.FC = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 py-4 sm:py-6 lg:py-8 px-4 sm:px-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 pt-2 sm:pt-4 pb-4 sm:pb-6 lg:pb-8 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-6 sm:mb-8">
+        <div className="mb-4 sm:mb-6">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-5 sm:mb-6 transition-colors group"
+            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-3 sm:mb-4 transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium">Back to Dashboard</span>
