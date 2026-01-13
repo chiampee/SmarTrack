@@ -33,13 +33,11 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
     {
       number: 2,
       title: 'Install in Chrome',
-      description: 'Open Chrome extensions page and load the extension.',
+      description: 'Copy the extensions page URL and complete the installation steps.',
       icon: Chrome,
-      action: () => {
-        window.open('chrome://extensions/', '_blank')
-      },
       subSteps: [
-        { icon: Chrome, text: 'Open Extensions Page (click button below)' },
+        { icon: Copy, text: 'Copy the extensions page URL' },
+        { icon: Chrome, text: 'Paste it into your address bar and press Enter' },
         { icon: Settings, text: 'Enable "Developer mode" (top-right toggle)' },
         { icon: FolderOpen, text: 'Click "Load unpacked" and select the extracted folder' }
       ]
@@ -246,8 +244,8 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
                           {step.description}
                         </p>
 
-                        {/* Sub-steps for better clarity */}
-                        {isActive && step.subSteps && (
+                        {/* Sub-steps for Step 1 only */}
+                        {isActive && step.subSteps && step.number === 1 && (
                           <div className="mb-4 space-y-2">
                             {step.subSteps.map((subStep, subIndex) => {
                               const SubIcon = subStep.icon
@@ -305,7 +303,7 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
                               {urlCopied ? (
                                 <>
                                   <Check className="w-6 h-6" />
-                                  <span>URL Copied! Paste in address bar</span>
+                                  <span>URL Copied! Now follow the steps below</span>
                                 </>
                               ) : (
                                 <>
@@ -317,20 +315,28 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
                             </motion.button>
                             
                             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                              <p className="font-semibold text-blue-900 mb-2 text-sm sm:text-base">Next steps:</p>
-                              <ol className="space-y-2.5 text-sm text-blue-800">
-                                <li className="flex items-start gap-2.5">
-                                  <span className="font-bold text-blue-700">1.</span>
-                                  <span>Paste <code className="bg-blue-100 px-1.5 py-0.5 rounded font-mono text-xs">chrome://extensions/</code> into your address bar and press Enter</span>
-                                </li>
-                                {step.subSteps?.slice(1).map((subStep, subIndex) => {
+                              <p className="font-semibold text-blue-900 mb-3 text-sm sm:text-base">Complete these steps:</p>
+                              <ol className="space-y-2.5">
+                                {step.subSteps?.map((subStep, subIndex) => {
                                   const SubIcon = subStep.icon
+                                  const isFirstStep = subIndex === 0
                                   return (
-                                    <li key={subIndex} className="flex items-start gap-2.5">
-                                      <span className="font-bold text-blue-700">{subIndex + 2}.</span>
-                                      <div className="flex items-center gap-2 flex-1">
+                                    <li key={subIndex} className="flex items-start gap-3">
+                                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center mt-0.5">
+                                        <span className="text-xs font-bold text-blue-700">{subIndex + 1}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
                                         <SubIcon className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                                        <span>{subStep.text}</span>
+                                        <span className="text-sm text-blue-800">
+                                          {isFirstStep && urlCopied ? (
+                                            <span className="line-through opacity-50">{subStep.text}</span>
+                                          ) : (
+                                            subStep.text
+                                          )}
+                                          {isFirstStep && !urlCopied && (
+                                            <span className="ml-1 text-blue-600">(click button above)</span>
+                                          )}
+                                        </span>
                                       </div>
                                     </li>
                                   )
