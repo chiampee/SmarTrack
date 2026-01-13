@@ -12,10 +12,12 @@
     }
 
     body {
-      width: 400px;
-      min-height: 450px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      width: 360px;
+      min-height: 400px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
       background: #f8fafc;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     body.toast-only {
@@ -46,25 +48,25 @@
 
     .header {
       background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #6366f1 100%);
-      padding: 24px 20px;
+      padding: 12px 16px;
       color: white;
       text-align: center;
-      box-shadow: 0 4px 12px rgba(30, 64, 175, 0.15);
+      box-shadow: 0 2px 8px rgba(30, 64, 175, 0.15);
     }
 
     .logo {
-      width: 36px;
-      height: 36px;
-      margin: 0 auto 10px;
+      width: 28px;
+      height: 28px;
+      margin: 0 auto 6px;
       background: white;
-      border-radius: 10px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      font-size: 18px;
+      font-size: 14px;
       color: #1e40af;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       transition: transform 0.2s;
     }
 
@@ -73,63 +75,77 @@
     }
 
     .title {
-      font-size: 18px;
+      font-size: 15px;
       font-weight: 600;
-      margin-bottom: 5px;
+      margin-bottom: 3px;
+      margin-top: 0;
     }
 
     .subtitle {
-      font-size: 12px;
+      font-size: 11px;
       opacity: 0.9;
     }
 
     .open-dashboard {
-      margin-top: 10px;
-      display: inline-block;
-      padding: 6px 10px;
+      margin-top: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
       background: rgba(255,255,255,0.15);
       border: 1px solid rgba(255,255,255,0.3);
-      border-radius: 8px;
+      border-radius: 6px;
       color: #fff;
-      font-size: 12px;
+      font-size: 11px;
+      font-weight: 600;
       cursor: pointer;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
     }
 
     .open-dashboard:hover {
       background: rgba(255,255,255,0.25);
+      border-color: rgba(255,255,255,0.5);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .open-dashboard:active {
+      transform: translateY(0);
     }
 
     .content {
-      padding: 20px;
+      padding: 16px;
     }
 
     .page-preview {
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 12px;
+      background: white;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 14px;
       display: flex;
-      gap: 14px;
+      gap: 10px;
       align-items: center;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-      transition: all 0.2s;
+      border: 1.5px solid #e2e8f0;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
     }
 
     .page-preview:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      transform: translateY(-1px);
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     .preview-thumbnail {
-      width: 60px;
-      height: 60px;
-      border-radius: 10px;
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
       flex-shrink: 0;
-      background: #e2e8f0;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
       overflow: hidden;
       display: none !important;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e2e8f0;
     }
 
     .preview-thumbnail.has-image {
@@ -149,32 +165,44 @@
     }
 
     .preview-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
-      color: #1e293b;
-      margin-bottom: 4px;
+      color: #0f172a;
+      margin-bottom: 3px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      line-height: 1.3;
     }
 
     .preview-url {
-      font-size: 12px;
+      font-size: 11px;
       color: #64748b;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .preview-url::before {
+      content: '🔗';
+      font-size: 10px;
+      opacity: 0.7;
     }
 
     .content-type-badge {
       display: inline-block;
-      padding: 3px 8px;
+      padding: 4px 10px;
       border-radius: 6px;
       font-size: 10px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
       flex-shrink: 0;
+      border: 1px solid currentColor;
+      opacity: 0.9;
     }
 
     .content-type-badge[data-type="blog"] {
@@ -213,21 +241,28 @@
     }
 
     .dupe {
-      background: #fff7ed;
-      border: 1px solid #fed7aa;
+      background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+      border: 1.5px solid #fdba74;
       color: #9a3412;
-      border-radius: 10px;
+      border-radius: 8px;
       padding: 10px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 4px rgba(251, 146, 60, 0.1);
+      animation: slideIn 0.3s ease-out;
     }
 
     .dupe h4 {
       font-size: 12px;
       font-weight: 700;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
+    }
+    
+    .dupe h4::before {
+      content: '⚠️';
+      font-size: 13px;
     }
 
     .dupe ul {
@@ -253,104 +288,191 @@
     }
 
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 14px;
     }
 
     .label {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 5px;
       font-size: 12px;
       font-weight: 600;
-      color: #334155;
+      color: #1e293b;
       margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+    
+    .label-icon {
+      font-size: 12px;
+      opacity: 0.7;
     }
 
     .input {
       width: 100%;
-      padding: 12px 14px;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      font-size: 14px;
-      transition: all 0.2s;
+      padding: 9px 12px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 7px;
+      font-size: 13px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       background: white;
+      color: #1e293b;
+      line-height: 1.4;
+    }
+    
+    .input::placeholder {
+      color: #94a3b8;
     }
 
     .input:focus {
       outline: none;
       border-color: #3b82f6;
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      background: #fafbfc;
     }
 
-    .input:hover {
+    .input:hover:not(:focus) {
       border-color: #cbd5e1;
+      background: #fafbfc;
     }
 
     .textarea {
       resize: vertical;
-      min-height: 80px;
+      min-height: 70px;
       font-family: inherit;
     }
 
     .select {
       width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      font-size: 14px;
+      padding: 9px 12px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 7px;
+      font-size: 13px;
       background: white;
       cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #1e293b;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 14px;
+      padding-right: 36px;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+    
+    .select:hover:not(:focus) {
+      border-color: #cbd5e1;
+      background-color: #fafbfc;
+    }
+    
+    .select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      background-color: #fafbfc;
     }
 
 
     .actions {
       display: flex;
       gap: 8px;
-      margin-top: 20px;
+      margin-top: 16px;
+      padding-top: 2px;
     }
 
     .hint {
       margin-top: 8px;
+      font-size: 10px;
+      color: #94a3b8;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      letter-spacing: 0.01em;
+    }
+    
+    .hint::before {
+      content: '💡';
       font-size: 11px;
-      color: #64748b;
-      text-align: right;
     }
 
     .btn {
       flex: 1;
-      padding: 12px 16px;
+      padding: 10px 16px;
       border: none;
-      border-radius: 8px;
-      font-size: 14px;
+      border-radius: 7px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      letter-spacing: -0.01em;
+    }
+    
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+    
+    .btn:active::before {
+      width: 300px;
+      height: 300px;
     }
 
     .btn:disabled {
-      opacity: 0.5;
+      opacity: 0.6;
       cursor: not-allowed;
+      transform: none !important;
     }
 
     .btn-primary {
       background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
       color: white;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+      border: 1.5px solid transparent;
     }
 
     .btn-primary:hover:not(:disabled) {
       background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+    }
+    
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
     }
 
 
     .btn-secondary {
-      background: #f1f5f9;
-      color: #475569;
-      border: 1px solid #e2e8f0;
+      background: white;
+      color: #64748b;
+      border: 1.5px solid #e2e8f0;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
 
-    .btn-secondary:hover {
-      background: #e2e8f0;
+    .btn-secondary:hover:not(:disabled) {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #475569;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+    
+    .btn-secondary:active:not(:disabled) {
+      transform: translateY(0);
+      background: #f1f5f9;
     }
 
     .status {
@@ -430,22 +552,29 @@
     .loading {
       display: none;
       text-align: center;
-      padding: 40px 20px;
+      padding: 40px 16px;
     }
 
     .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #e2e8f0;
-      border-top: 4px solid #3b82f6;
+      width: 36px;
+      height: 36px;
+      border: 3px solid #e2e8f0;
+      border-top: 3px solid #3b82f6;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
       margin: 0 auto 12px;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
     }
 
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 500;
     }
 
     .hidden {
@@ -454,28 +583,39 @@
 
     .selected-text-info {
       background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-      border: 2px solid #bfdbfe;
+      border: 1.5px solid #93c5fd;
       color: #1e40af;
-      padding: 10px 14px;
-      border-radius: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
       font-size: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       font-weight: 600;
-      box-shadow: 0 2px 8px rgba(30, 64, 175, 0.1);
+      box-shadow: 0 1px 4px rgba(59, 130, 246, 0.1);
+      animation: slideIn 0.3s ease-out;
     }
 
     .selected-text-info:empty {
       display: none;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">ST</div>
       <div class="title">Save to SmarTrack</div>
       <div class="subtitle">Smart Research Tracking</div>
       <button id="openDashboardBtn" class="open-dashboard">Open Dashboard ↗</button>
@@ -484,14 +624,14 @@
     <div class="content">
       <!-- Login view -->
       <div id="loginView" class="hidden">
-        <div style="text-align: center; padding: 40px 20px;">
-          <div style="font-size: 48px; margin-bottom: 20px;">🔐</div>
-          <h2 style="font-size: 18px; color: #1e293b; margin-bottom: 12px;">Login Required</h2>
-          <p style="font-size: 14px; color: #64748b; margin-bottom: 24px;">
-            Please log in to SmarTrack to save links
+        <div style="text-align: center; padding: 40px 16px 30px;">
+          <div style="font-size: 42px; margin-bottom: 14px; animation: pulse 2s ease-in-out infinite;">🔐</div>
+          <h2 style="font-size: 16px; color: #0f172a; margin-bottom: 8px; font-weight: 700;">Login Required</h2>
+          <p style="font-size: 13px; color: #64748b; margin-bottom: 20px; line-height: 1.5;">
+            Please log in to SmarTrack to start<br>saving and organizing your links
           </p>
-          <button id="loginBtn" class="btn btn-primary" style="width: 100%;">
-            Login to SmarTrack
+          <button id="loginBtn" class="btn btn-primary" style="width: 100%; padding: 10px 16px;">
+            🚀 Login to SmarTrack
           </button>
         </div>
       </div>
@@ -523,21 +663,30 @@
 
       <form id="linkForm">
         <div class="form-group">
-          <label class="label" for="title">Title</label>
-          <input type="text" id="title" class="input" placeholder="Enter a title" required>
+          <label class="label" for="title">
+            <span class="label-icon">📝</span>
+            <span>Title</span>
+          </label>
+          <input type="text" id="title" class="input" placeholder="Enter a descriptive title" required>
         </div>
 
         <div class="form-group">
-          <label class="label" for="description">Description</label>
-          <textarea id="description" class="input textarea" placeholder="Add notes or description"></textarea>
+          <label class="label" for="description">
+            <span class="label-icon">📄</span>
+            <span>Description</span>
+          </label>
+          <textarea id="description" class="input textarea" placeholder="Add notes, key takeaways, or a summary..."></textarea>
         </div>
 
         <div class="form-group">
-          <label class="label" for="category">Category</label>
+          <label class="label" for="category">
+            <span class="label-icon">🏷️</span>
+            <span>Category</span>
+          </label>
           <select id="category" class="select"></select>
-          <div id="customCategoryRow" class="hidden" style="margin-top:8px; display:flex; gap:8px;">
-            <input id="customCategoryInput" class="input" placeholder="Type a new category" style="flex:1;" />
-            <button id="saveCustomCategoryBtn" class="btn btn-secondary" type="button" style="flex:0 0 auto;">Add</button>
+          <div id="customCategoryRow" class="hidden" style="margin-top:8px; display:flex; gap:6px; animation: slideIn 0.2s ease-out;">
+            <input id="customCategoryInput" class="input" placeholder="Type a new category name" style="flex:1;" />
+            <button id="saveCustomCategoryBtn" class="btn btn-secondary" type="button" style="flex:0 0 auto; padding: 9px 16px; font-size: 12px;">Add</button>
           </div>
           <div style="margin-top:6px; display:none;">
             <button id="addCategoryBtn" type="button" class="btn btn-secondary" style="padding:8px 10px; font-size:12px;">+ Add custom category</button>
@@ -546,14 +695,14 @@
 
         <div class="actions">
           <button type="button" id="cancelBtn" class="btn btn-secondary">Cancel</button>
-          <button type="submit" id="saveBtn" class="btn btn-primary">Save Link</button>
+          <button type="submit" id="saveBtn" class="btn btn-primary">💾 Save Link</button>
         </div>
         <div class="hint">Press ⌘/Ctrl + Enter to save</div>
       </form>
 
       <div class="loading" id="loading">
         <div class="spinner"></div>
-        <div>Saving to SmarTrack...</div>
+        <div class="loading-text">Saving to SmarTrack...</div>
       </div>
 
       <div class="status hidden" id="status"></div>

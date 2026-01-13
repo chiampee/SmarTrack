@@ -26,60 +26,111 @@ const sections = [
     title: 'Information We Collect',
     content: `We collect only the minimum information necessary to provide our service:
 
-**Account Information**
-• Email address (for authentication)
-• Display name (optional)
+**Personally Identifiable Information**
+• Email address (collected via Auth0/Google OAuth for authentication)
+• Optional display name (if you choose to provide one)
 
-**Content You Save**
-• URLs of pages you choose to save
-• Page titles, descriptions, and extracted content
-• Categories, tags, and notes you add
+**Authentication Information**
+• Auth0 authentication tokens stored locally in your browser
+• These tokens enable you to remain logged in across browser sessions
+• Passwords are handled entirely by Auth0 (Google), never stored by us
+
+**Location Information**
+• IP addresses are automatically collected by our backend server for API requests
+• IP addresses are used for security (fraud prevention, rate limiting) and standard web server logging
+• We do NOT collect GPS coordinates, precise location data, or location from your device
+
+**Website Content**
+• URLs of pages you explicitly choose to save
+• Page titles, descriptions, and extracted text content from saved pages
+• Page metadata (Open Graph tags, article information, favicons)
+• User-selected text if you highlight content before saving
+• Categories, tags, and notes you add to saved content
 • AI-generated summaries of your saved content
 
 **Usage Data**
-• Basic analytics (page views, feature usage)
-• Error logs for debugging
-• We do NOT track your browsing history or pages you don't save`
+• Basic aggregate analytics (anonymized page views, feature usage)
+• Error logs for debugging and service improvement
+• We do NOT track your browsing history, pages you don't save, clicks, keystrokes, or scroll behavior
+
+**Data We Do NOT Collect**
+• Health information
+• Financial or payment information
+• Personal communications (emails, texts, chat messages)
+• Browsing history (we only save pages you explicitly choose to save)
+• User activity monitoring (no tracking of clicks, mouse position, scroll, or keystrokes)`
   },
   {
     icon: Database,
     title: 'How We Use Your Data',
-    content: `Your data is used exclusively to provide and improve SmarTrack:
+    content: `Your data is used exclusively for SmarTrack's single purpose: enabling you to save, organize, and retrieve web content in a searchable knowledge library.
 
-• **Provide the Service** - Store and organize your saved content
-• **AI Processing** - Generate summaries and categorizations
-• **Sync** - Keep your library accessible across devices
-• **Improve** - Analyze aggregate usage patterns (anonymized)
+**Primary Uses:**
+• **Provide the Service** - Store and organize your saved content in your personal library
+• **Authentication** - Manage your account access and session security
+• **AI Processing** - Generate summaries and automatic categorizations of your saved content
+• **Sync** - Keep your library accessible and synchronized across devices
+• **Offline Functionality** - Queue saves when offline and sync when connectivity returns
+• **Performance** - Cache data locally for fast access and instant searching
 • **Support** - Help you troubleshoot issues when you contact us
+
+**Data Sharing:**
+• **Auth0 (Google)** - We use Auth0 for authentication services (approved use case for authentication providers)
+• **No Third-Party Sales** - We do not sell, rent, or transfer your data to third parties
+• **No Data Brokers** - We do not share your data with data brokers or advertising networks
+• **No Unrelated Uses** - We do not use your data for purposes unrelated to knowledge management
 
 **We Never:**
 • Sell your data to third parties
-• Use your content for advertising
+• Use your content for advertising or marketing
 • Share your data with data brokers
-• Train AI models on your personal content`
+• Train AI models on your personal content
+• Use your data to determine creditworthiness or for lending purposes
+• Use your data for purposes unrelated to SmarTrack's single purpose`
   },
   {
     icon: Lock,
     title: 'Data Security',
-    content: `We implement industry-standard security measures:
+    content: `We implement industry-standard security measures to protect your data:
 
-• **Encryption in Transit** - All data transmitted via HTTPS
-• **Encryption at Rest** - Encryption for stored data
-• **Secure Infrastructure** - Industry-leading cloud providers
-• **Access Controls** - Role-based access and audit logs
+• **Encryption in Transit** - All data transmitted via HTTPS/TLS encryption
+• **Encryption at Rest** - All stored data is encrypted using industry-standard methods
+• **Secure Infrastructure** - Data stored on secure servers operated by industry-leading cloud providers
+• **Access Controls** - Role-based access controls and audit logs ensure only authorized access
+• **Authentication** - Secure OAuth 2.0 authentication through Auth0 (Google), a trusted identity provider
+• **Token Security** - Authentication tokens stored locally using Chrome's secure storage API
+• **Password Security** - Your password is never stored by us; authentication is handled entirely by Auth0
 
-We use secure OAuth authentication through trusted providers (Google). Your password is never stored by us.`
+**Third-Party Services:**
+• **Auth0 (Google)** - Handles all authentication and password management according to their security standards
+• **Backend API** - All API communications use HTTPS with proper certificate validation
+• **No Remote Code** - All extension code is bundled locally; no external scripts or dynamic code execution`
   },
   {
     icon: Globe,
     title: 'Data Storage',
     content: `**Storage Location**
-Your data is stored on secure servers operated by industry-leading cloud providers.
+Your data is stored on secure servers operated by industry-leading cloud providers. Authentication is handled by Auth0 (Google), which stores authentication credentials according to their privacy policy.
+
+**Local Storage**
+Some data is stored locally in your browser using Chrome's storage API:
+• Authentication tokens (for session management)
+• User preferences and settings
+• Offline queue of pending saves
+• Cached links for fast access
+
+**Server Storage**
+Data stored on our backend servers includes:
+• Your saved links and associated metadata
+• Categories, tags, and notes you create
+• AI-generated summaries
+• IP addresses from API requests (for security and logging)
 
 **Data Retention**
 • Active accounts: Data retained while account is active
 • Deleted content: Permanently removed within 30 days
-• Closed accounts: All data deleted within 30 days`
+• Closed accounts: All data deleted within 30 days
+• IP addresses: Retained in server logs for security purposes, automatically purged according to standard retention policies`
   },
   {
     icon: UserCheck,
@@ -97,19 +148,48 @@ We comply with applicable data protection laws. We do not sell personal informat
   {
     icon: Shield,
     title: 'Browser Extension Permissions',
-    content: `The SmarTrack extension requests minimal permissions:
+    content: `The SmarTrack extension requests only the permissions necessary for its core functionality:
 
-• **activeTab** - Read the current page only when you click save
-• **storage** - Cache your saves locally for performance
-• **identity** - Enable Google sign-in
+**Required Permissions:**
 
-**We Do NOT Request:**
-• Access to all websites
-• Browsing history
-• Cookies from other sites
-• Background tracking permissions
+• **activeTab** - Access the current tab only when you explicitly click the extension icon. Used to:
+  - Extract page title, URL, and description from the DOM
+  - Capture user-selected text if you highlight content before saving
+  - Extract favicon and Open Graph metadata for visual identification
+  - Verify the page is fully loaded before saving
 
-The extension only activates when you explicitly interact with it.`
+• **storage** - Store data locally in your browser. Used to:
+  - Securely store Auth0 authentication tokens for session management
+  - Maintain an offline queue for saves when the backend is unreachable
+  - Store user preferences (categories, notification settings)
+  - Cache saved links locally for fast access and offline viewing
+
+• **scripting** - Inject content scripts to extract page information. Used to:
+  - Access the page DOM to read Open Graph tags and meta descriptions
+  - Extract clean text content by bypassing ads and navigation clutter
+  - Capture user-selected text from the page
+  - Access content within iframes when necessary for complete context
+
+• **notifications** - Provide user feedback. Used to:
+  - Notify you when a link has been successfully saved
+  - Alert you if a save operation fails (network error, authentication issue)
+  - Notify you when offline saves are successfully synced
+
+• **Host Permissions (https://*/* and http://*/*)** - Universal compatibility. Used to:
+  - Enable saving links from any website you visit
+  - Extract page content, metadata, and DOM elements from saved pages
+  - Communicate with our secure backend API for data storage
+  - Enable seamless navigation to your SmarTrack dashboard
+
+**Remote Code:**
+• **No Remote Code** - All executable code is bundled locally within the extension package. We do not use external scripts, eval(), or dynamically loaded code. All network requests are standard HTTPS API calls for data storage, not code execution.
+
+**Privacy Protections:**
+• The extension only activates when you explicitly click the extension icon
+• Page content is only accessed for the specific tab you choose to save
+• We do NOT access tabs in the background without your interaction
+• We do NOT track your browsing history or pages you don't save
+• We do NOT monitor clicks, keystrokes, scroll behavior, or other user activity`
   },
   {
     icon: Trash2,
@@ -206,7 +286,7 @@ export const PrivacyPage: React.FC = () => {
               variants={fadeInUp}
               className="text-xs sm:text-sm text-slate-500"
             >
-              Last updated: January 1, 2026
+              Last updated: January 11, 2026
             </motion.p>
           </motion.div>
         </div>

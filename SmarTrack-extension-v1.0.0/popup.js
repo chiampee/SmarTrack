@@ -999,10 +999,10 @@ class SmarTrackPopup {
           
           // Set thumbnail container styles first
           thumbnailEl.style.cssText = `
-            width: 60px;
-            height: 60px;
+            width: 48px;
+            height: 48px;
             background: #e2e8f0;
-            border-radius: 10px;
+            border-radius: 8px;
             overflow: hidden;
             display: block;
             flex-shrink: 0;

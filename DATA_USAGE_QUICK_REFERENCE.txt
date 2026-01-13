@@ -1,0 +1,70 @@
+================================================================================
+CHROME WEB STORE - DATA USAGE FORM - QUICK REFERENCE
+================================================================================
+
+SECTION 1: What user data do you plan to collect?
+--------------------------------------------------
+
+✅ CHECK THESE 4 BOXES:
+
+1. ✅ Personally identifiable information
+   - Email address (via Auth0 for authentication)
+   - Optional display name
+
+2. ✅ Authentication information
+   - Auth0 tokens stored locally for session management
+   - Passwords handled by Auth0, not stored by extension
+
+3. ✅ Location
+   - IP addresses only (collected automatically by backend for API requests)
+   - NO GPS coordinates or precise location
+
+4. ✅ Website content
+   - Page title, description, metadata from pages user explicitly saves
+   - ONLY from pages user chooses to save, not browsing history
+
+❌ DO NOT CHECK THESE 5 BOXES:
+
+❌ Health information
+❌ Financial and payment information
+❌ Personal communications
+❌ Web history (we explicitly do NOT track this)
+❌ User activity (no monitoring of clicks, keystrokes, etc.)
+
+
+SECTION 2: Certifications
+--------------------------
+
+✅ CHECK ALL THREE BOXES:
+
+1. ✅ "I do not sell or transfer user data to third parties, apart from the approved use cases"
+   - We do not sell data
+   - Only transfer is to Auth0 (Google) for authentication (approved use case)
+
+2. ✅ "I do not use or transfer user data for purposes that are unrelated to my item's single purpose"
+   - Single purpose: Save and organize web content
+   - All data collection directly supports this purpose
+   - No advertising, no third-party profiling
+
+3. ✅ "I do not use or transfer user data to determine creditworthiness or for lending purposes"
+   - Free service, no financial component
+   - No credit assessment or lending
+
+================================================================================
+FINAL CHECKLIST:
+================================================================================
+
+Data Types: ✅ 4 checked, ❌ 5 unchecked
+Certifications: ✅ All 3 checked
+
+Privacy Policy Alignment:
+- All disclosures match our privacy policy at:
+  https://smar-track.vercel.app/privacy
+
+Key Points:
+- We do NOT track browsing history
+- We only save content from pages users explicitly choose to save
+- We do NOT sell or share data with third parties
+- All data is user-specific and can be deleted at any time
+
+================================================================================

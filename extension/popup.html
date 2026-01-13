@@ -46,10 +46,10 @@
 
     .header {
       background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #6366f1 100%);
-      padding: 24px 20px;
+      padding: 12px 16px;
       color: white;
       text-align: center;
-      box-shadow: 0 4px 12px rgba(30, 64, 175, 0.15);
+      box-shadow: 0 2px 8px rgba(30, 64, 175, 0.15);
     }
 
     .logo {
@@ -84,15 +84,20 @@
     }
 
     .open-dashboard {
-      margin-top: 10px;
-      display: inline-block;
-      padding: 6px 10px;
+      margin-top: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
       background: rgba(255,255,255,0.15);
       border: 1px solid rgba(255,255,255,0.3);
-      border-radius: 8px;
+      border-radius: 6px;
       color: #fff;
-      font-size: 12px;
+      font-size: 11px;
+      font-weight: 600;
       cursor: pointer;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
     }
 
     .open-dashboard:hover {
@@ -790,7 +795,6 @@
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">ST</div>
       <div class="title">Save to SmarTrack</div>
       <div class="subtitle">Smart Research Tracking</div>
       <button id="openDashboardBtn" class="open-dashboard">Open Dashboard ↗</button>
