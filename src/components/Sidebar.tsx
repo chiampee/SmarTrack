@@ -190,20 +190,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               <span className="font-medium text-base sm:text-sm">Main</span>
             </Link>
 
-            {/* Dashboard - always show as inactive (no active state) */}
-            <Link
-              to="/dashboard"
-              onClick={onClose}
-              className={`flex items-center gap-3 px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation ${
-                location.pathname === '/dashboard'
-                  ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50'
-              }`}
-            >
-              <BarChart3 className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/dashboard' ? 'text-blue-600' : 'text-gray-500'}`} />
-              <span className="font-medium text-base sm:text-sm">Dashboard</span>
-            </Link>
-
             {/* ✅ MOBILE RESPONSIVE: Projects Quick Filters with better touch targets */}
             <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-200">
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">Projects</h3>
