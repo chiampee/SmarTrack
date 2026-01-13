@@ -1,7 +1,11 @@
 import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { LoginPage } from './pages/LoginPage'
+import { FAQPage } from './pages/FAQPage'
+import { PrivacyPage } from './pages/PrivacyPage'
+import { TermsPage } from './pages/TermsPage'
+import { DocsPage } from './pages/DocsPage'
 import { Dashboard } from './pages/Dashboard'
 import { Settings } from './pages/Settings'
 import { AdminAnalytics } from './pages/AdminAnalytics'
@@ -10,11 +14,31 @@ import { Layout } from './components/Layout'
 import { LoadingSpinner } from './components/LoadingSpinner'
 import { CategoriesProvider } from './context/CategoriesContext'
 
+// Public routes accessible without authentication
+const publicRoutes = ['/faq', '/privacy', '/terms', '/docs']
+
 function App() {
   const { isAuthenticated, isLoading } = useAuth0()
+  const location = useLocation()
+
+  // Check if current route is public
+  const isPublicRoute = publicRoutes.some(route => location.pathname.startsWith(route))
 
   if (isLoading) {
     return <LoadingSpinner />
+  }
+
+  // Show public pages without authentication
+  if (isPublicRoute) {
+    return (
+      <Routes>
+        <Route path="/faq" element={<FAQPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/docs" element={<DocsPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    )
   }
 
   if (!isAuthenticated) {

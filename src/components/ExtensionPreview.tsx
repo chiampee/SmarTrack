@@ -1,350 +1,257 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Link2, ExternalLink, CheckCircle2, ArrowRight, Sparkles, Zap, Globe, Clock } from 'lucide-react'
+import React, { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Globe, Tag, CheckCircle2, Sparkles } from 'lucide-react'
 
 export const ExtensionPreview: React.FC = () => {
-  const [showSuccess, setShowSuccess] = useState(false)
-  const [showInDashboard, setShowInDashboard] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isVisible, setIsVisible] = useState(false)
-  const [hasStarted, setHasStarted] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [isHovering, setIsHovering] = useState(false)
 
-  useEffect(() => {
-    let timers: NodeJS.Timeout[] = []
-    const currentRef = containerRef.current
-    
-    // Intersection Observer for scroll-triggered animation
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && !hasStarted) {
-            setIsVisible(true)
-            setHasStarted(true)
-            
-            // Start animation sequence when component is visible
-            const timer1 = setTimeout(() => {
-              setIsSaving(true)
-            }, 1000)
-            const timer2 = setTimeout(() => {
-              setIsSaving(false)
-              setShowSuccess(true)
-            }, 2500)
-            const timer3 = setTimeout(() => setShowInDashboard(true), 4000)
-            
-            timers = [timer1, timer2, timer3]
-          }
-        })
-      },
-      {
-        threshold: 0.2,
-        rootMargin: '0px 0px -50px 0px'
-      }
-    )
+  const handleSave = () => {
+    if (isSaving || showSuccess) return
+    setIsSaving(true)
+    setTimeout(() => {
+      setIsSaving(false)
+      setShowSuccess(true)
+      setTimeout(() => setShowSuccess(false), 2500)
+    }, 1200)
+  }
 
-    if (currentRef) {
-      observer.observe(currentRef)
-    }
-
-    return () => {
-      timers.forEach(timer => clearTimeout(timer))
-      if (currentRef) {
-        observer.unobserve(currentRef)
-      }
-    }
-  }, [hasStarted])
+  // Particle animation for magic save effect
+  const particles = Array.from({ length: 8 }, (_, i) => ({
+    id: i,
+    angle: (i * 360) / 8,
+    delay: i * 0.05
+  }))
 
   return (
-    <div ref={containerRef} className="relative w-full">
-      {/* Step Indicator - Mobile Responsive */}
-      <div className={`flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-6 transition-all duration-700 ease-out ${
-        isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-6 scale-95'
-      }`}>
-        <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-indigo-500/20 border border-indigo-400/30 rounded-full">
-          <div className="w-5 h-5 sm:w-6 sm:h-6 bg-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-bold">1</div>
-          <span className="text-xs sm:text-sm text-indigo-200 font-medium whitespace-nowrap">Click Save</span>
-        </div>
-        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-500 flex-shrink-0" />
-        <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-indigo-500/20 border border-indigo-400/30 rounded-full">
-          <div className="w-5 h-5 sm:w-6 sm:h-6 bg-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-bold">2</div>
-          <span className="text-xs sm:text-sm text-indigo-200 font-medium whitespace-nowrap">Add Details</span>
-        </div>
-        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-500 flex-shrink-0" />
-        <div className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full transition-all duration-500 ${
-          showInDashboard 
-            ? 'bg-emerald-500/20 border border-emerald-400/30' 
-            : 'bg-slate-700/50 border border-slate-600/50'
-        }`}>
-          <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-500 ${
-            showInDashboard 
-              ? 'bg-emerald-500 text-white' 
-              : 'bg-slate-600 text-slate-400'
-          }`}>3</div>
-          <span className={`text-xs sm:text-sm font-medium transition-colors duration-500 whitespace-nowrap ${
-            showInDashboard ? 'text-emerald-200' : 'text-slate-400'
-          }`}>Done!</span>
-        </div>
-      </div>
-
-      {/* Mobile Device Frame with Dashboard Background */}
-      <div className={`relative mx-auto mb-8 transition-all duration-800 ease-out ${
-        isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-10 scale-98'
-      }`} style={{ maxWidth: '400px', width: '100%', transitionDelay: '100ms' }}>
-        {/* Mobile Frame */}
-        <div className="relative bg-slate-900 rounded-3xl shadow-2xl border-4 border-slate-800" style={{ minHeight: '700px', paddingBottom: '1rem' }}>
-          {/* Status Bar */}
-          <div className="bg-slate-900 px-4 py-1 flex justify-between items-center text-white text-xs">
-            <span>15:01</span>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-2 border border-white rounded-sm"></div>
-              <div className="w-3 h-3 border border-white rounded-full"></div>
-              <span>100</span>
-            </div>
-          </div>
-
-          {/* URL Bar */}
-          <div className="bg-slate-800 px-3 py-2 text-xs text-slate-300 text-center">
-            smar-track.vercel.app
-          </div>
-
-          {/* Dashboard Background (Blurred) */}
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden" style={{ filter: 'blur(2px)' }}>
-            <div className="p-4 space-y-4">
-              <div className="h-8 bg-slate-700/50 rounded w-3/4"></div>
-              <div className="h-24 bg-slate-700/30 rounded"></div>
-              <div className="h-32 bg-slate-700/30 rounded"></div>
-            </div>
-          </div>
-
-          {/* Extension Popup Overlay */}
-          <div 
-            className={`absolute top-16 left-0 right-0 bg-white rounded-t-3xl shadow-2xl transition-all duration-500 pb-6 ${
-              isVisible ? 'translate-y-0' : 'translate-y-full'
-            }`}
-          >
-            {/* Extension Header */}
-            <div className="bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-600 p-5 text-white text-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer"></div>
-              
-              <div className="relative z-10">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mx-auto mb-3 shadow-xl">
-                  <span className="text-indigo-600 font-bold text-xl tracking-tight">ST</span>
-                </div>
-                <h3 className="text-xl font-bold mb-1 tracking-tight">Save to SmarTrack</h3>
-                <p className="text-xs opacity-95 font-medium mb-3">Your Knowledge Library</p>
-              </div>
-            </div>
-
-            {/* Extension Content */}
-            <div className="p-4 pb-6 bg-white">
-              {/* Page Preview */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 flex items-start gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-lg flex-shrink-0 flex items-center justify-center">
-                  <Globe className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-slate-900 text-sm mb-1 truncate">
-                    Modern Web Development Guide
-                  </div>
-                  <div className="text-xs text-slate-500 truncate font-mono">
-                    example.com/web-dev-guide
-                  </div>
-                </div>
-              </div>
-
-              {/* Form */}
-              <form className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">
-                    Title <span className="text-slate-400 font-normal">(auto-filled)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value="Modern Web Development Guide"
-                    readOnly
-                    className="w-full px-3 py-2 border-2 border-blue-200 rounded-lg text-slate-900 text-sm font-medium bg-blue-50/30"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">
-                    Description <span className="text-slate-400 font-normal">(optional)</span>
-                  </label>
-                  <textarea
-                    value="A comprehensive guide to modern web development practices and frameworks."
-                    readOnly
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-700 text-sm resize-none"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">Category</label>
-                  <div className="relative">
-                    <select
-                      value="Technology"
-                      disabled
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm font-medium bg-white cursor-not-allowed appearance-none"
-                    >
-                      <option>Technology</option>
-                      <option>Business</option>
-                      <option>Research</option>
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-bold transition-all duration-500 shadow-lg relative overflow-hidden group ${
-                      showSuccess 
-                        ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white' 
-                        : isSaving
-                        ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white animate-pulse'
-                        : 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 text-white'
-                    }`}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                    <span className="relative z-10 flex items-center justify-center gap-2">
-                      {isSaving ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          <span>Saving...</span>
-                        </>
-                      ) : showSuccess ? (
-                        <>
-                          <CheckCircle2 className="w-4 h-4 animate-bounce" />
-                          <span>Saved!</span>
-                        </>
-                      ) : (
-                        <span>Save Page</span>
-                      )}
-                    </span>
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Enhanced Flow Animation: Extension → Library */}
-      {showSuccess && (
-        <div className={`mb-6 sm:mb-8 transition-all duration-700 ease-out ${
-          showSuccess ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-6 scale-95'
-        }`}>
-          <div className="text-center mb-4 sm:mb-6">
-            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-emerald-500/20 border border-emerald-400/30 rounded-full mb-2 sm:mb-3">
-              <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
-              <span className="text-xs sm:text-sm text-emerald-300 font-semibold">Page Saved Successfully!</span>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-400">Your page is now syncing to your library...</p>
-          </div>
+    <div className="w-full flex justify-center">
+      {/* Extension popup with glassmorphism and floating effect */}
+      <motion.div 
+        initial={{ opacity: 0, y: 40, scale: 0.95 }}
+        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="relative w-full max-w-[420px]"
+      >
+        {/* Gradient border effect */}
+        <div className="absolute -inset-[1px] rounded-[25px] bg-gradient-to-br from-blue-400/30 via-slate-200/50 to-blue-400/30 blur-[0.5px]" />
+        
+        {/* Main container with glassmorphism */}
+        <div className="relative rounded-3xl bg-white/90 backdrop-blur-xl border border-white/60 shadow-2xl shadow-slate-900/15 overflow-hidden">
+          {/* Subtle inner glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white via-transparent to-blue-50/30 pointer-events-none" />
           
-          <div className="flex items-center justify-center gap-4 sm:gap-6">
-            <div className="text-center flex-1 max-w-[150px] sm:max-w-[200px]">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-emerald-500 via-green-500 to-emerald-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow-2xl shadow-emerald-500/40 transform transition-all duration-500 hover:scale-110">
-                <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+          {/* Header */}
+          <div className="relative bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-5 text-white">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-blue-600 font-bold text-lg">ST</span>
               </div>
-              <p className="text-xs sm:text-sm text-emerald-400 font-bold mb-1">Saved</p>
-              <p className="text-xs text-slate-400">Page content stored</p>
-            </div>
-            
-            <div className="flex flex-col items-center gap-1.5 sm:gap-2">
-              <ArrowRight className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-400 animate-pulse" />
-              <div className="w-1 h-8 sm:h-12 bg-gradient-to-b from-indigo-400 to-indigo-600 rounded-full"></div>
-              <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400 animate-pulse" />
-            </div>
-            
-            <div className="text-center flex-1 max-w-[150px] sm:max-w-[200px]">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-500 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow-2xl shadow-indigo-500/40 transform transition-all duration-500 hover:scale-110">
-                <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              <div>
+                <div className="font-semibold text-lg">Save to SmarTrack</div>
+                <div className="text-blue-100 text-sm">Capture Intelligence</div>
               </div>
-              <p className="text-xs sm:text-sm text-indigo-300 font-bold mb-1">AI Processing</p>
-              <p className="text-xs text-slate-400">Creating summary</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Enhanced Library Preview with New Capture */}
-      {showInDashboard && (
-        <div className={`transition-all duration-700 ease-out ${
-          showInDashboard ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-6 scale-95'
-        }`}>
-          {/* Step 3 Label */}
-          <div className="text-center mb-3 sm:mb-4">
-            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-emerald-500/20 border border-emerald-400/30 rounded-full">
-              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-emerald-300">Step 3: View in Your Library</span>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-slate-800/90 via-slate-800/80 to-slate-900/90 rounded-xl sm:rounded-2xl p-4 sm:p-6 border-2 border-emerald-500/40 shadow-2xl shadow-emerald-500/20 relative overflow-hidden backdrop-blur-sm">
-            <div className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-500/0 via-emerald-500/20 to-emerald-500/0 animate-pulse pointer-events-none"></div>
-            
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-5">
+          {/* Content */}
+          <div className="relative p-6 space-y-5">
+            {/* Page preview card */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="flex items-start gap-4 p-4 bg-slate-50/80 backdrop-blur-sm rounded-2xl border border-slate-200/60"
+            >
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/20">
+                <Globe className="w-6 h-6 text-white" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-slate-900 text-sm mb-1">Global Semiconductor Supply Chain Report 2026</div>
+                <div className="text-xs text-slate-500 font-mono">economist.com/reports/semiconductors</div>
+              </div>
+            </motion.div>
+
+            {/* Form fields */}
+            <div className="space-y-4">
+              {/* Title */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+              >
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Title</label>
+                <div className="px-4 py-3 bg-white border-2 border-blue-200 rounded-xl text-slate-900 font-medium shadow-sm">
+                  Global Semiconductor Supply Chain Report 2026
+                </div>
+              </motion.div>
+
+              {/* Description with AI shimmer */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4, duration: 0.4 }}
+              >
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                  Description
+                  <span className="ml-2 text-blue-600 font-normal normal-case">✨ AI Generated</span>
+                </label>
                 <div className="relative">
-                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-emerald-400 rounded-full shadow-lg shadow-emerald-400/50 animate-pulse"></div>
-                  <div className="absolute inset-0 w-3 h-3 sm:w-4 sm:h-4 bg-emerald-400 rounded-full animate-ping opacity-75"></div>
+                  <div className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 leading-relaxed shadow-sm">
+                    Strategic analysis of localized manufacturing trends and the impact of AI-driven demand on global logistics.
+                  </div>
+                  {/* AI shimmer overlay */}
+                  <div className="absolute inset-0 rounded-xl ai-shimmer pointer-events-none" />
                 </div>
-                <span className="text-xs sm:text-sm text-emerald-300 font-bold tracking-wide flex items-center gap-1.5 sm:gap-2">
-                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" style={{ animationDuration: '3s' }} />
-                  <span className="hidden sm:inline">Your saved page appears in your library</span>
-                  <span className="sm:hidden">Page saved!</span>
-                </span>
-              </div>
+              </motion.div>
+
+              {/* Category */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.5, duration: 0.4 }}
+              >
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Category</label>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 font-medium flex items-center justify-between shadow-sm">
+                    <span>Market Intelligence</span>
+                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                  <button className="w-12 h-12 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center justify-center text-slate-500 font-semibold transition-colors">
+                    +
+                  </button>
+                </div>
+              </motion.div>
+
+              {/* Tags */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.6, duration: 0.4 }}
+              >
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Tags</label>
+                <div className="flex flex-wrap gap-2">
+                  {['#SupplyChain', '#MacroTech', '#Logistics'].map((tag, i) => (
+                    <motion.span 
+                      key={tag}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.7 + i * 0.1, duration: 0.3 }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium border border-blue-100"
+                    >
+                      <Tag className="w-3 h-3" />
+                      {tag}
+                    </motion.span>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Action buttons */}
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.8, duration: 0.4 }}
+              className="flex gap-3 pt-2"
+            >
+              <button className="flex-1 px-4 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold transition-colors">
+                Cancel
+              </button>
               
-              <div className="bg-gradient-to-br from-slate-700/95 via-slate-800/95 to-slate-700/95 rounded-lg sm:rounded-xl p-4 sm:p-5 border border-slate-600/50 hover:border-indigo-500/50 transition-all duration-500 transform hover:scale-[1.01] hover:shadow-2xl hover:shadow-indigo-500/10 group relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                
-                <div className="relative z-10 flex items-start gap-3 sm:gap-4">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-600 rounded-lg sm:rounded-xl flex-shrink-0 flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:shadow-indigo-500/50 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                    <Link2 className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-white font-bold text-base sm:text-lg mb-1.5 sm:mb-2 flex items-center gap-1.5 sm:gap-2 group-hover:text-indigo-300 transition-colors duration-300">
-                      <span className="truncate">Modern Web Development Guide</span>
-                      <ExternalLink className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-indigo-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300 flex-shrink-0" />
-                    </h4>
-                    <p className="text-xs text-slate-400 mb-1.5 sm:mb-2 font-mono truncate">https://example.com/web-dev-guide</p>
-                    <p className="text-xs sm:text-sm text-slate-300 mb-3 sm:mb-4 leading-relaxed line-clamp-2">A comprehensive guide to modern web development practices and frameworks.</p>
-                    
-                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                      <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-indigo-500/20 to-indigo-600/20 text-indigo-300 rounded-md sm:rounded-lg text-xs border border-indigo-500/30 font-semibold shadow-sm">
-                        Technology
-                      </span>
-                      <span className="text-xs text-slate-500 flex items-center gap-1 sm:gap-1.5 font-medium">
-                        <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400" />
-                        Just now
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center flex-shrink-0">
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-emerald-500/20 rounded-full flex items-center justify-center border-2 border-emerald-500/50">
-                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 animate-pulse" />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* Magic Save Button */}
+              <motion.button
+                onClick={handleSave}
+                onMouseEnter={() => setIsHovering(true)}
+                onMouseLeave={() => setIsHovering(false)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`relative flex-1 px-4 py-3.5 rounded-xl font-semibold overflow-hidden transition-all duration-300 ${
+                  showSuccess 
+                    ? 'bg-green-500 text-white shadow-lg shadow-green-500/30' 
+                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40'
+                }`}
+              >
+                {/* Particle effects on hover */}
+                <AnimatePresence>
+                  {isHovering && !isSaving && !showSuccess && (
+                    <>
+                      {particles.map((particle) => (
+                        <motion.div
+                          key={particle.id}
+                          initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+                          animate={{
+                            opacity: [0, 1, 0],
+                            scale: [0, 1, 0.5],
+                            x: Math.cos(particle.angle * Math.PI / 180) * 30,
+                            y: Math.sin(particle.angle * Math.PI / 180) * 30 - 20,
+                          }}
+                          exit={{ opacity: 0, scale: 0 }}
+                          transition={{
+                            duration: 1,
+                            delay: particle.delay,
+                            repeat: Infinity,
+                            repeatDelay: 0.5
+                          }}
+                          className="absolute left-1/2 top-1/2 w-2 h-2 bg-white/60 rounded-full pointer-events-none"
+                        />
+                      ))}
+                    </>
+                  )}
+                </AnimatePresence>
+
+                {/* Button glow effect */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  animate={isHovering ? { x: ['100%', '-100%'] } : {}}
+                  transition={{ duration: 0.8, repeat: isHovering ? Infinity : 0, repeatDelay: 0.5 }}
+                />
+
+                {/* Button content */}
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {isSaving ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                      />
+                      <span>Saving...</span>
+                    </>
+                  ) : showSuccess ? (
+                    <>
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      >
+                        <CheckCircle2 className="w-5 h-5" />
+                      </motion.div>
+                      <span>Saved!</span>
+                      <Sparkles className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <span>Save Link</span>
+                  )}
+                </span>
+              </motion.button>
+            </motion.div>
+
+            <div className="text-center text-xs text-slate-400">
+              Press ⌘/Ctrl + Enter to save
             </div>
           </div>
         </div>
-      )}
+      </motion.div>
     </div>
   )
 }

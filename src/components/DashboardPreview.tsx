@@ -1,256 +1,264 @@
-import React, { useEffect, useState } from 'react'
-import { BookOpen, Search, Star, Archive, Clock, BarChart3, Settings, TrendingUp, Link2 } from 'lucide-react'
+import React from 'react'
+import { motion } from 'framer-motion'
+import { BarChart3, Clock, ExternalLink, Filter, FolderOpen, Plus, Search, Star } from 'lucide-react'
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
+}
+
+const staggerChildren = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+}
 
 export const DashboardPreview: React.FC = () => {
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    // Animate in on mount with slight delay for smoother effect
-    const timer = setTimeout(() => {
-      setIsVisible(true)
-    }, 100)
-    
-    return () => clearTimeout(timer)
-  }, [])
-
   return (
-    <div 
-      className="bg-slate-900 text-white rounded-lg shadow-2xl relative w-full"
-      style={{ fontFamily: 'Inter, sans-serif', maxWidth: '100%' }}
+    <motion.div 
+      initial={{ opacity: 0, y: 40, scale: 0.98 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+      className="relative w-full"
     >
-      {/* Animated background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/5 via-purple-900/5 to-blue-900/5 animate-pulse pointer-events-none"></div>
+      {/* Gradient border effect */}
+      <div className="absolute -inset-[1px] rounded-[25px] bg-gradient-to-br from-blue-400/20 via-slate-200/40 to-blue-400/20" />
       
-      <div className={`flex flex-col lg:flex-row w-full relative z-10 transition-all duration-700 ease-out ${isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`}>
-        {/* Left Sidebar - Hidden on mobile, compact on tablet */}
-        <div className="hidden lg:block lg:w-56 xl:w-64 bg-gradient-to-b from-slate-800 to-slate-800/95 border-b lg:border-r lg:border-b-0 border-slate-700/50 flex-shrink-0">
-          {/* User Profile */}
-          <div className="p-4 lg:p-6 border-b border-slate-700/50 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-blue-500/0 group-hover:via-blue-500/10 transition-all duration-500"></div>
-            <div className="flex items-center gap-3 mb-2 relative z-10">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-blue-500 flex items-center justify-center text-white font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 hover:scale-110 animate-pulse" style={{ animationDuration: '3s' }}>
-                U
-              </div>
-              <div>
-                <div className="font-semibold text-white group-hover:text-blue-300 transition-colors">User</div>
-                <div className="text-xs text-slate-400">user@example.com</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <div className="p-3 lg:p-4">
-            <div className="text-xs font-semibold text-slate-400 uppercase mb-3">Navigation</div>
-            <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-600/20 to-indigo-500/20 text-indigo-400 rounded-lg mb-2 border border-indigo-500/20 shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20 transition-all duration-300 hover:scale-[1.02] group">
-              <BarChart3 className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
-              <span className="text-sm font-medium">Library</span>
-            </div>
-          </div>
-
-          {/* Projects */}
-          <div className="p-3 lg:p-4 border-t border-slate-700/50">
-            <div className="text-xs font-semibold text-slate-400 uppercase mb-3">Projects</div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 px-3 py-1.5 text-slate-300 hover:bg-gradient-to-r hover:from-slate-700/50 hover:to-slate-700/30 rounded text-sm transition-all duration-300 hover:translate-x-1 group cursor-pointer">
-                <BarChart3 className="w-4 h-4 group-hover:text-blue-400 transition-colors" />
-                <span className="group-hover:text-white transition-colors">Show All Links</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 text-slate-300 hover:bg-gradient-to-r hover:from-slate-700/50 hover:to-slate-700/30 rounded text-sm transition-all duration-300 hover:translate-x-1 group cursor-pointer">
-                <Star className="w-4 h-4 group-hover:text-yellow-400 transition-colors" />
-                <span className="group-hover:text-white transition-colors">Favorites</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 text-slate-300 hover:bg-gradient-to-r hover:from-slate-700/50 hover:to-slate-700/30 rounded text-sm transition-all duration-300 hover:translate-x-1 group cursor-pointer">
-                <Clock className="w-4 h-4 group-hover:text-blue-400 transition-colors" />
-                <span className="group-hover:text-white transition-colors">Recent (Last 7 days)</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 text-slate-300 hover:bg-gradient-to-r hover:from-slate-700/50 hover:to-slate-700/30 rounded text-sm transition-all duration-300 hover:translate-x-1 group cursor-pointer">
-                <Archive className="w-4 h-4 group-hover:text-purple-400 transition-colors" />
-                <span className="group-hover:text-white transition-colors">Archived</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Categories */}
-          <div className="p-3 lg:p-4 border-t border-slate-700/50 flex-1">
-            <div className="text-xs font-semibold text-slate-400 uppercase mb-3">Categories</div>
-            <div className="space-y-1">
-              <div className="flex items-center justify-between px-3 py-1.5 text-slate-300 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10 rounded text-sm transition-all duration-300 hover:translate-x-1 group cursor-pointer border border-transparent hover:border-purple-500/20">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 group-hover:text-purple-400 group-hover:rotate-12 transition-all duration-300" />
-                  <span className="group-hover:text-white transition-colors">Technology</span>
+      {/* Deep floating shadow */}
+      <div className="absolute inset-0 rounded-2xl shadow-2xl shadow-slate-900/10 pointer-events-none" />
+      
+      {/* Main container with glassmorphism */}
+      <div className="relative rounded-2xl bg-white/95 backdrop-blur-xl border border-white/60 overflow-hidden">
+        <div className="flex w-full">
+          {/* Sidebar */}
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="hidden lg:block w-64 border-r border-slate-200/80 bg-slate-50/70 backdrop-blur-sm"
+          >
+            {/* User Profile */}
+            <div className="px-5 py-4 border-b border-slate-200/80">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold shadow-lg shadow-blue-500/20">
+                  P
                 </div>
-                <span className="text-xs text-slate-500 group-hover:text-purple-400 font-semibold transition-colors">2</span>
-              </div>
-              <div className="flex items-center justify-between px-3 py-1.5 text-slate-300 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-500/10 rounded text-sm transition-all duration-300 hover:translate-x-1 group cursor-pointer border border-transparent hover:border-blue-500/20">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 group-hover:text-blue-400 group-hover:rotate-12 transition-all duration-300" />
-                  <span className="group-hover:text-white transition-colors">Business</span>
-                </div>
-                <span className="text-xs text-slate-500 group-hover:text-blue-400 font-semibold transition-colors">1</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Settings */}
-          <div className="p-3 lg:p-4 border-t border-slate-700/50">
-            <div className="flex items-center gap-2 px-3 py-1.5 text-slate-300 hover:bg-gradient-to-r hover:from-slate-700/50 hover:to-slate-700/30 rounded text-sm transition-all duration-300 hover:translate-x-1 group cursor-pointer">
-              <Settings className="w-4 h-4 group-hover:text-blue-400 group-hover:rotate-90 transition-all duration-300" />
-              <span className="group-hover:text-white transition-colors">Settings</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800/50 min-w-0 w-full">
-          {/* Header */}
-          <div className="p-4 sm:p-6 border-b border-slate-700/50 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-purple-500/5 to-blue-500/0 opacity-0 hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4 relative z-10">
-              <div className="flex-1 min-w-0">
-                <h1 className="text-xl sm:text-2xl font-bold text-white mb-2 bg-gradient-to-r from-white via-indigo-200 to-white bg-clip-text text-transparent animate-gradient-x">
-                  Intelligence Library
-                </h1>
-                <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-slate-400 flex-wrap">
-                  <span className="flex items-center gap-1">
-                    <Link2 className="w-3 h-3 text-blue-400" />
-                    3 links
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                    1 favorites
-                  </span>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-slate-900">Professional User</div>
+                  <div className="text-xs text-slate-500 truncate">user@company.com</div>
                 </div>
               </div>
-              <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto">
-                <button className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white rounded-lg text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl group">
-                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 group-hover:rotate-12 transition-transform duration-300" />
-                  <span className="hidden sm:inline">Export</span>
-                </button>
-                <button className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 hover:from-indigo-500 hover:via-indigo-400 hover:to-indigo-500 text-white rounded-lg text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 group relative overflow-hidden">
-                  <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></span>
-                  <Link2 className="w-3 h-3 sm:w-4 sm:h-4 relative z-10 group-hover:rotate-12 transition-transform duration-300" />
-                  <span className="relative z-10 font-semibold">Capture</span>
-                </button>
+            </div>
+
+            {/* Navigation */}
+            <div className="px-4 py-4">
+              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Navigation</div>
+              <div className="flex items-center gap-2.5 px-3 py-2 bg-blue-50/80 text-blue-700 rounded-xl border border-blue-100/80">
+                <BarChart3 className="w-4 h-4" />
+                <span className="text-sm font-medium">Dashboard</span>
               </div>
             </div>
 
-            {/* Search */}
-            <div className="flex items-center gap-2 sm:gap-3 relative z-10">
-              <div className="flex-1 relative group">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-slate-400 group-focus-within:text-blue-400 transition-colors duration-300" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 hover:border-slate-600"
-                />
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-blue-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-              </div>
-              <button className="px-3 sm:px-4 py-2 bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white rounded-lg text-xs sm:text-sm transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex-shrink-0">
-                Filters
-              </button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-            {/* Technology Category */}
-            <div className={`transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '200ms' }}>
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <h2 className="text-base sm:text-lg font-semibold text-white bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">Technology</h2>
-                <span className="text-xs sm:text-sm text-slate-400 flex items-center gap-1">
-                  <Link2 className="w-3 h-3" />
-                  2 links
-                </span>
-              </div>
-              <div className="space-y-2 sm:space-y-3">
-                <div className="bg-gradient-to-br from-slate-800/90 to-slate-800/70 border border-slate-700/50 rounded-lg p-3 sm:p-4 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 transform hover:scale-[1.01] group relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <div className="flex items-start gap-2 sm:gap-3 relative z-10">
-                    <input type="checkbox" className="mt-1 accent-blue-500 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm sm:text-base text-white font-medium mb-1 flex items-center gap-2 group-hover:text-blue-200 transition-colors">
-                            <span className="truncate">Modern Web Dev</span>
-                            <Link2 className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 group-hover:text-blue-400 group-hover:rotate-12 transition-all duration-300 flex-shrink-0" />
-                          </h3>
-                          <p className="text-xs text-slate-400 mb-2 truncate">example.com/web-dev</p>
-                          <p className="text-xs sm:text-sm text-slate-300 mb-2 line-clamp-2">A comprehensive guide to modern web development practices.</p>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-300 rounded text-xs border border-purple-500/30">Technology</span>
-                            <span className="text-xs text-slate-500">Jan 15</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 group-hover:scale-125 transition-transform duration-300" />
-                        </div>
-                      </div>
+            {/* Projects */}
+            <motion.div 
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={staggerChildren}
+              className="px-4 py-4 border-t border-slate-200/80"
+            >
+              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Projects</div>
+              <div className="space-y-1">
+                {[
+                  { name: 'Market Analysis', count: 12 },
+                  { name: 'Technical Specifications', count: 8 },
+                  { name: 'Competitive Intel', count: 5 },
+                ].map((project, i) => (
+                  <motion.div 
+                    key={project.name}
+                    variants={fadeInUp}
+                    transition={{ duration: 0.4 }}
+                    whileHover={{ x: 4 }}
+                    className="flex items-center justify-between px-3 py-2 text-slate-600 hover:bg-white/80 rounded-lg text-sm transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <FolderOpen className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                      <span className="group-hover:text-slate-900 transition-colors">{project.name}</span>
                     </div>
-                  </div>
-                </div>
+                    <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{project.count}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
 
-                <div className="bg-gradient-to-br from-slate-800/90 to-slate-800/70 border border-slate-700/50 rounded-lg p-3 sm:p-4 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300 transform hover:scale-[1.01] group relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <div className="flex items-start gap-2 sm:gap-3 relative z-10">
-                    <input type="checkbox" className="mt-1 accent-purple-500 flex-shrink-0" />
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-slate-700 to-slate-600 rounded flex-shrink-0 border border-slate-600 group-hover:border-purple-500/30 transition-colors"></div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm sm:text-base text-white font-medium mb-1 flex items-center gap-2 group-hover:text-purple-200 transition-colors">
-                            <span className="truncate">AI Research Tools</span>
-                            <Link2 className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 group-hover:text-purple-400 group-hover:rotate-12 transition-all duration-300 flex-shrink-0" />
-                          </h3>
-                          <p className="text-xs text-slate-400 mb-2 truncate">example.com/ai</p>
-                          <p className="text-xs sm:text-sm text-slate-300 mb-2 line-clamp-2">Latest AI tools for research.</p>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-300 rounded text-xs border border-purple-500/30">Technology</span>
-                            <span className="text-xs text-slate-500">Jan 12</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            {/* Quick Filters */}
+            <div className="px-4 py-4 border-t border-slate-200/80">
+              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Quick Filters</div>
+              <div className="space-y-1">
+                <motion.div 
+                  whileHover={{ x: 4 }}
+                  className="flex items-center gap-2.5 px-3 py-2 text-slate-600 hover:bg-white/80 rounded-lg text-sm transition-all cursor-pointer"
+                >
+                  <Star className="w-4 h-4 text-slate-400" />
+                  <span>Favorites</span>
+                </motion.div>
+                <motion.div 
+                  whileHover={{ x: 4 }}
+                  className="flex items-center gap-2.5 px-3 py-2 text-slate-600 hover:bg-white/80 rounded-lg text-sm transition-all cursor-pointer"
+                >
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  <span>Recent (7 days)</span>
+                </motion.div>
               </div>
             </div>
+          </motion.div>
 
-            {/* Business Category */}
-            <div className={`transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '400ms' }}>
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <h2 className="text-base sm:text-lg font-semibold text-white bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">Business</h2>
-                <span className="text-xs sm:text-sm text-slate-400 flex items-center gap-1">
-                  <Link2 className="w-3 h-3" />
-                  1 link
-                </span>
+          {/* Main Content */}
+          <div className="flex-1 bg-white/80 backdrop-blur-sm">
+            {/* Header */}
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="px-6 py-5 border-b border-slate-200/80"
+            >
+              <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                {/* Search */}
+                <div className="flex-1 relative group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                  <input
+                    readOnly
+                    placeholder="Search your knowledge base..."
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50/80 backdrop-blur-sm border border-slate-200/80 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all"
+                  />
+                </div>
+                
+                {/* Actions */}
+                <div className="flex gap-3">
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="p-3 bg-slate-100/80 hover:bg-slate-200/80 rounded-xl text-slate-600 transition-colors"
+                  >
+                    <Filter className="w-4 h-4" />
+                  </motion.button>
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="inline-flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold shadow-lg shadow-blue-600/20 hover:shadow-blue-600/35 transition-all duration-300"
+                  >
+                    <Plus className="w-4 h-4" />
+                    New Capture
+                  </motion.button>
+                </div>
               </div>
-              <div className="bg-gradient-to-br from-slate-800/90 to-slate-800/70 border border-slate-700/50 rounded-lg p-3 sm:p-4 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 transform hover:scale-[1.01] group relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <div className="flex items-start gap-2 sm:gap-3 relative z-10">
-                  <input type="checkbox" className="mt-1 accent-blue-500 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-2">
+
+              {/* Title */}
+              <div className="mt-4 flex items-center gap-3">
+                <h1 className="text-2xl font-bold text-slate-900">All Captures</h1>
+                <span className="text-sm font-medium text-slate-500 bg-slate-100/80 px-3 py-1 rounded-full">25 items</span>
+              </div>
+            </motion.div>
+
+            {/* Content List */}
+            <motion.div 
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-50px" }}
+              variants={staggerChildren}
+              className="p-6 bg-slate-50/50"
+            >
+              <div className="space-y-3">
+                {[
+                  {
+                    title: 'Q1 Fintech Regulatory Compliance Framework',
+                    domain: 'reuters.com',
+                    summary: 'Comprehensive overview of new regulatory requirements for fintech companies operating in the EU market.',
+                    category: 'Market Analysis',
+                    date: 'Today',
+                    starred: true
+                  },
+                  {
+                    title: 'Next-Gen Encryption Standards for Cloud Infrastructure',
+                    domain: 'ieee.org',
+                    summary: 'Technical specifications for post-quantum cryptographic standards in enterprise cloud environments.',
+                    category: 'Technical Specifications',
+                    date: 'Yesterday',
+                    starred: false
+                  },
+                  {
+                    title: 'Modern SaaS GTM Strategies: A 2026 Perspective',
+                    domain: 'hbr.org',
+                    summary: 'Strategic analysis of go-to-market approaches for B2B SaaS companies in the current market.',
+                    category: 'Competitive Intel',
+                    date: 'Jan 10',
+                    starred: true
+                  },
+                ].map((item, index) => (
+                  <motion.div 
+                    key={index}
+                    variants={fadeInUp}
+                    transition={{ duration: 0.5 }}
+                    whileHover={{ scale: 1.01, y: -2 }}
+                    className="relative bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 p-5 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 cursor-pointer group overflow-hidden"
+                  >
+                    {/* Subtle gradient border on hover */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                      <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-br from-blue-400/10 via-transparent to-blue-400/10" />
+                    </div>
+                    
+                    <div className="relative flex items-start gap-4">
+                      {/* Favicon placeholder */}
+                      <div className="w-10 h-10 bg-slate-100/80 rounded-xl flex items-center justify-center flex-shrink-0 text-slate-400 font-semibold text-sm uppercase group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                        {item.domain.charAt(0)}
+                      </div>
+                      
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm sm:text-base text-white font-medium mb-1 flex items-center gap-2 group-hover:text-blue-200 transition-colors">
-                          <span className="truncate">Customer Success</span>
-                          <Link2 className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400 group-hover:text-blue-400 group-hover:rotate-12 transition-all duration-300 flex-shrink-0" />
-                        </h3>
-                        <p className="text-xs text-slate-400 mb-2 truncate">example.com/customer</p>
-                        <p className="text-xs sm:text-sm text-slate-300 mb-2 line-clamp-2">Best practices for customer retention.</p>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="px-2 py-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 rounded text-xs border border-blue-500/30">Business</span>
-                          <span className="text-xs text-slate-500">Jan 10</span>
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <h3 className="font-semibold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+                              {item.title}
+                            </h3>
+                            <ExternalLink className="w-4 h-4 text-slate-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          {item.starred && (
+                            <motion.div whileHover={{ scale: 1.2, rotate: 15 }}>
+                              <Star className="w-4 h-4 text-amber-400 fill-amber-400 flex-shrink-0" />
+                            </motion.div>
+                          )}
+                        </div>
+                        
+                        <div className="text-xs text-slate-400 mb-2">{item.domain}</div>
+                        
+                        {/* Summary with AI shimmer */}
+                        <div className="relative mb-3">
+                          <p className="text-sm text-slate-600 line-clamp-2">{item.summary}</p>
+                          <div className="absolute inset-0 ai-shimmer pointer-events-none rounded" />
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-medium text-blue-700 bg-blue-50/80 px-2.5 py-1 rounded-lg border border-blue-100/80">
+                            {item.category}
+                          </span>
+                          <span className="text-xs text-slate-400">{item.date}</span>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </motion.div>
+                ))}
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
-

@@ -19,13 +19,6 @@ html {
   html {
     scroll-behavior: smooth;
   }
-  
-  /* Smooth scroll with custom easing */
-  @supports (scroll-behavior: smooth) {
-    html {
-      scroll-snap-type: y proximity;
-    }
-  }
 }
 
 /* Enhanced scroll behavior */
@@ -42,20 +35,13 @@ body {
   }
 }
 
-/* Smooth transitions for all elements */
-* {
-  transition-timing-function: cubic-bezier(0.4, 0.0, 0.2, 1);
-}
-
 /* ✅ MOBILE RESPONSIVE: Enhanced mobile optimizations */
 @media (max-width: 768px) {
-  /* Reduce animation complexity on mobile */
   * {
-    -webkit-tap-highlight-color: rgba(59, 130, 246, 0.2);
+    -webkit-tap-highlight-color: rgba(37, 99, 235, 0.1);
     touch-action: manipulation;
   }
   
-  /* Optimize scrolling on iOS */
   html {
     scroll-padding-top: 1rem;
     -webkit-text-size-adjust: 100%;
@@ -64,8 +50,7 @@ body {
   body {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
-    font-size: 16px; /* Prevent zoom on input focus */
-    /* Remove fixed positioning that causes scroll illusion */
+    font-size: 16px;
   }
   
   body > #root {
@@ -73,24 +58,20 @@ body {
     -webkit-overflow-scrolling: touch;
   }
   
-  /* Better spacing on mobile */
   section {
     scroll-margin-top: 1rem;
   }
   
-  /* ✅ Enhanced touch targets */
   button, a, input[type="checkbox"], input[type="radio"] {
     min-height: 44px;
     min-width: 44px;
   }
   
-  /* Better text readability */
   p, span, div {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
   
-  /* Prevent text selection on buttons during touch */
   button {
     -webkit-user-select: none;
     user-select: none;
@@ -98,65 +79,63 @@ body {
 }
 
 @layer components {
-    /* ✅ MOBILE RESPONSIVE: Card with responsive padding - Knowledge Curation Theme */
-    .card {
-      @apply bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 shadow-lg border border-slate-700/50;
-    }
+  /* White theme cards */
+  .card {
+    @apply bg-white rounded-2xl p-4 sm:p-6 border border-slate-200;
+  }
+  
   .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900;
+    @apply inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-semibold rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300;
   }
+  
+  /* Focus Blue primary button */
   .btn-primary {
-    @apply bg-indigo-600 text-white hover:bg-indigo-500 focus:ring-indigo-500 transition-all duration-200 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40;
+    @apply bg-blue-600 text-white hover:bg-blue-500 focus:ring-blue-500 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30;
   }
+  
   .btn-secondary {
-    @apply bg-slate-700 text-slate-200 hover:bg-slate-600 focus:ring-slate-500 transition-all duration-200 border border-slate-600;
+    @apply bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 hover:border-slate-300 focus:ring-slate-500;
   }
+  
   .input-field {
-    @apply block w-full px-3 py-2 border border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-slate-800 text-slate-100 placeholder-slate-400;
+    @apply block w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white text-slate-900 placeholder-slate-400;
   }
-  /* Knowledge Curation specific components */
-  .knowledge-card {
-    @apply bg-slate-800/60 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 hover:border-indigo-500/30 transition-all duration-300;
-  }
-  .knowledge-glow {
-    @apply shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20;
-  }
-  .capture-accent {
-    @apply bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600;
+  
+  /* Card with hover lift effect */
+  .card-lift {
+    @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-xl;
   }
 }
 
 @layer utilities {
-  @keyframes slide-in-right {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
+  /* AI Shimmer effect - subtle blue/white gradient */
+  @keyframes ai-shimmer {
+    0% {
+      background-position: -200% 0;
     }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-
-  .animate-slide-in-right {
-    animation: slide-in-right 0.3s ease-out;
-  }
-
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+    100% {
+      background-position: 200% 0;
     }
   }
+  
+  .ai-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(37, 99, 235, 0.08) 25%,
+      rgba(37, 99, 235, 0.15) 50%,
+      rgba(37, 99, 235, 0.08) 75%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: ai-shimmer 3s ease-in-out infinite;
+  }
 
-  @keyframes fade-in {
+  /* Scroll reveal fade-in-up */
+  @keyframes fade-in-up {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(24px);
     }
     to {
       opacity: 1;
@@ -164,11 +143,29 @@ body {
     }
   }
 
-  .animate-fade-in {
-    animation: fade-in 0.6s ease-out forwards;
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     opacity: 0;
   }
 
+  /* Scale-in animation */
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+  }
+
+  /* Gradient animation for text */
   @keyframes gradient-x {
     0%, 100% {
       background-position: 0% 50%;
@@ -183,85 +180,13 @@ body {
     animation: gradient-x 3s ease infinite;
   }
 
-  @keyframes shimmer {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(100%);
-    }
+  /* Button glow effect */
+  .btn-glow {
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
   }
-
-  .animate-shimmer {
-    animation: shimmer 3s ease-in-out infinite;
-  }
-
-  /* Smooth fade-in-up animation */
-  @keyframes fade-in-up {
-    from {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-fade-in-up {
-    animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    opacity: 0;
-  }
-
-  /* Smooth scale-in animation */
-  @keyframes scale-in {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  .animate-scale-in {
-    animation: scale-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    opacity: 0;
-  }
-
-  /* Smooth slide-in from left */
-  @keyframes slide-in-left {
-    from {
-      opacity: 0;
-      transform: translateX(-30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  .animate-slide-in-left {
-    animation: slide-in-left 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    opacity: 0;
-  }
-
-  /* Smooth slide-in from right */
-  @keyframes slide-in-right-smooth {
-    from {
-      opacity: 0;
-      transform: translateX(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  .animate-slide-in-right-smooth {
-    animation: slide-in-right-smooth 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    opacity: 0;
+  
+  .btn-glow:hover {
+    box-shadow: 0 0 30px rgba(37, 99, 235, 0.4);
   }
 
   /* Stagger animation delays */
@@ -283,6 +208,5 @@ body {
   .gpu-accelerated {
     transform: translateZ(0);
     backface-visibility: hidden;
-    perspective: 1000px;
   }
 }
