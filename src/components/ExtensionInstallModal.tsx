@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { X, Chrome, Download, CheckCircle2, ArrowRight, Sparkles, FileArchive, Settings, FolderOpen } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
