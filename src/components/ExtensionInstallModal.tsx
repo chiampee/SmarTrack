@@ -301,77 +301,46 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
 
                         {/* Action Button for Step 2 */}
                         {step.number === 2 && isActive && (
-                          <div className="space-y-3">
-                            <div className="flex flex-col sm:flex-row gap-2.5">
-                              <motion.button
-                                onClick={handleOpenExtensionsAndNext}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="flex-1 px-6 py-3.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:bg-indigo-800 transition-colors flex items-center justify-center gap-2.5 text-sm sm:text-base font-semibold shadow-lg hover:shadow-xl"
-                              >
-                                <Chrome className="w-5 h-5" />
-                                Try Opening Extensions Page
-                                <ArrowRight className="w-4 h-4" />
-                              </motion.button>
-                              <motion.button
-                                onClick={copyExtensionsUrl}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className={`px-4 sm:px-6 py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base font-semibold shadow-md ${
-                                  urlCopied
-                                    ? 'bg-green-600 text-white hover:bg-green-700'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
-                                }`}
-                              >
-                                {urlCopied ? (
-                                  <>
-                                    <Check className="w-5 h-5" />
-                                    <span className="hidden sm:inline">Copied!</span>
-                                    <span className="sm:hidden">Copied!</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-5 h-5" />
-                                    <span className="hidden sm:inline">Copy URL</span>
-                                    <span className="sm:hidden">Copy</span>
-                                  </>
-                                )}
-                              </motion.button>
-                            </div>
-                            
-                            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                              <p className="font-semibold text-amber-900 mb-2 text-sm sm:text-base flex items-center gap-2">
-                                <span>⚠️</span>
-                                Can't open automatically?
-                              </p>
-                              <p className="text-sm text-amber-800 mb-3">
-                                Due to browser security, we can't open the extensions page directly. Please:
-                              </p>
-                              <ol className="space-y-2 text-sm text-amber-800">
-                                <li className="flex items-start gap-2">
-                                  <span className="font-bold">1.</span>
-                                  <span>Click "Copy URL" above, or manually type <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono text-xs">chrome://extensions/</code> in your address bar</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                  <span className="font-bold">2.</span>
-                                  <span>Press Enter to navigate</span>
-                                </li>
-                              </ol>
-                            </div>
+                          <div className="space-y-4">
+                            <motion.button
+                              onClick={copyExtensionsUrl}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              className={`w-full px-6 py-4 rounded-lg transition-colors flex items-center justify-center gap-3 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl ${
+                                urlCopied
+                                  ? 'bg-green-600 text-white hover:bg-green-700'
+                                  : 'bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800'
+                              }`}
+                            >
+                              {urlCopied ? (
+                                <>
+                                  <Check className="w-6 h-6" />
+                                  <span>URL Copied! Paste in address bar</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-6 h-6" />
+                                  <span>Copy Extensions Page URL</span>
+                                  <ArrowRight className="w-5 h-5" />
+                                </>
+                              )}
+                            </motion.button>
                             
                             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                              <p className="font-semibold text-blue-900 mb-3 text-sm sm:text-base">After opening, complete these steps:</p>
-                              <ol className="space-y-2.5">
+                              <p className="font-semibold text-blue-900 mb-2 text-sm sm:text-base">Next steps:</p>
+                              <ol className="space-y-2.5 text-sm text-blue-800">
+                                <li className="flex items-start gap-2.5">
+                                  <span className="font-bold text-blue-700">1.</span>
+                                  <span>Paste <code className="bg-blue-100 px-1.5 py-0.5 rounded font-mono text-xs">chrome://extensions/</code> into your address bar and press Enter</span>
+                                </li>
                                 {step.subSteps?.slice(1).map((subStep, subIndex) => {
                                   const SubIcon = subStep.icon
                                   return (
-                                    <li key={subIndex} className="flex items-start gap-3">
-                                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center mt-0.5">
-                                        <span className="text-xs font-bold text-blue-700">{subIndex + 2}</span>
-                                      </div>
+                                    <li key={subIndex} className="flex items-start gap-2.5">
+                                      <span className="font-bold text-blue-700">{subIndex + 2}.</span>
                                       <div className="flex items-center gap-2 flex-1">
                                         <SubIcon className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                                        <span className="text-sm text-blue-800">{subStep.text}</span>
+                                        <span>{subStep.text}</span>
                                       </div>
                                     </li>
                                   )
