@@ -314,12 +314,12 @@ export const LegalCenterPage: React.FC = () => {
                 <div>
                   <strong className="text-slate-900">SmarTrack Legal Team</strong>
                 </div>
-                <a 
-                  href="mailto:privacy@smartrack.app"
-                  className="text-blue-600 hover:text-blue-700 font-semibold block"
-                >
-                  privacy@smartrack.app
-                </a>
+              <a 
+                href="mailto:smart.track.appp@gmail.com"
+                className="text-blue-600 hover:text-blue-700 font-semibold block"
+              >
+                smart.track.appp@gmail.com
+              </a>
                 <a 
                   href="https://smar-track.vercel.app"
                   target="_blank"
