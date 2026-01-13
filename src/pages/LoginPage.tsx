@@ -454,7 +454,7 @@ export const LoginPage: React.FC = () => {
               <Link to="/docs" className="hover:text-slate-900 transition-colors">Docs</Link>
               <Link to="/faq" className="hover:text-slate-900 transition-colors">FAQ</Link>
               <Link to="/legal" className="hover:text-slate-900 transition-colors">Legal</Link>
-              <a href="mailto:support@smartrack.app" className="hover:text-slate-900 transition-colors">Contact</a>
+              <a href="mailto:smart.track.appp@gmail.com" className="hover:text-slate-900 transition-colors">Contact</a>
             </div>
             {/* Copyright */}
             <div className="flex items-center gap-3">

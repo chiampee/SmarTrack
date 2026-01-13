@@ -398,7 +398,7 @@ export const FAQPage: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <motion.a
-                href="mailto:support@smartrack.app"
+                href="mailto:smart.track.appp@gmail.com"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/20 transition-all"

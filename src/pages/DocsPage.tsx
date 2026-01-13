@@ -680,7 +680,7 @@ export const DocsPage: React.FC = () => {
                 <ExternalLink className="w-4 h-4 text-slate-400 flex-shrink-0" />
               </Link>
               <a
-                href="mailto:support@smartrack.app"
+                href="mailto:smart.track.appp@gmail.com"
                 className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors group"
               >
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-lg sm:rounded-xl flex items-center justify-center text-green-600">
