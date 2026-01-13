@@ -70,7 +70,7 @@ export const ExtensionInstallModal: React.FC<ExtensionInstallModalProps> = ({
     try {
       window.open('chrome://extensions/', '_blank')
     } catch (error) {
-      // Expected to fail in most cases
+      // Expected to fail in most cases - user will use copy button instead
     }
   }
 
