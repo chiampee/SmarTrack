@@ -521,8 +521,10 @@ async def update_link(
         if result.matched_count == 0:
             raise NotFoundError("Link", link_id)
         
-        # Return updated link
-        link = await db.links.find_one({"_id": object_id})
+        # Return updated link - ✅ SECURITY: Always use user filter when fetching user data
+        link = await db.links.find_one(build_user_filter(user_id, {"_id": object_id}))
+        if not link:
+            raise NotFoundError("Link", link_id)
         return normalize_document(link)
         
     except HTTPException:
