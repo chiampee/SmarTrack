@@ -155,7 +155,7 @@ SmarTrack's content extraction engine captures:
 
 **Core Metadata:**
 - **URL** - Permanent canonical reference
-- **Title** - Page title from HTML `<title>` or Open Graph
+- **Page Title** - Extracted from HTML title tag or Open Graph metadata
 - **Description** - Meta description or first paragraph
 - **Favicon** - Site icon for visual identification
 
