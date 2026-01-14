@@ -42,6 +42,27 @@ def set_cached_analytics(cache_key: str, data: Any):
     _analytics_cache[cache_key] = data
     _cache_timestamps[cache_key] = time.time()
 
+@router.get("/admin/check")
+async def check_admin_status(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Check if current user is an admin
+    Returns only a boolean - does not expose admin email list
+    ✅ SECURE: Admin emails are never exposed to client
+    """
+    try:
+        # Try to get admin access - if successful, user is admin
+        await check_admin_access(credentials)
+        return {"isAdmin": True}
+    except HTTPException:
+        # If check_admin_access raises exception, user is not admin
+        return {"isAdmin": False}
+    except Exception:
+        # On any other error, assume not admin for security
+        return {"isAdmin": False}
+
+
 @router.get("/admin/debug-token")
 async def debug_admin_token(
     current_user: dict = Depends(check_admin_access),
