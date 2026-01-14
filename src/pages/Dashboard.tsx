@@ -1103,48 +1103,89 @@ export const Dashboard: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                className="bg-white rounded-lg border border-slate-200 shadow-sm p-8 sm:p-12"
+                className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 sm:p-12 lg:p-16"
               >
                 <div className="flex flex-col items-center justify-center text-center">
                   {links.length === 0 ? (
                     <>
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 mb-6 rounded-full bg-slate-100 flex items-center justify-center">
-                        <Archive className="w-8 h-8 sm:w-10 sm:h-10 text-slate-400" />
-                      </div>
-                      <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">Welcome to SmarTrack</h3>
-                      <p className="text-base sm:text-lg text-slate-600 mb-8 max-w-md mx-auto">
-                        Your personal research library. Start collecting, organizing, and discovering knowledge.
-                      </p>
-                      <button 
-                        onClick={() => setShowAddModal(true)}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-sm sm:text-base flex items-center gap-2 mx-auto shadow-sm hover:shadow-md"
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                        className="relative mb-8"
                       >
-                        <Plus className="w-5 h-5" />
-                        Add Your First Link
-                      </button>
-                      <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-left max-w-3xl w-full">
-                        <div className="p-5 bg-white border border-slate-200 rounded-lg">
-                          <div className="w-10 h-10 mb-3 rounded-lg bg-blue-50 flex items-center justify-center">
-                            <Plus className="w-5 h-5 text-blue-600" />
-                          </div>
-                          <div className="font-semibold text-sm text-slate-900 mb-1.5">Save Links</div>
-                          <div className="text-xs text-slate-600">Capture articles, videos, and resources</div>
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-lg shadow-blue-100/50">
+                          <Archive className="w-10 h-10 sm:w-12 sm:h-12 text-blue-600" />
                         </div>
-                        <div className="p-5 bg-white border border-slate-200 rounded-lg">
-                          <div className="w-10 h-10 mb-3 rounded-lg bg-purple-50 flex items-center justify-center">
-                            <Tag className="w-5 h-5 text-purple-600" />
-                          </div>
-                          <div className="font-semibold text-sm text-slate-900 mb-1.5">Organize</div>
-                          <div className="text-xs text-slate-600">Tag and categorize your research</div>
+                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow-md">
+                          <Plus className="w-3.5 h-3.5 text-white" />
                         </div>
-                        <div className="p-5 bg-white border border-slate-200 rounded-lg">
-                          <div className="w-10 h-10 mb-3 rounded-lg bg-blue-50 flex items-center justify-center">
-                            <Archive className="w-5 h-5 text-blue-600" />
+                      </motion.div>
+                      
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3, duration: 0.5 }}
+                      >
+                        <h3 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Welcome to SmarTrack</h3>
+                        <p className="text-base sm:text-lg text-slate-600 mb-10 max-w-lg mx-auto leading-relaxed">
+                          Your personal research library. Start collecting, organizing, and discovering knowledge.
+                        </p>
+                      </motion.div>
+                      
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4, duration: 0.5 }}
+                      >
+                        <button 
+                          onClick={() => setShowAddModal(true)}
+                          className="px-8 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-all font-semibold text-base sm:text-lg flex items-center gap-2.5 mx-auto shadow-lg shadow-blue-600/20 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5"
+                        >
+                          <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
+                          Add Your First Link
+                        </button>
+                      </motion.div>
+                      
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5, duration: 0.5 }}
+                        className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-left max-w-4xl w-full"
+                      >
+                        <motion.div
+                          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                          className="p-6 bg-white border border-slate-200 rounded-xl hover:border-blue-200 hover:shadow-md transition-all group"
+                        >
+                          <div className="w-12 h-12 mb-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 group-hover:from-blue-100 group-hover:to-blue-200 flex items-center justify-center transition-all">
+                            <Plus className="w-6 h-6 text-blue-600" />
                           </div>
-                          <div className="font-semibold text-sm text-slate-900 mb-1.5">Discover</div>
-                          <div className="text-xs text-slate-600">Search and find what you need</div>
-                        </div>
-                      </div>
+                          <div className="font-semibold text-base text-slate-900 mb-2">Save Links</div>
+                          <div className="text-sm text-slate-600 leading-relaxed">Capture articles, videos, and resources with one click</div>
+                        </motion.div>
+                        
+                        <motion.div
+                          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                          className="p-6 bg-white border border-slate-200 rounded-xl hover:border-purple-200 hover:shadow-md transition-all group"
+                        >
+                          <div className="w-12 h-12 mb-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 group-hover:from-purple-100 group-hover:to-purple-200 flex items-center justify-center transition-all">
+                            <Tag className="w-6 h-6 text-purple-600" />
+                          </div>
+                          <div className="font-semibold text-base text-slate-900 mb-2">Organize</div>
+                          <div className="text-sm text-slate-600 leading-relaxed">Tag and categorize your research for easy discovery</div>
+                        </motion.div>
+                        
+                        <motion.div
+                          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                          className="p-6 bg-white border border-slate-200 rounded-xl hover:border-green-200 hover:shadow-md transition-all group"
+                        >
+                          <div className="w-12 h-12 mb-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100 group-hover:from-green-100 group-hover:to-green-200 flex items-center justify-center transition-all">
+                            <Archive className="w-6 h-6 text-green-600" />
+                          </div>
+                          <div className="font-semibold text-base text-slate-900 mb-2">Discover</div>
+                          <div className="text-sm text-slate-600 leading-relaxed">Search and find what you need instantly</div>
+                        </motion.div>
+                      </motion.div>
                     </>
                   ) : (
                     <>
