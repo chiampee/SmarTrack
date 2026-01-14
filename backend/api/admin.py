@@ -1317,6 +1317,101 @@ async def get_admin_logs(
         raise HTTPException(status_code=500, detail=f"Failed to fetch logs: {str(e)}")
 
 
+@router.delete("/admin/logs")
+async def delete_all_logs(
+    current_user: dict = Depends(check_admin_access),
+    db = Depends(get_database)
+):
+    """
+    Delete all system logs
+    ⚠️ WARNING: This action is irreversible
+    """
+    try:
+        # Get count before deletion
+        total_count = await db.system_logs.count_documents({})
+        
+        # Delete all logs
+        result = await db.system_logs.delete_many({})
+        
+        # Log the deletion event (this will be the last log entry)
+        await log_system_event("admin_logs_delete_all", {
+            "deletedCount": result.deleted_count,
+            "adminEmail": current_user.get("email")
+        }, current_user.get("sub"), "warning")
+        
+        return {
+            "message": f"Successfully deleted {result.deleted_count} logs",
+            "deletedCount": result.deleted_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await log_system_event("admin_logs_delete_error", {
+            "error": str(e),
+            "adminEmail": current_user.get("email")
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Failed to delete logs: {str(e)}")
+
+
+@router.get("/admin/logs/size")
+async def get_logs_size(
+    current_user: dict = Depends(check_admin_access),
+    db = Depends(get_database)
+):
+    """
+    Get total logs count and estimated size
+    """
+    try:
+        # Get total count
+        total_logs = await db.system_logs.count_documents({})
+        
+        # Estimate size by sampling a few logs and calculating average
+        # Then multiply by total count
+        sample_size = min(100, total_logs)
+        if sample_size > 0:
+            sample_logs = await db.system_logs.find({}).limit(sample_size).to_list(sample_size)
+            
+            # Calculate average size per log
+            total_sample_size = 0
+            for log in sample_logs:
+                # Estimate size: ID + type + timestamp + userId + email + severity + details
+                log_size = (
+                    len(str(log.get("_id", ""))) +
+                    len(str(log.get("type", ""))) +
+                    len(str(log.get("timestamp", ""))) +
+                    len(str(log.get("userId", ""))) +
+                    len(str(log.get("email", ""))) +
+                    len(str(log.get("severity", ""))) +
+                    len(str(log.get("details", "")))
+                )
+                total_sample_size += log_size
+            
+            avg_size_per_log = total_sample_size / sample_size if sample_size > 0 else 500
+        else:
+            avg_size_per_log = 500  # Default estimate
+        
+        # Calculate total estimated size
+        estimated_size_bytes = int(total_logs * avg_size_per_log)
+        estimated_size_kb = estimated_size_bytes / 1024
+        estimated_size_mb = estimated_size_kb / 1024
+        
+        return {
+            "totalLogs": total_logs,
+            "estimatedSizeBytes": estimated_size_bytes,
+            "estimatedSizeKB": round(estimated_size_kb, 2),
+            "estimatedSizeMB": round(estimated_size_mb, 2)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await log_system_event("admin_logs_size_error", {
+            "error": str(e)
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Failed to calculate logs size: {str(e)}")
+
+
 @router.get("/admin/categories")
 async def get_admin_categories(
     current_user: dict = Depends(check_admin_access),
