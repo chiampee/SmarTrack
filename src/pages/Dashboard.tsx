@@ -53,9 +53,9 @@ export const Dashboard: React.FC = () => {
   const { isMobile, prefersReducedMotion, animationConfig } = useMobileOptimizations()
   const isExtensionInstalled = useExtensionDetection()
 
-  // Show extension install modal for first-time users
+  // Show extension install modal for first-time users (desktop only)
   useEffect(() => {
-    if (!isExtensionInstalled && isAuthenticated) {
+    if (!isExtensionInstalled && isAuthenticated && !isMobile) {
       // Check if user has dismissed the modal
       const dismissed = localStorage.getItem('smartrack-extension-install-dismissed')
       if (!dismissed) {
@@ -66,7 +66,7 @@ export const Dashboard: React.FC = () => {
         return () => clearTimeout(timer)
       }
     }
-  }, [isExtensionInstalled, isAuthenticated])
+  }, [isExtensionInstalled, isAuthenticated, isMobile])
 
   // Check if we should redirect to analytics after login
   useEffect(() => {
