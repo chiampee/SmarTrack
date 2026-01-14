@@ -50,14 +50,17 @@ export function parseError(error: unknown): AppError {
 
   // Handle Error objects
   if (error instanceof Error) {
+    // ✅ SECURITY: Safely extract error message (handle cases where message might be an object)
+    const errorMessage = typeof error.message === 'string' ? error.message : String(error.message)
+    
     // If it's "Authentication required", create error with suppression
-    if (error.message === 'Authentication required' || error.message?.includes('Authentication required')) {
-      const appError = createError(ErrorType.UNKNOWN_ERROR, error.message, error)
+    if (errorMessage === 'Authentication required' || errorMessage.includes('Authentication required')) {
+      const appError = createError(ErrorType.UNKNOWN_ERROR, errorMessage, error)
       appError.suppressLogging = true
       return appError
     }
     // Check for network errors
-    if (error.message.includes('fetch') || error.message.includes('Network')) {
+    if (errorMessage.includes('fetch') || errorMessage.includes('Network')) {
       return createError(
         ErrorType.NETWORK_ERROR,
         'Network error. Please check your internet connection.',
@@ -66,7 +69,7 @@ export function parseError(error: unknown): AppError {
     }
 
     // Check for auth errors
-    if (error.message.includes('auth') || error.message.includes('401')) {
+    if (errorMessage.includes('auth') || errorMessage.includes('401')) {
       return createError(
         ErrorType.AUTH_ERROR,
         'Authentication failed. Please log in again.',
@@ -75,7 +78,7 @@ export function parseError(error: unknown): AppError {
     }
 
     // Check for permission errors
-    if (error.message.includes('403') || error.message.includes('forbidden')) {
+    if (errorMessage.includes('403') || errorMessage.includes('forbidden')) {
       return createError(
         ErrorType.PERMISSION_DENIED,
         'You do not have permission to perform this action.',
@@ -83,8 +86,18 @@ export function parseError(error: unknown): AppError {
       )
     }
 
+    // Check for rate limit errors
+    if (errorMessage.includes('429') || errorMessage.includes('Too many requests') || errorMessage.includes('rate limit')) {
+      return createError(
+        ErrorType.API_ERROR,
+        'Too many requests. Please wait a moment and try again.',
+        error,
+        { status: 429 }
+      )
+    }
+
     // Check for not found errors
-    if (error.message.includes('404')) {
+    if (errorMessage.includes('404')) {
       return createError(
         ErrorType.NOT_FOUND,
         'The requested resource was not found.',
@@ -93,7 +106,7 @@ export function parseError(error: unknown): AppError {
     }
 
     // Generic error
-    return createError(ErrorType.UNKNOWN_ERROR, error.message, error)
+    return createError(ErrorType.UNKNOWN_ERROR, errorMessage, error)
   }
 
   // Handle HTTP Response errors
@@ -101,13 +114,22 @@ export function parseError(error: unknown): AppError {
     const err = error as any
     if (err.status || err.statusCode) {
       const status = err.status || err.statusCode
-      const message = err.message || err.detail || 'An error occurred'
+      // ✅ SECURITY: Safely extract message (handle objects, strings, etc.)
+      let message = 'An error occurred'
+      if (err.message) {
+        message = typeof err.message === 'string' ? err.message : String(err.message)
+      } else if (err.detail) {
+        message = typeof err.detail === 'string' ? err.detail : String(err.detail)
+      }
       
       if (status === 401) {
         return createError(ErrorType.AUTH_ERROR, message, undefined, { status })
       }
       if (status === 403) {
         return createError(ErrorType.PERMISSION_DENIED, message, undefined, { status })
+      }
+      if (status === 429) {
+        return createError(ErrorType.API_ERROR, 'Too many requests. Please wait a moment and try again.', undefined, { status })
       }
       if (status === 404) {
         return createError(ErrorType.NOT_FOUND, message, undefined, { status })
@@ -124,7 +146,7 @@ export function parseError(error: unknown): AppError {
   // Handle string errors
   if (typeof error === 'string') {
     const appError = createError(ErrorType.UNKNOWN_ERROR, error)
-    if (error === 'Authentication required' || error?.includes('Authentication required')) {
+    if (error === 'Authentication required' || (typeof error === 'string' && error.includes('Authentication required'))) {
       appError.suppressLogging = true
     }
     return appError

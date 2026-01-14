@@ -289,6 +289,9 @@ export const useBackendApi = () => {
         } else if (response.status === 403) {
           console.error('[API ERROR] 🚫 Forbidden - insufficient permissions')
           console.error('[API ERROR] Endpoint may require admin access')
+        } else if (response.status === 429) {
+          console.error('[API ERROR] ⏱️ Rate limit exceeded - too many requests')
+          console.error('[API ERROR] Please wait before making more requests')
         } else if (response.status === 404) {
           console.error('[API ERROR] 📭 Not found - endpoint does not exist or resource not found')
         } else if (response.status >= 500) {

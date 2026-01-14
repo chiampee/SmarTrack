@@ -168,8 +168,12 @@ app.add_middleware(
 # Add rate limiting middleware
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
-    # Skip rate limiting for health check
-    if request.url.path == "/api/health":
+    # Skip rate limiting for health check and lightweight read-only endpoints
+    skip_paths = [
+        "/api/health",
+        "/api/categories",  # Lightweight read-only endpoint (predefined categories)
+    ]
+    if request.url.path in skip_paths:
         response = await call_next(request)
         return response
     
