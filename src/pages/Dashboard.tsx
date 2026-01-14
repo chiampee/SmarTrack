@@ -1102,33 +1102,37 @@ export const Dashboard: React.FC = () => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 sm:p-12 lg:p-16"
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
               >
-                <div className="flex flex-col items-center justify-center text-center">
-                  {links.length === 0 ? (
-                    <>
+                {links.length === 0 ? (
+                  <div className="relative">
+                    {/* Hero Section */}
+                    <div className="px-6 sm:px-12 lg:px-16 pt-12 sm:pt-16 lg:pt-20 pb-8 sm:pb-12 text-center">
                       <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
+                        initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                        className="relative mb-8"
+                        transition={{ delay: 0.2, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                        className="mb-8"
                       >
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-lg shadow-blue-100/50">
-                          <Archive className="w-10 h-10 sm:w-12 sm:h-12 text-blue-600" />
-                        </div>
-                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow-md">
-                          <Plus className="w-3.5 h-3.5 text-white" />
+                        <div className="inline-flex items-center justify-center w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 shadow-lg shadow-blue-100/50 mb-6 relative">
+                          <Archive className="w-12 h-12 sm:w-14 sm:h-14 text-blue-600" />
+                          <div className="absolute -top-2 -right-2 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                            <Plus className="w-4 h-4 text-white" />
+                          </div>
                         </div>
                       </motion.div>
                       
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3, duration: 0.5 }}
+                        transition={{ delay: 0.3, duration: 0.6 }}
+                        className="mb-6"
                       >
-                        <h3 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Welcome to SmarTrack</h3>
-                        <p className="text-base sm:text-lg text-slate-600 mb-10 max-w-lg mx-auto leading-relaxed">
+                        <h3 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
+                          Welcome to SmarTrack
+                        </h3>
+                        <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
                           Your personal research library. Start collecting, organizing, and discovering knowledge.
                         </p>
                       </motion.div>
@@ -1136,62 +1140,76 @@ export const Dashboard: React.FC = () => {
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4, duration: 0.5 }}
+                        transition={{ delay: 0.4, duration: 0.6 }}
+                        className="mb-12"
                       >
                         <button 
                           onClick={() => setShowAddModal(true)}
-                          className="px-8 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-all font-semibold text-base sm:text-lg flex items-center gap-2.5 mx-auto shadow-lg shadow-blue-600/20 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5"
+                          className="px-8 py-4 sm:px-10 sm:py-5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-all font-semibold text-base sm:text-lg flex items-center gap-2.5 mx-auto shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/35 hover:-translate-y-1 active:translate-y-0"
                         >
                           <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
                           Add Your First Link
                         </button>
                       </motion.div>
-                      
+                    </div>
+
+                    {/* Features Section */}
+                    <div className="px-6 sm:px-12 lg:px-16 pb-12 sm:pb-16 lg:pb-20">
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5, duration: 0.5 }}
-                        className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-left max-w-4xl w-full"
+                        transition={{ delay: 0.5, duration: 0.6 }}
+                        className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto"
                       >
                         <motion.div
-                          whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                          className="p-6 bg-white border border-slate-200 rounded-xl hover:border-blue-200 hover:shadow-md transition-all group"
+                          whileHover={{ y: -6, scale: 1.02, transition: { duration: 0.2 } }}
+                          className="p-6 sm:p-8 bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-2xl hover:border-blue-300 hover:shadow-lg transition-all group cursor-default"
                         >
-                          <div className="w-12 h-12 mb-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 group-hover:from-blue-100 group-hover:to-blue-200 flex items-center justify-center transition-all">
-                            <Plus className="w-6 h-6 text-blue-600" />
+                          <div className="w-14 h-14 mb-5 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:shadow-lg group-hover:shadow-blue-500/30 transition-all">
+                            <Plus className="w-7 h-7 text-white" />
                           </div>
-                          <div className="font-semibold text-base text-slate-900 mb-2">Save Links</div>
-                          <div className="text-sm text-slate-600 leading-relaxed">Capture articles, videos, and resources with one click</div>
+                          <h4 className="font-bold text-lg text-slate-900 mb-2.5">Save Links</h4>
+                          <p className="text-sm text-slate-600 leading-relaxed">
+                            Capture articles, videos, and resources with one click. Build your knowledge base effortlessly.
+                          </p>
                         </motion.div>
                         
                         <motion.div
-                          whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                          className="p-6 bg-white border border-slate-200 rounded-xl hover:border-purple-200 hover:shadow-md transition-all group"
+                          whileHover={{ y: -6, scale: 1.02, transition: { duration: 0.2 } }}
+                          className="p-6 sm:p-8 bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-2xl hover:border-purple-300 hover:shadow-lg transition-all group cursor-default"
                         >
-                          <div className="w-12 h-12 mb-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 group-hover:from-purple-100 group-hover:to-purple-200 flex items-center justify-center transition-all">
-                            <Tag className="w-6 h-6 text-purple-600" />
+                          <div className="w-14 h-14 mb-5 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-md shadow-purple-500/20 group-hover:shadow-lg group-hover:shadow-purple-500/30 transition-all">
+                            <Tag className="w-7 h-7 text-white" />
                           </div>
-                          <div className="font-semibold text-base text-slate-900 mb-2">Organize</div>
-                          <div className="text-sm text-slate-600 leading-relaxed">Tag and categorize your research for easy discovery</div>
+                          <h4 className="font-bold text-lg text-slate-900 mb-2.5">Organize</h4>
+                          <p className="text-sm text-slate-600 leading-relaxed">
+                            Tag and categorize your research for easy discovery. Keep everything structured and accessible.
+                          </p>
                         </motion.div>
                         
                         <motion.div
-                          whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                          className="p-6 bg-white border border-slate-200 rounded-xl hover:border-green-200 hover:shadow-md transition-all group"
+                          whileHover={{ y: -6, scale: 1.02, transition: { duration: 0.2 } }}
+                          className="p-6 sm:p-8 bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-2xl hover:border-green-300 hover:shadow-lg transition-all group cursor-default"
                         >
-                          <div className="w-12 h-12 mb-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100 group-hover:from-green-100 group-hover:to-green-200 flex items-center justify-center transition-all">
-                            <Archive className="w-6 h-6 text-green-600" />
+                          <div className="w-14 h-14 mb-5 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-md shadow-green-500/20 group-hover:shadow-lg group-hover:shadow-green-500/30 transition-all">
+                            <Archive className="w-7 h-7 text-white" />
                           </div>
-                          <div className="font-semibold text-base text-slate-900 mb-2">Discover</div>
-                          <div className="text-sm text-slate-600 leading-relaxed">Search and find what you need instantly</div>
+                          <h4 className="font-bold text-lg text-slate-900 mb-2.5">Discover</h4>
+                          <p className="text-sm text-slate-600 leading-relaxed">
+                            Search and find what you need instantly. Your entire library at your fingertips.
+                          </p>
                         </motion.div>
                       </motion.div>
-                    </>
-                  ) : (
-                    <>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-8 sm:p-12">
+                    <div className="flex flex-col items-center justify-center text-center">
                       {/* ✅ SENIOR UX: Better empty state with actionable guidance */}
-                      <div className="text-6xl mb-4 animate-pulse">🔍</div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 mb-6 rounded-2xl bg-slate-100 flex items-center justify-center">
+                        <Archive className="w-8 h-8 sm:w-10 sm:h-10 text-slate-400" />
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">
                         {searchQuery 
                           ? 'No links match your search' 
                           : activeFilterId === 'archived' 
@@ -1201,7 +1219,7 @@ export const Dashboard: React.FC = () => {
                               : 'No links found'
                         }
                       </h3>
-                      <p className="text-gray-600 mb-6 max-w-md">
+                      <p className="text-base text-slate-600 mb-8 max-w-md mx-auto">
                         {searchQuery ? (
                           <>Try different keywords or check your spelling. You can search by title, description, URL, or tags.</>
                         ) : activeFilterId === 'archived' ? (
@@ -1218,7 +1236,7 @@ export const Dashboard: React.FC = () => {
                         {searchQuery && (
                           <button
                             onClick={() => setSearchQuery('')}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
                             aria-label="Clear search"
                           >
                             Clear Search
@@ -1254,9 +1272,9 @@ export const Dashboard: React.FC = () => {
                           </button>
                         )}
                       </div>
-                    </>
-                  )}
-                </div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             ) : (
               <motion.div
