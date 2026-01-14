@@ -1249,23 +1249,39 @@ async def get_admin_logs(
                 recent_errors = recent_errors_result[0]["total"] if recent_errors_result else 0
                 
                 # Logs by hour (last 24 hours for trend)
+                # Generate all 24 hours first, then fill in actual counts
+                now = datetime.utcnow()
+                hourly_trend = []
+                hourly_counts = {}
+                
+                # Get actual log counts by hour
                 hourly_pipeline = [
                     {"$match": {
-                        "timestamp": {"$gte": datetime.utcnow() - timedelta(hours=24)}
+                        "timestamp": {"$gte": now - timedelta(hours=24)}
                     }},
                     {"$group": {
                         "_id": {
-                            "year": {"$year": "$timestamp"},
-                            "month": {"$month": "$timestamp"},
-                            "day": {"$dayOfMonth": "$timestamp"},
                             "hour": {"$hour": "$timestamp"}
                         },
                         "count": {"$sum": 1}
-                    }},
-                    {"$sort": {"_id": 1}},
-                    {"$limit": 24}
+                    }}
                 ]
                 hourly_logs = await db.system_logs.aggregate(hourly_pipeline).to_list(24)
+                
+                # Create a map of hour -> count
+                for item in hourly_logs:
+                    hour = item["_id"]["hour"]
+                    hourly_counts[hour] = item["count"]
+                
+                # Generate all 24 hours (last 24 hours from now)
+                for i in range(24):
+                    hour_time = now - timedelta(hours=23-i)
+                    hour = hour_time.hour
+                    count = hourly_counts.get(hour, 0)
+                    hourly_trend.append({
+                        "hour": f"{hour:02d}:00",
+                        "count": count
+                    })
                 
                 stats = {
                     "severityDistribution": [
@@ -1280,13 +1296,7 @@ async def get_admin_logs(
                     "errorCount": error_count,
                     "recentErrors": recent_errors,
                     "totalLogs": total_count,
-                    "hourlyTrend": [
-                        {
-                            "hour": f"{item['_id']['hour']:02d}:00",
-                            "count": item["count"]
-                        }
-                        for item in hourly_logs
-                    ]
+                    "hourlyTrend": hourly_trend
                 }
             except Exception as e:
                 logger.error(f"[ANALYTICS ERROR] Failed to calculate log stats: {e}")

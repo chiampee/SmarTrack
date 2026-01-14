@@ -2026,27 +2026,36 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
           </div>
 
           {/* Hourly Trend */}
-          {statistics.hourlyTrend && statistics.hourlyTrend.length > 0 && (
+          {statistics && (
             <div className="bg-white rounded-lg p-4 border border-gray-200 mt-4">
               <h4 className="text-sm font-semibold text-gray-900 mb-3">Logs by Hour (Last 24h)</h4>
-              <div className="flex items-end gap-1 h-32">
-                {statistics.hourlyTrend.map((item: { hour: string; count: number }, index: number) => {
-                  const maxCount = Math.max(...statistics.hourlyTrend.map((h: { hour: string; count: number }) => h.count), 1)
-                  const height = (item.count / maxCount) * 100
-                  return (
-                    <div key={index} className="flex-1 flex flex-col items-center">
-                      <div
-                        className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition-colors cursor-pointer"
-                        style={{ height: `${height}%` }}
-                        title={`${item.hour}: ${item.count} logs`}
-                      />
-                      <div className="text-xs text-gray-500 mt-1 transform -rotate-45 origin-top-left whitespace-nowrap">
-                        {item.hour.split(':')[0]}
+              {statistics.hourlyTrend && statistics.hourlyTrend.length > 0 ? (
+                <div className="flex items-end gap-1 h-32">
+                  {statistics.hourlyTrend.map((item: { hour: string; count: number }, index: number) => {
+                    const maxCount = Math.max(...statistics.hourlyTrend.map((h: { hour: string; count: number }) => h.count), 1)
+                    const height = maxCount > 0 ? (item.count / maxCount) * 100 : 0
+                    return (
+                      <div key={index} className="flex-1 flex flex-col items-center">
+                        <div
+                          className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition-colors cursor-pointer min-h-[2px]"
+                          style={{ height: `${Math.max(height, 2)}%` }}
+                          title={`${item.hour}: ${item.count} logs`}
+                        />
+                        <div className="text-xs text-gray-500 mt-1 transform -rotate-45 origin-top-left whitespace-nowrap">
+                          {item.hour.split(':')[0]}
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-32 text-gray-400">
+                  <div className="text-center">
+                    <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No logs in the last 24 hours</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
