@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List, Download, Archive, Chrome } from 'lucide-react'
+import { Plus, Grid, List, Download, Archive, Chrome, Tag } from 'lucide-react'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { useExtensionDetection } from '../hooks/useExtensionDetection'
 import { LinkCard } from '../components/LinkCard'
@@ -1100,41 +1100,49 @@ export const Dashboard: React.FC = () => {
               </div>
             ) : filteredLinks.length === 0 ? (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                className="card p-12"
+                className="bg-white rounded-lg border border-slate-200 shadow-sm p-8 sm:p-12"
               >
                 <div className="flex flex-col items-center justify-center text-center">
                   {links.length === 0 ? (
                     <>
-                      <div className="text-7xl mb-6 animate-bounce">📚</div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">Welcome to SmarTrack!</h3>
-                      <p className="text-gray-600 mb-6 max-w-md">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 mb-6 rounded-full bg-slate-100 flex items-center justify-center">
+                        <Archive className="w-8 h-8 sm:w-10 sm:h-10 text-slate-400" />
+                      </div>
+                      <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">Welcome to SmarTrack</h3>
+                      <p className="text-base sm:text-lg text-slate-600 mb-8 max-w-md mx-auto">
                         Your personal research library. Start collecting, organizing, and discovering knowledge.
                       </p>
                       <button 
                         onClick={() => setShowAddModal(true)}
-                        className="btn btn-primary px-6 py-3 text-base font-semibold hover:scale-105 transition-transform"
+                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-sm sm:text-base flex items-center gap-2 mx-auto shadow-sm hover:shadow-md"
                       >
-                        <Plus className="w-5 h-5 mr-2" />
+                        <Plus className="w-5 h-5" />
                         Add Your First Link
                       </button>
-                      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 text-left max-w-2xl">
-                        <div className="p-4 bg-blue-50 rounded-lg">
-                          <div className="text-2xl mb-2">🔖</div>
-                          <div className="font-semibold text-sm mb-1">Save Links</div>
-                          <div className="text-xs text-gray-600">Capture articles, videos, and resources</div>
+                      <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-left max-w-3xl w-full">
+                        <div className="p-5 bg-white border border-slate-200 rounded-lg">
+                          <div className="w-10 h-10 mb-3 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <Plus className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div className="font-semibold text-sm text-slate-900 mb-1.5">Save Links</div>
+                          <div className="text-xs text-slate-600">Capture articles, videos, and resources</div>
                         </div>
-                        <div className="p-4 bg-purple-50 rounded-lg">
-                          <div className="text-2xl mb-2">🏷️</div>
-                          <div className="font-semibold text-sm mb-1">Organize</div>
-                          <div className="text-xs text-gray-600">Tag and categorize your research</div>
+                        <div className="p-5 bg-white border border-slate-200 rounded-lg">
+                          <div className="w-10 h-10 mb-3 rounded-lg bg-purple-50 flex items-center justify-center">
+                            <Tag className="w-5 h-5 text-purple-600" />
+                          </div>
+                          <div className="font-semibold text-sm text-slate-900 mb-1.5">Organize</div>
+                          <div className="text-xs text-slate-600">Tag and categorize your research</div>
                         </div>
-                        <div className="p-4 bg-green-50 rounded-lg">
-                          <div className="text-2xl mb-2">🔍</div>
-                          <div className="font-semibold text-sm mb-1">Discover</div>
-                          <div className="text-xs text-gray-600">Search and find what you need</div>
+                        <div className="p-5 bg-white border border-slate-200 rounded-lg">
+                          <div className="w-10 h-10 mb-3 rounded-lg bg-green-50 flex items-center justify-center">
+                            <Archive className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div className="font-semibold text-sm text-slate-900 mb-1.5">Discover</div>
+                          <div className="text-xs text-slate-600">Search and find what you need</div>
                         </div>
                       </div>
                     </>
