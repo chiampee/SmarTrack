@@ -935,7 +935,7 @@ export const Dashboard: React.FC = () => {
                   value={searchQuery}
                   onChange={setSearchQuery}
                   links={links}
-                  placeholder="Search..."
+                  placeholder={isMobile ? "Search links..." : "Search..."}
                 />
                 {/* Filter Button inside Search */}
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10">
@@ -959,16 +959,17 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Right: Action Buttons - mobile optimized */}
-            <div className="flex items-center gap-2 flex-shrink-0 order-2 w-full sm:w-auto">
-              {/* Action Buttons - full width on mobile, auto on desktop */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 order-2 w-full sm:w-auto">
+              {/* Action Buttons - optimized for mobile */}
               <button 
                 onClick={() => setShowAddModal(true)}
                 className="flex-1 sm:flex-initial px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 active:from-blue-800 transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-0 touch-manipulation"
                 aria-label="Add new link"
               >
                 <Plus className="w-4 h-4 flex-shrink-0" />
-                <span className="sm:hidden md:inline">New Link</span>
+                <span className="sm:hidden">Add</span>
                 <span className="hidden sm:inline md:hidden">New</span>
+                <span className="hidden md:inline">New Link</span>
               </button>
               
               <button 
@@ -979,7 +980,8 @@ export const Dashboard: React.FC = () => {
                 title={filteredLinksCount === 0 ? 'No links to export' : 'Export filtered links'}
               >
                 <Download className="w-4 h-4 flex-shrink-0" />
-                <span className="sm:hidden md:inline">Export</span>
+                <span className="sm:hidden">Export</span>
+                <span className="hidden sm:inline">Export</span>
               </button>
 
               {!isExtensionInstalled && !isMobile && (
@@ -1004,12 +1006,12 @@ export const Dashboard: React.FC = () => {
           animate="visible"
           variants={fadeInUp}
           transition={{ delay: shouldAnimate ? 0.05 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-          className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-3 mb-2 md:mb-6 px-1 sm:px-2"
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4 md:mb-6"
         >
           {/* Left: Collection Title and Stats - mobile optimized */}
-          <div className="flex items-center gap-2 md:gap-3 flex-wrap w-full md:w-auto">
-            <h2 className="text-base sm:text-lg md:text-2xl font-bold text-gray-900 flex items-center gap-1 sm:gap-1.5 md:gap-2">
-              <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-600" />
+          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-wrap w-full sm:w-auto">
+            <h2 className="text-sm sm:text-base md:text-2xl font-bold text-gray-900 flex items-center gap-1 sm:gap-1.5 md:gap-2">
+              <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-600 flex-shrink-0" />
               <span className="truncate">
                 {selectedCollectionId 
                   ? collections.find(c => c.id === selectedCollectionId)?.name || 'Collection'
@@ -1021,19 +1023,19 @@ export const Dashboard: React.FC = () => {
               </span>
             </h2>
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="px-1.5 sm:px-2 md:px-2.5 py-0.5 md:py-1 text-xs font-semibold text-blue-700 bg-blue-50 rounded-full border border-blue-200">
+              <span className="px-1.5 sm:px-2 md:px-2.5 py-0.5 md:py-1 text-xs font-semibold text-blue-700 bg-blue-50 rounded-full border border-blue-200 whitespace-nowrap">
                 {filteredLinksCount} {filteredLinksCount === 1 ? 'link' : 'links'}
               </span>
             </div>
           </div>
 
           {/* Right: View Controls - mobile optimized */}
-          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 w-full md:w-auto justify-end">
+          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 w-full sm:w-auto justify-end">
             {/* View Toggle - optimized for touch */}
             <div className="flex items-center gap-0.5 bg-gray-50 rounded-lg p-0.5 border border-gray-200">
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-2 md:py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1 sm:gap-1.5 md:gap-1.5 min-h-[36px] sm:min-h-[40px] md:min-h-0 touch-manipulation ${
+                className={`px-3 sm:px-2 md:px-3 py-2 sm:py-2 md:py-1.5 rounded-md transition-all text-xs font-medium flex items-center justify-center gap-1 sm:gap-1.5 md:gap-1.5 min-h-[40px] sm:min-h-[40px] md:min-h-0 touch-manipulation ${
                   viewMode === 'list' 
                     ? 'bg-white text-blue-600 shadow-sm' 
                     : 'text-gray-600 hover:text-gray-900'
@@ -1041,12 +1043,12 @@ export const Dashboard: React.FC = () => {
                 aria-label="List view"
                 aria-pressed={viewMode === 'list'}
               >
-                <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <List className="w-4 h-4 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">List</span>
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`px-2.5 sm:px-2 md:px-3 py-1.5 sm:py-2 md:py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1 sm:gap-1.5 md:gap-1.5 min-h-[36px] sm:min-h-[40px] md:min-h-0 touch-manipulation ${
+                className={`px-3 sm:px-2 md:px-3 py-2 sm:py-2 md:py-1.5 rounded-md transition-all text-xs font-medium flex items-center justify-center gap-1 sm:gap-1.5 md:gap-1.5 min-h-[40px] sm:min-h-[40px] md:min-h-0 touch-manipulation ${
                   viewMode === 'grid' 
                     ? 'bg-white text-blue-600 shadow-sm' 
                     : 'text-gray-600 hover:text-gray-900'
@@ -1054,7 +1056,7 @@ export const Dashboard: React.FC = () => {
                 aria-label="Grid view"
                 aria-pressed={viewMode === 'grid'}
               >
-                <Grid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Grid className="w-4 h-4 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">Grid</span>
               </button>
             </div>
@@ -1067,7 +1069,7 @@ export const Dashboard: React.FC = () => {
           animate="visible"
           variants={fadeInUp}
           transition={{ delay: shouldAnimate ? 0.2 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-          className="grid grid-cols-1 gap-6 sm:gap-8"
+          className="grid grid-cols-1 gap-3 sm:gap-4 md:gap-6 lg:gap-8"
         >
           {/* Content */}
           <motion.div>
