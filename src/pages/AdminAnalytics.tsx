@@ -1772,7 +1772,10 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
     toast.success('Logs exported successfully')
   }
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity: string | null | undefined) => {
+    if (!severity) {
+      return 'bg-blue-100 text-blue-700 border-blue-300'
+    }
     switch (severity.toLowerCase()) {
       case 'error':
       case 'critical':
@@ -1785,7 +1788,10 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
     }
   }
 
-  const getSeverityIcon = (severity: string) => {
+  const getSeverityIcon = (severity: string | null | undefined) => {
+    if (!severity) {
+      return 'info'
+    }
     switch (severity.toLowerCase()) {
       case 'error':
       case 'critical':
