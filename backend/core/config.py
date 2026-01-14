@@ -3,8 +3,7 @@ Configuration settings for SmarTrack Backend
 """
 
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
-from typing import List, Optional, Union, Any
+from typing import List, Optional
 
 class Settings(BaseSettings):
     # Database - MUST be provided via environment variable
@@ -47,28 +46,14 @@ class Settings(BaseSettings):
     
     # Admin Access - Can be set via environment variable (comma-separated) or defaults to single admin
     # Example: ADMIN_EMAILS=admin1@example.com,admin2@example.com
-    ADMIN_EMAILS: Union[str, List[str]] = "chaimpeer11@gmail.com"  # Comma-separated string or list
-    
-    @field_validator('ADMIN_EMAILS', mode='before')
-    @classmethod
-    def parse_admin_emails(cls, v: Any) -> List[str]:
-        """Parse ADMIN_EMAILS from string (comma-separated) or list"""
-        if isinstance(v, list):
-            return [email.strip() for email in v if email.strip()]
-        if isinstance(v, str):
-            # Handle comma-separated string from environment variable
-            emails = [email.strip() for email in v.split(",") if email.strip()]
-            return emails if emails else ["chaimpeer11@gmail.com"]  # Default fallback
-        return ["chaimpeer11@gmail.com"]  # Default fallback
+    ADMIN_EMAILS: str = "chaimpeer11@gmail.com"  # Comma-separated string from environment variable
     
     @property
     def admin_emails_list(self) -> List[str]:
-        """Get admin emails as list (for backward compatibility)"""
-        # After field_validator, ADMIN_EMAILS is always a List[str]
-        if isinstance(self.ADMIN_EMAILS, list):
-            return self.ADMIN_EMAILS
-        # Fallback: parse string if validator didn't run
-        return [email.strip() for email in str(self.ADMIN_EMAILS).split(",") if email.strip()] or ["chaimpeer11@gmail.com"]
+        """Parse ADMIN_EMAILS string into list, supporting comma-separated values from environment"""
+        # Handle comma-separated string from environment variable
+        emails = [email.strip() for email in str(self.ADMIN_EMAILS).split(",") if email.strip()]
+        return emails if emails else ["chaimpeer11@gmail.com"]  # Default fallback
     
     class Config:
         env_file = ".env"
