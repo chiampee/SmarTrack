@@ -1103,107 +1103,110 @@ export const Dashboard: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+                className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
               >
                 <div className="relative">
                   {/* Decorative background gradient */}
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-white to-purple-50/20 pointer-events-none" />
                   
-                  <div className="relative p-8 sm:p-12 lg:p-16">
+                  <div className="relative p-6 sm:p-8 md:p-12 lg:p-16">
                     <div className="flex flex-col items-center justify-center text-center max-w-3xl mx-auto">
                       {links.length === 0 ? (
                         <>
-                          {/* Hero Section */}
+                          {/* Hero Section - Mobile Optimized */}
                           <motion.div
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ delay: 0.2, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                            className="relative mb-10"
+                            className="relative mb-6 sm:mb-8 md:mb-10"
                           >
                             <div className="relative">
-                              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-blue-500/20">
-                                <Archive className="w-12 h-12 sm:w-14 sm:h-14 text-white" />
+                              <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-xl sm:shadow-2xl shadow-blue-500/20">
+                                <Archive className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 text-white" />
                               </div>
                               <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ delay: 0.5, duration: 0.4, type: "spring", stiffness: 200 }}
-                                className="absolute -top-2 -right-2 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg ring-4 ring-white"
+                                className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-6 h-6 sm:w-8 sm:h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg ring-2 sm:ring-4 ring-white"
                               >
-                                <Plus className="w-4 h-4 text-white" />
+                                <Plus className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                               </motion.div>
                             </div>
                           </motion.div>
                           
-                          {/* Welcome Text */}
+                          {/* Welcome Text - Mobile Optimized */}
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3, duration: 0.6 }}
-                            className="mb-6"
+                            className="mb-5 sm:mb-6"
                           >
-                            <h3 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
+                            <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-3 sm:mb-4 tracking-tight px-2">
                               Welcome to SmarTrack
                             </h3>
-                            <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                            <p className="text-base sm:text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed px-4">
                               Your personal research library. Start collecting, organizing, and discovering knowledge.
                             </p>
                           </motion.div>
                           
-                          {/* Primary CTA */}
+                          {/* Primary CTA - Mobile Optimized */}
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.4, duration: 0.6 }}
-                            className="mb-12"
+                            className="mb-8 sm:mb-10 md:mb-12 w-full sm:w-auto"
                           >
                             <button 
                               onClick={() => setShowAddModal(true)}
-                              className="px-8 py-4 sm:px-10 sm:py-5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-all font-semibold text-base sm:text-lg flex items-center gap-3 mx-auto shadow-xl shadow-blue-600/25 hover:shadow-2xl hover:shadow-blue-600/30 hover:-translate-y-1 active:translate-y-0"
+                              className="w-full sm:w-auto px-6 sm:px-8 md:px-10 py-3.5 sm:py-4 md:py-5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-all font-semibold text-sm sm:text-base md:text-lg flex items-center justify-center gap-2.5 sm:gap-3 mx-auto shadow-xl shadow-blue-600/25 hover:shadow-2xl hover:shadow-blue-600/30 hover:-translate-y-0.5 sm:hover:-translate-y-1 active:translate-y-0 touch-manipulation min-h-[48px] sm:min-h-0"
                             >
-                              <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
+                              <Plus className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 flex-shrink-0" />
                               <span>Add Your First Link</span>
                             </button>
                           </motion.div>
                           
-                          {/* Feature Cards */}
+                          {/* Feature Cards - Mobile Optimized */}
                           <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5, duration: 0.6 }}
-                            className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 w-full"
+                            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6 w-full"
                           >
                             <motion.div
-                              whileHover={{ y: -6, scale: 1.02, transition: { duration: 0.2 } }}
-                              className="p-6 sm:p-7 bg-white border border-slate-200 rounded-2xl hover:border-blue-300 hover:shadow-lg transition-all group cursor-pointer"
+                              whileHover={!isMobile ? { y: -6, scale: 1.02, transition: { duration: 0.2 } } : {}}
+                              whileTap={isMobile ? { scale: 0.98 } : {}}
+                              className="p-5 sm:p-6 md:p-7 bg-white border border-slate-200 rounded-xl sm:rounded-2xl hover:border-blue-300 hover:shadow-lg transition-all group cursor-pointer touch-manipulation"
                             >
-                              <div className="w-14 h-14 mb-5 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 group-hover:from-blue-100 group-hover:to-blue-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
-                                <Plus className="w-7 h-7 text-blue-600" />
+                              <div className="w-12 h-12 sm:w-14 sm:h-14 mb-4 sm:mb-5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 group-hover:from-blue-100 group-hover:to-blue-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
+                                <Plus className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600" />
                               </div>
-                              <div className="font-bold text-lg text-slate-900 mb-2.5">Save Links</div>
-                              <div className="text-sm text-slate-600 leading-relaxed">Capture articles, videos, and resources with one click</div>
+                              <div className="font-bold text-base sm:text-lg text-slate-900 mb-2 sm:mb-2.5">Save Links</div>
+                              <div className="text-xs sm:text-sm text-slate-600 leading-relaxed">Capture articles, videos, and resources with one click</div>
                             </motion.div>
                             
                             <motion.div
-                              whileHover={{ y: -6, scale: 1.02, transition: { duration: 0.2 } }}
-                              className="p-6 sm:p-7 bg-white border border-slate-200 rounded-2xl hover:border-purple-300 hover:shadow-lg transition-all group cursor-pointer"
+                              whileHover={!isMobile ? { y: -6, scale: 1.02, transition: { duration: 0.2 } } : {}}
+                              whileTap={isMobile ? { scale: 0.98 } : {}}
+                              className="p-5 sm:p-6 md:p-7 bg-white border border-slate-200 rounded-xl sm:rounded-2xl hover:border-purple-300 hover:shadow-lg transition-all group cursor-pointer touch-manipulation"
                             >
-                              <div className="w-14 h-14 mb-5 rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 group-hover:from-purple-100 group-hover:to-purple-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
-                                <Tag className="w-7 h-7 text-purple-600" />
+                              <div className="w-12 h-12 sm:w-14 sm:h-14 mb-4 sm:mb-5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 group-hover:from-purple-100 group-hover:to-purple-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
+                                <Tag className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600" />
                               </div>
-                              <div className="font-bold text-lg text-slate-900 mb-2.5">Organize</div>
-                              <div className="text-sm text-slate-600 leading-relaxed">Tag and categorize your research for easy discovery</div>
+                              <div className="font-bold text-base sm:text-lg text-slate-900 mb-2 sm:mb-2.5">Organize</div>
+                              <div className="text-xs sm:text-sm text-slate-600 leading-relaxed">Tag and categorize your research for easy discovery</div>
                             </motion.div>
                             
                             <motion.div
-                              whileHover={{ y: -6, scale: 1.02, transition: { duration: 0.2 } }}
-                              className="p-6 sm:p-7 bg-white border border-slate-200 rounded-2xl hover:border-green-300 hover:shadow-lg transition-all group cursor-pointer"
+                              whileHover={!isMobile ? { y: -6, scale: 1.02, transition: { duration: 0.2 } } : {}}
+                              whileTap={isMobile ? { scale: 0.98 } : {}}
+                              className="p-5 sm:p-6 md:p-7 bg-white border border-slate-200 rounded-xl sm:rounded-2xl hover:border-green-300 hover:shadow-lg transition-all group cursor-pointer touch-manipulation sm:col-span-2 md:col-span-1"
                             >
-                              <div className="w-14 h-14 mb-5 rounded-2xl bg-gradient-to-br from-green-50 to-green-100 group-hover:from-green-100 group-hover:to-green-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
-                                <Archive className="w-7 h-7 text-green-600" />
+                              <div className="w-12 h-12 sm:w-14 sm:h-14 mb-4 sm:mb-5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-green-50 to-green-100 group-hover:from-green-100 group-hover:to-green-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
+                                <Archive className="w-6 h-6 sm:w-7 sm:h-7 text-green-600" />
                               </div>
-                              <div className="font-bold text-lg text-slate-900 mb-2.5">Discover</div>
-                              <div className="text-sm text-slate-600 leading-relaxed">Search and find what you need instantly</div>
+                              <div className="font-bold text-base sm:text-lg text-slate-900 mb-2 sm:mb-2.5">Discover</div>
+                              <div className="text-xs sm:text-sm text-slate-600 leading-relaxed">Search and find what you need instantly</div>
                             </motion.div>
                           </motion.div>
                         </>
