@@ -44,8 +44,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         console.log(`[AdminContext] Rate limit cooldown active, waiting ${remaining}s...`)
         // Use cached result if available
         if (adminCheckCache.lastResult !== null) {
-          setIsAdmin(adminCheckCache.lastResult)
-          setIsChecking(false)
+          // ✅ Only update state if it's different to prevent unnecessary re-renders
+          setIsAdmin(prev => prev !== adminCheckCache.lastResult ? adminCheckCache.lastResult : prev)
+          setIsChecking(prev => prev !== false ? false : prev)
           if (!adminCheckCache.lastResult) {
             navigate('/404')
           }
@@ -59,8 +60,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         console.log(`[AdminContext] Cooldown active, waiting ${remaining}s...`)
         // Use cached result if available
         if (adminCheckCache.lastResult !== null) {
-          setIsAdmin(adminCheckCache.lastResult)
-          setIsChecking(false)
+          // ✅ Only update state if it's different to prevent unnecessary re-renders
+          setIsAdmin(prev => prev !== adminCheckCache.lastResult ? adminCheckCache.lastResult : prev)
+          setIsChecking(prev => prev !== false ? false : prev)
           if (!adminCheckCache.lastResult) {
             navigate('/404')
           }

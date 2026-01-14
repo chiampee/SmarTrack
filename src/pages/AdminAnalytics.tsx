@@ -198,7 +198,9 @@ export const AdminAnalytics: React.FC = () => {
 
   // Initial load - only load once when admin access is confirmed
   useEffect(() => {
-    if (isAdmin && !isChecking && !hasLoadedOnceRef.current) {
+    // ✅ Only trigger when we have a definitive admin status (not null, not checking)
+    // ✅ Use ref to ensure we only load once, even if effect runs multiple times
+    if (isAdmin === true && isChecking === false && !hasLoadedOnceRef.current) {
       console.log('[Analytics] Initial load triggered')
       hasLoadedOnceRef.current = true
       // Use applied dates (which start as initial dates)
