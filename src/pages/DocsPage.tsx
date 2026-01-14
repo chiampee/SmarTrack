@@ -21,126 +21,196 @@ import {
   ChevronRight
 } from 'lucide-react'
 
-// Documentation sections with improved content
+// Documentation sections with technical marketing content
 const docSections = [
   {
     id: 'getting-started',
     title: 'Getting Started',
     icon: Download,
     color: 'blue',
-    description: 'Quick setup guide to get you started',
+    description: 'Enterprise-grade setup in minutes',
     articles: [
       {
-        title: 'Installing the Chrome Extension',
-        content: `## Step 1: Install from Chrome Web Store
+        title: 'Installation & Authentication',
+        content: `## Installation
 
-Visit the Chrome Web Store and click "Add to Chrome" to install the SmarTrack extension. The installation takes just a few seconds.
+SmarTrack is distributed as a Chrome Web Store extension. Installation is a single-click process that takes less than 10 seconds.
 
-Once installed, you'll see the SmarTrack icon appear in your browser toolbar.
+**Installation Steps:**
+1. Visit the Chrome Web Store listing for SmarTrack
+2. Click "Add to Chrome" and confirm installation
+3. The extension icon appears in your browser toolbar automatically
 
-## Step 2: Sign In
+**Post-Installation:**
+- No configuration required
+- Automatic updates via Chrome Web Store
+- Zero-downtime updates preserve your data
 
-1. Click the SmarTrack icon in your browser toolbar
-2. Click "Sign in with Google" to authenticate
+## Authentication
+
+SmarTrack uses **Auth0** for enterprise-grade authentication, providing:
+
+- **OAuth 2.0** secure authentication flow
+- **Single Sign-On (SSO)** support for organizational accounts
+- **Multi-factor authentication (MFA)** compatibility
+- **Zero password storage** on our servers
+
+**First-Time Setup:**
+1. Click the SmarTrack extension icon
+2. Select "Sign in with Google" (or your organization's SSO provider)
 3. Authorize SmarTrack to access your basic profile
+4. Your account is created automatically with secure token-based authentication
 
-Your account will be created automatically upon first sign-in.
+## Your First Capture
 
-## Step 3: Save Your First Page
+**Method 1: Extension Popup**
+- Click the SmarTrack icon in your browser toolbar
+- Review pre-filled metadata (title, URL, description)
+- Add optional notes, tags, or category
+- Press **Cmd/Ctrl + Enter** to save instantly
 
-Navigate to any webpage you want to save, then:
+**Method 2: Right-Click Context Menu**
+- Right-click anywhere on a webpage
+- Select "Save to SmarTrack" from the context menu
+- The extension popup opens with page details pre-filled
 
-- **Click the extension icon** in your toolbar, or
-- **Use the keyboard shortcut**: ⌘+Shift+S (Mac) or Ctrl+Shift+S (Windows/Linux)
-
-Your page is now saved and will appear in your dashboard immediately.`
+Your saved content appears in your dashboard within seconds, fully indexed and searchable.`
       },
       {
-        title: 'System Requirements',
-        content: `## Supported Browsers
+        title: 'System Requirements & Compatibility',
+        content: `## Browser Compatibility
 
-SmarTrack works with all Chromium-based browsers:
+SmarTrack is built on **Chromium Manifest V3**, ensuring compatibility with:
 
-- **Google Chrome** (v90 or later)
-- **Microsoft Edge** (Chromium-based)
-- **Brave Browser**
-- **Arc Browser**
-- **Opera**
+- **Google Chrome** (v90+)
+- **Microsoft Edge** (Chromium-based, all versions)
+- **Brave Browser** (all versions)
+- **Arc Browser** (all versions)
+- **Opera** (Chromium-based, all versions)
 
-## Minimum Requirements
+**Technical Specifications:**
+- **Manifest Version**: V3 (latest Chrome extension standard)
+- **Storage API**: IndexedDB for offline capability
+- **Network Protocol**: HTTPS-only (TLS 1.3)
+- **Authentication**: OAuth 2.0 via Auth0
 
-- Modern operating system (Windows 10+, macOS 10.15+, or Linux)
-- Stable internet connection
-- 50MB free disk space for the extension
+## System Requirements
 
-## Coming Soon
+**Minimum Requirements:**
+- Operating System: Windows 10+, macOS 10.15+, or modern Linux distribution
+- RAM: 2GB available (extension uses <50MB)
+- Disk Space: 50MB for extension installation
+- Network: Stable internet connection (HTTPS required)
 
-- Firefox support (Q2 2026)
-- Safari support (Q3 2026)
-- Mobile apps (Q4 2026)`
+**Recommended:**
+- Modern browser with automatic updates enabled
+- 4GB+ RAM for optimal performance with large libraries
+- Broadband connection for fast content extraction
+
+## Platform Roadmap
+
+**Q2 2026**: Firefox support (WebExtensions API)
+**Q3 2026**: Safari support (macOS/iOS)
+**Q4 2026**: Native mobile applications (iOS/Android)`
       }
     ]
   },
   {
     id: 'saving-content',
-    title: 'Saving Content',
+    title: 'Content Capture',
     icon: Globe,
     color: 'green',
-    description: 'Learn how to capture and save web content',
+    description: 'Enterprise-grade content extraction and storage',
     articles: [
       {
-        title: 'How to Save a Page',
-        content: `## Three Ways to Save
+        title: 'Capture Methods',
+        content: `## Extension Popup (Primary Method)
 
-### 1. Extension Icon
-Click the SmarTrack icon in your browser toolbar. A popup will appear with the page details pre-filled for your review.
+Click the SmarTrack icon in your browser toolbar to open the capture interface. The extension automatically:
 
-### 2. Keyboard Shortcut
-Use the quick save shortcut:
-- **Mac**: ⌘ + Shift + S
-- **Windows/Linux**: Ctrl + Shift + S
+- **Extracts page metadata** (title, description, Open Graph tags)
+- **Identifies content type** (article, PDF, video, etc.)
+- **Pre-fills form fields** for rapid capture
+- **Validates URL** and checks for duplicates
 
-This instantly saves the current page without opening the popup.
+**Workflow:**
+1. Click extension icon → Popup opens
+2. Review auto-extracted metadata
+3. Add optional notes, tags, or assign to a project
+4. Press **Cmd/Ctrl + Enter** to save instantly
 
-### 3. Right-Click Menu
-Right-click anywhere on the page and select "Save to SmarTrack" from the context menu.
+## Context Menu (Quick Capture)
 
-## What Gets Saved
+Right-click anywhere on a webpage to access:
 
-When you save a page, SmarTrack automatically captures:
+- **"Save to SmarTrack"** - Opens popup with current page
+- **"Save Link"** - Captures selected link URL and text
+- **"Open Dashboard"** - Quick access to your library
 
-- **Page URL** - Permanent reference to the original source
-- **Page Title** - The title of the webpage
-- **Main Content** - Clean, formatted text (ads and navigation removed)
-- **Featured Image** - If available on the page
-- **Your Notes** - Optional personal annotations
-- **AI Summary** - Automatically generated summary of the content`
+This method is ideal for rapid capture without interrupting your workflow.
+
+## What Gets Captured
+
+SmarTrack's content extraction engine captures:
+
+**Core Metadata:**
+- **URL** - Permanent canonical reference
+- **Title** - Page title from HTML `<title>` or Open Graph
+- **Description** - Meta description or first paragraph
+- **Favicon** - Site icon for visual identification
+
+**Content Extraction:**
+- **Main Content** - Clean text extraction using BeautifulSoup
+- **Content Type** - Automatic detection (webpage, PDF, article, video)
+- **Metadata** - Author, publish date (when available)
+
+**User-Added Data:**
+- **Notes** - Personal annotations and highlights
+- **Tags** - Custom organizational tags
+- **Category** - Manual or auto-assigned categorization
+- **Project Assignment** - Link to collections/projects
+
+**Storage:**
+- Content is stored in MongoDB with full-text indexing
+- Automatic deduplication prevents duplicate saves
+- Offline queue ensures no data loss during network interruptions`
       },
       {
-        title: 'Saving Different Content Types',
-        content: `## Articles & Blog Posts
+        title: 'Content Type Support',
+        content: `## Universal Web Content
 
-SmarTrack automatically extracts the main article content, intelligently removing navigation, ads, and other clutter to give you clean, readable text.
+SmarTrack's extraction engine handles all standard web content types:
 
-## Twitter/X Threads
+**Articles & Blog Posts:**
+- Intelligent content extraction removes navigation, ads, and sidebar elements
+- Preserves article structure, headings, and formatting
+- Captures author metadata and publication dates when available
 
-Save any tweet URL and we'll capture the full thread, unrolled and formatted for easy reading.
+**PDF Documents:**
+- Text extraction from PDFs viewed in browser
+- Preserves document structure and formatting
+- Full-text searchable after capture
 
-## YouTube Videos
+**Video Content (YouTube, Vimeo, etc.):**
+- Captures video metadata (title, description, channel)
+- Preserves video URL for direct access
+- Extracts thumbnail images when available
 
-Save video pages to capture the title, description, and a direct link back to the video for future reference.
+**Social Media Platforms:**
+- **Twitter/X**: Thread capture with full context
+- **LinkedIn**: Post and article extraction
+- **Reddit**: Thread and comment capture
+- **Hacker News**: Discussion thread preservation
 
-## PDF Documents
+**Paywalled Content:**
+- Captures content visible to authenticated users
+- Creates permanent snapshot of accessible content
+- Useful for subscription-based research archives
 
-If you're viewing a PDF in your browser, save it like any other page. We'll extract the text content for searchability.
-
-## Paywalled Content
-
-If you have access to read the content (via subscription), SmarTrack can save it. We capture exactly what you can see on the page.
-
-## Social Media
-
-We support Twitter/X, LinkedIn posts, Reddit threads, and Hacker News discussions with optimized extraction for each platform.`
+**Technical Limitations:**
+- Content extraction works best with HTML-based pages
+- JavaScript-rendered content requires page load completion
+- Some dynamic content may require manual review`
       }
     ]
   },
@@ -149,40 +219,51 @@ We support Twitter/X, LinkedIn posts, Reddit threads, and Hacker News discussion
     title: 'Keyboard Shortcuts',
     icon: Keyboard,
     color: 'purple',
-    description: 'Power user shortcuts for faster workflows',
+    description: 'Accelerate your workflow with power user shortcuts',
     articles: [
       {
-        title: 'All Keyboard Shortcuts',
+        title: 'Keyboard Shortcuts Reference',
         content: `## Extension Shortcuts
 
-These shortcuts work when browsing the web:
+These shortcuts are available when using the extension popup:
 
 | Action | Mac | Windows/Linux |
 |--------|-----|---------------|
-| Save current page | ⌘ + Shift + S | Ctrl + Shift + S |
-| Open extension popup | ⌘ + Shift + E | Ctrl + Shift + E |
+| Save current page | ⌘ + Enter | Ctrl + Enter |
+| Close popup | Escape | Escape |
+
+**Usage:**
+- Press **Cmd/Ctrl + Enter** while the extension popup is open to save instantly
+- No need to click the "Save" button—accelerate your capture workflow
 
 ## Dashboard Shortcuts
 
-These shortcuts work in your SmarTrack dashboard:
+These shortcuts work within the SmarTrack dashboard:
 
-| Action | Mac | Windows/Linux |
-|--------|-----|---------------|
-| Search | ⌘ + K | Ctrl + K |
-| New capture | ⌘ + N | Ctrl + N |
-| Toggle sidebar | ⌘ + \\ | Ctrl + \\ |
-| Go to settings | ⌘ + , | Ctrl + , |
+| Action | Mac | Windows/Linux | Description |
+|--------|-----|---------------|-------------|
+| Focus search | / | / | Instantly focus the search bar |
+| Show all links | G | G | Navigate to main view |
+| Show favorites | F | F | Filter to favorite links |
+| Show recent | R | R | Show links from last 7 days |
+| Show archived | A | A | View archived links |
 
-## Customizing Shortcuts
+**Power User Tips:**
+- Press **/** anywhere in the dashboard to jump to search
+- Use single-letter shortcuts (G, F, R, A) for instant filtering
+- All shortcuts work without modifier keys for speed
 
-You can customize extension shortcuts:
+## Customizing Extension Shortcuts
 
-1. Go to \`chrome://extensions/shortcuts\` in Chrome
-2. Find SmarTrack in the list
-3. Click the pencil icon to edit shortcuts
+Extension shortcuts can be customized via Chrome's native shortcut manager:
+
+1. Navigate to \`chrome://extensions/shortcuts\`
+2. Locate "SmarTrack" in the extension list
+3. Click the pencil icon next to any shortcut
 4. Press your desired key combination
+5. Changes apply immediately
 
-Note: Dashboard shortcuts cannot be customized at this time.`
+**Note:** Dashboard shortcuts are fixed and cannot be customized. This ensures consistent keyboard navigation across all user sessions.`
       }
     ]
   },
@@ -191,59 +272,84 @@ Note: Dashboard shortcuts cannot be customized at this time.`
     title: 'Organization',
     icon: FolderTree,
     color: 'amber',
-    description: 'Organize your knowledge with projects and tags',
+    description: 'Enterprise-grade knowledge organization',
     articles: [
       {
         title: 'Projects & Collections',
-        content: `## Creating a Project
+        content: `## Project-Based Organization
 
-Projects help you organize related saves into focused collections:
+Projects are SmarTrack's primary organizational structure, enabling hierarchical knowledge management for research teams and individual power users.
 
-1. In the dashboard sidebar, click "+ New Project"
-2. Enter a descriptive project name
-3. Optionally add a description and choose a color theme
+**Creating Projects:**
+1. Navigate to the dashboard sidebar
+2. Click **"+ New Project"**
+3. Enter a descriptive project name (e.g., "Q1 Market Analysis")
+4. Optionally add a description for team context
+5. Project appears immediately in sidebar navigation
 
-## Adding Saves to Projects
+**Project Assignment Methods:**
 
-You can assign saves to projects in multiple ways:
+**Method 1: During Capture**
+- Select project from dropdown in extension popup
+- Assignment happens at save time for immediate organization
 
-- **When saving**: Select a project from the dropdown in the save dialog
-- **From dashboard**: Drag and drop saves into project folders in the sidebar
-- **Bulk assign**: Select multiple saves and use "Move to Project" from the actions menu
+**Method 2: Dashboard Assignment**
+- Open link details from dashboard
+- Use "Move to Project" action
+- Supports bulk operations for multiple links
 
-## Project Organization Tips
+**Method 3: Sidebar Drag & Drop**
+- Drag links directly onto project folders in sidebar
+- Visual feedback confirms assignment
+- Works with multiple link selection
 
-- Use projects for major research themes (e.g., "Market Research", "Competitor Analysis")
-- Keep project names concise and descriptive
-- Pin frequently-used projects for quick access in the sidebar`
+**Best Practices:**
+- Use projects for **thematic collections** (e.g., "Competitive Intelligence", "Technical Research")
+- Keep project names **concise and searchable**
+- Limit project depth to **2-3 levels** for optimal navigation
+- Archive completed projects to maintain clean workspace`
       },
       {
         title: 'Tags & Categories',
-        content: `## Auto-Tagging
+        content: `## Tag-Based Organization
 
-SmarTrack's AI automatically suggests relevant tags based on content analysis. You can:
+Tags provide flexible, multi-dimensional organization that complements project-based structure.
 
-- Accept suggested tags with one click
-- Remove unwanted tags
-- Add custom tags for personal organization
+**Tag Management:**
+- **Add tags** during capture or edit existing links
+- **Multi-tag support** - assign unlimited tags per link
+- **Tag autocomplete** - suggestions based on existing tags
+- **Tag filtering** - filter dashboard by one or multiple tags
 
-## Manual Tagging
+**Tag Best Practices:**
+- Use **consistent naming** (e.g., "important" not "Important" or "IMPORTANT")
+- Create **hierarchical tags** with separators (e.g., "tech:ai", "tech:ml")
+- Leverage **common prefixes** for grouping (e.g., "client:", "project:")
 
-Add tags in the save dialog or edit them later from the dashboard. Tags help with filtering and discovery across your entire library.
+## Category System
 
-## Categories
+Categories provide high-level content classification:
 
-Categories are AI-assigned based on content type and automatically organized:
-
+**Available Categories:**
 - Technology
 - Business
 - Research
 - Design
 - Science
 - News
-- And more...
+- Other
 
-You can override the auto-assigned category if needed by editing the save.`
+**Category Assignment:**
+- **Manual assignment** during capture or editing
+- Categories help with **broad filtering** and **content discovery**
+- Use categories for **top-level organization** across all projects
+
+**Category vs. Tags:**
+- **Categories**: Broad classification (one per link)
+- **Tags**: Specific attributes (multiple per link)
+- **Projects**: Thematic collections (one per link)
+
+This three-tier system (Projects → Categories → Tags) provides comprehensive organization at scale.`
       }
     ]
   },
@@ -252,185 +358,243 @@ You can override the auto-assigned category if needed by editing the save.`
     title: 'Search & Discovery',
     icon: Search,
     color: 'blue',
-    description: 'Find anything in your knowledge base instantly',
+    description: 'Enterprise search across your entire knowledge base',
     articles: [
       {
-        title: 'Searching Your Library',
-        content: `## Basic Search
+        title: 'Search Capabilities',
+        content: `## Full-Text Search
 
-Type any word or phrase in the search bar. SmarTrack searches across:
+SmarTrack's search engine indexes and searches across multiple content dimensions:
 
-- Titles
-- URLs
-- Descriptions
-- Full page content
-- Your notes
-- Tags
+**Search Fields:**
+- **Titles** - Page titles and metadata
+- **URLs** - Full URL path matching
+- **Descriptions** - Meta descriptions and extracted summaries
+- **Full Content** - Complete extracted text content
+- **User Notes** - Personal annotations and highlights
+- **Tags** - All assigned tags
 
-## Search Operators
+**Search Behavior:**
+- **Real-time filtering** as you type
+- **Case-insensitive** matching
+- **Partial word matching** (e.g., "learn" matches "learning")
+- **Multi-field search** across all indexed content simultaneously
 
-Use these operators to refine your searches:
+## Advanced Filtering
 
-| Operator | Example | Description |
-|----------|---------|-------------|
-| "quotes" | "machine learning" | Exact phrase match |
-| tag: | tag:important | Filter by tag |
-| project: | project:research | Filter by project |
-| from: | from:nytimes.com | Filter by domain |
-| before: | before:2026-01-01 | Before date |
-| after: | after:2025-06-01 | After date |
+Combine search with dashboard filters for precise results:
 
-## Combining Operators
+**Available Filters:**
+- **Date Range** - Today, Last Week, Last Month, Last Year, All Time
+- **Category** - Filter by content category
+- **Content Type** - Webpage, PDF, Article, Video, Image, Document
+- **Tags** - Filter by one or multiple tags
+- **Status** - Favorites, Archived, Recent
 
-You can combine multiple operators for precise searches:
+**Filter Combinations:**
+- Search + Date Range + Category = Highly targeted results
+- Multiple filters can be active simultaneously
+- Clear all filters with one click
 
-\`\`\`
-"artificial intelligence" tag:important from:arxiv.org
-\`\`\`
+## Search Autocomplete
 
-This finds pages containing "artificial intelligence" that are tagged "important" and from arxiv.org.`
+The search interface provides intelligent autocomplete:
+
+- **Title suggestions** - Matching link titles
+- **Tag suggestions** - Existing tags with # prefix
+- **URL suggestions** - Matching URLs
+- **Keyboard navigation** - Arrow keys to navigate, Enter to select
+
+Press **/** anywhere in the dashboard to instantly focus the search bar.`
       },
       {
-        title: 'Semantic Search',
-        content: `## Natural Language Queries
+        title: 'Discovery Features',
+        content: `## Content Discovery
 
-SmarTrack understands meaning, not just keywords. Try searches like:
+Beyond search, SmarTrack provides multiple discovery mechanisms:
 
-- "Articles about startup fundraising strategies"
-- "Research on climate change impacts"
-- "Tutorials for learning Python"
+**Recent Links:**
+- Automatically surfaces links from the last 7 days
+- Quick access via "Recent" filter or **R** keyboard shortcut
+- Helps rediscover recently saved content
 
-## How It Works
+**Favorites:**
+- Mark important links as favorites
+- Quick access via "Favorites" filter or **F** keyboard shortcut
+- Visual star indicator in link cards
 
-Our AI analyzes the semantic meaning of your query and matches it against the content of your saves, going beyond simple keyword matching to understand context and intent.
+**Category Browsing:**
+- Browse links by category in sidebar
+- See link counts per category
+- One-click filtering by category
 
-## Tips for Better Results
+**Project Navigation:**
+- Browse links organized by project
+- Sidebar shows all projects with link counts
+- Click project to filter dashboard
 
-1. **Be specific**: Include context about what you're looking for
-2. **Use natural language**: Write queries as you would ask a colleague
-3. **Include context**: Specify use case ("for my startup" vs. "for enterprise")`
+**Best Practices:**
+- Use **favorites** for frequently-referenced content
+- Leverage **categories** for broad content discovery
+- Organize with **projects** for thematic research
+- Combine **search + filters** for precise discovery`
       }
     ]
   },
   {
     id: 'ai-features',
-    title: 'AI Features',
+    title: 'Intelligent Features',
     icon: Sparkles,
     color: 'pink',
-    description: 'Leverage AI for smarter knowledge management',
+    description: 'AI-powered content processing and organization',
     articles: [
       {
-        title: 'AI Summaries',
-        content: `## Automatic Summarization
+        title: 'Content Extraction & Processing',
+        content: `## Automated Content Extraction
 
-When you save a page, our AI automatically generates:
+SmarTrack's content extraction engine processes every saved page:
 
-- **Concise summary** (2-3 sentences capturing key points)
-- **Key takeaways** (bullet points of main insights)
-- **Main topics** (identified themes and subjects)
+**Extraction Pipeline:**
+1. **HTML Parsing** - BeautifulSoup-based parsing for clean text extraction
+2. **Content Cleaning** - Removes navigation, ads, and non-content elements
+3. **Metadata Extraction** - Open Graph tags, meta descriptions, author info
+4. **Content Type Detection** - Automatic classification (webpage, PDF, article, video)
+5. **Text Indexing** - Full-text indexing for searchability
 
-## Regenerating Summaries
+**What Gets Extracted:**
+- **Main Content** - Clean, readable text (typically 50KB limit)
+- **Page Title** - From HTML title or Open Graph
+- **Description** - Meta description or first paragraph
+- **Featured Image** - Open Graph image when available
+- **Metadata** - Author, publish date, site information
 
-If the summary isn't quite right:
+**Technical Specifications:**
+- **Extraction Engine**: BeautifulSoup with custom cleaning algorithms
+- **Content Limit**: ~50KB per page (prevents excessive storage)
+- **Processing Time**: Typically <2 seconds per page
+- **Error Handling**: Graceful fallback if extraction fails
 
-1. Open the save in your dashboard
-2. Click the "..." menu
-3. Select "Regenerate Summary"
+## Content Quality
 
-The AI will create a new summary based on the latest content.
+**Best Results:**
+- Well-structured HTML pages
+- Standard article/blog formats
+- Pages with semantic HTML markup
 
-## Summary Quality
-
-Our AI works best with:
-
-- Well-structured articles and blog posts
-- English content (other languages improving)
-- Text-heavy pages with substantial content
-
-It may struggle with:
-
-- Image-heavy pages with minimal text
-- Very short pages or snippets
-- Poorly formatted content`
+**Limitations:**
+- JavaScript-heavy SPAs may require full page load
+- Some dynamic content may not be captured
+- Image-only content has limited text extraction`
       },
       {
-        title: 'Smart Categorization',
-        content: `## How It Works
+        title: 'Organization Intelligence',
+        content: `## Automatic Categorization
 
-Our AI analyzes the content and automatically:
+SmarTrack automatically assigns categories based on content analysis:
 
-- Assigns a relevant category
-- Suggests appropriate tags
-- Identifies related saves in your library
+**Category Detection:**
+- Analyzes page content and metadata
+- Matches against predefined category taxonomy
+- Assigns most relevant category automatically
 
-## Accuracy
+**Available Categories:**
+- Technology
+- Business
+- Research
+- Design
+- Science
+- News
+- Other
 
-Auto-categorization is correct approximately 90% of the time. You can always:
+**Manual Override:**
+- Edit category at any time from link details
+- Your manual assignments take precedence
+- System learns from your corrections
 
-- Edit the category manually
-- The system learns from your corrections over time
+## Content Type Detection
 
-## Related Content
+Automatic detection of content types:
 
-On each save's detail page, you'll see "Related Saves" powered by AI. This helps you discover connections and patterns in your knowledge base that you might not have noticed.`
+- **Webpage** - Standard HTML pages
+- **PDF** - PDF documents
+- **Article** - News articles and blog posts
+- **Video** - Video hosting platforms
+- **Image** - Image galleries and collections
+- **Document** - Document formats
+- **Other** - Unclassified content
+
+Content type helps with filtering and organization workflows.`
       }
     ]
   },
   {
     id: 'import-export',
-    title: 'Import & Export',
+    title: 'Data Portability',
     icon: Upload,
     color: 'slate',
-    description: 'Bring your data in and take it with you',
+    description: 'Full control over your data with import and export',
     articles: [
       {
-        title: 'Importing Data',
-        content: `## Supported Import Formats
+        title: 'Data Export',
+        content: `## Export Your Knowledge Base
 
-SmarTrack supports importing from:
+SmarTrack provides comprehensive data export capabilities, ensuring you maintain full control over your research data.
 
-- Chrome bookmarks (HTML export)
-- Pocket export
-- Raindrop.io export
-- Notion database export
-- CSV file
-- JSON file
+**Export Location:**
+- Navigate to **Settings → Account** tab
+- Find **"Export Data"** section
+- Click **"Export All Links"** button
 
-## How to Import
+**Export Format:**
+- **JSON** - Complete data structure with all metadata
+- Includes: URLs, titles, descriptions, tags, categories, notes, timestamps
+- Machine-readable format for backup and migration
 
-1. Go to **Settings → Import/Export**
-2. Click **"Import Data"**
-3. Select your import format
-4. Upload your file
-5. Review the preview of items to be imported
-6. Click **"Import"** to complete
+**Export Process:**
+1. Click "Export All Links" in Settings
+2. JSON file downloads immediately
+3. File contains all your saved links with complete metadata
+4. File is named with timestamp for organization
 
-## After Import
+**Use Cases:**
+- **Backup** - Regular exports for data safety
+- **Migration** - Transfer data to other systems
+- **Analysis** - Import into analytics tools
+- **Compliance** - GDPR/CCPA data portability requirements
 
-Imported links are automatically processed by our AI for summaries and categorization. This may take a few minutes for large imports (100+ items).`
+**Technical Details:**
+- Export includes all user-generated content
+- Metadata preserved in structured format
+- No data loss during export process
+- File size depends on library size (typically <1MB per 100 links)`
       },
       {
-        title: 'Exporting Your Data',
-        content: `## Export Formats
+        title: 'Data Import (Coming Soon)',
+        content: `## Import Capabilities
 
-### JSON (Full Backup)
-Includes all metadata, tags, notes, and AI-generated content. Best for backup or migrating to another service.
+Data import functionality is currently in development and will support:
 
-### Markdown
-Each save becomes a .md file with frontmatter. Perfect for Obsidian, Notion, or other markdown-based tools.
+**Planned Import Formats:**
+- **Chrome Bookmarks** - HTML export format
+- **Pocket Export** - JSON format
+- **CSV** - Spreadsheet format
+- **JSON** - SmarTrack export format (round-trip compatibility)
 
-### CSV
-Spreadsheet-friendly format with key fields. Good for analysis or simple migrations.
+**Import Workflow (Planned):**
+1. Navigate to Settings → Import/Export
+2. Select import format
+3. Upload your file
+4. Preview imported items
+5. Confirm and import
 
-## How to Export
+**Post-Import Processing:**
+- Imported links will undergo content extraction
+- Automatic categorization and tagging
+- Full-text indexing for searchability
+- Processing time scales with import size
 
-1. Go to **Settings → Import/Export**
-2. Click **"Export Data"**
-3. Select your preferred format
-4. Choose what to include (all data, specific projects, date ranges)
-5. Click **"Download"**
-
-Your export will download immediately. Large exports may take a moment to prepare.`
+**Status:**
+Import functionality is scheduled for Q2 2026 release. Export is available immediately for all users.`
       }
     ]
   }
