@@ -307,6 +307,19 @@ export const useAdminApi = () => {
     }>('/api/debug-token')
   }
 
+  const deleteAllLogs = async (): Promise<{ message: string; deletedCount: number }> => {
+    return makeRequest<{ message: string; deletedCount: number }>(
+      '/api/admin/logs',
+      { method: 'DELETE' }
+    )
+  }
+
+  const getLogsSize = async (): Promise<{ totalLogs: number; estimatedSizeBytes: number; estimatedSizeKB: number; estimatedSizeMB: number }> => {
+    return makeRequest<{ totalLogs: number; estimatedSizeBytes: number; estimatedSizeKB: number; estimatedSizeMB: number }>(
+      '/api/admin/logs/size'
+    )
+  }
+
   return {
     getAnalytics,
     getUsers,
@@ -319,6 +332,8 @@ export const useAdminApi = () => {
     updateUserLimits,
     resetUserLimits,
     debugToken,
+    deleteAllLogs,
+    getLogsSize,
   }
 }
 

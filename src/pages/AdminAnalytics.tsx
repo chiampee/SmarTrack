@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { 
   Users, Link as LinkIcon, HardDrive, TrendingUp, 
   RefreshCw, BarChart3, FileText, Settings,
-  ChevronLeft, ChevronRight, Search, AlertCircle, Tag, LogIn, Download
+  ChevronLeft, ChevronRight, Search, AlertCircle, Tag, LogIn, Download, Trash2, AlertTriangle
 } from 'lucide-react'
 import { useAdminAccess } from '../hooks/useAdminAccess'
 import { useAdminApi, AdminAnalytics as AdminAnalyticsType, AdminUser, SystemLog, AdminCategory, UserLimits, SystemLogsResponse } from '../services/adminApi'
@@ -1685,6 +1685,10 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
   const [showStats, setShowStats] = useState(true)
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [statistics, setStatistics] = useState<SystemLogsResponse['statistics'] | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [logsSize, setLogsSize] = useState<{ totalLogs: number; estimatedSizeBytes: number; estimatedSizeKB: number; estimatedSizeMB: number } | null>(null)
+  const [loadingSize, setLoadingSize] = useState(false)
   const toast = useToast()
 
   const loadingRef = React.useRef(false)
@@ -1749,6 +1753,45 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
     }
   }, [autoRefresh])
 
+  const loadLogsSize = async () => {
+    try {
+      setLoadingSize(true)
+      const sizeInfo = await adminApi.getLogsSize()
+      setLogsSize(sizeInfo)
+    } catch (error: any) {
+      console.error('Failed to load logs size:', error)
+      // If API doesn't support size endpoint, estimate from statistics
+      if (statistics) {
+        const estimatedBytes = statistics.totalLogs * 500 // Rough estimate: 500 bytes per log
+        setLogsSize({
+          totalLogs: statistics.totalLogs,
+          estimatedSizeBytes: estimatedBytes,
+          estimatedSizeKB: estimatedBytes / 1024,
+          estimatedSizeMB: estimatedBytes / (1024 * 1024)
+        })
+      }
+    } finally {
+      setLoadingSize(false)
+    }
+  }
+
+  const handleDeleteAllLogs = async () => {
+    try {
+      setIsDeleting(true)
+      const result = await adminApi.deleteAllLogs()
+      toast.success(`Successfully deleted ${result.deletedCount.toLocaleString()} logs`)
+      setShowDeleteModal(false)
+      setLogsSize(null)
+      setStatistics(null)
+      loadLogs(true) // Reload logs and stats
+    } catch (error: any) {
+      console.error('Failed to delete logs:', error)
+      toast.error(error?.message || 'Failed to delete logs')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const exportLogs = () => {
     const csvContent = [
       ['Timestamp', 'Type', 'Severity', 'User ID', 'Email', 'Details'].join(','),
@@ -1771,6 +1814,13 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
     URL.revokeObjectURL(url)
     toast.success('Logs exported successfully')
   }
+
+  // Load logs size when statistics are available
+  useEffect(() => {
+    if (statistics && statistics.totalLogs > 0 && !logsSize) {
+      loadLogsSize()
+    }
+  }, [statistics])
 
   const getSeverityColor = (severity: string | null | undefined) => {
     if (!severity) {
@@ -1982,6 +2032,16 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
             >
               <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
               Refresh
+            </button>
+            <button
+              onClick={() => {
+                loadLogsSize()
+                setShowDeleteModal(true)
+              }}
+              className="px-3 py-1.5 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors flex items-center gap-1"
+            >
+              <Trash2 className="w-3 h-3" />
+              Delete All
             </button>
           </div>
         </div>
