@@ -188,16 +188,18 @@ async def log_system_event(
     event_type: str,
     details: Dict[str, Any],
     user_id: str = None,
-    severity: str = "info"
+    severity: str = "info",
+    email: str = None
 ):
     """
     Log system events (API requests, errors, user actions, etc.)
     
     Args:
-        event_type: Type of event (api_request, error, user_action, rate_limit, etc.)
+        event_type: Type of event (api_request, error, user_action, rate_limit, account_deletion, etc.)
         details: Event details dictionary
         user_id: Optional user ID associated with the event
         severity: Event severity (info, warning, error, critical)
+        email: Optional email address for GDPR/CCPA compliance logging
     """
     try:
         db = get_database()
@@ -205,6 +207,7 @@ async def log_system_event(
             "type": event_type,
             "timestamp": datetime.utcnow(),
             "userId": user_id,
+            "email": email or details.get("email"),  # Extract email from details if not provided
             "details": details,
             "severity": severity
         }

@@ -212,6 +212,7 @@ async def delete_user_account(
         
         # ✅ GDPR/CCPA Compliance: Log account deletion event
         # This log entry is retained for compliance audit purposes
+        # The log includes: user ID, email, deletion summary, and compliance information
         try:
             await log_system_event(
                 "account_deletion",
@@ -229,6 +230,8 @@ async def delete_user_account(
                         "timestamp": datetime.utcnow().isoformat()
                     }
                 },
+                user_id=user_id,  # Pass user_id explicitly for logging
+                email=user_email,  # Pass email explicitly for GDPR/CCPA compliance
                 severity="info"
             )
             logger.info(f"[ACCOUNT DELETION] ✅ Logged deletion event for user {user_id}")

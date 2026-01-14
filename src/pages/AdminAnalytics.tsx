@@ -2170,6 +2170,7 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
             <option value="error">Error</option>
             <option value="user_action">User Action</option>
             <option value="rate_limit">Rate Limit</option>
+            <option value="account_deletion">Account Deletion (GDPR/CCPA)</option>
           </select>
           <select
             value={severity}
