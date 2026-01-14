@@ -47,6 +47,12 @@ export const AdminAnalytics: React.FC = () => {
   // Load analytics data with comprehensive error handling
   // Accepts optional date parameters to use latest values when dates change
   const loadAnalytics = async (retryCount = 0, customStartDate?: string, customEndDate?: string) => {
+    // Security: Prevent loading if not admin
+    if (!isAdmin || isChecking) {
+      console.log('[Analytics] Admin access required - skipping load')
+      return
+    }
+
     // Prevent concurrent requests
     if (loadingRef.current) {
       console.log('[Analytics] Request already in progress, skipping...')
@@ -87,6 +93,8 @@ export const AdminAnalytics: React.FC = () => {
         // Don't fail the request if token refresh fails, might still work with cached token
       }
       
+      // Security: Backend validates admin access via check_admin_access
+      // This API call will return 403 Forbidden if user is not an admin
       const data = await adminApi.getAnalytics(effectiveStartDate, effectiveEndDate)
       setAnalytics(data)
       setLastRefresh(new Date())
@@ -99,7 +107,12 @@ export const AdminAnalytics: React.FC = () => {
       let errorType = 'UNKNOWN'
       let retryable = true
       
-      if (error?.type === 'NOT_FOUND' || error?.message?.includes('404') || error?.message?.includes('Not found')) {
+      // Security: Check for 403 Forbidden (admin access denied)
+      if (error?.status === 403 || error?.message?.includes('403') || error?.message?.includes('Forbidden') || error?.message?.includes('Admin access required')) {
+        errorMessage = 'Admin access denied. You do not have permission to access analytics. Please ensure you are logged in with an admin account.'
+        errorType = 'AUTH'
+        retryable = false
+      } else if (error?.type === 'NOT_FOUND' || error?.message?.includes('404') || error?.message?.includes('Not found')) {
         errorMessage = 'Admin access denied. Please ensure you are logged in with the correct account (chaimpeer11@gmail.com). Try clicking "Re-Login" to re-authenticate.'
         errorType = 'AUTH'
         retryable = false
