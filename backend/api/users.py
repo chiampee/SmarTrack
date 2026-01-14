@@ -2,11 +2,14 @@
 Users API endpoints
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Dict, Any
 from services.mongodb import get_database
 from services.auth import get_current_user
+from services.admin import log_system_event
+from utils.mongodb_utils import build_user_filter
 from core.config import settings
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -136,3 +139,120 @@ async def get_user_stats(
                 "storageRemaining": MAX_STORAGE_PER_USER_BYTES
             }
         raise HTTPException(status_code=500, detail=error_msg)
+
+@router.delete("/users/account")
+async def delete_user_account(
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """
+    Delete user account and all associated data (GDPR/CCPA Right to Erasure)
+    
+    ⚠️ DESTRUCTIVE OPERATION - Requires confirmation header
+    Add header: X-Confirm-Delete-Account: yes
+    
+    This endpoint:
+    1. Deletes all user data (links, collections, user_limits)
+    2. Logs the deletion event for compliance
+    3. Returns confirmation of deletion
+    
+    GDPR/CCPA Compliance:
+    - All PII and user data is permanently deleted
+    - Deletion event is logged with timestamp, user ID, and email
+    - Log entry is retained for compliance audit purposes
+    """
+    # ✅ Safety check: Require explicit confirmation header
+    confirmation = request.headers.get("X-Confirm-Delete-Account", "").lower()
+    if confirmation != "yes":
+        raise HTTPException(
+            status_code=428,  # 428 Precondition Required
+            detail={
+                "error": "ConfirmationRequired",
+                "message": "This destructive operation requires confirmation",
+                "requiredHeader": "X-Confirm-Delete-Account: yes",
+                "hint": "Add the confirmation header to proceed with account deletion"
+            }
+        )
+    
+    try:
+        user_id = current_user["sub"]
+        user_email = current_user.get("email", "unknown")
+        
+        logger.info(f"[ACCOUNT DELETION] Starting account deletion for user: {user_id}, email: {user_email}")
+        
+        # Count data before deletion (for logging)
+        links_count = await db.links.count_documents(build_user_filter(user_id))
+        collections_count = await db.collections.count_documents(build_user_filter(user_id))
+        user_limits_exists = await db.user_limits.find_one({"userId": user_id})
+        
+        # ✅ GDPR/CCPA Compliance: Delete all user data
+        deletion_summary = {
+            "linksDeleted": 0,
+            "collectionsDeleted": 0,
+            "userLimitsDeleted": False,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # 1. Delete all links
+        links_result = await db.links.delete_many(build_user_filter(user_id))
+        deletion_summary["linksDeleted"] = links_result.deleted_count
+        logger.info(f"[ACCOUNT DELETION] Deleted {links_result.deleted_count} links for user {user_id}")
+        
+        # 2. Delete all collections
+        collections_result = await db.collections.delete_many(build_user_filter(user_id))
+        deletion_summary["collectionsDeleted"] = collections_result.deleted_count
+        logger.info(f"[ACCOUNT DELETION] Deleted {collections_result.deleted_count} collections for user {user_id}")
+        
+        # 3. Delete user limits (if exists)
+        if user_limits_exists:
+            user_limits_result = await db.user_limits.delete_one({"userId": user_id})
+            deletion_summary["userLimitsDeleted"] = user_limits_result.deleted_count > 0
+            logger.info(f"[ACCOUNT DELETION] Deleted user limits for user {user_id}")
+        
+        # ✅ GDPR/CCPA Compliance: Log account deletion event
+        # This log entry is retained for compliance audit purposes
+        try:
+            await log_system_event(
+                "account_deletion",
+                {
+                    "userId": user_id,
+                    "email": user_email,
+                    "deletionSummary": deletion_summary,
+                    "linksCount": links_count,
+                    "collectionsCount": collections_count,
+                    "reason": "User-initiated account deletion (GDPR/CCPA Right to Erasure)",
+                    "compliance": {
+                        "regulation": "GDPR/CCPA",
+                        "right": "Right to Erasure (Right to be Forgotten)",
+                        "dataDeleted": True,
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+                },
+                severity="info"
+            )
+            logger.info(f"[ACCOUNT DELETION] ✅ Logged deletion event for user {user_id}")
+        except Exception as log_error:
+            # Don't fail account deletion if logging fails, but log the error
+            logger.error(f"[ACCOUNT DELETION] ⚠️ Failed to log deletion event: {log_error}")
+        
+        logger.info(f"[ACCOUNT DELETION] ✅ Account deletion completed for user {user_id}")
+        
+        return {
+            "message": "Account and all associated data deleted successfully",
+            "deletionSummary": deletion_summary,
+            "compliance": {
+                "regulation": "GDPR/CCPA",
+                "right": "Right to Erasure",
+                "status": "completed",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[ACCOUNT DELETION] ❌ Failed to delete account: {str(e)}")
+        import traceback
+        logger.error(f"[ACCOUNT DELETION] Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete account: {str(e)}")

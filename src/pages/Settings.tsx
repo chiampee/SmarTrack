@@ -33,6 +33,9 @@ export const Settings: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [confirmText, setConfirmText] = useState('')
+  const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false)
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const [accountConfirmText, setAccountConfirmText] = useState('')
   const isExtensionInstalled = useExtensionDetection()
 
   const handleDownloadExtension = () => {
@@ -66,6 +69,54 @@ export const Settings: React.FC = () => {
       toast.error('Failed to delete all links. Please try again.')
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (accountConfirmText !== 'DELETE ACCOUNT') {
+      toast.error('Please type DELETE ACCOUNT to confirm')
+      return
+    }
+
+    try {
+      setIsDeletingAccount(true)
+      const response = await makeRequest<{ 
+        message: string
+        deletionSummary: {
+          linksDeleted: number
+          collectionsDeleted: number
+          userLimitsDeleted: boolean
+          timestamp: string
+        }
+        compliance: {
+          regulation: string
+          right: string
+          status: string
+          timestamp: string
+        }
+      }>('/api/users/account', {
+        method: 'DELETE',
+        headers: {
+          'X-Confirm-Delete-Account': 'yes'
+        }
+      })
+      
+      toast.success(`Account deleted successfully. ${response.deletionSummary.linksDeleted} links and ${response.deletionSummary.collectionsDeleted} collections removed.`)
+      
+      // Logout and redirect after successful deletion
+      setTimeout(() => {
+        logout({
+          logoutParams: {
+            returnTo: window.location.origin
+          }
+        })
+      }, 2000)
+    } catch (error: any) {
+      console.error('Failed to delete account:', error)
+      const errorMessage = error?.message || 'Failed to delete account. Please try again.'
+      toast.error(errorMessage)
+    } finally {
+      setIsDeletingAccount(false)
     }
   }
 
@@ -268,10 +319,12 @@ export const Settings: React.FC = () => {
                 {/* Danger Zone */}
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Danger Zone</h3>
-                  <div className="bg-white border-2 border-red-200 rounded-lg p-5">
+                  
+                  {/* Delete All Links */}
+                  <div className="bg-white border-2 border-red-200 rounded-lg p-5 mb-4">
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                        <Trash2 className="w-5 h-5 text-red-600" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-slate-900 mb-1">Permanently Delete All Links</h4>
@@ -316,6 +369,72 @@ export const Settings: React.FC = () => {
                                 className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                               >
                                 {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Delete Account */}
+                  <div className="bg-white border-2 border-red-300 rounded-lg p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-red-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <AlertTriangle className="w-5 h-5 text-red-700" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-slate-900 mb-1">Permanently Delete Account</h4>
+                        <p className="text-sm text-slate-600 mb-2">
+                          This will permanently delete your account and <strong>all associated data</strong> including:
+                        </p>
+                        <ul className="text-sm text-slate-600 mb-4 list-disc list-inside space-y-1">
+                          <li>All saved links</li>
+                          <li>All collections</li>
+                          <li>All user preferences and settings</li>
+                          <li>All account data</li>
+                        </ul>
+                        <p className="text-sm text-red-600 font-medium mb-4">
+                          ⚠️ This action cannot be undone. Your data will be permanently deleted in compliance with GDPR/CCPA Right to Erasure.
+                        </p>
+                        
+                        {!showDeleteAccountConfirm ? (
+                          <button
+                            onClick={() => setShowDeleteAccountConfirm(true)}
+                            className="px-5 py-2.5 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors font-medium flex items-center gap-2"
+                          >
+                            <AlertTriangle className="w-4 h-4" />
+                            Delete Account
+                          </button>
+                        ) : (
+                          <div className="space-y-3">
+                            <p className="text-sm font-medium text-slate-900">
+                              Are you absolutely sure? Type <span className="font-mono bg-red-100 text-red-700 px-2 py-0.5 rounded">DELETE ACCOUNT</span> to confirm.
+                            </p>
+                            <input
+                              type="text"
+                              value={accountConfirmText}
+                              onChange={(e) => setAccountConfirmText(e.target.value)}
+                              placeholder="Type DELETE ACCOUNT"
+                              className="input-field w-full border-red-400 focus:border-red-600 focus:ring-red-600"
+                              autoFocus
+                            />
+                            <div className="flex flex-col sm:flex-row gap-2.5">
+                              <button
+                                onClick={() => {
+                                  setShowDeleteAccountConfirm(false)
+                                  setAccountConfirmText('')
+                                }}
+                                className="flex-1 px-4 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={handleDeleteAccount}
+                                disabled={isDeletingAccount || accountConfirmText !== 'DELETE ACCOUNT'}
+                                className="flex-1 px-4 py-2.5 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                              >
+                                {isDeletingAccount ? 'Deleting Account...' : 'Confirm Account Deletion'}
                               </button>
                             </div>
                           </div>
