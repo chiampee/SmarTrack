@@ -3,7 +3,8 @@ Configuration settings for SmarTrack Backend
 """
 
 from pydantic_settings import BaseSettings
-from typing import List, Optional
+from pydantic import field_validator
+from typing import List, Optional, Any, Union
 
 class Settings(BaseSettings):
     # Database - MUST be provided via environment variable
@@ -44,8 +45,28 @@ class Settings(BaseSettings):
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 60  # Reasonable limit for production
     ADMIN_RATE_LIMIT_REQUESTS_PER_MINUTE: int = 300  # Admin users get higher limit
     
-    # Admin Access
-    ADMIN_EMAILS: List[str] = ["chaimpeer11@gmail.com"]  # List of admin email addresses
+    # Admin Access - Can be set via environment variable (comma-separated) or defaults to single admin
+    # Example: ADMIN_EMAILS=admin1@example.com,admin2@example.com
+    ADMIN_EMAILS: Union[str, List[str]] = "chaimpeer11@gmail.com"  # Comma-separated string or list
+    
+    @field_validator('ADMIN_EMAILS', mode='before')
+    @classmethod
+    def parse_admin_emails(cls, v: Any) -> List[str]:
+        """Parse ADMIN_EMAILS from string (comma-separated) or list"""
+        if isinstance(v, list):
+            return [email.strip() for email in v if email.strip()]
+        if isinstance(v, str):
+            # Handle comma-separated string from environment variable
+            emails = [email.strip() for email in v.split(",") if email.strip()]
+            return emails if emails else ["chaimpeer11@gmail.com"]  # Default fallback
+        return ["chaimpeer11@gmail.com"]  # Default fallback
+    
+    @property
+    def admin_emails_list(self) -> List[str]:
+        """Get admin emails as list (for backward compatibility)"""
+        if isinstance(self.ADMIN_EMAILS, list):
+            return self.ADMIN_EMAILS
+        return [str(self.ADMIN_EMAILS)]
     
     class Config:
         env_file = ".env"

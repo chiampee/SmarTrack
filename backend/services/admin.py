@@ -60,9 +60,9 @@ async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends
         
         # Log extracted email and admin list for debugging (use print for Render logs visibility)
         logger.debug(f"[ADMIN CHECK] User ID: {user_id}, Email extracted: {user_email or 'None'}")
-        logger.debug(f"[ADMIN CHECK] Admin emails list: {settings.ADMIN_EMAILS}")
+        logger.debug(f"[ADMIN CHECK] Admin emails list: {settings.admin_emails_list}")
         logger.info(f"Admin access check - User ID: {user_id}, Email extracted: {user_email or 'None'}")
-        logger.debug(f"Admin emails list: {[email.lower() for email in settings.ADMIN_EMAILS]}")
+        logger.debug(f"Admin emails list: {[email.lower() for email in settings.admin_emails_list]}")
         
         if not user_email:
             # Log failed admin access attempt with reason
@@ -83,7 +83,7 @@ async def check_admin_access(credentials: HTTPAuthorizationCredentials = Depends
         
         # Normalize email for comparison
         user_email_lower = user_email.lower()
-        admin_emails_lower = [email.lower() for email in settings.ADMIN_EMAILS]
+        admin_emails_lower = [email.lower() for email in settings.admin_emails_list]
         
         # Check if email is in admin list
         if user_email_lower in admin_emails_lower:

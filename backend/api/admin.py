@@ -112,8 +112,8 @@ async def debug_admin_token(
             },
             "adminCheck": {
                 "extractedEmail": extracted_email,
-                "adminEmails": settings.ADMIN_EMAILS,
-                "isAdmin": extracted_email and extracted_email.lower() in [email.lower() for email in settings.ADMIN_EMAILS],
+                "adminEmails": settings.admin_emails_list,
+                "isAdmin": extracted_email and extracted_email.lower() in [email.lower() for email in settings.admin_emails_list],
             },
             "allPayloadKeys": list(payload.keys())
         }
