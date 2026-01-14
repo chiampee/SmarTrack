@@ -172,6 +172,7 @@ async def rate_limit_middleware(request: Request, call_next):
     skip_paths = [
         "/api/health",
         "/api/categories",  # Lightweight read-only endpoint (predefined categories)
+        "/api/collections",  # User-specific but lightweight (cached on frontend)
     ]
     if request.url.path in skip_paths:
         response = await call_next(request)

@@ -315,13 +315,30 @@ export const Dashboard: React.FC = () => {
       try {
         isRefetchingCollectionsRef.current = true
         console.log('[Collections] Refetching collections...')
-        const cols = await makeRequest<Collection[]>('/api/collections')
+        
+        const userId = backendApi.getUserId()
+        const cachedCollections = userId ? await cacheManager.getCollections(userId) : null
+        
+        const cols = await makeRequest<Collection[]>('/api/collections').catch(async (error) => {
+          // If rate limited, use cached data if available
+          if (error?.status === 429 && cachedCollections) {
+            console.warn('[Collections] Rate limited during refetch, using cached data')
+            return cachedCollections
+          }
+          throw error
+        })
+        
         setCollections(cols || [])
         console.log('[Collections] Successfully refetched:', cols?.length || 0, 'collections')
+        
+        // Update cache with fresh data
+        if (userId && cols) {
+          await cacheManager.saveCollections(userId, cols)
+        }
       } catch (e) {
         const error = e instanceof Error ? e : new Error(String(e))
-        // Only log if not a timeout (timeout might be due to backend cold start)
-        if (!error.message.includes('timeout')) {
+        // Only log if not a timeout or rate limit (we handle those gracefully)
+        if (!error.message.includes('timeout') && !error.message.includes('429') && !error.message.includes('Too many requests')) {
           logger.error('Failed to refetch collections', { component: 'Dashboard', action: 'refetchCollections' }, error)
         }
       } finally {
@@ -330,25 +347,51 @@ export const Dashboard: React.FC = () => {
     }, 800)
   }, [makeRequest])
 
-  // Load collections and categories from backend
+  // Load collections and categories from backend with caching
   useEffect(() => {
     const fetchMeta = async () => {
       if (!isAuthenticated) return
+      
+      const userId = backendApi.getUserId()
+      if (!userId) return
+      
       try {
-        // Fetch categories and collections
+        // Try to load collections from cache first
+        const cachedCollections = await cacheManager.getCollections(userId)
+        if (cachedCollections && cachedCollections.length >= 0) {
+          setCollections(cachedCollections)
+        }
+        
+        // Fetch categories (static, no cache needed) and collections in parallel
         const [cats, cols] = await Promise.all([
           makeRequest<Category[]>('/api/categories'),
-          makeRequest<Collection[]>('/api/collections')
+          makeRequest<Collection[]>('/api/collections').catch(async (error) => {
+            // If rate limited, use cached data if available
+            if (error?.status === 429 && cachedCollections) {
+              console.warn('[Collections] Rate limited, using cached data')
+              return cachedCollections
+            }
+            throw error
+          })
         ])
+        
         setCategoriesState(cats || [])
         setCollections(cols || [])
+        
+        // Update cache with fresh collections data
+        if (userId && cols) {
+          await cacheManager.saveCollections(userId, cols)
+        }
       } catch (e) {
         const error = e instanceof Error ? e : new Error(String(e))
-        logger.error('Failed to load metadata', { component: 'Dashboard', action: 'fetchMetadata' }, error)
+        // Only log if not rate limit (we handle that gracefully)
+        if (error.message && !error.message.includes('429') && !error.message.includes('Too many requests')) {
+          logger.error('Failed to load metadata', { component: 'Dashboard', action: 'fetchMetadata' }, error)
+        }
       }
     }
     fetchMeta()
-  }, [isAuthenticated, makeRequest])
+  }, [isAuthenticated, makeRequest, backendApi])
 
   // Filter links based on search and filters
   useEffect(() => {
