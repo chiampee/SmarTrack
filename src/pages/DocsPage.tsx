@@ -12,7 +12,6 @@ import {
   FolderTree, 
   Sparkles, 
   Upload, 
-  Tag,
   ExternalLink,
   Copy,
   Check,
@@ -21,22 +20,6 @@ import {
   Command,
   ChevronRight
 } from 'lucide-react'
-
-const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 }
-}
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1
-    }
-  }
-}
 
 // Documentation sections with improved content
 const docSections = [
@@ -551,8 +534,7 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
         // Render table
         if (tableRows.length > 0) {
           const headers = tableRows[0].split('|').map(h => h.trim()).filter(h => h)
-          const separator = tableRows[1]
-          const dataRows = tableRows.slice(2)
+          const dataRows = tableRows.slice(2) // Skip separator row
 
           elements.push(
             <div key={`table-${index}`} className="my-6 overflow-x-auto">
