@@ -63,9 +63,11 @@ class Settings(BaseSettings):
     @property
     def admin_emails_list(self) -> List[str]:
         """Get admin emails as list (for backward compatibility)"""
+        # After field_validator, ADMIN_EMAILS is always a List[str]
         if isinstance(self.ADMIN_EMAILS, list):
             return self.ADMIN_EMAILS
-        return [str(self.ADMIN_EMAILS)]
+        # Fallback: parse string if validator didn't run
+        return [email.strip() for email in str(self.ADMIN_EMAILS).split(",") if email.strip()] or ["chaimpeer11@gmail.com"]
     
     class Config:
         env_file = ".env"
