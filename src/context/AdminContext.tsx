@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useAdminApi } from '../services/adminApi'
 
@@ -24,10 +24,14 @@ const adminCheckCache = {
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user, isAuthenticated, isLoading } = useAuth0()
   const navigate = useNavigate()
+  const location = useLocation()
   const adminApi = useAdminApi()
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const [isChecking, setIsChecking] = useState(true)
   const hasCheckedRef = useRef(false)
+  
+  // ✅ Only redirect to 404 if user is trying to access admin routes
+  const isAdminRoute = location.pathname === '/analytics'
 
   useEffect(() => {
     const checkAdminAccess = async () => {
@@ -78,7 +82,10 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (!isAuthenticated || !user) {
         setIsAdmin(false)
         setIsChecking(false)
-        navigate('/404')
+        // ✅ Only redirect if trying to access admin route
+        if (isAdminRoute) {
+          navigate('/404')
+        }
         return
       }
 
@@ -98,7 +105,10 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (!adminStatus) {
           setIsAdmin(false)
           setIsChecking(false)
-          navigate('/404')
+          // ✅ Only redirect if trying to access admin route
+          if (isAdminRoute) {
+            navigate('/404')
+          }
           return
         }
 
@@ -113,14 +123,18 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           if (adminCheckCache.lastResult !== null) {
             setIsAdmin(adminCheckCache.lastResult)
             setIsChecking(false)
-            if (!adminCheckCache.lastResult) {
+            // ✅ Only redirect if trying to access admin route
+            if (!adminCheckCache.lastResult && isAdminRoute) {
               navigate('/404')
             }
           } else {
             // No cached result, assume not admin for security
             setIsAdmin(false)
             setIsChecking(false)
-            navigate('/404')
+            // ✅ Only redirect if trying to access admin route
+            if (isAdminRoute) {
+              navigate('/404')
+            }
           }
           return
         }
@@ -129,7 +143,10 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         console.error('Failed to check admin status:', error)
         setIsAdmin(false)
         setIsChecking(false)
-        navigate('/404')
+        // ✅ Only redirect if trying to access admin route
+        if (isAdminRoute) {
+          navigate('/404')
+        }
       } finally {
         adminCheckCache.inProgress = false
         hasCheckedRef.current = true
@@ -139,7 +156,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     checkAdminAccess()
     // ✅ adminApi is stable from useAdminApi hook, but we include it for completeness
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, isLoading, user, navigate])
+  }, [isAuthenticated, isLoading, user, navigate, location.pathname])
 
   return (
     <AdminContext.Provider value={{ isAdmin, isChecking, user }}>
