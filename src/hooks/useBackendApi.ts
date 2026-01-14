@@ -19,6 +19,33 @@ const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://smartrack-back
 // Track if we've logged the backend URL (module-level, not window)
 const apiDebugLogged = false
 
+// Request deduplication: Track in-flight requests to prevent duplicate concurrent requests
+const activeRequests = new Map<string, AbortController>()
+
+/**
+ * Get or create an abort controller for a request endpoint
+ * If a request is already in flight, return its abort controller
+ */
+const getRequestController = (endpoint: string): AbortController => {
+  const requestKey = endpoint
+  const existing = activeRequests.get(requestKey)
+  if (existing) {
+    // Request already in flight, return existing controller
+    return existing
+  }
+  // Create new controller for this request
+  const controller = new AbortController()
+  activeRequests.set(requestKey, controller)
+  return controller
+}
+
+/**
+ * Clean up request controller after request completes
+ */
+const cleanupRequest = (endpoint: string) => {
+  activeRequests.delete(endpoint)
+}
+
 export interface UserStats {
   linksUsed: number
   linksLimit: number
@@ -238,23 +265,28 @@ export const useBackendApi = () => {
     
     try {
       setIsLoading(true)
+      
+      // ✅ REQUEST DEDUPLICATION: Prevent duplicate concurrent requests
+      const requestController = getRequestController(endpoint)
+      
       // Apply a default timeout to avoid infinite loading UI
       // Admin endpoints need more time for complex analytics queries (30 seconds)
       const isAdminEndpoint = endpoint.startsWith('/api/admin')
       const timeoutDuration = isAdminEndpoint ? 30000 : 10000
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), timeoutDuration)
+      const timeoutId = setTimeout(() => requestController.abort(), timeoutDuration)
 
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          'Authorization': `Bearer ${requestToken}`,
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-        signal: controller.signal,
-      })
-      clearTimeout(timeoutId)
+      try {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            'Authorization': `Bearer ${requestToken}`,
+            'Content-Type': 'application/json',
+            ...options.headers,
+          },
+          signal: requestController.signal,
+        })
+        clearTimeout(timeoutId)
+        cleanupRequest(endpoint)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: response.statusText }))
@@ -302,10 +334,18 @@ export const useBackendApi = () => {
         throw error
       }
 
-      const data = await response.json()
-      return data as T
+        const data = await response.json()
+        return data as T
+      } catch (fetchError) {
+        clearTimeout(timeoutId)
+        cleanupRequest(endpoint)
+        throw fetchError
+      }
       
     } catch (error: unknown) {
+      // Clean up request on error
+      cleanupRequest(endpoint)
+      
       // Handle network errors, timeouts, etc.
       if (error instanceof Error && error.name === 'AbortError') {
         const timeoutError = parseError(new Error('Request timeout. Please try again.'))
@@ -315,16 +355,27 @@ export const useBackendApi = () => {
       
       // Enhanced error logging for network errors - ALWAYS show in production
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        console.error('🚨 [API ERROR] Network error - Failed to fetch')
-        console.error(`[API ERROR] Full URL: ${url}`)
-        console.error(`[API ERROR] Backend base URL: ${API_BASE_URL}`)
-        console.error(`[API ERROR] Environment variable VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL || '❌ NOT SET (using default)'}`)
-        console.error(`[API ERROR] Test backend health: ${API_BASE_URL}/api/health`)
-        console.error(`[API ERROR] This usually means:`)
-        console.error(`  1. Backend URL is wrong`)
-        console.error(`  2. Backend is down`)
-        console.error(`  3. CORS is blocking the request`)
-        console.error(`  4. VITE_BACKEND_URL not set in Vercel environment variables`)
+        // Check if it's a resource exhaustion error
+        const isResourceError = error.message.includes('ERR_INSUFFICIENT_RESOURCES') || 
+                                (error as any).code === 'ERR_INSUFFICIENT_RESOURCES'
+        
+        if (isResourceError) {
+          console.error('🚨 [API ERROR] Browser resource exhaustion - Too many concurrent requests')
+          console.error(`[API ERROR] This usually means too many requests are being made simultaneously`)
+          console.error(`[API ERROR] Active requests: ${activeRequests.size}`)
+          console.error(`[API ERROR] Consider reducing concurrent API calls or implementing request queuing`)
+        } else {
+          console.error('🚨 [API ERROR] Network error - Failed to fetch')
+          console.error(`[API ERROR] Full URL: ${url}`)
+          console.error(`[API ERROR] Backend base URL: ${API_BASE_URL}`)
+          console.error(`[API ERROR] Environment variable VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL || '❌ NOT SET (using default)'}`)
+          console.error(`[API ERROR] Test backend health: ${API_BASE_URL}/api/health`)
+          console.error(`[API ERROR] This usually means:`)
+          console.error(`  1. Backend URL is wrong`)
+          console.error(`  2. Backend is down`)
+          console.error(`  3. CORS is blocking the request`)
+          console.error(`  4. VITE_BACKEND_URL not set in Vercel environment variables`)
+        }
       }
       
       const appError = parseError(error)

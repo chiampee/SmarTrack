@@ -348,12 +348,21 @@ export const Dashboard: React.FC = () => {
   }, [makeRequest])
 
   // Load collections and categories from backend with caching
+  // ✅ Use ref to prevent concurrent fetches
+  const fetchingMetaRef = useRef(false)
+  
   useEffect(() => {
     const fetchMeta = async () => {
       if (!isAuthenticated) return
+      if (fetchingMetaRef.current) {
+        console.log('[Dashboard] Metadata fetch already in progress, skipping')
+        return
+      }
       
       const userId = backendApi.getUserId()
       if (!userId) return
+      
+      fetchingMetaRef.current = true
       
       try {
         // Try to load collections from cache first
@@ -362,32 +371,48 @@ export const Dashboard: React.FC = () => {
           setCollections(cachedCollections)
         }
         
-        // Fetch categories (static, no cache needed) and collections in parallel
-        const [cats, cols] = await Promise.all([
-          makeRequest<Category[]>('/api/categories'),
-          makeRequest<Collection[]>('/api/collections').catch(async (error) => {
-            // If rate limited, use cached data if available
-            if (error?.status === 429 && cachedCollections) {
-              console.warn('[Collections] Rate limited, using cached data')
-              return cachedCollections
+        // ✅ Sequential fetch instead of parallel to reduce concurrent requests
+        // Fetch categories first (lighter request)
+        let cats: Category[] = []
+        try {
+          cats = await makeRequest<Category[]>('/api/categories')
+          setCategoriesState(cats || [])
+        } catch (error) {
+          console.warn('[Dashboard] Failed to fetch categories, using empty array')
+          setCategoriesState([])
+        }
+        
+        // Then fetch collections (with fallback to cache)
+        try {
+          const cols = await makeRequest<Collection[]>('/api/collections')
+          setCollections(cols || [])
+          
+          // Update cache with fresh collections data
+          if (userId && cols) {
+            await cacheManager.saveCollections(userId, cols)
+          }
+        } catch (error: any) {
+          // If rate limited or network error, use cached data if available
+          if ((error?.status === 429 || error?.type === 'NETWORK_ERROR') && cachedCollections) {
+            console.warn('[Collections] Request failed, using cached data')
+            setCollections(cachedCollections)
+          } else {
+            // Only log if not a network/rate limit error
+            const errorMsg = error instanceof Error ? error.message : String(error)
+            if (!errorMsg.includes('429') && !errorMsg.includes('Too many requests') && !errorMsg.includes('Network error')) {
+              logger.error('Failed to load collections', { component: 'Dashboard', action: 'fetchMetadata' }, error)
             }
-            throw error
-          })
-        ])
-        
-        setCategoriesState(cats || [])
-        setCollections(cols || [])
-        
-        // Update cache with fresh collections data
-        if (userId && cols) {
-          await cacheManager.saveCollections(userId, cols)
+          }
         }
       } catch (e) {
         const error = e instanceof Error ? e : new Error(String(e))
-        // Only log if not rate limit (we handle that gracefully)
-        if (error.message && !error.message.includes('429') && !error.message.includes('Too many requests')) {
+        // Only log if not rate limit or network error (we handle those gracefully)
+        const errorMsg = error.message || String(e)
+        if (!errorMsg.includes('429') && !errorMsg.includes('Too many requests') && !errorMsg.includes('Network error')) {
           logger.error('Failed to load metadata', { component: 'Dashboard', action: 'fetchMetadata' }, error)
         }
+      } finally {
+        fetchingMetaRef.current = false
       }
     }
     fetchMeta()
