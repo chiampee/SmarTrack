@@ -203,8 +203,10 @@ async def update_collection(
         if result.matched_count == 0:
             raise NotFoundError("Collection", collection_id)
         
-        # Return updated collection
-        collection = await db.collections.find_one({"_id": object_id})
+        # Return updated collection - ✅ SECURITY: Always use user filter when fetching user data
+        collection = await db.collections.find_one(build_user_filter(user_id, {"_id": object_id}))
+        if not collection:
+            raise NotFoundError("Collection", collection_id)
         return normalize_document(collection)
         
     except HTTPException:
