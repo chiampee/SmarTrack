@@ -1672,6 +1672,7 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
 
 // ✅ ENHANCED: Logs Tab Component - PM Focus
 const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ adminApi }) => {
+  const { isAdmin, isChecking } = useAdminAccess()
   const [logs, setLogs] = useState<SystemLog[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -1689,6 +1690,7 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
   const [isDeleting, setIsDeleting] = useState(false)
   const [logsSize, setLogsSize] = useState<{ totalLogs: number; estimatedSizeBytes: number; estimatedSizeKB: number; estimatedSizeMB: number } | null>(null)
   const [loadingSize, setLoadingSize] = useState(false)
+  const [deleteConfirmation, setDeleteConfirmation] = useState('')
   const toast = useToast()
 
   const loadingRef = React.useRef(false)
@@ -1776,17 +1778,37 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
   }
 
   const handleDeleteAllLogs = async () => {
+    // Security check: Verify admin access before deletion
+    if (!isAdmin || isChecking) {
+      toast.error('Admin access required')
+      setShowDeleteModal(false)
+      return
+    }
+
+    // Security check: Require confirmation text
+    if (deleteConfirmation !== 'DELETE') {
+      toast.error('Please type "DELETE" to confirm')
+      return
+    }
+
     try {
       setIsDeleting(true)
       const result = await adminApi.deleteAllLogs()
       toast.success(`Successfully deleted ${result.deletedCount.toLocaleString()} logs`)
       setShowDeleteModal(false)
+      setDeleteConfirmation('')
       setLogsSize(null)
       setStatistics(null)
       loadLogs(true) // Reload logs and stats
     } catch (error: any) {
       console.error('Failed to delete logs:', error)
-      toast.error(error?.message || 'Failed to delete logs')
+      // Check if error is due to unauthorized access
+      if (error?.status === 403 || error?.message?.includes('Admin access required') || error?.message?.includes('Forbidden')) {
+        toast.error('Admin access required. You do not have permission to delete logs.')
+        setShowDeleteModal(false)
+      } else {
+        toast.error(error?.message || 'Failed to delete logs')
+      }
     } finally {
       setIsDeleting(false)
     }
@@ -1821,6 +1843,21 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
       loadLogsSize()
     }
   }, [statistics])
+
+  // Security: Prevent access if not admin (after all hooks)
+  if (isChecking) {
+    return <LoadingSpinner />
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Access Denied</h3>
+        <p className="text-gray-600">Admin access required to view system logs.</p>
+      </div>
+    )
+  }
 
   const getSeverityColor = (severity: string | null | undefined) => {
     if (!severity) {
@@ -2033,16 +2070,22 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
               <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
-            <button
-              onClick={() => {
-                loadLogsSize()
-                setShowDeleteModal(true)
-              }}
-              className="px-3 py-1.5 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors flex items-center gap-1"
-            >
-              <Trash2 className="w-3 h-3" />
-              Delete All
-            </button>
+            {isAdmin && !isChecking && (
+              <button
+                onClick={() => {
+                  if (!isAdmin) {
+                    toast.error('Admin access required')
+                    return
+                  }
+                  loadLogsSize()
+                  setShowDeleteModal(true)
+                }}
+                className="px-3 py-1.5 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors flex items-center gap-1"
+              >
+                <Trash2 className="w-3 h-3" />
+                Delete All
+              </button>
+            )}
           </div>
         </div>
 
@@ -2313,6 +2356,25 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
                     </div>
                   </div>
                 ) : null}
+                
+                {/* Security: Confirmation text input */}
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <label className="block text-sm font-semibold text-red-900 mb-2">
+                    Type "DELETE" to confirm this action:
+                  </label>
+                  <input
+                    type="text"
+                    value={deleteConfirmation}
+                    onChange={(e) => setDeleteConfirmation(e.target.value)}
+                    placeholder="Type DELETE here"
+                    className="w-full px-3 py-2 border border-red-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    disabled={isDeleting}
+                    autoFocus
+                  />
+                  <p className="mt-2 text-xs text-red-700">
+                    This action cannot be undone. All system logs will be permanently deleted.
+                  </p>
+                </div>
               </div>
             </div>
             
@@ -2321,6 +2383,7 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
                 onClick={() => {
                   setShowDeleteModal(false)
                   setLogsSize(null)
+                  setDeleteConfirmation('')
                 }}
                 disabled={isDeleting}
                 className="flex-1 px-4 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
@@ -2329,7 +2392,7 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
               </button>
               <button
                 onClick={handleDeleteAllLogs}
-                disabled={isDeleting}
+                disabled={isDeleting || deleteConfirmation !== 'DELETE' || !isAdmin || isChecking}
                 className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isDeleting ? (
