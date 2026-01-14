@@ -1105,111 +1105,113 @@ export const Dashboard: React.FC = () => {
                 transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                 className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
               >
-                {links.length === 0 ? (
-                  <div className="relative">
-                    {/* Hero Section */}
-                    <div className="px-6 sm:px-12 lg:px-16 pt-12 sm:pt-16 lg:pt-20 pb-8 sm:pb-12 text-center">
-                      <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.2, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                        className="mb-8"
-                      >
-                        <div className="inline-flex items-center justify-center w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 shadow-lg shadow-blue-100/50 mb-6 relative">
-                          <Archive className="w-12 h-12 sm:w-14 sm:h-14 text-blue-600" />
-                          <div className="absolute -top-2 -right-2 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
-                            <Plus className="w-4 h-4 text-white" />
-                          </div>
-                        </div>
-                      </motion.div>
-                      
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3, duration: 0.6 }}
-                        className="mb-6"
-                      >
-                        <h3 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
-                          Welcome to SmarTrack
-                        </h3>
-                        <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-                          Your personal research library. Start collecting, organizing, and discovering knowledge.
-                        </p>
-                      </motion.div>
-                      
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4, duration: 0.6 }}
-                        className="mb-12"
-                      >
-                        <button 
-                          onClick={() => setShowAddModal(true)}
-                          className="px-8 py-4 sm:px-10 sm:py-5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-all font-semibold text-base sm:text-lg flex items-center gap-2.5 mx-auto shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/35 hover:-translate-y-1 active:translate-y-0"
-                        >
-                          <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
-                          Add Your First Link
-                        </button>
-                      </motion.div>
-                    </div>
-
-                    {/* Features Section */}
-                    <div className="px-6 sm:px-12 lg:px-16 pb-12 sm:pb-16 lg:pb-20">
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5, duration: 0.6 }}
-                        className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto"
-                      >
-                        <motion.div
-                          whileHover={{ y: -6, scale: 1.02, transition: { duration: 0.2 } }}
-                          className="p-6 sm:p-8 bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-2xl hover:border-blue-300 hover:shadow-lg transition-all group cursor-default"
-                        >
-                          <div className="w-14 h-14 mb-5 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:shadow-lg group-hover:shadow-blue-500/30 transition-all">
-                            <Plus className="w-7 h-7 text-white" />
-                          </div>
-                          <h4 className="font-bold text-lg text-slate-900 mb-2.5">Save Links</h4>
-                          <p className="text-sm text-slate-600 leading-relaxed">
-                            Capture articles, videos, and resources with one click. Build your knowledge base effortlessly.
-                          </p>
-                        </motion.div>
-                        
-                        <motion.div
-                          whileHover={{ y: -6, scale: 1.02, transition: { duration: 0.2 } }}
-                          className="p-6 sm:p-8 bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-2xl hover:border-purple-300 hover:shadow-lg transition-all group cursor-default"
-                        >
-                          <div className="w-14 h-14 mb-5 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-md shadow-purple-500/20 group-hover:shadow-lg group-hover:shadow-purple-500/30 transition-all">
-                            <Tag className="w-7 h-7 text-white" />
-                          </div>
-                          <h4 className="font-bold text-lg text-slate-900 mb-2.5">Organize</h4>
-                          <p className="text-sm text-slate-600 leading-relaxed">
-                            Tag and categorize your research for easy discovery. Keep everything structured and accessible.
-                          </p>
-                        </motion.div>
-                        
-                        <motion.div
-                          whileHover={{ y: -6, scale: 1.02, transition: { duration: 0.2 } }}
-                          className="p-6 sm:p-8 bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-2xl hover:border-green-300 hover:shadow-lg transition-all group cursor-default"
-                        >
-                          <div className="w-14 h-14 mb-5 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-md shadow-green-500/20 group-hover:shadow-lg group-hover:shadow-green-500/30 transition-all">
-                            <Archive className="w-7 h-7 text-white" />
-                          </div>
-                          <h4 className="font-bold text-lg text-slate-900 mb-2.5">Discover</h4>
-                          <p className="text-sm text-slate-600 leading-relaxed">
-                            Search and find what you need instantly. Your entire library at your fingertips.
-                          </p>
-                        </motion.div>
-                      </motion.div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-8 sm:p-12">
-                    <div className="flex flex-col items-center justify-center text-center">
+                <div className="relative">
+                  {/* Decorative background gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-white to-purple-50/20 pointer-events-none" />
+                  
+                  <div className="relative p-8 sm:p-12 lg:p-16">
+                    <div className="flex flex-col items-center justify-center text-center max-w-3xl mx-auto">
+                      {links.length === 0 ? (
+                        <>
+                          {/* Hero Section */}
+                          <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.2, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                            className="relative mb-10"
+                          >
+                            <div className="relative">
+                              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-blue-500/20">
+                                <Archive className="w-12 h-12 sm:w-14 sm:h-14 text-white" />
+                              </div>
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: 0.5, duration: 0.4, type: "spring", stiffness: 200 }}
+                                className="absolute -top-2 -right-2 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg ring-4 ring-white"
+                              >
+                                <Plus className="w-4 h-4 text-white" />
+                              </motion.div>
+                            </div>
+                          </motion.div>
+                          
+                          {/* Welcome Text */}
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3, duration: 0.6 }}
+                            className="mb-6"
+                          >
+                            <h3 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
+                              Welcome to SmarTrack
+                            </h3>
+                            <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                              Your personal research library. Start collecting, organizing, and discovering knowledge.
+                            </p>
+                          </motion.div>
+                          
+                          {/* Primary CTA */}
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.4, duration: 0.6 }}
+                            className="mb-12"
+                          >
+                            <button 
+                              onClick={() => setShowAddModal(true)}
+                              className="px-8 py-4 sm:px-10 sm:py-5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-all font-semibold text-base sm:text-lg flex items-center gap-3 mx-auto shadow-xl shadow-blue-600/25 hover:shadow-2xl hover:shadow-blue-600/30 hover:-translate-y-1 active:translate-y-0"
+                            >
+                              <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
+                              <span>Add Your First Link</span>
+                            </button>
+                          </motion.div>
+                          
+                          {/* Feature Cards */}
+                          <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5, duration: 0.6 }}
+                            className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 w-full"
+                          >
+                            <motion.div
+                              whileHover={{ y: -6, scale: 1.02, transition: { duration: 0.2 } }}
+                              className="p-6 sm:p-7 bg-white border border-slate-200 rounded-2xl hover:border-blue-300 hover:shadow-lg transition-all group cursor-pointer"
+                            >
+                              <div className="w-14 h-14 mb-5 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 group-hover:from-blue-100 group-hover:to-blue-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
+                                <Plus className="w-7 h-7 text-blue-600" />
+                              </div>
+                              <div className="font-bold text-lg text-slate-900 mb-2.5">Save Links</div>
+                              <div className="text-sm text-slate-600 leading-relaxed">Capture articles, videos, and resources with one click</div>
+                            </motion.div>
+                            
+                            <motion.div
+                              whileHover={{ y: -6, scale: 1.02, transition: { duration: 0.2 } }}
+                              className="p-6 sm:p-7 bg-white border border-slate-200 rounded-2xl hover:border-purple-300 hover:shadow-lg transition-all group cursor-pointer"
+                            >
+                              <div className="w-14 h-14 mb-5 rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 group-hover:from-purple-100 group-hover:to-purple-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
+                                <Tag className="w-7 h-7 text-purple-600" />
+                              </div>
+                              <div className="font-bold text-lg text-slate-900 mb-2.5">Organize</div>
+                              <div className="text-sm text-slate-600 leading-relaxed">Tag and categorize your research for easy discovery</div>
+                            </motion.div>
+                            
+                            <motion.div
+                              whileHover={{ y: -6, scale: 1.02, transition: { duration: 0.2 } }}
+                              className="p-6 sm:p-7 bg-white border border-slate-200 rounded-2xl hover:border-green-300 hover:shadow-lg transition-all group cursor-pointer"
+                            >
+                              <div className="w-14 h-14 mb-5 rounded-2xl bg-gradient-to-br from-green-50 to-green-100 group-hover:from-green-100 group-hover:to-green-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
+                                <Archive className="w-7 h-7 text-green-600" />
+                              </div>
+                              <div className="font-bold text-lg text-slate-900 mb-2.5">Discover</div>
+                              <div className="text-sm text-slate-600 leading-relaxed">Search and find what you need instantly</div>
+                            </motion.div>
+                          </motion.div>
+                        </>
+                      ) : (
+                    <>
                       {/* ✅ SENIOR UX: Better empty state with actionable guidance */}
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 mb-6 rounded-2xl bg-slate-100 flex items-center justify-center">
-                        <Archive className="w-8 h-8 sm:w-10 sm:h-10 text-slate-400" />
-                      </div>
-                      <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">
+                      <div className="text-6xl mb-4 animate-pulse">🔍</div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
                         {searchQuery 
                           ? 'No links match your search' 
                           : activeFilterId === 'archived' 
@@ -1219,7 +1221,7 @@ export const Dashboard: React.FC = () => {
                               : 'No links found'
                         }
                       </h3>
-                      <p className="text-base text-slate-600 mb-8 max-w-md mx-auto">
+                      <p className="text-gray-600 mb-6 max-w-md">
                         {searchQuery ? (
                           <>Try different keywords or check your spelling. You can search by title, description, URL, or tags.</>
                         ) : activeFilterId === 'archived' ? (
@@ -1236,7 +1238,7 @@ export const Dashboard: React.FC = () => {
                         {searchQuery && (
                           <button
                             onClick={() => setSearchQuery('')}
-                            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
                             aria-label="Clear search"
                           >
                             Clear Search
@@ -1272,9 +1274,11 @@ export const Dashboard: React.FC = () => {
                           </button>
                         )}
                       </div>
+                    </>
+                  )}
                     </div>
                   </div>
-                )}
+                </div>
               </motion.div>
             ) : (
               <motion.div
