@@ -1080,36 +1080,49 @@ export const DocsPage: React.FC = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="hidden lg:block w-64 flex-shrink-0"
+            className="hidden lg:block w-72 flex-shrink-0"
           >
-            <div className="sticky top-28 space-y-1">
-              {docSections.map((section) => {
-                const Icon = section.icon
-                const colors = colorClasses[section.color]
-                const isActive = activeSection === section.id
-                
-                return (
-                  <button
-                    key={section.id}
-                    onClick={() => {
-                      setActiveSection(section.id)
-                      setActiveArticle(0)
-                    }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${
-                      isActive 
-                        ? `${colors.bg} ${colors.text} border ${colors.border}` 
-                        : 'text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium">{section.title}</div>
-                      <div className="text-xs text-slate-500 mt-0.5">{section.description}</div>
-                    </div>
-                    {isActive && <ChevronRight className="w-4 h-4 flex-shrink-0" />}
-                  </button>
-                )
-              })}
+            <div className="sticky top-24">
+              {/* Sidebar Header */}
+              <div className="mb-6">
+                <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Documentation</h2>
+              </div>
+              
+              {/* Navigation Items */}
+              <nav className="space-y-1">
+                {docSections.map((section) => {
+                  const Icon = section.icon
+                  const colors = colorClasses[section.color]
+                  const isActive = activeSection === section.id
+                  
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => {
+                        setActiveSection(section.id)
+                        setActiveArticle(0)
+                      }}
+                      className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg text-left transition-all group ${
+                        isActive 
+                          ? 'bg-blue-50 border-l-4 border-blue-600 text-blue-700 shadow-sm' 
+                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 border-l-4 border-transparent'
+                      }`}
+                    >
+                      <div className={`mt-0.5 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'}`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`font-semibold text-sm ${isActive ? 'text-blue-900' : 'text-slate-900'}`}>
+                          {section.title}
+                        </div>
+                        <div className={`text-xs mt-1 leading-relaxed ${isActive ? 'text-blue-600' : 'text-slate-500'}`}>
+                          {section.description}
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </nav>
             </div>
           </motion.aside>
 
