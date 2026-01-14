@@ -1138,8 +1138,8 @@ export const Dashboard: React.FC = () => {
                           <div className="text-xs text-slate-600">Tag and categorize your research</div>
                         </div>
                         <div className="p-5 bg-white border border-slate-200 rounded-lg">
-                          <div className="w-10 h-10 mb-3 rounded-lg bg-green-50 flex items-center justify-center">
-                            <Archive className="w-5 h-5 text-green-600" />
+                          <div className="w-10 h-10 mb-3 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <Archive className="w-5 h-5 text-blue-600" />
                           </div>
                           <div className="font-semibold text-sm text-slate-900 mb-1.5">Discover</div>
                           <div className="text-xs text-slate-600">Search and find what you need</div>
