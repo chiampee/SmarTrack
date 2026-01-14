@@ -51,7 +51,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           // ✅ Only update state if it's different to prevent unnecessary re-renders
           setIsAdmin(prev => prev !== adminCheckCache.lastResult ? adminCheckCache.lastResult : prev)
           setIsChecking(prev => prev !== false ? false : prev)
-          if (!adminCheckCache.lastResult) {
+          // ✅ Only redirect if trying to access admin route
+          if (!adminCheckCache.lastResult && isAdminRoute) {
             navigate('/404')
           }
         }
@@ -67,7 +68,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           // ✅ Only update state if it's different to prevent unnecessary re-renders
           setIsAdmin(prev => prev !== adminCheckCache.lastResult ? adminCheckCache.lastResult : prev)
           setIsChecking(prev => prev !== false ? false : prev)
-          if (!adminCheckCache.lastResult) {
+          // ✅ Only redirect if trying to access admin route
+          if (!adminCheckCache.lastResult && isAdminRoute) {
             navigate('/404')
           }
         }
