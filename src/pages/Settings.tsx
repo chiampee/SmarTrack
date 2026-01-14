@@ -305,7 +305,7 @@ export const Settings: React.FC = () => {
                 {/* Account Actions */}
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Account Actions</h3>
-                  <div className="bg-white border border-slate-200 rounded-lg p-5">
+                  <div className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
                     <button
                       onClick={() => logout()}
                       className="px-5 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-2 font-medium"
@@ -313,6 +313,63 @@ export const Settings: React.FC = () => {
                       <LogOut className="w-4 h-4" />
                       Sign Out
                     </button>
+                    
+                    {/* Delete All Links */}
+                    <div className="pt-4 border-t border-slate-200">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Trash2 className="w-5 h-5 text-slate-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-slate-900 mb-1">Permanently Delete All Links</h4>
+                          <p className="text-sm text-slate-600 mb-4">
+                            This will permanently delete all your saved links from the database. This action cannot be undone.
+                          </p>
+                          
+                          {!showDeleteConfirm ? (
+                            <button
+                              onClick={() => setShowDeleteConfirm(true)}
+                              className="px-5 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium flex items-center gap-2"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete All Links
+                            </button>
+                          ) : (
+                            <div className="space-y-3">
+                              <p className="text-sm font-medium text-slate-900">
+                                Are you absolutely sure? Type <span className="font-mono bg-slate-100 px-2 py-0.5 rounded">DELETE</span> to confirm.
+                              </p>
+                              <input
+                                type="text"
+                                value={confirmText}
+                                onChange={(e) => setConfirmText(e.target.value)}
+                                placeholder="Type DELETE"
+                                className="input-field w-full border-slate-300 focus:border-slate-500 focus:ring-slate-500"
+                                autoFocus
+                              />
+                              <div className="flex flex-col sm:flex-row gap-2.5">
+                                <button
+                                  onClick={() => {
+                                    setShowDeleteConfirm(false)
+                                    setConfirmText('')
+                                  }}
+                                  className="flex-1 px-4 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={handleDeleteAll}
+                                  disabled={isDeleting || confirmText !== 'DELETE'}
+                                  className="flex-1 px-4 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                >
+                                  {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -320,63 +377,6 @@ export const Settings: React.FC = () => {
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Danger Zone</h3>
                   
-                  {/* Delete All Links */}
-                  <div className="bg-white border-2 border-red-200 rounded-lg p-5 mb-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Trash2 className="w-5 h-5 text-red-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-slate-900 mb-1">Permanently Delete All Links</h4>
-                        <p className="text-sm text-slate-600 mb-4">
-                          This will permanently delete all your saved links from the database. This action cannot be undone.
-                        </p>
-                        
-                        {!showDeleteConfirm ? (
-                          <button
-                            onClick={() => setShowDeleteConfirm(true)}
-                            className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center gap-2"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete All Links
-                          </button>
-                        ) : (
-                          <div className="space-y-3">
-                            <p className="text-sm font-medium text-slate-900">
-                              Are you absolutely sure? Type <span className="font-mono bg-slate-100 px-2 py-0.5 rounded">DELETE</span> to confirm.
-                            </p>
-                            <input
-                              type="text"
-                              value={confirmText}
-                              onChange={(e) => setConfirmText(e.target.value)}
-                              placeholder="Type DELETE"
-                              className="input-field w-full border-red-300 focus:border-red-500 focus:ring-red-500"
-                              autoFocus
-                            />
-                            <div className="flex flex-col sm:flex-row gap-2.5">
-                              <button
-                                onClick={() => {
-                                  setShowDeleteConfirm(false)
-                                  setConfirmText('')
-                                }}
-                                className="flex-1 px-4 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors font-medium"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                onClick={handleDeleteAll}
-                                disabled={isDeleting || confirmText !== 'DELETE'}
-                                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                              >
-                                {isDeleting ? 'Deleting...' : 'Confirm Delete'}
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Delete Account */}
                   <div className="bg-white border-2 border-red-300 rounded-lg p-5">
                     <div className="flex items-start gap-3">
