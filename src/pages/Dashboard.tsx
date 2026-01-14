@@ -959,8 +959,8 @@ export const Dashboard: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 pb-4 sm:pb-0">
       <div className="max-w-[1600px] mx-auto px-2 sm:px-3 md:px-6 lg:px-8 py-2 sm:py-3 md:py-8">
         
-        {/* Extension Install Banner - Hidden on mobile */}
-        {!isExtensionInstalled && isAuthenticated && !isMobile && (
+        {/* Extension Install Banner - Removed per user request */}
+        {false && !isExtensionInstalled && isAuthenticated && !isMobile && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1052,7 +1052,8 @@ export const Dashboard: React.FC = () => {
                 <span className="hidden sm:inline">Export</span>
               </button>
 
-              {!isExtensionInstalled && !isMobile && (
+              {/* Install Extension button removed per user request */}
+              {false && !isExtensionInstalled && !isMobile && (
                 <button 
                   onClick={handleExtensionInstallClick}
                   className="flex-1 sm:flex-initial px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-lg hover:from-indigo-700 hover:to-indigo-800 active:from-indigo-800 transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-0 touch-manipulation"
