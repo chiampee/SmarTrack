@@ -3,8 +3,7 @@ Configuration settings for SmarTrack Backend
 """
 
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
-from typing import List, Optional, Any, Union
+from typing import List, Optional
 
 class Settings(BaseSettings):
     # Database - MUST be provided via environment variable
