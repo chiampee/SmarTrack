@@ -17,8 +17,7 @@ import {
   Check,
   Zap,
   Globe,
-  Command,
-  ChevronRight
+  Command
 } from 'lucide-react'
 
 // Documentation sections with technical marketing content
@@ -1092,7 +1091,6 @@ export const DocsPage: React.FC = () => {
               <nav className="space-y-1">
                 {docSections.map((section) => {
                   const Icon = section.icon
-                  const colors = colorClasses[section.color]
                   const isActive = activeSection === section.id
                   
                   return (
