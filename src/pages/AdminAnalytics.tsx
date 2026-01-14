@@ -1685,7 +1685,11 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
 
 // ✅ ENHANCED: Logs Tab Component - PM Focus
 const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ adminApi }) => {
-  const { isAdmin, isChecking } = useAdminAccess()
+  // ✅ Don't call useAdminAccess again - use the parent's admin status
+  // This prevents duplicate admin checks and rate limit issues
+  const { isAdmin: parentIsAdmin, isChecking: parentIsChecking } = useAdminAccess()
+  const isAdmin = parentIsAdmin
+  const isChecking = parentIsChecking
   const [logs, setLogs] = useState<SystemLog[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
