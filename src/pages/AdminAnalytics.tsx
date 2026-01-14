@@ -2252,6 +2252,102 @@ const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admin
           </div>
         </>
       )}
+
+      {/* Delete All Logs Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-2xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Delete All Logs</h3>
+                <p className="text-sm text-slate-600 mb-4">
+                  This will permanently delete all system logs. This action cannot be undone.
+                </p>
+                
+                {/* Logs Size Information */}
+                {loadingSize ? (
+                  <div className="bg-slate-50 rounded-lg p-4 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Calculating log size...</span>
+                    </div>
+                  </div>
+                ) : logsSize ? (
+                  <div className="bg-slate-50 rounded-lg p-4 mb-4 border border-slate-200">
+                    <div className="text-sm font-semibold text-slate-900 mb-2">Logs Information:</div>
+                    <div className="space-y-1.5 text-sm text-slate-600">
+                      <div className="flex justify-between">
+                        <span>Total Logs:</span>
+                        <span className="font-medium text-slate-900">{logsSize.totalLogs.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Estimated Size:</span>
+                        <span className="font-medium text-slate-900">
+                          {logsSize.estimatedSizeMB > 1 
+                            ? `${logsSize.estimatedSizeMB.toFixed(2)} MB`
+                            : logsSize.estimatedSizeKB > 1
+                            ? `${logsSize.estimatedSizeKB.toFixed(2)} KB`
+                            : `${logsSize.estimatedSizeBytes} bytes`
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : statistics ? (
+                  <div className="bg-slate-50 rounded-lg p-4 mb-4 border border-slate-200">
+                    <div className="text-sm font-semibold text-slate-900 mb-2">Logs Information:</div>
+                    <div className="space-y-1.5 text-sm text-slate-600">
+                      <div className="flex justify-between">
+                        <span>Total Logs:</span>
+                        <span className="font-medium text-slate-900">{statistics.totalLogs.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Estimated Size:</span>
+                        <span className="font-medium text-slate-900">
+                          {((statistics.totalLogs * 500) / (1024 * 1024)).toFixed(2)} MB
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setLogsSize(null)
+                }}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAllLogs}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Delete All Logs
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
