@@ -13,6 +13,7 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { Layout } from './components/Layout'
 import { LoadingSpinner } from './components/LoadingSpinner'
 import { CategoriesProvider } from './context/CategoriesContext'
+import { AdminProvider } from './context/AdminContext'
 import { Navigate } from 'react-router-dom'
 
 // Public routes accessible without authentication
@@ -48,18 +49,20 @@ function App() {
   }
 
   return (
-    <CategoriesProvider>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<MainPage />} />
-          <Route path="/main" element={<MainPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/analytics" element={<AdminAnalytics />} />
-          <Route path="/404" element={<NotFoundPage />} />
-        </Routes>
-      </Layout>
-    </CategoriesProvider>
+    <AdminProvider>
+      <CategoriesProvider>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<MainPage />} />
+            <Route path="/main" element={<MainPage />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/analytics" element={<AdminAnalytics />} />
+            <Route path="/404" element={<NotFoundPage />} />
+          </Routes>
+        </Layout>
+      </CategoriesProvider>
+    </AdminProvider>
   )
 }
 

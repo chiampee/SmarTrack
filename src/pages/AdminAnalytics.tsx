@@ -4,7 +4,7 @@ import {
   RefreshCw, BarChart3, FileText, Settings,
   ChevronLeft, ChevronRight, Search, AlertCircle, Tag, LogIn, Download, Trash2, AlertTriangle
 } from 'lucide-react'
-import { useAdminAccess } from '../hooks/useAdminAccess'
+import { useAdminAccess } from '../context/AdminContext'
 import { useAdminApi, AdminAnalytics as AdminAnalyticsType, AdminUser, SystemLog, AdminCategory, UserLimits, SystemLogsResponse } from '../services/adminApi'
 import { useToast } from '../components/Toast'
 import { LoadingSpinner } from '../components/LoadingSpinner'
@@ -1685,12 +1685,8 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
 
 // ✅ ENHANCED: Logs Tab Component - PM Focus
 const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ adminApi }) => {
-  // ✅ Don't call useAdminAccess again - this component is only rendered inside AdminAnalytics
-  // which already checks admin access. No need for duplicate checks.
-  // If we reach here, admin access is already confirmed by the parent component.
-  // Use constants for admin checks since parent already validated
-  const isAdmin = true // Parent component already verified admin access
-  const isChecking = false // Parent component already finished checking
+  // ✅ Use Context - single source of truth, no duplicate checks
+  const { isAdmin, isChecking } = useAdminAccess()
   const [logs, setLogs] = useState<SystemLog[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
