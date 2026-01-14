@@ -436,6 +436,70 @@ Your export will download immediately. Large exports may take a moment to prepar
   }
 ]
 
+// Visual Chart Components for Tables
+const KeyboardShortcutsChart: React.FC<{ data: Array<{ action: string; mac: string; windows: string }> }> = ({ data }) => {
+  return (
+    <div className="my-6 space-y-3">
+      {data.map((item, index) => (
+        <div key={index} className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4 border border-purple-100 hover:shadow-md transition-all">
+          <div className="font-semibold text-slate-900 mb-3">{item.action}</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-white rounded-lg p-3 border border-slate-200">
+              <div className="text-xs text-slate-500 mb-1.5 font-medium">Mac</div>
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  {item.mac.split('+').map((key, i) => (
+                    <kbd key={i} className="px-2 py-1 bg-slate-100 text-slate-700 rounded text-sm font-mono border border-slate-300">
+                      {key.trim()}
+                    </kbd>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg p-3 border border-slate-200">
+              <div className="text-xs text-slate-500 mb-1.5 font-medium">Windows/Linux</div>
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  {item.windows.split('+').map((key, i) => (
+                    <kbd key={i} className="px-2 py-1 bg-slate-100 text-slate-700 rounded text-sm font-mono border border-slate-300">
+                      {key.trim()}
+                    </kbd>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const SearchOperatorsChart: React.FC<{ data: Array<{ operator: string; example: string; description: string }> }> = ({ data }) => {
+  const colors = ['bg-blue-50 border-blue-200', 'bg-green-50 border-green-200', 'bg-purple-50 border-purple-200', 'bg-amber-50 border-amber-200', 'bg-pink-50 border-pink-200', 'bg-slate-50 border-slate-200']
+  
+  return (
+    <div className="my-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      {data.map((item, index) => (
+        <div key={index} className={`${colors[index % colors.length]} rounded-xl p-4 border-2 hover:shadow-lg transition-all group`}>
+          <div className="flex items-start justify-between mb-2">
+            <code className="text-sm font-mono font-semibold text-slate-900 bg-white px-2 py-1 rounded border border-slate-300">
+              {item.operator}
+            </code>
+          </div>
+          <div className="mb-2">
+            <div className="text-xs text-slate-500 mb-1">Example:</div>
+            <code className="text-sm font-mono text-slate-700 bg-white px-2 py-1 rounded border border-slate-200 block">
+              {item.example}
+            </code>
+          </div>
+          <div className="text-sm text-slate-600 leading-relaxed">{item.description}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // Improved markdown renderer with proper formatting
 const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
@@ -522,7 +586,7 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
         return
       }
 
-      // Tables
+      // Tables - Convert to visual charts
       if (line.startsWith('|') && line.endsWith('|')) {
         if (!inTable) {
           inTable = true
@@ -531,40 +595,68 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
         tableRows.push(line)
         return
       } else if (inTable) {
-        // Render table
+        // Render table as visual chart
         if (tableRows.length > 0) {
           const headers = tableRows[0].split('|').map(h => h.trim()).filter(h => h)
           const dataRows = tableRows.slice(2) // Skip separator row
 
-          elements.push(
-            <div key={`table-${index}`} className="my-6 overflow-x-auto">
-              <table className="w-full border-collapse border border-slate-200 rounded-lg">
-                <thead>
-                  <tr className="bg-slate-50">
-                    {headers.map((header, i) => (
-                      <th key={i} className="px-4 py-3 text-left text-sm font-semibold text-slate-900 border-b border-slate-200">
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {dataRows.map((row, rowIndex) => {
-                    const cells = row.split('|').map(c => c.trim()).filter(c => c)
-                    return (
-                      <tr key={rowIndex} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+          // Detect table type and render appropriate chart
+          if (headers.length === 3 && (headers.includes('Mac') || headers.includes('Windows/Linux'))) {
+            // Keyboard shortcuts table
+            const shortcuts = dataRows.map(row => {
+              const cells = row.split('|').map(c => c.trim()).filter(c => c)
+              return {
+                action: cells[0] || '',
+                mac: cells[1] || '',
+                windows: cells[2] || ''
+              }
+            })
+            elements.push(
+              <KeyboardShortcutsChart key={`chart-${index}`} data={shortcuts} />
+            )
+          } else if (headers.length === 3 && headers.includes('Operator')) {
+            // Search operators table
+            const operators = dataRows.map(row => {
+              const cells = row.split('|').map(c => c.trim()).filter(c => c)
+              return {
+                operator: cells[0] || '',
+                example: cells[1] || '',
+                description: cells[2] || ''
+              }
+            })
+            elements.push(
+              <SearchOperatorsChart key={`chart-${index}`} data={operators} />
+            )
+          } else {
+            // Generic table - render as visual cards
+            elements.push(
+              <div key={`table-${index}`} className="my-6 space-y-3">
+                {dataRows.map((row, rowIndex) => {
+                  const cells = row.split('|').map(c => c.trim()).filter(c => c)
+                  return (
+                    <div key={rowIndex} className="bg-slate-50 rounded-xl p-4 border border-slate-200 hover:shadow-md transition-all">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {cells.map((cell, cellIndex) => (
-                          <td key={cellIndex} className="px-4 py-3 text-sm text-slate-600">
-                            {cell}
-                          </td>
+                          <div key={cellIndex}>
+                            {cellIndex === 0 ? (
+                              <div className="font-semibold text-slate-900 mb-1">{cell}</div>
+                            ) : (
+                              <div className="text-sm text-slate-600">
+                                {headers[cellIndex] && (
+                                  <span className="text-xs text-slate-500 font-medium mr-1">{headers[cellIndex]}:</span>
+                                )}
+                                {cell}
+                              </div>
+                            )}
+                          </div>
                         ))}
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          }
         }
         inTable = false
         tableRows = []
