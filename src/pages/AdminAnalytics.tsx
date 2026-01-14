@@ -1685,11 +1685,12 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
 
 // ✅ ENHANCED: Logs Tab Component - PM Focus
 const LogsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ adminApi }) => {
-  // ✅ Don't call useAdminAccess again - use the parent's admin status
-  // This prevents duplicate admin checks and rate limit issues
-  const { isAdmin: parentIsAdmin, isChecking: parentIsChecking } = useAdminAccess()
-  const isAdmin = parentIsAdmin
-  const isChecking = parentIsChecking
+  // ✅ Don't call useAdminAccess again - this component is only rendered inside AdminAnalytics
+  // which already checks admin access. No need for duplicate checks.
+  // If we reach here, admin access is already confirmed by the parent component.
+  // Use constants for admin checks since parent already validated
+  const isAdmin = true // Parent component already verified admin access
+  const isChecking = false // Parent component already finished checking
   const [logs, setLogs] = useState<SystemLog[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
