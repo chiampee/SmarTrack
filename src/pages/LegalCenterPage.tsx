@@ -59,6 +59,36 @@ const privacySections = [
 **Account Termination:** Users may initiate data removal via Settings → Account.
 
 **Purge Timeline:** Upon account deletion, PII and saved content are purged from production systems and backups within thirty (30) days.`
+  },
+  {
+    icon: Shield,
+    title: '5. GDPR/CCPA Compliance & Your Legal Rights',
+    content: `**Legal Basis for Processing:**
+We process your personal data based on the following legal grounds:
+• **Performance of Contract:** Processing necessary to provide the Service you requested (saving and organizing web content)
+• **Consent:** You explicitly consent to data processing by using the Service
+• **Legitimate Interest:** Processing necessary for security, fraud prevention, and service improvement
+
+**Your Rights Under GDPR (EU Users) and CCPA (California Users):**
+
+**Right to Access:** You may request a copy of all personal data we hold about you in a structured, machine-readable format (JSON/Markdown).
+
+**Right to Rectification:** You may correct inaccurate data through your dashboard Settings or by contacting us.
+
+**Right to Erasure (Right to be Forgotten):** You may delete your account and all associated data at any time via Settings → Account. We will purge all data, including encrypted backups, within thirty (30) days.
+
+**Right to Data Portability:** You may export your saved content in a structured format (JSON/Markdown) for transfer to another service.
+
+**Right to Object:** You may withdraw consent for data processing at any time by deleting your account, which will result in termination of Service.
+
+**Right to Restrict Processing:** You may request that we limit how we process your data by contacting us.
+
+**Right to Withdraw Consent:** You may withdraw your consent at any time without affecting the lawfulness of processing based on consent before withdrawal.
+
+**Non-Discrimination (CCPA):** We will not discriminate against you for exercising your privacy rights.
+
+**How to Exercise Your Rights:**
+Contact us at smart.track.appp@gmail.com with your request. We will respond within thirty (30) days.`
   }
 ]
 
@@ -98,7 +128,9 @@ const termsSections = [
 
 **NO RESPONSIBILITY:** THE COMPANY ASSUMES NO RESPONSIBILITY FOR THE ACCURACY, LEGALITY, OR CONTENT OF EXTERNAL WEBSITES SAVED BY USERS.
 
-**LIMITATION OF LIABILITY:** TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE COMPANY SHALL NOT BE LIABLE FOR ANY DAMAGES (INDIRECT, CONSEQUENTIAL, OR OTHERWISE) ARISING FROM THE USE OR INABILITY TO USE THE SERVICE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.`
+**LIMITATION OF LIABILITY:** TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE COMPANY SHALL NOT BE LIABLE FOR ANY DAMAGES (INDIRECT, CONSEQUENTIAL, OR OTHERWISE) ARISING FROM THE USE OR INABILITY TO USE THE SERVICE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+**LIABILITY CAP:** NOTWITHSTANDING ANYTHING TO THE CONTRARY, THE COMPANY'S TOTAL LIABILITY FOR ANY CLAIMS ARISING FROM OR RELATED TO THE SERVICE SHALL NOT EXCEED ONE HUNDRED DOLLARS ($100.00 USD). THIS CAP APPLIES TO ALL CLAIMS, WHETHER IN CONTRACT, TORT (INCLUDING NEGLIGENCE), STRICT LIABILITY, OR OTHERWISE, AND REGARDLESS OF THE THEORY OF LIABILITY.`
   },
   {
     icon: Scale,
@@ -178,7 +210,7 @@ export const LegalCenterPage: React.FC = () => {
               variants={fadeInUp}
               className="text-xs sm:text-sm text-slate-500"
             >
-              Last Revised: January 13, 2026
+              Last Revised: January 14, 2026
             </motion.p>
           </motion.div>
         </div>
