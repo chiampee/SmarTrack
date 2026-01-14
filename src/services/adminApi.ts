@@ -320,6 +320,11 @@ export const useAdminApi = () => {
     )
   }
 
+  const checkAdminStatus = async (): Promise<{ isAdmin: boolean }> => {
+    // ✅ SECURE: Check admin status via backend without exposing admin emails
+    return makeRequest<{ isAdmin: boolean }>('/api/admin/check')
+  }
+
   return {
     getAnalytics,
     getUsers,
@@ -334,6 +339,7 @@ export const useAdminApi = () => {
     debugToken,
     deleteAllLogs,
     getLogsSize,
+    checkAdminStatus,
   }
 }
 
