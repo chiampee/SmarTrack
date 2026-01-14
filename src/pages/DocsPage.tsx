@@ -732,18 +732,25 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
 
       // Headers
       if (line.startsWith('## ')) {
+        const headerText = line.replace('## ', '')
+        // Check if it's a bold header (starts with **)
+        const isBold = headerText.startsWith('**') && headerText.endsWith('**')
+        const cleanText = isBold ? headerText.slice(2, -2) : headerText
         elements.push(
-          <h2 key={index} className="text-2xl font-bold text-slate-900 mt-8 mb-4 first:mt-0">
-            {line.replace('## ', '')}
+          <h2 key={index} className="text-2xl font-bold text-slate-900 mt-10 mb-5 pt-6 border-t border-slate-200 first:mt-0 first:pt-0 first:border-t-0">
+            {cleanText}
           </h2>
         )
         return
       }
 
       if (line.startsWith('### ')) {
+        const headerText = line.replace('### ', '')
+        const isBold = headerText.startsWith('**') && headerText.endsWith('**')
+        const cleanText = isBold ? headerText.slice(2, -2) : headerText
         elements.push(
-          <h3 key={index} className="text-xl font-semibold text-slate-900 mt-6 mb-3">
-            {line.replace('### ', '')}
+          <h3 key={index} className="text-xl font-semibold text-slate-900 mt-8 mb-4">
+            {cleanText}
           </h3>
         )
         return
@@ -830,19 +837,19 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
         if (!inList || listType !== 'ul') {
           if (inList) {
             elements.push(
-              listType === 'ul' ? (
-                <ul key={`list-${index}-start`} className="list-disc list-inside space-y-2 my-4 text-slate-600">
-                  {listItems.map((item, i) => (
-                    <li key={i} className="pl-2">{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <ol key={`list-${index}-start`} className="list-decimal list-inside space-y-2 my-4 text-slate-600">
-                  {listItems.map((item, i) => (
-                    <li key={i} className="pl-2">{item}</li>
-                  ))}
-                </ol>
-              )
+          listType === 'ul' ? (
+            <ul key={`list-${index}-start`} className="list-disc list-outside space-y-3 my-5 text-slate-700 ml-6">
+              {listItems.map((item, i) => (
+                <li key={i} className="leading-7">{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <ol key={`list-${index}-start`} className="list-decimal list-outside space-y-3 my-5 text-slate-700 ml-6">
+              {listItems.map((item, i) => (
+                <li key={i} className="leading-7">{item}</li>
+              ))}
+            </ol>
+          )
             )
           }
           listItems = []
@@ -857,19 +864,19 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
         if (!inList || listType !== 'ol') {
           if (inList) {
             elements.push(
-              listType === 'ul' ? (
-                <ul key={`list-${index}-start`} className="list-disc list-inside space-y-2 my-4 text-slate-600">
-                  {listItems.map((item, i) => (
-                    <li key={i} className="pl-2">{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <ol key={`list-${index}-start`} className="list-decimal list-inside space-y-2 my-4 text-slate-600">
-                  {listItems.map((item, i) => (
-                    <li key={i} className="pl-2">{item}</li>
-                  ))}
-                </ol>
-              )
+          listType === 'ul' ? (
+            <ul key={`list-${index}-start`} className="list-disc list-outside space-y-3 my-5 text-slate-700 ml-6">
+              {listItems.map((item, i) => (
+                <li key={i} className="leading-7">{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <ol key={`list-${index}-start`} className="list-decimal list-outside space-y-3 my-5 text-slate-700 ml-6">
+              {listItems.map((item, i) => (
+                <li key={i} className="leading-7">{item}</li>
+              ))}
+            </ol>
+          )
             )
           }
           listItems = []
@@ -883,15 +890,15 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
       if (inList && line.trim() === '') {
         elements.push(
           listType === 'ul' ? (
-            <ul key={`list-${index}`} className="list-disc list-inside space-y-2 my-4 text-slate-600">
+            <ul key={`list-${index}`} className="list-disc list-outside space-y-3 my-5 text-slate-700 ml-6">
               {listItems.map((item, i) => (
-                <li key={i} className="pl-2">{item}</li>
+                <li key={i} className="leading-7">{item}</li>
               ))}
             </ul>
           ) : (
-            <ol key={`list-${index}`} className="list-decimal list-inside space-y-2 my-4 text-slate-600">
+            <ol key={`list-${index}`} className="list-decimal list-outside space-y-3 my-5 text-slate-700 ml-6">
               {listItems.map((item, i) => (
-                <li key={i} className="pl-2">{item}</li>
+                <li key={i} className="leading-7">{item}</li>
               ))}
             </ol>
           )
@@ -922,7 +929,7 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
         })
 
         elements.push(
-          <p key={index} className="text-slate-600 mb-4 text-base leading-relaxed">
+          <p key={index} className="text-slate-700 mb-5 text-base leading-7">
             {formattedLine}
           </p>
         )
@@ -933,15 +940,15 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
     if (inList && listItems.length > 0) {
       elements.push(
         listType === 'ul' ? (
-          <ul key="list-final" className="list-disc list-inside space-y-2 my-4 text-slate-600">
+          <ul key="list-final" className="list-disc list-outside space-y-3 my-5 text-slate-700 ml-6">
             {listItems.map((item, i) => (
-              <li key={i} className="pl-2">{item}</li>
+              <li key={i} className="leading-7">{item}</li>
             ))}
           </ul>
         ) : (
-          <ol key="list-final" className="list-decimal list-inside space-y-2 my-4 text-slate-600">
+          <ol key="list-final" className="list-decimal list-outside space-y-3 my-5 text-slate-700 ml-6">
             {listItems.map((item, i) => (
-              <li key={i} className="pl-2">{item}</li>
+              <li key={i} className="leading-7">{item}</li>
             ))}
           </ol>
         )
@@ -1079,45 +1086,66 @@ export const DocsPage: React.FC = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="hidden lg:block w-72 flex-shrink-0"
+            className="hidden lg:block w-80 flex-shrink-0"
           >
             <div className="sticky top-24">
               {/* Sidebar Header */}
-              <div className="mb-6">
-                <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Documentation</h2>
+              <div className="mb-6 pb-4 border-b border-slate-200">
+                <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Documentation</h2>
               </div>
               
               {/* Navigation Items */}
-              <nav className="space-y-1">
+              <nav className="space-y-6">
                 {docSections.map((section) => {
                   const Icon = section.icon
                   const isActive = activeSection === section.id
                   
                   return (
-                    <button
-                      key={section.id}
-                      onClick={() => {
-                        setActiveSection(section.id)
-                        setActiveArticle(0)
-                      }}
-                      className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg text-left transition-all group ${
-                        isActive 
-                          ? 'bg-blue-50 border-l-4 border-blue-600 text-blue-700 shadow-sm' 
-                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 border-l-4 border-transparent'
-                      }`}
-                    >
-                      <div className={`mt-0.5 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'}`}>
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className={`font-semibold text-sm ${isActive ? 'text-blue-900' : 'text-slate-900'}`}>
-                          {section.title}
+                    <div key={section.id} className="space-y-1">
+                      {/* Section Header */}
+                      <button
+                        onClick={() => {
+                          setActiveSection(section.id)
+                          setActiveArticle(0)
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all group ${
+                          isActive 
+                            ? 'bg-blue-50 text-blue-700' 
+                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                        }`}
+                      >
+                        <div className={`flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'}`}>
+                          <Icon className="w-4 h-4" />
                         </div>
-                        <div className={`text-xs mt-1 leading-relaxed ${isActive ? 'text-blue-600' : 'text-slate-500'}`}>
-                          {section.description}
+                        <div className="flex-1 min-w-0">
+                          <div className={`font-semibold text-sm ${isActive ? 'text-blue-900' : 'text-slate-900'}`}>
+                            {section.title}
+                          </div>
                         </div>
-                      </div>
-                    </button>
+                      </button>
+                      
+                      {/* Articles within Section */}
+                      {isActive && section.articles.length > 0 && (
+                        <div className="ml-7 space-y-0.5 border-l-2 border-slate-200 pl-4">
+                          {section.articles.map((article, articleIndex) => {
+                            const isArticleActive = activeArticle === articleIndex
+                            return (
+                              <button
+                                key={articleIndex}
+                                onClick={() => setActiveArticle(articleIndex)}
+                                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all ${
+                                  isArticleActive
+                                    ? 'bg-blue-100 text-blue-700 font-medium'
+                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                }`}
+                              >
+                                {article.title}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
               </nav>
@@ -1129,30 +1157,48 @@ export const DocsPage: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="flex-1 min-w-0"
+            className="flex-1 min-w-0 max-w-4xl"
           >
-            {/* Section Header */}
+            {/* Breadcrumbs */}
+            <nav className="mb-6 flex items-center gap-2 text-sm text-slate-500">
+              <button
+                onClick={() => navigate('/')}
+                className="hover:text-slate-900 transition-colors"
+              >
+                Home
+              </button>
+              <span>/</span>
+              <span className="text-slate-900 font-medium">Documentation</span>
+              <span>/</span>
+              <span className="text-slate-700">{currentSection.title}</span>
+            </nav>
+
+            {/* Article Header */}
             <div className="mb-8">
-              <div className="flex items-center gap-3 mb-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorClasses[currentSection.color].bg} ${colorClasses[currentSection.color].text}`}>
-                  <currentSection.icon className="w-6 h-6" />
+              <div className="flex items-start gap-4 mb-6">
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 ${colorClasses[currentSection.color].bg} ${colorClasses[currentSection.color].text}`}>
+                  <currentSection.icon className="w-7 h-7" />
                 </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-slate-900">{currentSection.title}</h1>
-                  <p className="text-slate-600 mt-1">{currentSection.description}</p>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-3xl font-bold text-slate-900 mb-2">
+                    {currentSection.articles[activeArticle].title}
+                  </h1>
+                  <p className="text-slate-600 text-base">
+                    {currentSection.description}
+                  </p>
                 </div>
               </div>
               
-              {/* Article tabs */}
+              {/* Article tabs - Mobile/Tablet */}
               {currentSection.articles.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-2">
+                <div className="lg:hidden flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                   {currentSection.articles.map((article, index) => (
                     <button
                       key={index}
                       onClick={() => setActiveArticle(index)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                      className={`px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
                         activeArticle === index
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-blue-600 text-white shadow-sm'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
@@ -1169,11 +1215,8 @@ export const DocsPage: React.FC = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm"
+              className="bg-white rounded-xl border border-slate-200 p-8 lg:p-10 shadow-sm"
             >
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">
-                {currentSection.articles[activeArticle].title}
-              </h2>
               <ArticleContent content={currentSection.articles[activeArticle].content} />
             </motion.div>
 
