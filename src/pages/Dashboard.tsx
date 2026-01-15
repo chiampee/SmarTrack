@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Plus, Grid, List, Download, Archive, Chrome, Tag, MessageSquare, Globe, File, Trash2, Star } from 'lucide-react'
-import { LinkedInLogo, XLogo, RedditLogo, WebIcon, PDFIcon } from '../components/BrandLogos'
+import { LinkedInLogo, XLogo, RedditLogo, WebIcon, PDFIcon, YouTubeLogo } from '../components/BrandLogos'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { useExtensionDetection } from '../hooks/useExtensionDetection'
 import { LinkCard } from '../components/LinkCard'
@@ -957,8 +957,8 @@ export const Dashboard: React.FC = () => {
   const shouldAnimate = !prefersReducedMotion
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-indigo-50/10 pb-4 sm:pb-0">
-      <div className="max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-indigo-50/10 pb-6 sm:pb-4 md:pb-0">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-5 md:px-6 lg:px-8 py-4 sm:py-5 md:py-6 lg:py-8">
         
         {/* Extension Install Banner - Removed per user request */}
         {false && !isExtensionInstalled && isAuthenticated && !isMobile && (
@@ -988,15 +988,15 @@ export const Dashboard: React.FC = () => {
           </motion.div>
         )}
 
-        {/* ✅ ENHANCED TOOLBAR: Premium design with better visual hierarchy */}
+        {/* ✅ ENHANCED TOOLBAR: Premium design optimized for mobile/tablet */}
         <motion.div
           initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
           variants={fadeInUp}
           transition={{ duration: animationConfig.duration, ease: "easeOut" }}
-          className="bg-white/95 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg shadow-gray-900/5 border border-gray-200/80 mb-3 sm:mb-4 p-3 sm:p-4 md:p-5"
+          className="bg-white/95 backdrop-blur-sm rounded-2xl sm:rounded-2xl shadow-lg shadow-gray-900/5 border border-gray-200/80 mb-4 sm:mb-5 md:mb-6 p-4 sm:p-4 md:p-5"
         >
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 md:gap-4">
             {/* Left: Search with integrated Filter */}
             <div className="flex-1 min-w-0 order-1 relative">
               <div className="relative flex items-center">
@@ -1027,16 +1027,16 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Action Buttons - enhanced styling */}
-            <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0 order-2 w-full sm:w-auto">
-              {/* Action Buttons - premium design */}
+            {/* Right: Action Buttons - optimized for mobile/tablet */}
+            <div className="flex items-stretch sm:items-center gap-2.5 sm:gap-2.5 md:gap-3 flex-shrink-0 order-2 w-full sm:w-auto">
+              {/* Action Buttons - mobile-optimized with better touch targets */}
               <button 
                 onClick={() => setShowAddModal(true)}
-                className="flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 sm:py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 active:from-blue-800 active:via-blue-800 active:to-indigo-800 transition-all duration-200 shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2 min-h-[44px] sm:min-h-[42px] touch-manipulation"
+                className="flex-1 sm:flex-initial px-5 sm:px-5 md:px-6 py-3 sm:py-2.5 md:py-2.5 text-base sm:text-sm font-bold sm:font-semibold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 active:from-blue-800 active:via-blue-800 active:to-indigo-800 transition-all duration-200 shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/30 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2 min-h-[48px] sm:min-h-[44px] md:min-h-[42px] touch-manipulation"
                 aria-label="Add new link"
               >
-                <Plus className="w-4 h-4 sm:w-4.5 sm:h-4.5 flex-shrink-0" />
-                <span className="sm:hidden">Add</span>
+                <Plus className="w-5 h-5 sm:w-4.5 sm:h-4.5 flex-shrink-0" />
+                <span className="sm:hidden font-semibold">Add Link</span>
                 <span className="hidden sm:inline md:hidden">New</span>
                 <span className="hidden md:inline">New Link</span>
               </button>
@@ -1044,12 +1044,12 @@ export const Dashboard: React.FC = () => {
               <button 
                 onClick={handleExport}
                 disabled={filteredLinksCount === 0}
-                className="flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 sm:py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 hover:shadow-md active:bg-gray-100 active:shadow-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm flex items-center justify-center gap-2 min-h-[44px] sm:min-h-[42px] touch-manipulation"
+                className="flex-1 sm:flex-initial px-5 sm:px-5 md:px-6 py-3 sm:py-2.5 md:py-2.5 text-base sm:text-sm font-bold sm:font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 hover:shadow-md active:bg-gray-100 active:shadow-sm active:scale-[0.98] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm flex items-center justify-center gap-2 min-h-[48px] sm:min-h-[44px] md:min-h-[42px] touch-manipulation"
                 aria-label="Export links"
                 title={filteredLinksCount === 0 ? 'No links to export' : 'Export filtered links'}
               >
-                <Download className="w-4 h-4 flex-shrink-0" />
-                <span className="sm:hidden">Export</span>
+                <Download className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="sm:hidden font-semibold">Export</span>
                 <span className="hidden sm:inline">Export</span>
               </button>
 
@@ -1070,19 +1070,19 @@ export const Dashboard: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* ✅ ENHANCED SECONDARY HEADER: Premium collection info and view controls */}
+        {/* ✅ ENHANCED SECONDARY HEADER: Optimized for mobile/tablet */}
         <motion.div
           initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
           variants={fadeInUp}
           transition={{ delay: shouldAnimate ? 0.05 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5 md:mb-6"
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 md:gap-5 mb-5 sm:mb-5 md:mb-6"
         >
-          {/* Left: Collection Title and Stats - enhanced design */}
-          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-wrap w-full sm:w-auto">
-            <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-2.5 md:gap-3">
-              <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/20">
-                <Archive className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white flex-shrink-0" />
+          {/* Left: Collection Title and Stats - mobile-optimized */}
+          <div className="flex items-center gap-2.5 sm:gap-3 md:gap-4 flex-wrap w-full sm:w-auto">
+            <h2 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-2.5 sm:gap-2.5 md:gap-3">
+              <div className="p-2 sm:p-2 md:p-2.5 rounded-xl sm:rounded-xl md:rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/20">
+                <Archive className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white flex-shrink-0" />
               </div>
               <span className="truncate bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                 {selectedCollectionId 
@@ -1095,19 +1095,19 @@ export const Dashboard: React.FC = () => {
               </span>
             </h2>
             <div className="flex items-center gap-2 sm:gap-2.5">
-              <span className="px-3 sm:px-3.5 md:px-4 py-1.5 sm:py-1.5 md:py-2 text-xs sm:text-sm font-bold text-blue-700 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-full border border-blue-200/80 shadow-sm whitespace-nowrap backdrop-blur-sm">
+              <span className="px-3.5 sm:px-3.5 md:px-4 py-2 sm:py-1.5 md:py-2 text-sm sm:text-sm md:text-sm font-bold text-blue-700 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-full border border-blue-200/80 shadow-sm whitespace-nowrap backdrop-blur-sm">
                 {filteredLinksCount} {filteredLinksCount === 1 ? 'link' : 'links'}
               </span>
             </div>
           </div>
 
-          {/* Right: View Controls - premium toggle design */}
-          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
-            {/* View Toggle - enhanced with better styling */}
+          {/* Right: View Controls - mobile-optimized toggle */}
+          <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto justify-end">
+            {/* View Toggle - larger touch targets for mobile */}
             <div className="flex items-center gap-1 bg-gray-100/80 backdrop-blur-sm rounded-xl p-1 border border-gray-200/60 shadow-sm">
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-3 sm:px-4 md:px-4 py-2 sm:py-2 md:py-2 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 sm:gap-2 min-h-[40px] sm:min-h-[40px] md:min-h-[38px] touch-manipulation ${
+                className={`px-4 sm:px-4 md:px-4 py-2.5 sm:py-2 md:py-2 rounded-lg transition-all duration-200 text-sm sm:text-sm font-bold sm:font-semibold flex items-center justify-center gap-2 sm:gap-2 min-h-[44px] sm:min-h-[40px] md:min-h-[38px] touch-manipulation active:scale-[0.97] ${
                   viewMode === 'list' 
                     ? 'bg-white text-blue-600 shadow-md shadow-blue-500/10' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
@@ -1115,12 +1115,13 @@ export const Dashboard: React.FC = () => {
                 aria-label="List view"
                 aria-pressed={viewMode === 'list'}
               >
-                <List className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                <List className="w-5 h-5 sm:w-4.5 sm:h-4.5" />
+                <span className="sm:hidden">List</span>
                 <span className="hidden sm:inline">List</span>
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`px-3 sm:px-4 md:px-4 py-2 sm:py-2 md:py-2 rounded-lg transition-all duration-200 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 sm:gap-2 min-h-[40px] sm:min-h-[40px] md:min-h-[38px] touch-manipulation ${
+                className={`px-4 sm:px-4 md:px-4 py-2.5 sm:py-2 md:py-2 rounded-lg transition-all duration-200 text-sm sm:text-sm font-bold sm:font-semibold flex items-center justify-center gap-2 sm:gap-2 min-h-[44px] sm:min-h-[40px] md:min-h-[38px] touch-manipulation active:scale-[0.97] ${
                   viewMode === 'grid' 
                     ? 'bg-white text-blue-600 shadow-md shadow-blue-500/10' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
@@ -1128,7 +1129,8 @@ export const Dashboard: React.FC = () => {
                 aria-label="Grid view"
                 aria-pressed={viewMode === 'grid'}
               >
-                <Grid className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                <Grid className="w-5 h-5 sm:w-4.5 sm:h-4.5" />
+                <span className="sm:hidden">Grid</span>
                 <span className="hidden sm:inline">Grid</span>
               </button>
             </div>
@@ -1245,10 +1247,10 @@ export const Dashboard: React.FC = () => {
                             transition={{ delay: 0.5, duration: 0.6 }}
                             className="mb-8 sm:mb-10 w-full"
                           >
-                            <h4 className="text-sm sm:text-base font-semibold text-slate-700 mb-4 sm:mb-5 text-center">
+                            <h4 className="text-base sm:text-lg md:text-base font-bold sm:font-semibold text-slate-700 mb-5 sm:mb-5 md:mb-6 text-center px-2">
                               Save content from anywhere
                             </h4>
-                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 max-w-3xl mx-auto">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-4 max-w-4xl mx-auto px-2 sm:px-0">
                               {[
                                 {
                                   name: 'LinkedIn',
@@ -1275,6 +1277,14 @@ export const Dashboard: React.FC = () => {
                                   hoverBorder: 'hover:border-orange-300'
                                 },
                                 {
+                                  name: 'YouTube',
+                                  icon: <YouTubeLogo />,
+                                  bgColor: 'bg-red-50',
+                                  textColor: 'text-[#FF0000]',
+                                  borderColor: 'border-red-200',
+                                  hoverBorder: 'hover:border-red-300'
+                                },
+                                {
                                   name: 'Web Pages',
                                   icon: <WebIcon />,
                                   bgColor: 'bg-green-50',
@@ -1285,10 +1295,10 @@ export const Dashboard: React.FC = () => {
                                 {
                                   name: 'PDFs',
                                   icon: <PDFIcon />,
-                                  bgColor: 'bg-red-50',
-                                  textColor: 'text-red-600',
-                                  borderColor: 'border-red-200',
-                                  hoverBorder: 'hover:border-red-300'
+                                  bgColor: 'bg-purple-50',
+                                  textColor: 'text-purple-600',
+                                  borderColor: 'border-purple-200',
+                                  hoverBorder: 'hover:border-purple-300'
                                 }
                               ].map((platform, index) => (
                                 <motion.div
@@ -1297,60 +1307,60 @@ export const Dashboard: React.FC = () => {
                                   animate={{ opacity: 1, scale: 1 }}
                                   transition={{ delay: 0.6 + index * 0.1, duration: 0.4 }}
                                   whileHover={!isMobile ? { y: -4, scale: 1.05, transition: { duration: 0.2 } } : {}}
-                                  className={`p-3 sm:p-4 bg-white border ${platform.borderColor} ${platform.hoverBorder} rounded-lg sm:rounded-xl transition-all group cursor-default touch-manipulation text-center`}
+                                  className={`p-3.5 sm:p-4 md:p-4 bg-white border-2 ${platform.borderColor} ${platform.hoverBorder} rounded-xl sm:rounded-xl md:rounded-xl transition-all group cursor-default touch-manipulation text-center active:scale-[0.97]`}
                                 >
-                                  <div className={`w-12 h-12 sm:w-14 sm:h-14 ${platform.bgColor} rounded-xl sm:rounded-2xl flex items-center justify-center mb-2 sm:mb-3 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-sm group-hover:shadow-md`}>
+                                  <div className={`w-14 h-14 sm:w-14 sm:h-14 md:w-16 md:h-16 ${platform.bgColor} rounded-xl sm:rounded-2xl md:rounded-2xl flex items-center justify-center mb-2.5 sm:mb-3 mx-auto group-hover:scale-110 transition-transform duration-300 shadow-sm group-hover:shadow-md`}>
                                     <div className={platform.textColor}>
                                       {platform.icon}
                                     </div>
                                   </div>
-                                  <div className="text-xs sm:text-sm font-medium text-slate-900 leading-tight">{platform.name}</div>
+                                  <div className="text-xs sm:text-sm md:text-sm font-semibold sm:font-medium text-slate-900 leading-tight">{platform.name}</div>
                                 </motion.div>
                               ))}
                             </div>
                           </motion.div>
 
-                          {/* Feature Cards - Mobile Optimized */}
+                          {/* Feature Cards - Optimized for mobile/tablet */}
                           <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.9, duration: 0.6 }}
-                            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6 w-full"
+                            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-4 md:gap-5 lg:gap-6 w-full px-2 sm:px-0"
                           >
                             <motion.div
                               whileHover={!isMobile ? { y: -6, scale: 1.02, transition: { duration: 0.2 } } : {}}
-                              whileTap={isMobile ? { scale: 0.98 } : {}}
-                              className="p-5 sm:p-6 md:p-7 bg-white border border-slate-200 rounded-xl sm:rounded-2xl hover:border-blue-300 hover:shadow-lg transition-all group cursor-pointer touch-manipulation"
+                              whileTap={isMobile ? { scale: 0.97 } : {}}
+                              className="p-6 sm:p-6 md:p-7 bg-white border-2 border-slate-200 rounded-2xl sm:rounded-2xl hover:border-blue-300 hover:shadow-lg transition-all group cursor-pointer touch-manipulation active:scale-[0.98]"
                             >
-                              <div className="w-12 h-12 sm:w-14 sm:h-14 mb-4 sm:mb-5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 group-hover:from-blue-100 group-hover:to-blue-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
-                                <Plus className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600" />
+                              <div className="w-14 h-14 sm:w-14 sm:h-14 md:w-16 md:h-16 mb-4 sm:mb-5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 group-hover:from-blue-100 group-hover:to-blue-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
+                                <Plus className="w-7 h-7 sm:w-7 sm:h-7 md:w-8 md:h-8 text-blue-600" />
                               </div>
-                              <div className="font-bold text-base sm:text-lg text-slate-900 mb-2 sm:mb-2.5">Save Links</div>
-                              <div className="text-xs sm:text-sm text-slate-600 leading-relaxed">Capture articles, videos, and resources with one click</div>
+                              <div className="font-bold text-lg sm:text-lg md:text-xl text-slate-900 mb-2.5 sm:mb-2.5">Save Links</div>
+                              <div className="text-sm sm:text-sm md:text-base text-slate-600 leading-relaxed">Capture articles, videos, and resources with one click</div>
                             </motion.div>
                             
                             <motion.div
                               whileHover={!isMobile ? { y: -6, scale: 1.02, transition: { duration: 0.2 } } : {}}
-                              whileTap={isMobile ? { scale: 0.98 } : {}}
-                              className="p-5 sm:p-6 md:p-7 bg-white border border-slate-200 rounded-xl sm:rounded-2xl hover:border-purple-300 hover:shadow-lg transition-all group cursor-pointer touch-manipulation"
+                              whileTap={isMobile ? { scale: 0.97 } : {}}
+                              className="p-6 sm:p-6 md:p-7 bg-white border-2 border-slate-200 rounded-2xl sm:rounded-2xl hover:border-purple-300 hover:shadow-lg transition-all group cursor-pointer touch-manipulation active:scale-[0.98]"
                             >
-                              <div className="w-12 h-12 sm:w-14 sm:h-14 mb-4 sm:mb-5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 group-hover:from-purple-100 group-hover:to-purple-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
-                                <Tag className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600" />
+                              <div className="w-14 h-14 sm:w-14 sm:h-14 md:w-16 md:h-16 mb-4 sm:mb-5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 group-hover:from-purple-100 group-hover:to-purple-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
+                                <Tag className="w-7 h-7 sm:w-7 sm:h-7 md:w-8 md:h-8 text-purple-600" />
                               </div>
-                              <div className="font-bold text-base sm:text-lg text-slate-900 mb-2 sm:mb-2.5">Organize</div>
-                              <div className="text-xs sm:text-sm text-slate-600 leading-relaxed">Tag and categorize your research for easy discovery</div>
+                              <div className="font-bold text-lg sm:text-lg md:text-xl text-slate-900 mb-2.5 sm:mb-2.5">Organize</div>
+                              <div className="text-sm sm:text-sm md:text-base text-slate-600 leading-relaxed">Tag and categorize your research for easy discovery</div>
                             </motion.div>
                             
                             <motion.div
                               whileHover={!isMobile ? { y: -6, scale: 1.02, transition: { duration: 0.2 } } : {}}
-                              whileTap={isMobile ? { scale: 0.98 } : {}}
-                              className="p-5 sm:p-6 md:p-7 bg-white border border-slate-200 rounded-xl sm:rounded-2xl hover:border-green-300 hover:shadow-lg transition-all group cursor-pointer touch-manipulation sm:col-span-2 md:col-span-1"
+                              whileTap={isMobile ? { scale: 0.97 } : {}}
+                              className="p-6 sm:p-6 md:p-7 bg-white border-2 border-slate-200 rounded-2xl sm:rounded-2xl hover:border-green-300 hover:shadow-lg transition-all group cursor-pointer touch-manipulation sm:col-span-2 md:col-span-1 active:scale-[0.98]"
                             >
-                              <div className="w-12 h-12 sm:w-14 sm:h-14 mb-4 sm:mb-5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-green-50 to-green-100 group-hover:from-green-100 group-hover:to-green-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
-                                <Archive className="w-6 h-6 sm:w-7 sm:h-7 text-green-600" />
+                              <div className="w-14 h-14 sm:w-14 sm:h-14 md:w-16 md:h-16 mb-4 sm:mb-5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-green-50 to-green-100 group-hover:from-green-100 group-hover:to-green-200 flex items-center justify-center transition-all shadow-sm group-hover:shadow-md">
+                                <Archive className="w-7 h-7 sm:w-7 sm:h-7 md:w-8 md:h-8 text-green-600" />
                               </div>
-                              <div className="font-bold text-base sm:text-lg text-slate-900 mb-2 sm:mb-2.5">Discover</div>
-                              <div className="text-xs sm:text-sm text-slate-600 leading-relaxed">Search and find what you need instantly</div>
+                              <div className="font-bold text-lg sm:text-lg md:text-xl text-slate-900 mb-2.5 sm:mb-2.5">Discover</div>
+                              <div className="text-sm sm:text-sm md:text-base text-slate-600 leading-relaxed">Search and find what you need instantly</div>
                             </motion.div>
                           </motion.div>
                         </>
@@ -1447,33 +1457,33 @@ export const Dashboard: React.FC = () => {
                     initial={{ opacity: 0, y: -20, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                    className="mb-5 p-4 sm:p-5 bg-gradient-to-br from-blue-50 via-indigo-50/50 to-purple-50 border border-blue-200/80 rounded-2xl shadow-lg shadow-blue-500/10 backdrop-blur-sm"
+                    className="mb-5 p-4 sm:p-5 md:p-5 bg-gradient-to-br from-blue-50 via-indigo-50/50 to-purple-50 border-2 border-blue-200/80 rounded-2xl shadow-lg shadow-blue-500/10 backdrop-blur-sm"
                   >
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
-                      <span className="text-sm sm:text-base font-bold text-blue-900 flex items-center gap-2.5">
-                        <span className="inline-flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white text-xs sm:text-sm font-bold shadow-md shadow-blue-500/30">
+                      <span className="text-base sm:text-base md:text-lg font-bold text-blue-900 flex items-center gap-2.5">
+                        <span className="inline-flex items-center justify-center w-7 h-7 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white text-sm sm:text-sm md:text-base font-bold shadow-md shadow-blue-500/30">
                           {selectedLinks.size}
                         </span>
                         <span className="bg-gradient-to-r from-blue-900 to-indigo-900 bg-clip-text text-transparent">
                           link{selectedLinks.size > 1 ? 's' : ''} selected
                         </span>
                       </span>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2.5 w-full sm:w-auto">
                         <button 
                           onClick={clearSelection} 
-                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white/80 backdrop-blur-sm text-gray-700 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-white hover:shadow-md transition-all duration-200"
+                          className="flex-1 sm:flex-initial px-4 sm:px-4 py-2.5 sm:py-2 bg-white/80 backdrop-blur-sm text-gray-700 border-2 border-gray-300 rounded-xl text-sm font-bold sm:font-semibold hover:bg-white hover:shadow-md active:scale-[0.97] transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation"
                         >
                           Clear
                         </button>
                         <button 
                           onClick={selectAll} 
-                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white/80 backdrop-blur-sm text-gray-700 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-white hover:shadow-md transition-all duration-200"
+                          className="flex-1 sm:flex-initial px-4 sm:px-4 py-2.5 sm:py-2 bg-white/80 backdrop-blur-sm text-gray-700 border-2 border-gray-300 rounded-xl text-sm font-bold sm:font-semibold hover:bg-white hover:shadow-md active:scale-[0.97] transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation"
                         >
                           Select All
                         </button>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2.5">
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-2.5">
                       <button 
                         onClick={handleBulkArchive}
                         disabled={isLoading}

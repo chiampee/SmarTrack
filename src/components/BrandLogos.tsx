@@ -70,3 +70,15 @@ export const PDFIcon: React.FC<BrandLogoProps> = ({ className = "w-6 h-6 sm:w-7 
     <path d="M8.5 11C8.22 11 8 11.22 8 11.5V13H9.5V15H8V17H10.5C11.33 17 12 16.33 12 15.5V11.5C12 11.22 11.78 11 11.5 11H8.5M10 12.5H11V13.5H10V12.5M13 11V17H14.5V15.5H15.5C16.33 15.5 17 14.83 17 14V12.5C17 11.67 16.33 11 15.5 11H13M14.5 12.5H15.5V14H14.5V12.5Z"/>
   </svg>
 )
+
+// YouTube Logo
+export const YouTubeLogo: React.FC<BrandLogoProps> = ({ className = "w-6 h-6 sm:w-7 sm:h-7" }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+  </svg>
+)
