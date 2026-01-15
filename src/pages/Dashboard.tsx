@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List, Download, Archive, Chrome, Tag, MessageSquare, Globe, File, Trash2, Star } from 'lucide-react'
+import { Plus, Grid, List, Archive, Chrome, Tag, MessageSquare, Globe, File, Trash2, Star } from 'lucide-react'
 import { LinkedInLogo, XLogo, RedditLogo, WebIcon, PDFIcon, YouTubeLogo } from '../components/BrandLogos'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { useExtensionDetection } from '../hooks/useExtensionDetection'
 import { LinkCard } from '../components/LinkCard'
+import { useAddLink } from '../components/Layout'
 import { SearchAutocomplete } from '../components/SearchAutocomplete'
 import { AddLinkModal } from '../components/AddLinkModal'
 import { EditLinkModal } from '../components/EditLinkModal'
@@ -53,6 +54,13 @@ export const Dashboard: React.FC = () => {
   const [searchParams] = useSearchParams()
   const { isMobile, prefersReducedMotion, animationConfig } = useMobileOptimizations()
   const isExtensionInstalled = useExtensionDetection()
+  
+  // Expose add link handler for Header (mobile/tablet)
+  const setAddLinkHandler = useAddLink()
+  React.useEffect(() => {
+    setAddLinkHandler(() => setShowAddModal(true))
+    return () => setAddLinkHandler(undefined)
+  }, [setAddLinkHandler])
 
   // Show extension install modal for first-time users (desktop only)
   useEffect(() => {
@@ -897,21 +905,6 @@ export const Dashboard: React.FC = () => {
   const filteredLinksCount = filteredLinks.length
   const favoritesCount = links.filter(l => l.isFavorite).length
 
-  // Handle export
-  const handleExport = () => {
-    const dataStr = JSON.stringify(filteredLinks, null, 2)
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
-
-    const exportFileDefaultName = `smartrack-links-${new Date().toISOString().split('T')[0]}.json`
-
-    const linkElement = document.createElement('a')
-    linkElement.setAttribute('href', dataUri)
-    linkElement.setAttribute('download', exportFileDefaultName)
-    linkElement.click()
-
-    toast.success('Links exported successfully!')
-  }
-
   // Handle extension download
   const handleDownloadExtension = () => {
     const linkElement = document.createElement('a')
@@ -1027,45 +1020,17 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Action Buttons - mobile-first with perfect touch targets */}
-            <div className="flex items-stretch sm:items-center gap-2 sm:gap-2.5 md:gap-3 flex-shrink-0 order-2 w-full sm:w-auto">
-              {/* Action Buttons - optimized for mobile with larger touch areas */}
+            {/* Right: Action Buttons - Desktop only (mobile/tablet button moved to header) */}
+            <div className="hidden lg:flex items-center gap-2.5 md:gap-3 flex-shrink-0 order-2">
+              {/* Add Link Button - Desktop only */}
               <button 
                 onClick={() => setShowAddModal(true)}
-                className="flex-1 sm:flex-initial px-4 sm:px-5 md:px-6 py-3.5 sm:py-2.5 md:py-2.5 text-base sm:text-sm font-bold sm:font-semibold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 active:from-blue-800 active:via-blue-800 active:to-indigo-800 transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:scale-[0.96] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2 min-h-[52px] sm:min-h-[44px] md:min-h-[42px] touch-manipulation"
+                className="px-5 md:px-6 py-2.5 md:py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 active:from-blue-800 active:via-blue-800 active:to-indigo-800 transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:scale-[0.96] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2 min-h-[42px] touch-manipulation"
                 aria-label="Add new link"
               >
-                <Plus className="w-5 h-5 sm:w-4.5 sm:h-4.5 flex-shrink-0" />
-                <span className="sm:hidden font-semibold">Add Link</span>
-                <span className="hidden sm:inline md:hidden">New</span>
-                <span className="hidden md:inline">New Link</span>
+                <Plus className="w-4.5 h-4.5 flex-shrink-0" />
+                <span>New Link</span>
               </button>
-              
-              <button 
-                onClick={handleExport}
-                disabled={filteredLinksCount === 0}
-                className="flex-1 sm:flex-initial px-4 sm:px-5 md:px-6 py-3.5 sm:py-2.5 md:py-2.5 text-base sm:text-sm font-bold sm:font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 hover:shadow-md active:bg-gray-100 active:shadow-sm active:scale-[0.96] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm flex items-center justify-center gap-2 min-h-[52px] sm:min-h-[44px] md:min-h-[42px] touch-manipulation"
-                aria-label="Export links"
-                title={filteredLinksCount === 0 ? 'No links to export' : 'Export filtered links'}
-              >
-                <Download className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                <span className="sm:hidden font-semibold">Export</span>
-                <span className="hidden sm:inline">Export</span>
-              </button>
-
-              {/* Install Extension button removed per user request */}
-              {false && !isExtensionInstalled && !isMobile && (
-                <button 
-                  onClick={handleExtensionInstallClick}
-                  className="flex-1 sm:flex-initial px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-lg hover:from-indigo-700 hover:to-indigo-800 active:from-indigo-800 transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-0 touch-manipulation"
-                  aria-label="Install Chrome extension"
-                  title="Install SmarTrack Chrome Extension - Get step-by-step instructions"
-                >
-                  <Chrome className="w-4 h-4 flex-shrink-0" />
-                  <span className="sm:hidden md:inline">Install Extension</span>
-                  <span className="hidden sm:inline md:hidden">Install</span>
-                </button>
-              )}
             </div>
           </div>
         </motion.div>
