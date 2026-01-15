@@ -17,7 +17,13 @@ interface JWTPayload {
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://smartrack-back.onrender.com'
 
 // #region agent log
-fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useBackendApi.ts:17',message:'Backend URL initialization',data:{apiBaseUrl:API_BASE_URL,envVar:import.meta.env.VITE_BACKEND_URL,hasEnvVar:!!import.meta.env.VITE_BACKEND_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+try {
+  const logData = {location:'useBackendApi.ts:17',message:'Backend URL initialization',data:{apiBaseUrl:API_BASE_URL,envVar:import.meta.env.VITE_BACKEND_URL,hasEnvVar:!!import.meta.env.VITE_BACKEND_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'};
+  console.log('[DEBUG]', JSON.stringify(logData));
+  localStorage.setItem('debug_log_' + Date.now(), JSON.stringify(logData));
+} catch(e) {
+  // Debug logging failed, continue silently
+}
 // #endregion
 
 // Track if we've logged the backend URL (module-level, not window)
@@ -268,7 +274,13 @@ export const useBackendApi = () => {
     const url = `${API_BASE_URL}${endpoint}`
     
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useBackendApi.ts:264',message:'Before fetch attempt',data:{url,apiBaseUrl:API_BASE_URL,endpoint,hasToken:!!requestToken},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    try {
+      const logData = {location:'useBackendApi.ts:264',message:'Before fetch attempt',data:{url,apiBaseUrl:API_BASE_URL,endpoint,hasToken:!!requestToken},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'};
+      console.log('[DEBUG]', JSON.stringify(logData));
+      localStorage.setItem('debug_log_' + Date.now(), JSON.stringify(logData));
+    } catch(e) {
+      // Debug logging failed, continue silently
+    }
     // #endregion
     
     try {
@@ -285,7 +297,13 @@ export const useBackendApi = () => {
 
       try {
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useBackendApi.ts:279',message:'About to call fetch',data:{url,method:options.method||'GET'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        try {
+          const logData = {location:'useBackendApi.ts:279',message:'About to call fetch',data:{url,method:options.method||'GET'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'};
+          console.log('[DEBUG]', JSON.stringify(logData));
+          localStorage.setItem('debug_log_' + Date.now(), JSON.stringify(logData));
+        } catch(e) {
+          // Debug logging failed, continue silently
+        }
         // #endregion
         const response = await fetch(url, {
           ...options,
@@ -351,9 +369,15 @@ export const useBackendApi = () => {
         clearTimeout(timeoutId)
         cleanupRequest(endpoint)
         // #region agent log
-        const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-        const cspValue = cspMeta ? cspMeta.getAttribute('content') : 'NOT_FOUND';
-        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useBackendApi.ts:350',message:'Fetch error caught',data:{errorMessage:fetchError instanceof Error ? fetchError.message : String(fetchError),errorName:fetchError instanceof Error ? fetchError.name : 'Unknown',url,cspMetaExists:!!cspMeta,cspValue:cspValue?.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        try {
+          const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+          const cspValue = cspMeta ? cspMeta.getAttribute('content') : 'NOT_FOUND';
+          const logData = {location:'useBackendApi.ts:350',message:'Fetch error caught',data:{errorMessage:fetchError instanceof Error ? fetchError.message : String(fetchError),errorName:fetchError instanceof Error ? fetchError.name : 'Unknown',url,cspMetaExists:!!cspMeta,cspValue:cspValue?.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'};
+          console.log('[DEBUG]', JSON.stringify(logData));
+          localStorage.setItem('debug_log_' + Date.now(), JSON.stringify(logData));
+        } catch(e) {
+          // Debug logging failed, continue silently
+        }
         // #endregion
         throw fetchError
       }
@@ -372,10 +396,16 @@ export const useBackendApi = () => {
       // Enhanced error logging for network errors - ALWAYS show in production
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         // #region agent log
-        const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-        const cspValue = cspMeta ? cspMeta.getAttribute('content') : 'NOT_FOUND';
-        const cspHeader = document.querySelector('meta[http-equiv="Content-Security-Policy"]') ? 'META_TAG' : 'NO_META';
-        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useBackendApi.ts:368',message:'Failed to fetch error',data:{url,apiBaseUrl:API_BASE_URL,errorMessage:error.message,errorStack:error.stack?.substring(0,300),cspMetaExists:!!cspMeta,cspValue:cspValue?.substring(0,300),cspHeader},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        try {
+          const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+          const cspValue = cspMeta ? cspMeta.getAttribute('content') : 'NOT_FOUND';
+          const cspHeader = document.querySelector('meta[http-equiv="Content-Security-Policy"]') ? 'META_TAG' : 'NO_META';
+          const logData = {location:'useBackendApi.ts:368',message:'Failed to fetch error',data:{url,apiBaseUrl:API_BASE_URL,errorMessage:error.message,errorStack:error.stack?.substring(0,300),cspMetaExists:!!cspMeta,cspValue:cspValue?.substring(0,300),cspHeader},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'};
+          console.log('[DEBUG]', JSON.stringify(logData));
+          localStorage.setItem('debug_log_' + Date.now(), JSON.stringify(logData));
+        } catch(e) {
+          // Debug logging failed, continue silently
+        }
         // #endregion
         // Check if it's a resource exhaustion error
         const isResourceError = error.message.includes('ERR_INSUFFICIENT_RESOURCES') || 
