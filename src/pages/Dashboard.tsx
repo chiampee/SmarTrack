@@ -32,8 +32,24 @@ export const Dashboard: React.FC = () => {
   const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set())
   // Initialize modal as closed - never auto-open
   const [showAddModal, setShowAddModal] = useState(false)
-  const [hasUserInteracted, setHasUserInteracted] = React.useState(false)
+  const hasUserInteractedRef = React.useRef(false)
   const isInitialMount = React.useRef(true)
+  
+  // Wrapper function to safely set modal state - only allows opening if user interacted
+  const setShowAddModalSafe = React.useCallback((value: boolean) => {
+    if (value === true) {
+      // Only allow opening if user has explicitly interacted
+      if (hasUserInteractedRef.current) {
+        setShowAddModal(true)
+      } else {
+        console.warn('[Dashboard] BLOCKED: Attempted to open modal without user interaction')
+        setShowAddModal(false)
+      }
+    } else {
+      // Always allow closing
+      setShowAddModal(false)
+    }
+  }, [])
   const [editingLink, setEditingLink] = useState<Link | null>(null)
   const [showCreateCollectionModal, setShowCreateCollectionModal] = useState(false)
   const [showExtensionInstallModal, setShowExtensionInstallModal] = useState(false)
@@ -61,14 +77,12 @@ export const Dashboard: React.FC = () => {
   // Expose add link handler for Header (mobile/tablet)
   const setAddLinkHandler = useAddLink()
   React.useEffect(() => {
-    // Only set handler if user hasn't interacted yet (prevent auto-trigger)
+    // Set handler that marks user interaction and opens modal
     setAddLinkHandler(() => {
-      // Explicitly mark as user interaction before opening
-      setHasUserInteracted(true)
-      // Small delay to ensure state is set before opening modal
-      setTimeout(() => {
-        setShowAddModal(true)
-      }, 0)
+      // Mark user interaction FIRST using ref (synchronous)
+      hasUserInteractedRef.current = true
+      // Then open modal
+      setShowAddModal(true)
     })
     return () => setAddLinkHandler(undefined)
   }, [setAddLinkHandler])
@@ -207,23 +221,43 @@ export const Dashboard: React.FC = () => {
     if (isInitialMount.current) {
       isInitialMount.current = false
       // Force close on first mount - CRITICAL for preventing auto-open
+      hasUserInteractedRef.current = false
       setShowAddModal(false)
-      setHasUserInteracted(false)
     }
   }, [])
 
-  // Aggressively prevent auto-opening after authentication or on any state change
+  // Aggressively prevent auto-opening - runs on every render to catch any attempts
   useEffect(() => {
-    // If modal is open but user hasn't interacted, force close it
-    if (showAddModal && !hasUserInteracted) {
-      console.log('[Dashboard] Preventing auto-open: closing modal without user interaction')
+    // If modal is open but user hasn't interacted, force close it immediately
+    if (showAddModal && !hasUserInteractedRef.current) {
+      console.warn('[Dashboard] BLOCKED: Attempted to open modal without user interaction - forcing close')
       setShowAddModal(false)
     }
-  }, [showAddModal, hasUserInteracted, isAuthenticated])
+  })
+
+  // Additional safeguard: Reset on authentication change
+  useEffect(() => {
+    // When authentication state changes, ensure modal is closed and interaction reset
+    if (isAuthenticated) {
+      // Small delay to ensure this runs after any other effects
+      const timer = setTimeout(() => {
+        if (!hasUserInteractedRef.current) {
+          setShowAddModal(false)
+        }
+      }, 100)
+      return () => clearTimeout(timer)
+    } else {
+      // Reset on logout
+      hasUserInteractedRef.current = false
+      setShowAddModal(false)
+    }
+  }, [isAuthenticated])
 
   // Handler that tracks user interaction - ONLY way to open modal
   const handleAddLinkClick = React.useCallback(() => {
-    setHasUserInteracted(true)
+    // Mark user interaction FIRST
+    hasUserInteractedRef.current = true
+    // Then open modal
     setShowAddModal(true)
   }, [])
 
@@ -232,14 +266,16 @@ export const Dashboard: React.FC = () => {
     const params = new URLSearchParams(location.search)
     const addLinkParam = params.get('addLink') || params.get('add-link')
     // Explicitly ignore any URL parameters that might try to open the modal
-    if (addLinkParam && !hasUserInteracted) {
+    if (addLinkParam && !hasUserInteractedRef.current) {
       // Remove the parameter from URL without opening modal
       const newParams = new URLSearchParams(location.search)
       newParams.delete('addLink')
       newParams.delete('add-link')
       navigate({ pathname: location.pathname, search: newParams.toString() }, { replace: true })
+      // Ensure modal stays closed
+      setShowAddModal(false)
     }
-  }, [location.search, hasUserInteracted, navigate, location.pathname])
+  }, [location.search, navigate, location.pathname])
 
   // React to sidebar query params: filter, collection, category
   useEffect(() => {
@@ -1651,10 +1687,10 @@ export const Dashboard: React.FC = () => {
 
       {/* Add Link Modal - Only open if user explicitly clicked */}
       <AddLinkModal
-        isOpen={showAddModal && hasUserInteracted}
+        isOpen={showAddModal && hasUserInteractedRef.current}
         onClose={() => {
           setShowAddModal(false)
-          setHasUserInteracted(false)
+          hasUserInteractedRef.current = false
         }}
         onSave={handleAddLink}
         collections={collections}
