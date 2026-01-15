@@ -895,7 +895,7 @@ export const Dashboard: React.FC = () => {
   }
 
   const filteredLinksCount = filteredLinks.length
-  const favoritesCount = links.filter(l => l.isFavorite).length
+  const favoritesCount = links.filter(l => l.isFavorite && !l.isArchived).length
 
   // Handle export
   const handleExport = () => {
@@ -1565,7 +1565,7 @@ export const Dashboard: React.FC = () => {
                   </motion.div>
                 )}
                 
-                {/* Group by Category */}
+                {/* Links Display - Grouped by Category */}
                 {(() => {
                   // Group links by category
                   const groupedLinks = filteredLinks.reduce((acc, link) => {
@@ -1577,28 +1577,73 @@ export const Dashboard: React.FC = () => {
                     return acc
                   }, {} as Record<string, typeof filteredLinks>)
 
+                  // Sort categories by link count (descending) then alphabetically
+                  const sortedCategories = Object.entries(groupedLinks).sort((a, b) => {
+                    if (b[1].length !== a[1].length) {
+                      return b[1].length - a[1].length
+                    }
+                    return a[0].localeCompare(b[0])
+                  })
+
                   return (
                     <motion.div
                       variants={staggerContainer}
-                      className="space-y-6"
+                      className="space-y-6 sm:space-y-7 md:space-y-8"
                     >
-                      {Object.entries(groupedLinks).map(([category, categoryLinks]) => (
+                      {/* Summary Stats Bar - Show when links exist */}
+                      {filteredLinks.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.4, ease: "easeOut" }}
+                          className="bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-purple-50/50 rounded-xl sm:rounded-2xl border border-blue-200/60 p-4 sm:p-5 mb-4 sm:mb-5"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                              <div className="p-2 sm:p-2.5 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/20">
+                                <Archive className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                              </div>
+                              <div>
+                                <div className="text-sm sm:text-base font-semibold text-gray-700">Total Links</div>
+                                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+                                  {filteredLinks.length} {filteredLinks.length === 1 ? 'link' : 'links'}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                              <div className="text-center">
+                                <div className="text-xs sm:text-sm text-gray-600">Categories</div>
+                                <div className="text-lg sm:text-xl font-bold text-blue-600">{sortedCategories.length}</div>
+                              </div>
+                              {favoritesCount > 0 && (
+                                <div className="text-center">
+                                  <div className="text-xs sm:text-sm text-gray-600">Favorites</div>
+                                  <div className="text-lg sm:text-xl font-bold text-amber-600">{favoritesCount}</div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* Category Groups */}
+                      {sortedCategories.map(([category, categoryLinks]) => (
                         <motion.div
                           key={category}
                           variants={staggerItem}
-                          className="mb-6"
+                          className="mb-6 sm:mb-7 md:mb-8"
                         >
                           {/* Enhanced Category Header */}
                           <motion.div
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            className="flex items-center gap-3 mb-5 pb-4 border-b border-gray-200/60"
+                            className="flex items-center gap-3 mb-4 sm:mb-5 pb-3 sm:pb-4 border-b border-gray-200/60"
                           >
-                            <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                               <div className="w-1.5 h-8 sm:h-10 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-600 rounded-full shadow-sm shadow-blue-500/30"></div>
-                              <h3 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">{category}</h3>
-                              <span className="px-3 sm:px-4 py-1 sm:py-1.5 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-700 rounded-full text-sm font-bold border border-blue-200/80 shadow-sm">
+                              <h3 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">{category}</h3>
+                              <span className="px-3 sm:px-4 py-1 sm:py-1.5 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-700 rounded-full text-xs sm:text-sm font-bold border border-blue-200/80 shadow-sm">
                                 {categoryLinks.length} {categoryLinks.length === 1 ? 'link' : 'links'}
                               </span>
                             </div>
@@ -1609,17 +1654,27 @@ export const Dashboard: React.FC = () => {
                             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 md:gap-6' 
                             : 'flex flex-col gap-3 sm:gap-4'
                           }>
-                            {categoryLinks.map((link) => (
-                              <LinkCard
+                            {categoryLinks.map((link, index) => (
+                              <motion.div
                                 key={link.id}
-                                link={link}
-                                viewMode={viewMode}
-                                isSelected={selectedLinks.has(link.id)}
-                                onSelect={() => toggleSelection(link.id)}
-                                onAction={handleLinkAction}
-                                collections={collections}
-                                onCardClick={() => setEditingLink(link)}
-                              />
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ 
+                                  delay: index * 0.05,
+                                  duration: 0.4,
+                                  ease: [0.16, 1, 0.3, 1]
+                                }}
+                              >
+                                <LinkCard
+                                  link={link}
+                                  viewMode={viewMode}
+                                  isSelected={selectedLinks.has(link.id)}
+                                  onSelect={() => toggleSelection(link.id)}
+                                  onAction={handleLinkAction}
+                                  collections={collections}
+                                  onCardClick={() => setEditingLink(link)}
+                                />
+                              </motion.div>
                             ))}
                           </div>
                         </motion.div>
