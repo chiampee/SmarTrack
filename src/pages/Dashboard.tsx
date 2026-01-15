@@ -184,6 +184,11 @@ export const Dashboard: React.FC = () => {
 
   // React to sidebar query params: filter, collection, category
   useEffect(() => {
+    // Skip if links array is empty
+    if (links.length === 0) {
+      return
+    }
+    
     const params = new URLSearchParams(location.search)
     const filter = params.get('filter')
     const collection = params.get('collection')
@@ -421,6 +426,12 @@ export const Dashboard: React.FC = () => {
 
   // Filter links based on search and filters
   useEffect(() => {
+    // Skip if links array is empty
+    if (links.length === 0) {
+      setFilteredLinks([])
+      return
+    }
+    
     console.log('🔍 useEffect: Recalculating filteredLinks from links array', {
       selectedCollectionId,
       activeFilterId,
@@ -876,9 +887,45 @@ export const Dashboard: React.FC = () => {
           ...(linkData.collectionId && { collectionId: linkData.collectionId }),
         }),
       })
-      // Refresh links from backend - useEffect will handle filteredLinks based on active view
+      
+      // Optimistically add the link to the state immediately
+      const newLink: Link = {
+        ...savedLink,
+        createdAt: savedLink.createdAt || new Date().toISOString(),
+        updatedAt: savedLink.updatedAt || new Date().toISOString(),
+        clickCount: savedLink.clickCount || 0,
+      }
+      setLinks(prev => [newLink, ...prev])
+      
+      // Refresh links from backend to ensure consistency
       const refreshedLinks = await getLinks()
       setLinks(refreshedLinks)
+      
+      // Navigate to show the new link appropriately
+      // If link was added to a specific collection, navigate to that collection
+      if (linkData.collectionId) {
+        navigate(`/?collection=${linkData.collectionId}`, { replace: false })
+      } else {
+        // Clear any filters/collections that might hide the new link
+        // Navigate to root to show all links
+        const currentParams = new URLSearchParams(location.search)
+        const hasFilters = currentParams.has('filter') || currentParams.has('collection') || currentParams.has('category')
+        
+        if (hasFilters) {
+          // Clear URL params to show all links
+          navigate('/', { replace: false })
+        }
+        // Also clear local state filters to ensure new link is visible
+        setSearchQuery('')
+        setActiveFilterId(null)
+        setSelectedCollectionId(null)
+        setFilters({
+          category: '',
+          dateRange: 'all_time',
+          tags: [],
+          contentType: ''
+        })
+      }
       
       // If link was added to a collection, refresh collections to update counts
       if (linkData.collectionId) {
@@ -1172,7 +1219,7 @@ export const Dashboard: React.FC = () => {
                   )}
                 </div>
               </div>
-            ) : filteredLinks.length === 0 ? (
+            ) : filteredLinks.length === 0 && links.length > 0 ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
