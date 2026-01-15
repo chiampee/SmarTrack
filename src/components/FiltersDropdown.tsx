@@ -15,6 +15,8 @@ interface FiltersDropdownProps {
 
 export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFiltersChange, iconOnly = false }) => {
   const [isOpen, setIsOpen] = React.useState(false)
+  const buttonRef = React.useRef<HTMLButtonElement>(null)
+  const [dropdownPosition, setDropdownPosition] = React.useState<{ top: number; right: number } | null>(null)
 
   const contentTypes: { value: Link['contentType']; label: string }[] = [
     { value: 'webpage', label: 'Web Page' },
@@ -56,9 +58,21 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
     filters.tags.length > 0 ||
     filters.contentType !== ''
 
+  // Calculate dropdown position when opening
+  React.useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 8,
+        right: window.innerWidth - rect.right
+      })
+    }
+  }, [isOpen])
+
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={iconOnly 
           ? `p-1.5 rounded-md transition-colors hover:bg-gray-100 ${
@@ -87,9 +101,24 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
         )}
       </button>
 
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-          <div className="p-4">
+      {isOpen && dropdownPosition && (
+        <>
+          {/* Backdrop to ensure dropdown is on top */}
+          <div 
+            className="fixed inset-0 z-[9998] bg-black/5" 
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+          <div 
+            className="fixed w-80 bg-white border border-gray-200 rounded-lg shadow-2xl z-[9999]"
+            style={{
+              top: `${dropdownPosition.top}px`,
+              right: `${dropdownPosition.right}px`,
+              maxHeight: 'calc(100vh - ' + (dropdownPosition.top + 20) + 'px)',
+              overflowY: 'auto'
+            }}
+          >
+            <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-medium text-gray-900">Filter Links</h3>
               <div className="flex gap-2">
@@ -182,8 +211,9 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
                 />
               </div>
             </div>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )

@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List, Archive, Chrome, Tag, MessageSquare, Globe, File, Trash2, Star } from 'lucide-react'
+import { Plus, Grid, List, Download, Archive, Chrome, Tag, MessageSquare, Globe, File, Trash2, Star } from 'lucide-react'
 import { LinkedInLogo, XLogo, RedditLogo, WebIcon, PDFIcon, YouTubeLogo } from '../components/BrandLogos'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { useExtensionDetection } from '../hooks/useExtensionDetection'
 import { LinkCard } from '../components/LinkCard'
-import { useAddLink } from '../components/Layout'
 import { SearchAutocomplete } from '../components/SearchAutocomplete'
 import { AddLinkModal } from '../components/AddLinkModal'
 import { EditLinkModal } from '../components/EditLinkModal'
@@ -30,26 +29,7 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [slowLoading, setSlowLoading] = useState(false)
   const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set())
-  // Initialize modal as closed - never auto-open
   const [showAddModal, setShowAddModal] = useState(false)
-  const hasUserInteractedRef = React.useRef(false)
-  const isInitialMount = React.useRef(true)
-  
-  // Wrapper function to safely set modal state - only allows opening if user interacted
-  const setShowAddModalSafe = React.useCallback((value: boolean) => {
-    if (value === true) {
-      // Only allow opening if user has explicitly interacted
-      if (hasUserInteractedRef.current) {
-        setShowAddModal(true)
-      } else {
-        console.warn('[Dashboard] BLOCKED: Attempted to open modal without user interaction')
-        setShowAddModal(false)
-      }
-    } else {
-      // Always allow closing
-      setShowAddModal(false)
-    }
-  }, [])
   const [editingLink, setEditingLink] = useState<Link | null>(null)
   const [showCreateCollectionModal, setShowCreateCollectionModal] = useState(false)
   const [showExtensionInstallModal, setShowExtensionInstallModal] = useState(false)
@@ -73,19 +53,6 @@ export const Dashboard: React.FC = () => {
   const [searchParams] = useSearchParams()
   const { isMobile, prefersReducedMotion, animationConfig } = useMobileOptimizations()
   const isExtensionInstalled = useExtensionDetection()
-  
-  // Expose add link handler for Header (mobile/tablet)
-  const setAddLinkHandler = useAddLink()
-  React.useEffect(() => {
-    // Set handler that marks user interaction and opens modal
-    setAddLinkHandler(() => {
-      // Mark user interaction FIRST using ref (synchronous)
-      hasUserInteractedRef.current = true
-      // Then open modal
-      setShowAddModal(true)
-    })
-    return () => setAddLinkHandler(undefined)
-  }, [setAddLinkHandler])
 
   // Show extension install modal for first-time users (desktop only)
   useEffect(() => {
@@ -214,68 +181,6 @@ export const Dashboard: React.FC = () => {
       setShowCreateCollectionModal(false)
     }
   }, [location.search, showCreateCollectionModal])
-
-  // CRITICAL: Ensure Add Link modal NEVER opens automatically
-  // Force close on initial mount and after authentication
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false
-      // Force close on first mount - CRITICAL for preventing auto-open
-      hasUserInteractedRef.current = false
-      setShowAddModal(false)
-    }
-  }, [])
-
-  // Aggressively prevent auto-opening - runs on every render to catch any attempts
-  useEffect(() => {
-    // If modal is open but user hasn't interacted, force close it immediately
-    if (showAddModal && !hasUserInteractedRef.current) {
-      console.warn('[Dashboard] BLOCKED: Attempted to open modal without user interaction - forcing close')
-      setShowAddModal(false)
-    }
-  })
-
-  // Additional safeguard: Reset on authentication change
-  useEffect(() => {
-    // When authentication state changes, ensure modal is closed and interaction reset
-    if (isAuthenticated) {
-      // Small delay to ensure this runs after any other effects
-      const timer = setTimeout(() => {
-        if (!hasUserInteractedRef.current) {
-          setShowAddModal(false)
-        }
-      }, 100)
-      return () => clearTimeout(timer)
-    } else {
-      // Reset on logout
-      hasUserInteractedRef.current = false
-      setShowAddModal(false)
-    }
-  }, [isAuthenticated])
-
-  // Handler that tracks user interaction - ONLY way to open modal
-  const handleAddLinkClick = React.useCallback(() => {
-    // Mark user interaction FIRST
-    hasUserInteractedRef.current = true
-    // Then open modal
-    setShowAddModal(true)
-  }, [])
-
-  // Check for URL parameters that might trigger modal (and prevent them)
-  useEffect(() => {
-    const params = new URLSearchParams(location.search)
-    const addLinkParam = params.get('addLink') || params.get('add-link')
-    // Explicitly ignore any URL parameters that might try to open the modal
-    if (addLinkParam && !hasUserInteractedRef.current) {
-      // Remove the parameter from URL without opening modal
-      const newParams = new URLSearchParams(location.search)
-      newParams.delete('addLink')
-      newParams.delete('add-link')
-      navigate({ pathname: location.pathname, search: newParams.toString() }, { replace: true })
-      // Ensure modal stays closed
-      setShowAddModal(false)
-    }
-  }, [location.search, navigate, location.pathname])
 
   // React to sidebar query params: filter, collection, category
   useEffect(() => {
@@ -992,6 +897,21 @@ export const Dashboard: React.FC = () => {
   const filteredLinksCount = filteredLinks.length
   const favoritesCount = links.filter(l => l.isFavorite).length
 
+  // Handle export
+  const handleExport = () => {
+    const dataStr = JSON.stringify(filteredLinks, null, 2)
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
+
+    const exportFileDefaultName = `smartrack-links-${new Date().toISOString().split('T')[0]}.json`
+
+    const linkElement = document.createElement('a')
+    linkElement.setAttribute('href', dataUri)
+    linkElement.setAttribute('download', exportFileDefaultName)
+    linkElement.click()
+
+    toast.success('Links exported successfully!')
+  }
+
   // Handle extension download
   const handleDownloadExtension = () => {
     const linkElement = document.createElement('a')
@@ -1087,7 +1007,7 @@ export const Dashboard: React.FC = () => {
                   placeholder={isMobile ? "Search links..." : "Search your library..."}
                 />
                 {/* Filter Button inside Search */}
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-[100]">
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20">
                   <FiltersDropdown
                     filters={{
                       category: filters.category,
@@ -1107,17 +1027,45 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Action Buttons - Desktop only (mobile/tablet button moved to header) */}
-            <div className="hidden lg:flex items-center gap-2.5 md:gap-3 flex-shrink-0 order-2">
-              {/* Add Link Button - Desktop only */}
+            {/* Right: Action Buttons - mobile-first with perfect touch targets */}
+            <div className="flex items-stretch sm:items-center gap-2 sm:gap-2.5 md:gap-3 flex-shrink-0 order-2 w-full sm:w-auto">
+              {/* Action Buttons - optimized for mobile with larger touch areas */}
               <button 
-                onClick={handleAddLinkClick}
-                className="px-5 md:px-6 py-2.5 md:py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 active:from-blue-800 active:via-blue-800 active:to-indigo-800 transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:scale-[0.96] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2 min-h-[42px] touch-manipulation"
+                onClick={() => setShowAddModal(true)}
+                className="flex-1 sm:flex-initial px-4 sm:px-5 md:px-6 py-3.5 sm:py-2.5 md:py-2.5 text-base sm:text-sm font-bold sm:font-semibold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 active:from-blue-800 active:via-blue-800 active:to-indigo-800 transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:scale-[0.96] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2 min-h-[52px] sm:min-h-[44px] md:min-h-[42px] touch-manipulation"
                 aria-label="Add new link"
               >
-                <Plus className="w-4.5 h-4.5 flex-shrink-0" />
-                <span>New Link</span>
+                <Plus className="w-5 h-5 sm:w-4.5 sm:h-4.5 flex-shrink-0" />
+                <span className="sm:hidden font-semibold">Add Link</span>
+                <span className="hidden sm:inline md:hidden">New</span>
+                <span className="hidden md:inline">New Link</span>
               </button>
+              
+              <button 
+                onClick={handleExport}
+                disabled={filteredLinksCount === 0}
+                className="flex-1 sm:flex-initial px-4 sm:px-5 md:px-6 py-3.5 sm:py-2.5 md:py-2.5 text-base sm:text-sm font-bold sm:font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 hover:shadow-md active:bg-gray-100 active:shadow-sm active:scale-[0.96] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm flex items-center justify-center gap-2 min-h-[52px] sm:min-h-[44px] md:min-h-[42px] touch-manipulation"
+                aria-label="Export links"
+                title={filteredLinksCount === 0 ? 'No links to export' : 'Export filtered links'}
+              >
+                <Download className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="sm:hidden font-semibold">Export</span>
+                <span className="hidden sm:inline">Export</span>
+              </button>
+
+              {/* Install Extension button removed per user request */}
+              {false && !isExtensionInstalled && !isMobile && (
+                <button 
+                  onClick={handleExtensionInstallClick}
+                  className="flex-1 sm:flex-initial px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-lg hover:from-indigo-700 hover:to-indigo-800 active:from-indigo-800 transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-0 touch-manipulation"
+                  aria-label="Install Chrome extension"
+                  title="Install SmarTrack Chrome Extension - Get step-by-step instructions"
+                >
+                  <Chrome className="w-4 h-4 flex-shrink-0" />
+                  <span className="sm:hidden md:inline">Install Extension</span>
+                  <span className="hidden sm:inline md:hidden">Install</span>
+                </button>
+              )}
             </div>
           </div>
         </motion.div>
@@ -1284,13 +1232,13 @@ export const Dashboard: React.FC = () => {
                               transition={{ delay: 0.4, duration: 0.6 }}
                               className="mb-8 sm:mb-10 md:mb-12 w-full sm:w-auto"
                             >
-                            <button 
-                              onClick={handleAddLinkClick}
-                              className="w-full sm:w-auto px-6 sm:px-8 md:px-10 py-3.5 sm:py-4 md:py-5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-all font-semibold text-sm sm:text-base md:text-lg flex items-center justify-center gap-2.5 sm:gap-3 mx-auto shadow-xl shadow-blue-600/25 hover:shadow-2xl hover:shadow-blue-600/30 hover:-translate-y-0.5 sm:hover:-translate-y-1 active:translate-y-0 touch-manipulation min-h-[48px] sm:min-h-0"
-                            >
-                              <Plus className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 flex-shrink-0" />
-                              <span>Add Your First Link</span>
-                            </button>
+                              <button 
+                                onClick={() => setShowAddModal(true)}
+                                className="w-full sm:w-auto px-6 sm:px-8 md:px-10 py-3.5 sm:py-4 md:py-5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-all font-semibold text-sm sm:text-base md:text-lg flex items-center justify-center gap-2.5 sm:gap-3 mx-auto shadow-xl shadow-blue-600/25 hover:shadow-2xl hover:shadow-blue-600/30 hover:-translate-y-0.5 sm:hover:-translate-y-1 active:translate-y-0 touch-manipulation min-h-[48px] sm:min-h-0"
+                              >
+                                <Plus className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 flex-shrink-0" />
+                                <span>Add Your First Link</span>
+                              </button>
                             </motion.div>
                           )}
                           
@@ -1485,7 +1433,7 @@ export const Dashboard: React.FC = () => {
                         )}
                         {links.length > 0 && (
                           <button 
-                            onClick={handleAddLinkClick}
+                            onClick={() => setShowAddModal(true)}
                             className="px-5 py-2.5 text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center gap-2 shadow-sm"
                             aria-label="Add new link"
                           >
@@ -1685,13 +1633,10 @@ export const Dashboard: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* Add Link Modal - Only open if user explicitly clicked */}
+      {/* Add Link Modal */}
       <AddLinkModal
-        isOpen={showAddModal && hasUserInteractedRef.current}
-        onClose={() => {
-          setShowAddModal(false)
-          hasUserInteractedRef.current = false
-        }}
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
         onSave={handleAddLink}
         collections={collections}
         existingCategories={Array.from(new Set(links.map(l => l.category).filter(Boolean)))}
