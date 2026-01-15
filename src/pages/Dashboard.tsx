@@ -58,7 +58,10 @@ export const Dashboard: React.FC = () => {
   // Expose add link handler for Header (mobile/tablet)
   const setAddLinkHandler = useAddLink()
   React.useEffect(() => {
-    setAddLinkHandler(() => setShowAddModal(true))
+    setAddLinkHandler(() => {
+      setHasUserInteracted(true)
+      setShowAddModal(true)
+    })
     return () => setAddLinkHandler(undefined)
   }, [setAddLinkHandler])
 
@@ -189,6 +192,25 @@ export const Dashboard: React.FC = () => {
       setShowCreateCollectionModal(false)
     }
   }, [location.search, showCreateCollectionModal])
+
+  // Ensure Add Link modal does NOT open automatically on login/sign-in
+  // Modal should only open when user explicitly clicks the "Add Link" button
+  // Initialize as closed and only open via user interaction
+  const [hasUserInteracted, setHasUserInteracted] = React.useState(false)
+  
+  // Prevent auto-opening on initial load or authentication
+  useEffect(() => {
+    // Ensure modal is closed when component first mounts or after authentication
+    if (!hasUserInteracted) {
+      setShowAddModal(false)
+    }
+  }, [isAuthenticated, hasUserInteracted])
+
+  // Handler that tracks user interaction
+  const handleAddLinkClick = () => {
+    setHasUserInteracted(true)
+    setShowAddModal(true)
+  }
 
   // React to sidebar query params: filter, collection, category
   useEffect(() => {
@@ -1000,7 +1022,7 @@ export const Dashboard: React.FC = () => {
                   placeholder={isMobile ? "Search links..." : "Search your library..."}
                 />
                 {/* Filter Button inside Search */}
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10">
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-[100]">
                   <FiltersDropdown
                     filters={{
                       category: filters.category,
@@ -1024,7 +1046,7 @@ export const Dashboard: React.FC = () => {
             <div className="hidden lg:flex items-center gap-2.5 md:gap-3 flex-shrink-0 order-2">
               {/* Add Link Button - Desktop only */}
               <button 
-                onClick={() => setShowAddModal(true)}
+                onClick={handleAddLinkClick}
                 className="px-5 md:px-6 py-2.5 md:py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 active:from-blue-800 active:via-blue-800 active:to-indigo-800 transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:scale-[0.96] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2 min-h-[42px] touch-manipulation"
                 aria-label="Add new link"
               >
@@ -1197,13 +1219,13 @@ export const Dashboard: React.FC = () => {
                               transition={{ delay: 0.4, duration: 0.6 }}
                               className="mb-8 sm:mb-10 md:mb-12 w-full sm:w-auto"
                             >
-                              <button 
-                                onClick={() => setShowAddModal(true)}
-                                className="w-full sm:w-auto px-6 sm:px-8 md:px-10 py-3.5 sm:py-4 md:py-5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-all font-semibold text-sm sm:text-base md:text-lg flex items-center justify-center gap-2.5 sm:gap-3 mx-auto shadow-xl shadow-blue-600/25 hover:shadow-2xl hover:shadow-blue-600/30 hover:-translate-y-0.5 sm:hover:-translate-y-1 active:translate-y-0 touch-manipulation min-h-[48px] sm:min-h-0"
-                              >
-                                <Plus className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 flex-shrink-0" />
-                                <span>Add Your First Link</span>
-                              </button>
+                            <button 
+                              onClick={handleAddLinkClick}
+                              className="w-full sm:w-auto px-6 sm:px-8 md:px-10 py-3.5 sm:py-4 md:py-5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-all font-semibold text-sm sm:text-base md:text-lg flex items-center justify-center gap-2.5 sm:gap-3 mx-auto shadow-xl shadow-blue-600/25 hover:shadow-2xl hover:shadow-blue-600/30 hover:-translate-y-0.5 sm:hover:-translate-y-1 active:translate-y-0 touch-manipulation min-h-[48px] sm:min-h-0"
+                            >
+                              <Plus className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 flex-shrink-0" />
+                              <span>Add Your First Link</span>
+                            </button>
                             </motion.div>
                           )}
                           
@@ -1398,7 +1420,7 @@ export const Dashboard: React.FC = () => {
                         )}
                         {links.length > 0 && (
                           <button 
-                            onClick={() => setShowAddModal(true)}
+                            onClick={handleAddLinkClick}
                             className="px-5 py-2.5 text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center gap-2 shadow-sm"
                             aria-label="Add new link"
                           >
