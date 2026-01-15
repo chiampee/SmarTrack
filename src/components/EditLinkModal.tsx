@@ -259,9 +259,6 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors first:rounded-t-lg last:rounded-b-lg"
                         >
                           {suggestion}
-                          {predefinedCategories.includes(suggestion) && (
-                            <span className="ml-2 text-xs text-gray-400">(predefined)</span>
-                          )}
                         </button>
                       ))}
                     </div>
