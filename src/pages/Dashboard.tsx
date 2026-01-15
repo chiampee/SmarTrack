@@ -30,7 +30,10 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [slowLoading, setSlowLoading] = useState(false)
   const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set())
+  // Initialize modal as closed - never auto-open
   const [showAddModal, setShowAddModal] = useState(false)
+  const [hasUserInteracted, setHasUserInteracted] = React.useState(false)
+  const isInitialMount = React.useRef(true)
   const [editingLink, setEditingLink] = useState<Link | null>(null)
   const [showCreateCollectionModal, setShowCreateCollectionModal] = useState(false)
   const [showExtensionInstallModal, setShowExtensionInstallModal] = useState(false)
@@ -58,9 +61,14 @@ export const Dashboard: React.FC = () => {
   // Expose add link handler for Header (mobile/tablet)
   const setAddLinkHandler = useAddLink()
   React.useEffect(() => {
+    // Only set handler if user hasn't interacted yet (prevent auto-trigger)
     setAddLinkHandler(() => {
+      // Explicitly mark as user interaction before opening
       setHasUserInteracted(true)
-      setShowAddModal(true)
+      // Small delay to ensure state is set before opening modal
+      setTimeout(() => {
+        setShowAddModal(true)
+      }, 0)
     })
     return () => setAddLinkHandler(undefined)
   }, [setAddLinkHandler])
@@ -193,24 +201,45 @@ export const Dashboard: React.FC = () => {
     }
   }, [location.search, showCreateCollectionModal])
 
-  // Ensure Add Link modal does NOT open automatically on login/sign-in
-  // Modal should only open when user explicitly clicks the "Add Link" button
-  // Initialize as closed and only open via user interaction
-  const [hasUserInteracted, setHasUserInteracted] = React.useState(false)
-  
-  // Prevent auto-opening on initial load or authentication
+  // CRITICAL: Ensure Add Link modal NEVER opens automatically
+  // Force close on initial mount and after authentication
   useEffect(() => {
-    // Ensure modal is closed when component first mounts or after authentication
-    if (!hasUserInteracted) {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      // Force close on first mount - CRITICAL for preventing auto-open
+      setShowAddModal(false)
+      setHasUserInteracted(false)
+    }
+  }, [])
+
+  // Aggressively prevent auto-opening after authentication or on any state change
+  useEffect(() => {
+    // If modal is open but user hasn't interacted, force close it
+    if (showAddModal && !hasUserInteracted) {
+      console.log('[Dashboard] Preventing auto-open: closing modal without user interaction')
       setShowAddModal(false)
     }
-  }, [isAuthenticated, hasUserInteracted])
+  }, [showAddModal, hasUserInteracted, isAuthenticated])
 
-  // Handler that tracks user interaction
-  const handleAddLinkClick = () => {
+  // Handler that tracks user interaction - ONLY way to open modal
+  const handleAddLinkClick = React.useCallback(() => {
     setHasUserInteracted(true)
     setShowAddModal(true)
-  }
+  }, [])
+
+  // Check for URL parameters that might trigger modal (and prevent them)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const addLinkParam = params.get('addLink') || params.get('add-link')
+    // Explicitly ignore any URL parameters that might try to open the modal
+    if (addLinkParam && !hasUserInteracted) {
+      // Remove the parameter from URL without opening modal
+      const newParams = new URLSearchParams(location.search)
+      newParams.delete('addLink')
+      newParams.delete('add-link')
+      navigate({ pathname: location.pathname, search: newParams.toString() }, { replace: true })
+    }
+  }, [location.search, hasUserInteracted, navigate, location.pathname])
 
   // React to sidebar query params: filter, collection, category
   useEffect(() => {
@@ -1620,10 +1649,13 @@ export const Dashboard: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* Add Link Modal */}
+      {/* Add Link Modal - Only open if user explicitly clicked */}
       <AddLinkModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        isOpen={showAddModal && hasUserInteracted}
+        onClose={() => {
+          setShowAddModal(false)
+          setHasUserInteracted(false)
+        }}
         onSave={handleAddLink}
         collections={collections}
         existingCategories={Array.from(new Set(links.map(l => l.category).filter(Boolean)))}
