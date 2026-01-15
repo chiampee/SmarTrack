@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Chrome, FileText, FolderTree, Search, ArrowRight, CheckCircle2, LogIn, BookOpen, ExternalLink, Sparkles, ChevronUp } from 'lucide-react'
+import { Chrome, FileText, FolderTree, Search, ArrowRight, CheckCircle2, LogIn, BookOpen, ExternalLink, Sparkles, ChevronUp, Link2, File, MessageSquare, Globe } from 'lucide-react'
 import { DashboardPreview } from '../components/DashboardPreview'
 import { ExtensionPreview } from '../components/ExtensionPreview'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
@@ -245,6 +245,108 @@ export const LoginPage: React.FC = () => {
                 </span>
               ))}
             </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Platform Support Section */}
+      <section className="bg-gradient-to-b from-white to-slate-50/80 py-12 sm:py-16 md:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={shouldAnimate ? "hidden" : "visible"}
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={fadeInUp}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-10 sm:mb-12 md:mb-16"
+          >
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-3 sm:mb-4">
+              Save Everything in One Place
+            </h2>
+            <p className="text-base sm:text-lg text-slate-600 max-w-3xl mx-auto px-2">
+              Capture content from LinkedIn, X (Twitter), Reddit, web pages, and PDFs—all organized in your unified knowledge hub.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 md:gap-8">
+            {[
+              {
+                name: 'LinkedIn',
+                icon: <MessageSquare className="w-6 h-6 sm:w-7 sm:h-7" />,
+                color: 'from-blue-500 to-blue-600',
+                bgColor: 'bg-blue-50',
+                textColor: 'text-blue-600',
+                description: 'Posts & Articles'
+              },
+              {
+                name: 'X (Twitter)',
+                icon: <MessageSquare className="w-6 h-6 sm:w-7 sm:h-7" />,
+                color: 'from-slate-900 to-slate-800',
+                bgColor: 'bg-slate-50',
+                textColor: 'text-slate-700',
+                description: 'Threads & Tweets'
+              },
+              {
+                name: 'Reddit',
+                icon: <MessageSquare className="w-6 h-6 sm:w-7 sm:h-7" />,
+                color: 'from-orange-500 to-orange-600',
+                bgColor: 'bg-orange-50',
+                textColor: 'text-orange-600',
+                description: 'Discussions & Posts'
+              },
+              {
+                name: 'Web Pages',
+                icon: <Globe className="w-6 h-6 sm:w-7 sm:h-7" />,
+                color: 'from-green-500 to-green-600',
+                bgColor: 'bg-green-50',
+                textColor: 'text-green-600',
+                description: 'Any Website'
+              },
+              {
+                name: 'PDFs',
+                icon: <File className="w-6 h-6 sm:w-7 sm:h-7" />,
+                color: 'from-red-500 to-red-600',
+                bgColor: 'bg-red-50',
+                textColor: 'text-red-600',
+                description: 'Documents'
+              }
+            ].map((platform, index) => (
+              <motion.div
+                key={platform.name}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-30px" }}
+                variants={fadeInUp}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="group"
+              >
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 p-6 sm:p-8 hover:border-slate-300 hover:shadow-xl transition-all duration-300 cursor-default text-center h-full flex flex-col items-center justify-center">
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 ${platform.bgColor} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                    <div className={`${platform.textColor}`}>
+                      {platform.icon}
+                    </div>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1 sm:mb-2">{platform.name}</h3>
+                  <p className="text-xs sm:text-sm text-slate-500">{platform.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            initial={shouldAnimate ? "hidden" : "visible"}
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={fadeInUp}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-center mt-10 sm:mt-12"
+          >
+            <div className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-blue-50 border border-blue-100 rounded-xl">
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+              <span className="text-sm sm:text-base font-medium text-blue-700">
+                All content types supported in one unified dashboard
+              </span>
+            </div>
           </motion.div>
         </div>
       </section>
