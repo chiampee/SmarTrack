@@ -29,6 +29,9 @@ class Settings(BaseSettings):
         "https://smartracker.vercel.app",
         "https://smartrack.vercel.app",
         "https://smartrack.top",
+        # Staging - Frontend (Vercel Preview deployments)
+        "https://smar-track-git-staging-chiampee.vercel.app",
+        "https://smartrack-staging.vercel.app",
         # Production - Chrome Extension
         # ⚠️ IMPORTANT: Add your ACTUAL extension ID here after publishing
         # Example: "chrome-extension://abcdefghijklmnopqrstuvwxyz123456"
