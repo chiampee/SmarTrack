@@ -18,18 +18,21 @@ class Settings(BaseSettings):
     
     # CORS - Whitelist only (NEVER use wildcards with credentials!)
     CORS_ORIGINS: List[str] = [
-        # Development
-        "http://localhost:3001",
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:5554",
-        "http://localhost:8000",
-        # Production - Frontend
+        # Production Frontend URLs
+        "https://smartrack.top",
+        "https://www.smartrack.top",
         "https://smar-track.vercel.app",
         "https://smartracker.vercel.app",
         "https://smartrack.vercel.app",
-        "https://smartrack.top",
-        "https://www.smartrack.top",  # www subdomain variant
+        # Staging Frontend URLs
+        "https://smar-track-git-staging-chiampee.vercel.app",
+        "https://smar-track-git-staging-chiampees-projects.vercel.app",
+        # Local Development
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+        "http://localhost:5554",
+        "http://localhost:8000",
         # Production - Chrome Extension
         # ⚠️ IMPORTANT: Add your ACTUAL extension ID here after publishing
         # Example: "chrome-extension://abcdefghijklmnopqrstuvwxyz123456"
