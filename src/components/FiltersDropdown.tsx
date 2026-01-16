@@ -70,7 +70,7 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
   }, [isOpen])
 
   return (
-    <div className="relative">
+    <div className="relative z-50">
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
@@ -110,7 +110,7 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
             aria-hidden="true"
           />
           <div 
-            className="fixed w-80 bg-white border border-gray-200 rounded-lg shadow-2xl z-[100]"
+            className="fixed w-80 bg-white border border-gray-200 rounded-lg shadow-2xl z-[9999]"
             style={{
               top: `${dropdownPosition.top}px`,
               right: `${dropdownPosition.right}px`,

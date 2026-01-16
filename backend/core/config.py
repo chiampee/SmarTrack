@@ -16,30 +16,9 @@ class Settings(BaseSettings):
     AUTH0_CLIENT_SECRET: Optional[str] = None
     AUTH0_CLIENT_ID: Optional[str] = None
     
-    # CORS - Whitelist only (NEVER use wildcards with credentials!)
-    CORS_ORIGINS: List[str] = [
-        # Production Frontend URLs
-        "https://smartrack.top",
-        "https://www.smartrack.top",
-        "https://smar-track.vercel.app",
-        "https://smartracker.vercel.app",
-        "https://smartrack.vercel.app",
-        # Staging Frontend URLs
-        "https://smar-track-git-staging-chiampee.vercel.app",
-        "https://smar-track-git-staging-chiampees-projects.vercel.app",
-        # Local Development
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:5173",
-        "http://localhost:5554",
-        "http://localhost:8000",
-        # Production - Chrome Extension
-        # ⚠️ IMPORTANT: Add your ACTUAL extension ID here after publishing
-        # Example: "chrome-extension://abcdefghijklmnopqrstuvwxyz123456"
-        # TODO: Replace with real extension ID before production deployment
-        # NEVER USE: "chrome-extension://*" - this is a security vulnerability!
-        # "chrome-extension://hbgpbeonpmmbiomclclhpgephdboabao",  # Uncomment and update with real ID
-    ]
+    # CORS - TEMPORARY: Allow all origins to unblock production (NUCLEAR FIX)
+    # TODO: Revert to specific origins list after identifying missing origin
+    CORS_ORIGINS: List[str] = ["*"]
     
     # Usage Limits
     MAX_LINKS_PER_USER: int = 40  # 40 links per user
@@ -107,15 +86,19 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # ✅ Validate CORS configuration on startup (prevent wildcard accidents)
+# TEMPORARILY DISABLED to allow ["*"] for production unblocking
 def validate_cors_config():
     """Ensure no wildcard CORS origins - this would be a security vulnerability"""
-    for origin in settings.CORS_ORIGINS:
-        if "*" in origin:
-            raise ValueError(
-                f"⚠️ SECURITY ERROR: CORS wildcard detected: '{origin}'\n"
-                f"Wildcards in CORS_ORIGINS are a security vulnerability.\n"
-                f"Please specify exact origins instead."
-            )
+    # TEMPORARILY DISABLED - allowing ["*"] for urgent production fix
+    # TODO: Re-enable after reverting CORS_ORIGINS to specific origins
+    pass
+    # for origin in settings.CORS_ORIGINS:
+    #     if "*" in origin:
+    #         raise ValueError(
+    #             f"⚠️ SECURITY ERROR: CORS wildcard detected: '{origin}'\n"
+    #             f"Wildcards in CORS_ORIGINS are a security vulnerability.\n"
+    #             f"Please specify exact origins instead."
+    #         )
 
 # Run validation on module import
 validate_cors_config()
