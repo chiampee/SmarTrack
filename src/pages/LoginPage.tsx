@@ -181,7 +181,7 @@ export const LoginPage: React.FC = () => {
               className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-50/80 backdrop-blur-sm border border-blue-100 rounded-full text-xs sm:text-sm text-blue-700 font-medium mb-6 sm:mb-8"
             >
               <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              Your Second Brain
+              Research Management Tool
             </motion.div>
 
             {/* Headline */}
@@ -190,7 +190,7 @@ export const LoginPage: React.FC = () => {
               transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-4 sm:mb-6 leading-tight tracking-tight"
             >
-              Never lose a great link again.
+              Your Personal Web Archive.
             </motion.h1>
 
             {/* Subheadline */}
@@ -199,7 +199,7 @@ export const LoginPage: React.FC = () => {
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               className="text-base sm:text-lg md:text-xl text-slate-600 mb-8 sm:mb-10 max-w-3xl mx-auto leading-relaxed px-2"
             >
-              Save the threads, videos, and articles you actually want to read. SmarTrack keeps your research organized so you can find it the moment you need it.
+              A centralized library for your reading list. Capture content from any tab, auto-organize with AI, and search your archive instantly.
             </motion.p>
 
             {/* CTAs */}
@@ -214,7 +214,7 @@ export const LoginPage: React.FC = () => {
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/25 transition-all duration-300 text-base sm:text-lg"
               >
                 <Chrome className="w-5 h-5" />
-                <span>Get the Extension — Free</span>
+                <span>Install Chrome Extension</span>
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.98 }}
@@ -222,7 +222,7 @@ export const LoginPage: React.FC = () => {
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 text-slate-700 font-semibold rounded-xl border border-slate-200 hover:border-slate-300 transition-all text-base sm:text-lg"
               >
                 <LogIn className="w-5 h-5" />
-                Open Dashboard
+                Go to Dashboard
               </motion.button>
             </motion.div>
 
@@ -259,10 +259,10 @@ export const LoginPage: React.FC = () => {
             className="text-center mb-10 sm:mb-12 md:mb-16"
           >
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-3 sm:mb-4">
-              Save Everything in One Place
+              Supported Platforms
             </h2>
             <p className="text-base sm:text-lg text-slate-600 max-w-3xl mx-auto px-2">
-              Capture content from LinkedIn, X (Twitter), Reddit, web pages, and PDFs—all organized in your unified knowledge hub.
+              Optimized parsers for the sites you use most.
             </p>
           </motion.div>
 
@@ -361,10 +361,10 @@ export const LoginPage: React.FC = () => {
             className="text-center mb-8 sm:mb-12"
           >
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-3 sm:mb-4">
-              One-Click Capture
+              Capture without context switching.
             </h2>
             <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-2">
-              Save any webpage instantly with AI-generated summaries and automatic categorization.
+              Save content directly from your active tab without breaking your workflow.
             </p>
           </motion.div>
           <ExtensionPreview />
@@ -393,20 +393,20 @@ export const LoginPage: React.FC = () => {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             <FeaturePillar
               icon={<Chrome className="w-5 h-5 sm:w-6 sm:h-6" />}
-              title="Save in one click"
-              description="See something good? Hit the button. We strip away the ads and clutter, saving just the content you care about."
+              title="One-Click Capture"
+              description="Save the current page instantly using the browser extension. Works on LinkedIn, X, Reddit, and any article."
               index={0}
             />
             <FeaturePillar
               icon={<FolderTree className="w-5 h-5 sm:w-6 sm:h-6" />}
-              title="It sorts itself"
-              description="Don't waste time organizing. Our AI automatically tags your links based on topic, so your library stays clean without the manual work."
+              title="Automated Sorting"
+              description="The AI scans content upon arrival and assigns relevant tags and categories automatically. No manual filing required."
               index={1}
             />
             <FeaturePillar
               icon={<Search className="w-5 h-5 sm:w-6 sm:h-6" />}
-              title="Find anything instantly"
-              description="Search your entire library with natural language. No need to remember exact titles or dates—just describe what you're looking for."
+              title="Natural Language Search"
+              description="Retrieve specific links by describing them. Type 'posts about AI agents' to find exact matches."
               index={2}
             />
           </div>
@@ -458,19 +458,19 @@ export const LoginPage: React.FC = () => {
             {[
               {
                 icon: <BookOpen className="w-5 h-5 sm:w-6 sm:h-6" />,
-                title: 'Getting Started',
+                title: 'Installation Guide',
                 description: 'Install the extension and save your first page in under 2 minutes.',
                 link: '/docs'
               },
               {
                 icon: <FileText className="w-5 h-5 sm:w-6 sm:h-6" />,
-                title: 'Capture Shortcuts',
+                title: 'Keyboard Shortcuts',
                 description: 'Master keyboard shortcuts for faster saving.',
                 link: '/docs'
               },
               {
                 icon: <Search className="w-5 h-5 sm:w-6 sm:h-6" />,
-                title: 'Search & Discovery',
+                title: 'Search Syntax',
                 description: 'Learn advanced search operators and techniques.',
                 link: '/docs'
               }
@@ -516,16 +516,14 @@ export const LoginPage: React.FC = () => {
               transition={{ duration: 0.6 }}
               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6"
             >
-              Ready to build your
-              <br className="hidden sm:block" />
-              <span className="sm:hidden"> </span>institutional memory?
+              Start your archive.
             </motion.h2>
             <motion.p
               variants={fadeInUp}
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-base sm:text-lg text-slate-400 mb-8 sm:mb-10 max-w-2xl mx-auto px-2"
             >
-              Join thousands of professionals who've transformed how they capture and organize knowledge.
+              Free to use. No credit card required.
             </motion.p>
             <motion.div
               variants={fadeInScale}
@@ -537,7 +535,7 @@ export const LoginPage: React.FC = () => {
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 sm:gap-3 px-8 sm:px-10 py-4 sm:py-5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-xl shadow-blue-600/30 transition-all duration-300 text-base sm:text-lg"
               >
                 <Chrome className="w-5 h-5 sm:w-6 sm:h-6" />
-                <span>Add to Chrome — Free</span>
+                <span>Install Chrome Extension</span>
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </motion.button>
             </motion.div>
