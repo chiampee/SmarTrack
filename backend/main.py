@@ -130,8 +130,20 @@ async def global_exception_handler(request: Request, exc: Exception):
     # This prevents malicious sites from making authenticated requests
     def validate_origin(origin: str) -> str:
         """Validate origin against CORS whitelist"""
-        if origin and origin in settings.CORS_ORIGINS:
+        if not origin:
+            return settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "https://smar-track.vercel.app"
+        
+        # Exact match
+        if origin in settings.CORS_ORIGINS:
             return origin
+        
+        # URGENT FIX: Allow Vercel preview deployments (pattern matching)
+        # Vercel preview URLs follow pattern: https://project-name-*.vercel.app
+        if origin.endswith('.vercel.app'):
+            # Check if it's a known Vercel project pattern
+            if 'smar-track' in origin or 'smartrack' in origin:
+                return origin
+        
         # Return first allowed origin as safe fallback (never wildcard with credentials)
         return settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "https://smar-track.vercel.app"
     
@@ -157,9 +169,12 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.add_middleware(SecurityHeadersMiddleware)
 
 # Add CORS middleware
+# URGENT FIX: Use regex to allow Vercel preview deployments (pattern: https://*-*.vercel.app)
+# Combined with explicit allow_origins list for production URLs
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",  # Allow all Vercel preview deployments
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],

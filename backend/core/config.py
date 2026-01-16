@@ -16,9 +16,26 @@ class Settings(BaseSettings):
     AUTH0_CLIENT_SECRET: Optional[str] = None
     AUTH0_CLIENT_ID: Optional[str] = None
     
-    # CORS - TEMPORARY: Allow all origins to unblock production (URGENT FIX)
-    # ⚠️ WARNING: This is a temporary "nuclear fix" - should be reverted to specific origins
-    CORS_ORIGINS: List[str] = ["*"]
+    # CORS - URGENT FIX: Comprehensive list of all frontend URLs
+    # ⚠️ NOTE: Cannot use ["*"] when allow_credentials=True - must specify exact origins
+    CORS_ORIGINS: List[str] = [
+        # Production Frontend URLs
+        "https://smartrack.top",
+        "https://www.smartrack.top",
+        "https://smar-track.vercel.app",
+        "https://smartracker.vercel.app",
+        "https://smartrack.vercel.app",
+        # Staging Frontend URLs (Vercel Preview deployments)
+        "https://smar-track-git-staging-chiampee.vercel.app",
+        "https://smar-track-git-staging-chiampees-projects.vercel.app",
+        "https://smartrack-staging.vercel.app",
+        # Local Development
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+        "http://localhost:5554",
+        "http://localhost:8000",
+    ]
     
     # Usage Limits
     MAX_LINKS_PER_USER: int = 40  # 40 links per user
