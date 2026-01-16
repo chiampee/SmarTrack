@@ -58,30 +58,29 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
     filters.tags.length > 0 ||
     filters.contentType !== ''
 
-  // Calculate dropdown position when opening - align right edge with button
+  // Calculate dropdown position when opening - align right edge with button's right edge
   React.useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
       const viewportWidth = window.innerWidth
       const viewportHeight = window.innerHeight
       const scrollY = window.scrollY
-      const dropdownWidth = 320 // w-80 = 320px on mobile, w-96 = 384px on desktop
+      const isMobile = viewportWidth < 640 // sm breakpoint
+      const dropdownWidth = isMobile ? 320 : 384 // w-80 on mobile, w-96 on desktop
       const dropdownHeight = 450 // Estimated max height
       const spacing = 8
       
-      // Align dropdown's right edge with button's right edge
+      // Align dropdown's RIGHT edge with button's RIGHT edge
       // right position = distance from viewport right edge to button's right edge
       let rightPosition = viewportWidth - rect.right
       
-      // Check if dropdown would go off-screen on the left
-      const leftEdge = viewportWidth - rightPosition - dropdownWidth
-      if (leftEdge < 16) {
-        // Not enough space on left, shift right but keep button's right edge visible
-        rightPosition = viewportWidth - rect.right
-        // If still too wide, align to viewport edge with margin
-        if (rightPosition + dropdownWidth > viewportWidth - 16) {
-          rightPosition = 16
-        }
+      // Calculate where the left edge of dropdown would be
+      const dropdownLeftEdge = viewportWidth - rightPosition - dropdownWidth
+      
+      // If dropdown would go off-screen on the left, adjust
+      if (dropdownLeftEdge < 16) {
+        // Shift right to maintain 16px margin from left edge
+        rightPosition = viewportWidth - 16 - dropdownWidth
       }
       
       // Calculate top position - prefer below button
@@ -102,7 +101,7 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
       // Ensure dropdown doesn't go off-screen at the bottom
       const maxTop = scrollY + viewportHeight - dropdownHeight - 16
       if (topPosition > maxTop) {
-        topPosition = maxTop
+        topPosition = Math.max(scrollY + 16, maxTop)
       }
       
       setDropdownPosition({
@@ -157,7 +156,7 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
             style={{
               top: `${dropdownPosition.top}px`,
               right: `${dropdownPosition.right}px`,
-              maxHeight: 'calc(100vh - ' + (dropdownPosition.top - window.scrollY + 20) + 'px)',
+              maxHeight: `calc(100vh - ${dropdownPosition.top - window.scrollY + 20}px)`,
               overflowY: 'auto'
             }}
           >
