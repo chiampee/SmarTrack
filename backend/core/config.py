@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     AUTH0_CLIENT_SECRET: Optional[str] = None
     AUTH0_CLIENT_ID: Optional[str] = None
     
-    # CORS - TEMPORARY: Allow all origins to unblock production (NUCLEAR FIX)
-    # TODO: Revert to specific origins list after identifying missing origin
+    # CORS - TEMPORARY: Allow all origins to unblock production (URGENT FIX)
+    # ⚠️ WARNING: This is a temporary "nuclear fix" - should be reverted to specific origins
     CORS_ORIGINS: List[str] = ["*"]
     
     # Usage Limits
@@ -86,11 +86,11 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # ✅ Validate CORS configuration on startup (prevent wildcard accidents)
-# TEMPORARILY DISABLED to allow ["*"] for production unblocking
+# ⚠️ TEMPORARILY DISABLED for urgent production fix
 def validate_cors_config():
     """Ensure no wildcard CORS origins - this would be a security vulnerability"""
-    # TEMPORARILY DISABLED - allowing ["*"] for urgent production fix
-    # TODO: Re-enable after reverting CORS_ORIGINS to specific origins
+    # TEMPORARY: Allow wildcard for urgent production fix
+    # TODO: Re-enable this validation after fixing CORS properly
     pass
     # for origin in settings.CORS_ORIGINS:
     #     if "*" in origin:
