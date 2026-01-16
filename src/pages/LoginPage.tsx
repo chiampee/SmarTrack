@@ -428,7 +428,7 @@ export const LoginPage: React.FC = () => {
               Your Knowledge Hub
             </h2>
             <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto px-2">
-              Everything you capture—searchable, organized, and accessible from any device.
+              Everything you capture, searchable, organized, and accessible from any device.
             </p>
           </motion.div>
           <DashboardPreview />
