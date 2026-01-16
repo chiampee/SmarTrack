@@ -58,13 +58,42 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
     filters.tags.length > 0 ||
     filters.contentType !== ''
 
-  // Calculate dropdown position when opening
+  // Calculate dropdown position when opening - improved UX positioning
   React.useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight
+      const dropdownWidth = 320 // w-80 = 320px
+      const dropdownHeight = 400 // Estimated height
+      const spacing = 8
+      
+      // Calculate right position - align to right edge of button
+      let rightPosition = viewportWidth - rect.right
+      
+      // Ensure dropdown doesn't go off-screen on the right
+      if (rightPosition + dropdownWidth > viewportWidth) {
+        rightPosition = Math.max(16, viewportWidth - dropdownWidth - 16) // 16px margin from edge
+      }
+      
+      // Calculate top position - prefer below button, but above if not enough space
+      let topPosition = rect.bottom + window.scrollY + spacing
+      const spaceBelow = viewportHeight - rect.bottom
+      const spaceAbove = rect.top
+      
+      // If not enough space below but enough above, position above button
+      if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+        topPosition = rect.top + window.scrollY - dropdownHeight - spacing
+      }
+      
+      // Ensure dropdown doesn't go off-screen at the top
+      if (topPosition < window.scrollY + 16) {
+        topPosition = window.scrollY + 16
+      }
+      
       setDropdownPosition({
-        top: rect.bottom + window.scrollY + 8,
-        right: window.innerWidth - rect.right
+        top: topPosition,
+        right: rightPosition
       })
     }
   }, [isOpen])
@@ -110,46 +139,50 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
             aria-hidden="true"
           />
           <div 
-            className="fixed w-80 bg-white border border-gray-200 rounded-lg shadow-2xl z-[9999]"
+            className="fixed w-80 sm:w-96 bg-white border border-gray-200/80 rounded-xl sm:rounded-2xl shadow-2xl shadow-gray-900/10 z-[9999] backdrop-blur-sm"
             style={{
               top: `${dropdownPosition.top}px`,
               right: `${dropdownPosition.right}px`,
-              maxHeight: 'calc(100vh - ' + (dropdownPosition.top + 20) + 'px)',
+              maxHeight: 'calc(100vh - ' + (dropdownPosition.top - window.scrollY + 20) + 'px)',
               overflowY: 'auto'
             }}
           >
-            <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-gray-900">Filter Links</h3>
-              <div className="flex gap-2">
+            <div className="p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-5 sm:mb-6 pb-3 border-b border-gray-100">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                Filter Links
+              </h3>
+              <div className="flex items-center gap-2">
                 {hasActiveFilters && (
                   <button
                     onClick={clearFilters}
-                    className="text-sm text-blue-600 hover:text-blue-700"
+                    className="text-xs sm:text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-md transition-colors"
                   >
                     Clear All
                   </button>
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-md transition-colors"
+                  aria-label="Close filters"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 sm:space-y-5">
               {/* Date Range */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
+                <label className="block text-sm sm:text-base font-semibold text-gray-800 mb-2.5 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
                   Date Range
                 </label>
                 <select
                   value={filters.dateRange}
                   onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                  className="input-field w-full"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white hover:border-gray-400"
                 >
                   {dateRanges.map((range) => (
                     <option key={range.value} value={range.value}>
@@ -161,8 +194,8 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
 
               {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-                  <Tag className="w-4 h-4" />
+                <label className="block text-sm sm:text-base font-semibold text-gray-800 mb-2.5 flex items-center gap-2">
+                  <Tag className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
                   Category
                 </label>
                 <input
@@ -170,20 +203,20 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
                   value={filters.category}
                   onChange={(e) => handleFilterChange('category', e.target.value)}
                   placeholder="Filter by category"
-                  className="input-field w-full"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white hover:border-gray-400 placeholder:text-gray-400"
                 />
               </div>
 
               {/* Content Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-                  <FileText className="w-4 h-4" />
+                <label className="block text-sm sm:text-base font-semibold text-gray-800 mb-2.5 flex items-center gap-2">
+                  <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
                   Content Type
                 </label>
                 <select
                   value={filters.contentType}
                   onChange={(e) => handleFilterChange('contentType', e.target.value)}
-                  className="input-field w-full"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white hover:border-gray-400"
                 >
                   <option value="">All Types</option>
                   {contentTypes.map((type) => (
@@ -196,14 +229,14 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
 
               {/* Tags */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-                  <Tag className="w-4 h-4" />
+                <label className="block text-sm sm:text-base font-semibold text-gray-800 mb-2.5 flex items-center gap-2">
+                  <Tag className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
                   Tags
                 </label>
                 <input
                   type="text"
                   placeholder="Enter tags (comma separated)"
-                  className="input-field w-full"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white hover:border-gray-400 placeholder:text-gray-400"
                   onBlur={(e) => {
                     const tags = e.target.value.split(',').map(t => t.trim()).filter(t => t)
                     handleFilterChange('tags', tags)
