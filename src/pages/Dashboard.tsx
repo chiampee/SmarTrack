@@ -1044,12 +1044,11 @@ export const Dashboard: React.FC = () => {
               <button 
                 onClick={handleExport}
                 disabled={filteredLinksCount === 0}
-                className="flex-1 sm:flex-initial px-4 sm:px-5 md:px-6 py-3.5 sm:py-2.5 md:py-2.5 text-base sm:text-sm font-bold sm:font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 hover:shadow-md active:bg-gray-100 active:shadow-sm active:scale-[0.96] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm flex items-center justify-center gap-2 min-h-[52px] sm:min-h-[44px] md:min-h-[42px] touch-manipulation"
+                className="hidden sm:flex sm:flex-initial px-4 sm:px-5 md:px-6 py-3.5 sm:py-2.5 md:py-2.5 text-base sm:text-sm font-bold sm:font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 hover:shadow-md active:bg-gray-100 active:shadow-sm active:scale-[0.96] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm items-center justify-center gap-2 min-h-[52px] sm:min-h-[44px] md:min-h-[42px] touch-manipulation"
                 aria-label="Export links"
                 title={filteredLinksCount === 0 ? 'No links to export' : 'Export filtered links'}
               >
                 <Download className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                <span className="sm:hidden font-semibold">Export</span>
                 <span className="hidden sm:inline">Export</span>
               </button>
 
