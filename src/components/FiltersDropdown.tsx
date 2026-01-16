@@ -58,37 +58,51 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
     filters.tags.length > 0 ||
     filters.contentType !== ''
 
-  // Calculate dropdown position when opening - improved UX positioning
+  // Calculate dropdown position when opening - align right edge with button
   React.useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
       const viewportWidth = window.innerWidth
       const viewportHeight = window.innerHeight
-      const dropdownWidth = 320 // w-80 = 320px
-      const dropdownHeight = 400 // Estimated height
+      const scrollY = window.scrollY
+      const dropdownWidth = 320 // w-80 = 320px on mobile, w-96 = 384px on desktop
+      const dropdownHeight = 450 // Estimated max height
       const spacing = 8
       
-      // Calculate right position - align to right edge of button
+      // Align dropdown's right edge with button's right edge
+      // right position = distance from viewport right edge to button's right edge
       let rightPosition = viewportWidth - rect.right
       
-      // Ensure dropdown doesn't go off-screen on the right
-      if (rightPosition + dropdownWidth > viewportWidth) {
-        rightPosition = Math.max(16, viewportWidth - dropdownWidth - 16) // 16px margin from edge
+      // Check if dropdown would go off-screen on the left
+      const leftEdge = viewportWidth - rightPosition - dropdownWidth
+      if (leftEdge < 16) {
+        // Not enough space on left, shift right but keep button's right edge visible
+        rightPosition = viewportWidth - rect.right
+        // If still too wide, align to viewport edge with margin
+        if (rightPosition + dropdownWidth > viewportWidth - 16) {
+          rightPosition = 16
+        }
       }
       
-      // Calculate top position - prefer below button, but above if not enough space
-      let topPosition = rect.bottom + window.scrollY + spacing
+      // Calculate top position - prefer below button
+      let topPosition = rect.bottom + scrollY + spacing
       const spaceBelow = viewportHeight - rect.bottom
       const spaceAbove = rect.top
       
       // If not enough space below but enough above, position above button
       if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
-        topPosition = rect.top + window.scrollY - dropdownHeight - spacing
+        topPosition = rect.top + scrollY - dropdownHeight - spacing
       }
       
       // Ensure dropdown doesn't go off-screen at the top
-      if (topPosition < window.scrollY + 16) {
-        topPosition = window.scrollY + 16
+      if (topPosition < scrollY + 16) {
+        topPosition = scrollY + 16
+      }
+      
+      // Ensure dropdown doesn't go off-screen at the bottom
+      const maxTop = scrollY + viewportHeight - dropdownHeight - 16
+      if (topPosition > maxTop) {
+        topPosition = maxTop
       }
       
       setDropdownPosition({
