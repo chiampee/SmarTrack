@@ -28,6 +28,7 @@ if (!auth0Domain || !auth0ClientId || !auth0Audience) {
           <Auth0Provider
             domain={auth0Domain}
             clientId={auth0ClientId}
+            cacheLocation="localstorage"
             authorizationParams={{
               redirect_uri: window.location.origin + '/dashboard', // Redirect to dashboard after login
               audience: auth0Audience,

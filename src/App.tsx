@@ -11,6 +11,7 @@ import { Settings } from './pages/Settings'
 import { AdminAnalytics } from './pages/AdminAnalytics'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { Layout } from './components/Layout'
+import { LoadingSpinner } from './components/LoadingSpinner'
 import { CategoriesProvider } from './context/CategoriesContext'
 import { AdminProvider } from './context/AdminContext'
 import { Navigate } from 'react-router-dom'
@@ -25,20 +26,13 @@ function App() {
   // Check if current route is public
   const isPublicRoute = publicRoutes.some(route => location.pathname.startsWith(route))
 
-  // Show loading spinner while Auth0 is initializing
-  // This prevents race conditions where isAuthenticated is false before token loads
+  // CRITICAL: Handle loading state first - wait for Auth0 to initialize
+  // This prevents race conditions on mobile where session might not be restored yet
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
-          <p className="text-lg text-gray-700 font-medium">Loading SmarTrack...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
-  // Show public pages without authentication
+  // Show public pages without authentication (only after loading completes)
   if (isPublicRoute) {
     return (
       <Routes>
@@ -52,8 +46,8 @@ function App() {
     )
   }
 
-  // Only check authentication status AFTER loading is complete
-  // This prevents race conditions on page refresh
+  // Only check authentication AFTER loading is complete
+  // This ensures Auth0 has fully restored the session from localStorage
   if (!isAuthenticated) {
     return <LoginPage />
   }
