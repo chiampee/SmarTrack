@@ -16,7 +16,7 @@ interface FiltersDropdownProps {
 export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFiltersChange, iconOnly = false }) => {
   const [isOpen, setIsOpen] = React.useState(false)
   const buttonRef = React.useRef<HTMLButtonElement>(null)
-  const [dropdownPosition, setDropdownPosition] = React.useState<{ top: number; right: number } | null>(null)
+  const dropdownRef = React.useRef<HTMLDivElement>(null)
 
   const contentTypes: { value: Link['contentType']; label: string }[] = [
     { value: 'webpage', label: 'Web Page' },
@@ -58,56 +58,23 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
     filters.tags.length > 0 ||
     filters.contentType !== ''
 
-  // Calculate dropdown position when opening - align right edge with button's right edge
+  // Close dropdown when clicking outside
   React.useEffect(() => {
-    if (isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect()
-      const viewportWidth = window.innerWidth
-      const viewportHeight = window.innerHeight
-      const scrollY = window.scrollY
-      const isMobile = viewportWidth < 640 // sm breakpoint
-      const dropdownWidth = isMobile ? 320 : 384 // w-80 on mobile, w-96 on desktop
-      const dropdownHeight = 450 // Estimated max height
-      const spacing = 8
-      
-      // Align dropdown's RIGHT edge with button's RIGHT edge
-      // right position = distance from viewport right edge to button's right edge
-      let rightPosition = viewportWidth - rect.right
-      
-      // Calculate where the left edge of dropdown would be
-      const dropdownLeftEdge = viewportWidth - rightPosition - dropdownWidth
-      
-      // If dropdown would go off-screen on the left, adjust
-      if (dropdownLeftEdge < 16) {
-        // Shift right to maintain 16px margin from left edge
-        rightPosition = viewportWidth - 16 - dropdownWidth
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isOpen &&
+        buttonRef.current &&
+        dropdownRef.current &&
+        !buttonRef.current.contains(event.target as Node) &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false)
       }
-      
-      // Calculate top position - prefer below button
-      let topPosition = rect.bottom + scrollY + spacing
-      const spaceBelow = viewportHeight - rect.bottom
-      const spaceAbove = rect.top
-      
-      // If not enough space below but enough above, position above button
-      if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
-        topPosition = rect.top + scrollY - dropdownHeight - spacing
-      }
-      
-      // Ensure dropdown doesn't go off-screen at the top
-      if (topPosition < scrollY + 16) {
-        topPosition = scrollY + 16
-      }
-      
-      // Ensure dropdown doesn't go off-screen at the bottom
-      const maxTop = scrollY + viewportHeight - dropdownHeight - 16
-      if (topPosition > maxTop) {
-        topPosition = Math.max(scrollY + 16, maxTop)
-      }
-      
-      setDropdownPosition({
-        top: topPosition,
-        right: rightPosition
-      })
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [isOpen])
 
@@ -143,7 +110,7 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
         )}
       </button>
 
-      {isOpen && dropdownPosition && (
+      {isOpen && (
         <>
           {/* Backdrop to ensure dropdown is on top */}
           <div 
@@ -152,11 +119,10 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
             aria-hidden="true"
           />
           <div 
-            className="fixed w-80 sm:w-96 bg-white border border-gray-200/80 rounded-xl sm:rounded-2xl shadow-2xl shadow-gray-900/10 z-[9999] backdrop-blur-sm"
+            ref={dropdownRef}
+            className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white border border-gray-200/80 rounded-xl sm:rounded-2xl shadow-2xl shadow-gray-900/10 z-[9999] backdrop-blur-sm"
             style={{
-              top: `${dropdownPosition.top}px`,
-              right: `${dropdownPosition.right}px`,
-              maxHeight: `calc(100vh - ${dropdownPosition.top - window.scrollY + 20}px)`,
+              maxHeight: 'calc(100vh - 200px)',
               overflowY: 'auto'
             }}
           >
