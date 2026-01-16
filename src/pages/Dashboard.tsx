@@ -994,7 +994,7 @@ export const Dashboard: React.FC = () => {
           animate="visible"
           variants={fadeInUp}
           transition={{ duration: animationConfig.duration, ease: "easeOut" }}
-          className="bg-white/98 backdrop-blur-sm rounded-2xl sm:rounded-2xl shadow-lg shadow-gray-900/5 border border-gray-200/80 mb-3 sm:mb-4 md:mb-6 p-3 sm:p-4 md:p-5"
+          className="relative z-20 bg-white/98 backdrop-blur-sm rounded-2xl sm:rounded-2xl shadow-lg shadow-gray-900/5 border border-gray-200/80 mb-3 sm:mb-4 md:mb-6 p-3 sm:p-4 md:p-5"
         >
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 md:gap-4">
             {/* Left: Search with integrated Filter */}
@@ -1588,7 +1588,7 @@ export const Dashboard: React.FC = () => {
                   return (
                     <motion.div
                       variants={staggerContainer}
-                      className="space-y-6 sm:space-y-7 md:space-y-8"
+                      className="relative z-0 space-y-6 sm:space-y-7 md:space-y-8"
                     >
                       {/* Summary Stats Bar - Show when links exist */}
                       {filteredLinks.length > 0 && (
