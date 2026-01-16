@@ -29,6 +29,7 @@ class Settings(BaseSettings):
         "https://smartracker.vercel.app",
         "https://smartrack.vercel.app",
         "https://smartrack.top",
+        "https://www.smartrack.top",  # www subdomain variant
         # Production - Chrome Extension
         # ⚠️ IMPORTANT: Add your ACTUAL extension ID here after publishing
         # Example: "chrome-extension://abcdefghijklmnopqrstuvwxyz123456"
