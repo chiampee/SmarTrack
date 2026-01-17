@@ -591,8 +591,8 @@ class SmarTrackPopup {
     const title = getBestTitle();
     
     // Improved description extraction - prioritize meta descriptions, then article content
-    const getBestDescription = () => {
-      // Try meta descriptions first (usually well-crafted)
+    // Helper functions to reduce cognitive complexity
+    const getMetaDescription = () => {
       const metaDesc = getMetaContent('description') ||
                       getMetaContent('og:description') ||
                       getMetaContent('twitter:description');
@@ -600,38 +600,45 @@ class SmarTrackPopup {
       if (metaDesc && metaDesc.trim().length > 20) {
         return metaDesc.trim();
       }
-      
-      // Try article tag content (structured content)
+      return null;
+    };
+    
+    const getArticleDescription = () => {
       const article = document.querySelector('article');
-      if (article) {
-        // Get first few paragraphs from article
-        const paragraphs = article.querySelectorAll('p');
-        for (const p of paragraphs) {
-          const text = p.textContent.trim();
-          if (text.length > 50 && text.length < 300) {
-            return text;
-          }
-        }
-        // If no good paragraph, get first 200 chars of article text
-        const articleText = article.textContent.trim();
-        if (articleText.length > 50) {
-          return articleText.substring(0, 250).replace(/\s+/g, ' ').trim();
+      if (!article) return null;
+      
+      // Get first few paragraphs from article
+      const paragraphs = article.querySelectorAll('p');
+      for (const p of paragraphs) {
+        const text = p.textContent.trim();
+        if (text.length > 50 && text.length < 300) {
+          return text;
         }
       }
       
-      // Try main content area
+      // If no good paragraph, get first 200 chars of article text
+      const articleText = article.textContent.trim();
+      if (articleText.length > 50) {
+        return articleText.substring(0, 250).replace(/\s+/g, ' ').trim();
+      }
+      return null;
+    };
+    
+    const getMainContentDescription = () => {
       const main = document.querySelector('main');
-      if (main) {
-        const paragraphs = main.querySelectorAll('p');
-        for (const p of paragraphs) {
-          const text = p.textContent.trim();
-          if (text.length > 50 && text.length < 300) {
-            return text;
-          }
+      if (!main) return null;
+      
+      const paragraphs = main.querySelectorAll('p');
+      for (const p of paragraphs) {
+        const text = p.textContent.trim();
+        if (text.length > 50 && text.length < 300) {
+          return text;
         }
       }
-      
-      // Fallback: get first meaningful paragraph from body
+      return null;
+    };
+    
+    const getFallbackDescription = () => {
       const paragraphs = document.querySelectorAll('body p');
       for (const p of paragraphs) {
         const text = p.textContent.trim();
@@ -643,8 +650,14 @@ class SmarTrackPopup {
           }
         }
       }
-      
       return '';
+    };
+    
+    const getBestDescription = () => {
+      return getMetaDescription() ||
+             getArticleDescription() ||
+             getMainContentDescription() ||
+             getFallbackDescription();
     };
     
     const description = getBestDescription();

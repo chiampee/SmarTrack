@@ -206,7 +206,7 @@ async def rate_limit_middleware(request: Request, call_next):
                 from jose import jwt
                 token = auth_header.split(" ")[1]
                 # Decode without verification (just to get user ID for rate limiting)
-                payload = jwt.decode(token, options={"verify_signature": False})
+                payload = jwt.decode(token, "", options={"verify_signature": False})
                 user_id = payload.get("sub")
                 if user_id:
                     return f"user:{user_id}"
