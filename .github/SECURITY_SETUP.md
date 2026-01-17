@@ -1,6 +1,6 @@
 # Security Scanning Setup Guide
 
-This repository includes comprehensive security scanning using Snyk and GitHub CodeQL.
+This repository includes comprehensive security scanning using Snyk, GitHub CodeQL, SonarCloud, and GitGuardian.
 
 ## Required GitHub Secrets
 
@@ -40,6 +40,63 @@ To enable security scanning, you need to configure the following secrets in your
 
 **How to add**: Same process as above, name it `DOCKER_PASSWORD`
 
+### 4. SONAR_TOKEN (Required for SonarCloud)
+
+**Purpose**: Authenticates with SonarCloud for code quality analysis, security hotspots, code smells, and bugs.
+
+**How to obtain**:
+1. Sign up for a free account at [https://sonarcloud.io](https://sonarcloud.io) (free for public repos)
+2. Log in with your GitHub account (recommended)
+3. Navigate to **My Account** → **Security** → **Generate Token**
+4. Give it a name (e.g., "GitHub Actions")
+5. Copy the token immediately (you won't be able to see it again)
+
+**How to add to GitHub**:
+1. Go to your repository on GitHub
+2. Navigate to **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+4. Name: `SONAR_TOKEN`
+5. Value: Paste your SonarCloud token
+6. Click **Add secret**
+
+**Note**: After adding the token, you'll also need to:
+1. Go to [SonarCloud](https://sonarcloud.io)
+2. Import your GitHub repository
+3. Update `sonar-project.properties` with your organization key if different from `chiampee`
+
+### 5. GITGUARDIAN_API_KEY (Required for GitGuardian)
+
+**Purpose**: Authenticates with GitGuardian for secret scanning in code and git history.
+
+**How to obtain**:
+1. Sign up for a free account at [https://dashboard.gitguardian.com](https://dashboard.gitguardian.com)
+2. Log in with your GitHub account (recommended)
+3. Navigate to **Settings** → **API** → **Create API Key**
+4. Give it a name (e.g., "GitHub Actions")
+5. Copy the API key immediately (you won't be able to see it again)
+
+**How to add to GitHub**:
+1. Go to your repository on GitHub
+2. Navigate to **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+4. Name: `GITGUARDIAN_API_KEY`
+5. Value: Paste your GitGuardian API key
+6. Click **Add secret**
+
+**Local Setup (for pre-commit hooks)**:
+1. Install GitGuardian CLI:
+   ```bash
+   # Using pipx (recommended)
+   pipx install ggshield
+   
+   # Or using pip
+   pip install ggshield
+   ```
+2. Authenticate locally (optional, for better integration):
+   ```bash
+   ggshield auth login
+   ```
+
 ## Workflows
 
 ### Security Scanning (`security.yml`)
@@ -68,6 +125,76 @@ This workflow runs:
 - Weekly schedule (Mondays at 01:00 UTC)
 - Manual trigger via workflow_dispatch
 
+### SonarCloud Code Quality Analysis (`sonarcloud.yml`)
+
+This workflow runs:
+- **Code Quality Analysis**: Detects code smells, bugs, and technical debt
+- **Security Hotspots**: Identifies security-sensitive code that needs review
+- **Coverage Tracking**: Tracks test coverage (if coverage reports are generated)
+- **Duplication Detection**: Finds duplicated code blocks
+- **Maintainability Rating**: Provides maintainability ratings for your code
+
+**Triggers**:
+- Push to `main`, `master`, or `develop` branches
+- Pull requests to `main`, `master`, or `develop` branches
+- Manual trigger via workflow_dispatch
+
+**Languages Analyzed**:
+- TypeScript/JavaScript (frontend)
+- Python (backend)
+
+### GitGuardian Secret Scanning (`gitguardian.yml`)
+
+This workflow runs:
+- **Secret Detection**: Scans code for exposed secrets, API keys, passwords, tokens
+- **Git History Scanning**: Scans entire git history for previously committed secrets
+- **Real-time Protection**: Prevents secrets from being committed via pre-commit hooks
+- **Comprehensive Coverage**: Scans all file types including code, config files, and documentation
+
+**Triggers**:
+- Push to `main`, `master`, or `develop` branches
+- Pull requests to `main`, `master`, or `develop` branches
+- Daily schedule (02:00 UTC)
+- Manual trigger via workflow_dispatch
+
+**Pre-commit Protection**:
+- Automatically scans staged files before each commit
+- Blocks commits containing secrets
+- Integrated with Husky git hooks
+
+## Pre-commit Hooks
+
+### GitGuardian Secret Scanning
+
+The repository includes a pre-commit hook that scans for secrets before each commit:
+
+**How it works**:
+1. When you run `git commit`, the hook automatically runs
+2. GitGuardian scans all staged files for secrets
+3. If secrets are found, the commit is blocked
+4. You'll see a detailed report of what was found
+
+**Installation** (if not already installed):
+```bash
+# Install GitGuardian CLI
+pipx install ggshield
+
+# Or with pip
+pip install ggshield
+```
+
+**Manual scan** (if you want to scan without committing):
+```bash
+# Scan all files
+ggshield secret scan path .
+
+# Scan specific file
+ggshield secret scan path src/config.ts
+
+# Scan git history
+ggshield secret scan commit-range HEAD~10..HEAD
+```
+
 ## Viewing Results
 
 ### Security Tab
@@ -77,6 +204,29 @@ This workflow runs:
    - Dependency vulnerabilities (from Snyk)
    - CodeQL alerts (from SAST analysis)
    - License compliance issues
+
+### SonarCloud Dashboard
+1. Go to [https://sonarcloud.io](https://sonarcloud.io)
+2. Log in with your GitHub account
+3. Select your project (SmarTrack)
+4. View:
+   - Code quality metrics and ratings
+   - Security hotspots
+   - Code smells and bugs
+   - Test coverage (if configured)
+   - Technical debt
+   - Duplication percentage
+
+### GitGuardian Dashboard
+1. Go to [https://dashboard.gitguardian.com](https://dashboard.gitguardian.com)
+2. Log in with your GitHub account
+3. Select your repository
+4. View:
+   - Detected secrets and their locations
+   - Secret exposure incidents
+   - Historical scans
+   - Remediation recommendations
+   - Real-time alerts
 
 ### Workflow Runs
 1. Navigate to your repository on GitHub
@@ -128,6 +278,19 @@ To add SAST scanning for additional languages, edit `.github/workflows/codeql.ym
 - Ensure the repository has Actions enabled
 - Check that the code is properly checked out in the workflow
 
+### SonarCloud Issues
+- Ensure `SONAR_TOKEN` is correctly set in repository secrets
+- Verify the repository is imported in SonarCloud
+- Check that `sonar-project.properties` has the correct `sonar.projectKey` and `sonar.organization`
+- For public repos, SonarCloud is free; private repos may require a paid plan
+
+### GitGuardian Issues
+- Ensure `GITGUARDIAN_API_KEY` is correctly set in repository secrets
+- Verify the repository is connected in GitGuardian dashboard
+- For pre-commit hooks: Install `ggshield` CLI locally (`pipx install ggshield`)
+- If pre-commit hook fails, you can bypass with `git commit --no-verify` (not recommended)
+- Check `.gitguardian.yaml` for configuration options
+
 ### License Compliance Warnings
 - Review the license report in the workflow summary
 - Update `snyk-policy` file if you need to allow specific licenses
@@ -137,4 +300,23 @@ To add SAST scanning for additional languages, edit `.github/workflows/codeql.ym
 
 - [Snyk Documentation](https://docs.snyk.io)
 - [GitHub CodeQL Documentation](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors)
+- [SonarCloud Documentation](https://docs.sonarcloud.io)
+- [GitGuardian Documentation](https://docs.gitguardian.com)
+- [GitGuardian CLI (ggshield) Documentation](https://docs.gitguardian.com/internal-monitoring/integrations/cli)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
+
+## Coverage Tracking Setup (Optional)
+
+To enable coverage tracking in SonarCloud:
+
+### Frontend (TypeScript/JavaScript)
+1. Install coverage tool: `npm install -D @vitest/coverage-v8` or `jest --coverage`
+2. Run tests with coverage: `npm test -- --coverage`
+3. Coverage report will be automatically picked up by SonarCloud
+
+### Backend (Python)
+1. Install pytest-cov: `pip install pytest-cov`
+2. Run tests with coverage: `pytest --cov=. --cov-report=xml`
+3. Coverage report will be automatically picked up by SonarCloud
+
+The `sonar-project.properties` file is already configured to look for coverage reports in the standard locations.

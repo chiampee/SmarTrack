@@ -1,4 +1,22 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+# GitGuardian secret scanning
+echo "🔒 Scanning for secrets with GitGuardian..."
+if command -v ggshield >/dev/null 2>&1; then
+  ggshield secret scan pre-commit || {
+    echo "❌ GitGuardian found secrets in your code. Please remove them before committing."
+    exit 1
+  }
+elif command -v pipx >/dev/null 2>&1; then
+  pipx run ggshield secret scan pre-commit || {
+    echo "❌ GitGuardian found secrets in your code. Please remove them before committing."
+    exit 1
+  }
+else
+  echo "⚠️  GitGuardian CLI not found. Install with: pip install ggshield or pipx install ggshield"
+  echo "   Skipping secret scan for now. Consider installing GitGuardian CLI for local protection."
+fi
+
+# Lint staged files
 npx lint-staged

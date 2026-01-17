@@ -205,6 +205,63 @@ DEBUG=False
 
 ---
 
+## 🔍 Automated Security Scanning
+
+### **Status: CONFIGURED** ✅
+
+**GitHub Actions Workflows:**
+
+1. **Dependency Vulnerability Scanning** (`.github/workflows/security.yml`)
+   - ✅ NPM dependency scanning with Snyk
+   - ✅ Python dependency scanning with Snyk
+   - ✅ License compliance checking
+   - ✅ Docker image scanning (if Dockerfiles present)
+   - ✅ Runs on push, PR, weekly schedule, and manual trigger
+
+2. **SAST Code Analysis** (`.github/workflows/codeql.yml`)
+   - ✅ JavaScript/TypeScript static analysis with CodeQL
+   - ✅ Python static analysis with CodeQL
+   - ✅ Security and quality queries
+   - ✅ Runs on push, PR, weekly schedule, and manual trigger
+
+3. **Code Quality Analysis** (`.github/workflows/sonarcloud.yml`)
+   - ✅ Code quality analysis with SonarCloud
+   - ✅ Security hotspots detection
+   - ✅ Code smells and bugs identification
+   - ✅ Coverage tracking (if coverage reports are generated)
+   - ✅ Duplication detection
+   - ✅ Maintainability ratings
+   - ✅ Runs on push, PR, and manual trigger
+
+4. **Secret Scanning** (`.github/workflows/gitguardian.yml`)
+   - ✅ Secret detection in code with GitGuardian
+   - ✅ Git history scanning for previously committed secrets
+   - ✅ Pre-commit hooks to prevent secret commits
+   - ✅ Real-time protection against credential leaks
+   - ✅ Runs on push, PR, daily schedule, and manual trigger
+
+**Setup Required:**
+- Add `SNYK_TOKEN` to GitHub repository secrets (see `.github/SECURITY_SETUP.md`)
+- Add `SONAR_TOKEN` to GitHub repository secrets (see `.github/SECURITY_SETUP.md`)
+- Add `GITGUARDIAN_API_KEY` to GitHub repository secrets (see `.github/SECURITY_SETUP.md`)
+- Import repository in SonarCloud (free for public repos)
+- Connect repository in GitGuardian dashboard (free tier available)
+- Install GitGuardian CLI locally for pre-commit hooks: `pipx install ggshield`
+- Optional: Add `DOCKER_USERNAME` and `DOCKER_PASSWORD` for Docker scanning
+
+**Viewing Results:**
+- Security tab: Dependency vulnerabilities and CodeQL alerts
+- Actions tab: Detailed workflow run logs
+- Workflow summaries: License compliance reports
+- SonarCloud dashboard: Code quality metrics, security hotspots, coverage
+- GitGuardian dashboard: Secret detections, exposure incidents, remediation recommendations
+- Pre-commit hooks: Real-time secret detection before commits
+
+**Documentation:**
+- See `.github/SECURITY_SETUP.md` for detailed setup instructions
+
+---
+
 ## ✅ Conclusion
 
 **All security measures are properly configured:**
@@ -213,5 +270,12 @@ DEBUG=False
 - ✅ No information disclosure
 - ✅ Configuration via environment variables
 - ✅ Multi-layer security architecture
+- ✅ Automated dependency vulnerability scanning
+- ✅ Automated SAST code analysis
+- ✅ License compliance monitoring
+- ✅ Code quality analysis and security hotspots
+- ✅ Coverage tracking and maintainability ratings
+- ✅ Secret scanning and credential leak prevention
+- ✅ Pre-commit hooks for real-time protection
 
 **The system is secure and follows best practices.**
