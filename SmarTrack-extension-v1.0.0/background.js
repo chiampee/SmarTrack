@@ -19,8 +19,8 @@ try {
 
 const BACKGROUND_CONSTANTS = {
   // URLs
-  DASHBOARD_URL: typeof SRT_CONFIG !== 'undefined' ? SRT_CONFIG.getDashboardUrl() : 'https://smar-track.vercel.app',
-  API_BASE_URL: typeof SRT_CONFIG !== 'undefined' ? SRT_CONFIG.getApiBaseUrl() : 'https://smartrack-back.onrender.com',
+  DASHBOARD_URL: typeof SRT_CONFIG === 'undefined' ? 'https://smar-track.vercel.app' : SRT_CONFIG.getDashboardUrl(),
+  API_BASE_URL: typeof SRT_CONFIG === 'undefined' ? 'https://smartrack-back.onrender.com' : SRT_CONFIG.getApiBaseUrl(),
   LINKS_ENDPOINT: '/api/links',
   
   // Storage Keys
@@ -91,16 +91,16 @@ const BACKGROUND_CONSTANTS = {
  * Manages extension lifecycle, offline queue, and message routing
  */
 class SmarTrackBackground {
+  /** @type {boolean} */
+  isInitialized = false;
+  
+  /** @type {Map<string, Function>} */
+  messageHandlers = new Map();
+  
   /**
    * Creates a new SmarTrackBackground instance
    */
   constructor() {
-    /** @type {boolean} */
-    this.isInitialized = false;
-    
-    /** @type {Map<string, Function>} */
-    this.messageHandlers = new Map();
-    
     this.init();
   }
 
@@ -778,10 +778,10 @@ class SmarTrackBackground {
                   }
                   // Handle protocol-relative URLs (//example.com/image.jpg)
                   if (imageUrl.startsWith('//')) {
-                    return window.location.protocol + imageUrl;
+                    return (globalThis.location || self.location).protocol + imageUrl;
                   }
                   // Convert relative URL to absolute
-                  return new URL(imageUrl, window.location.origin).href;
+                  return new URL(imageUrl, (globalThis.location || self.location).origin).href;
                 } catch {
                   return imageUrl;
                 }
@@ -792,14 +792,14 @@ class SmarTrackBackground {
                   const href = favicon.getAttribute('href');
                   if (href) {
                     try {
-                      return new URL(href, window.location.origin).href;
+                      return new URL(href, (globalThis.location || self.location).origin).href;
                     } catch {
                       return href;
                     }
                   }
                 }
                 try {
-                  return new URL('/favicon.ico', window.location.origin).href;
+                  return new URL('/favicon.ico', (globalThis.location || self.location).origin).href;
                 } catch {
                   return null;
                 }
@@ -842,10 +842,10 @@ class SmarTrackBackground {
     try {
       const urlObj = new URL(url);
       const hostname = urlObj.hostname.replace('www.', '');
-      const pathname = urlObj.pathname.split('/').filter(p => p).pop();
+      const pathname = urlObj.pathname.split('/').findLast(Boolean);
       
       if (pathname) {
-        return decodeURIComponent(pathname).replace(/[-_]/g, ' ').trim();
+        return decodeURIComponent(pathname).replaceAll(/[-_]/g, ' ').trim();
       }
       
       return hostname;
@@ -871,7 +871,7 @@ class SmarTrackBackground {
         version = chrome.runtime.getManifest().version;
       }
     } catch (e) {
-      // Use default
+      console.debug('[SRT] Failed to get manifest version:', e);
     }
     
     const body = {
