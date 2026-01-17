@@ -33,10 +33,10 @@ const docSections = [
         title: 'Installation & Authentication',
         content: `## Installation
 
-SmarTrack is distributed as a Chrome Web Store extension. Installation is a single-click process that takes less than 10 seconds.
+SmarTrack is available as a Chrome extension. Installation is a simple process that takes less than 10 seconds.
 
 **Installation Steps:**
-1. Visit the Chrome Web Store listing for SmarTrack
+1. Install the extension from the Chrome Web Store (when available) or load it as an unpacked extension
 2. Click "Add to Chrome" and confirm installation
 3. The extension icon appears in your browser toolbar automatically
 
@@ -55,10 +55,11 @@ SmarTrack uses **Auth0** for enterprise-grade authentication, providing:
 - **Zero password storage** on our servers
 
 **First-Time Setup:**
-1. Click the SmarTrack extension icon
-2. Select "Sign in with Google" (or your organization's SSO provider)
-3. Authorize SmarTrack to access your basic profile
-4. Your account is created automatically with secure token-based authentication
+1. Click the SmarTrack extension icon or visit the dashboard
+2. Click "Sign In" to authenticate with Auth0
+3. Choose your preferred authentication method (Google, email, etc.)
+4. Authorize SmarTrack to access your basic profile
+5. Your account is created automatically with secure token-based authentication
 
 ## Your First Capture
 
@@ -167,7 +168,7 @@ SmarTrack's content extraction engine captures:
 - **Notes** - Personal annotations and highlights
 - **Tags** - Custom organizational tags
 - **Category** - Manual or auto-assigned categorization
-- **Project Assignment** - Link to collections/projects
+- **Collection Assignment** - Link to collections
 
 **Storage:**
 - Content is stored in MongoDB with full-text indexing
@@ -274,39 +275,39 @@ Extension shortcuts can be customized via Chrome's native shortcut manager:
     description: 'Enterprise-grade knowledge organization',
     articles: [
       {
-        title: 'Projects & Collections',
-        content: `## Project-Based Organization
+        title: 'Collections',
+        content: `## Collection-Based Organization
 
-Projects are SmarTrack's primary organizational structure, enabling hierarchical knowledge management for research teams and individual power users.
+Collections are SmarTrack's primary organizational structure, enabling hierarchical knowledge management for research teams and individual power users.
 
-**Creating Projects:**
-1. Navigate to the dashboard sidebar
-2. Click **"+ New Project"**
-3. Enter a descriptive project name (e.g., "Q1 Market Analysis")
-4. Optionally add a description for team context
-5. Project appears immediately in sidebar navigation
+**Creating Collections:**
+1. Navigate to the dashboard
+2. Click **"+ New Collection"** button
+3. Enter a descriptive collection name (e.g., "Q1 Market Analysis")
+4. Optionally add a description for context
+5. Collection appears immediately and can be used for organizing links
 
-**Project Assignment Methods:**
+**Collection Assignment Methods:**
 
 **Method 1: During Capture**
-- Select project from dropdown in extension popup
+- Select collection from dropdown in extension popup
 - Assignment happens at save time for immediate organization
 
 **Method 2: Dashboard Assignment**
 - Open link details from dashboard
-- Use "Move to Project" action
+- Use "Move to Collection" action
 - Supports bulk operations for multiple links
 
-**Method 3: Sidebar Drag & Drop**
-- Drag links directly onto project folders in sidebar
-- Visual feedback confirms assignment
-- Works with multiple link selection
+**Method 3: From Link Card**
+- Click on a link card to edit
+- Select collection from the collection dropdown
+- Changes save automatically
 
 **Best Practices:**
-- Use projects for **thematic collections** (e.g., "Competitive Intelligence", "Technical Research")
-- Keep project names **concise and searchable**
-- Limit project depth to **2-3 levels** for optimal navigation
-- Archive completed projects to maintain clean workspace`
+- Use collections for **thematic organization** (e.g., "Competitive Intelligence", "Technical Research")
+- Keep collection names **concise and searchable**
+- Use collections to group related links together
+- Collections help organize your library by topic or project`
       },
       {
         title: 'Tags & Categories',
@@ -346,9 +347,9 @@ Categories provide high-level content classification:
 **Category vs. Tags:**
 - **Categories**: Broad classification (one per link)
 - **Tags**: Specific attributes (multiple per link)
-- **Projects**: Thematic collections (one per link)
+- **Collections**: Thematic organization (one per link)
 
-This three-tier system (Projects → Categories → Tags) provides comprehensive organization at scale.`
+This three-tier system (Collections → Categories → Tags) provides comprehensive organization at scale.`
       }
     ]
   },
@@ -407,6 +408,36 @@ The search interface provides intelligent autocomplete:
 Press **/** anywhere in the dashboard to instantly focus the search bar.`
       },
       {
+        title: 'Search Syntax',
+        content: `## Natural Language Search
+
+SmarTrack's search uses natural language matching across all content fields. Simply describe what you're looking for.
+
+**Basic Search:**
+- Type any word or phrase to search across titles, descriptions, content, and tags
+- Search is case-insensitive and matches partial words
+- Example: "AI agents" finds links containing "AI", "agents", or "AI agents"
+
+**Search Fields:**
+- **Titles** - Page titles and metadata
+- **URLs** - Full URL path matching
+- **Descriptions** - Meta descriptions and extracted summaries
+- **Full Content** - Complete extracted text content
+- **User Notes** - Personal annotations and highlights
+- **Tags** - All assigned tags
+
+**Search Tips:**
+- Use specific terms for better results
+- Combine multiple words to narrow results
+- Search works in real-time as you type
+- Results update instantly with each keystroke
+
+**Examples:**
+- "posts about AI agents" - Finds links mentioning AI agents
+- "reddit machine learning" - Finds Reddit links about machine learning
+- "important research" - Finds links tagged or titled with these terms`
+      },
+      {
         title: 'Discovery Features',
         content: `## Content Discovery
 
@@ -427,15 +458,15 @@ Beyond search, SmarTrack provides multiple discovery mechanisms:
 - See link counts per category
 - One-click filtering by category
 
-**Project Navigation:**
-- Browse links organized by project
-- Sidebar shows all projects with link counts
-- Click project to filter dashboard
+**Collection Navigation:**
+- Browse links organized by collection
+- Dashboard shows all collections with link counts
+- Click collection to filter dashboard
 
 **Best Practices:**
 - Use **favorites** for frequently-referenced content
 - Leverage **categories** for broad content discovery
-- Organize with **projects** for thematic research
+- Organize with **collections** for thematic research
 - Combine **search + filters** for precise discovery`
       }
     ]
