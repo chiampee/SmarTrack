@@ -5,7 +5,7 @@ Refactored to use utility functions for better maintainability
 
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel
 from services.mongodb import get_database
 from services.auth import get_current_user
@@ -87,9 +87,9 @@ async def get_collections(
             
             # Ensure datetime fields exist
             if "createdAt" not in item:
-                item["createdAt"] = datetime.utcnow()
+                item["createdAt"] = datetime.now(timezone.utc)
             if "updatedAt" not in item:
-                item["updatedAt"] = datetime.utcnow()
+                item["updatedAt"] = datetime.now(timezone.utc)
         
         return normalized
         
@@ -138,8 +138,8 @@ async def create_collection(
             "color": collection_data.color or "#3B82F6",
             "icon": collection_data.icon or "book",
             "isDefault": False,
-            "createdAt": datetime.utcnow(),
-            "updatedAt": datetime.utcnow()
+            "createdAt": datetime.now(timezone.utc),
+            "updatedAt": datetime.now(timezone.utc)
         }
         
         result = await db.collections.insert_one(collection_doc)
@@ -169,7 +169,7 @@ async def update_collection(
         object_id = validate_object_id(collection_id, "Collection")
         
         # Build update data
-        update_data = {"updatedAt": datetime.utcnow()}
+        update_data = {"updatedAt": datetime.now(timezone.utc)}
         
         # Process update fields with validation
         for field, value in collection_data.dict(exclude_unset=True).items():

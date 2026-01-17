@@ -151,10 +151,30 @@ class BackendApiService {
       window.addEventListener('message', handleResponse);
       
       // Request token from frontend
-      window.postMessage({
-        type: 'SRT_REQUEST_AUTH_TOKEN',
-        messageId: messageId
-      }, '*');
+      // Try to get current tab and use its origin for security
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs && tabs[0] && tabs[0].url) {
+          try {
+            const targetOrigin = new URL(tabs[0].url).origin;
+            window.postMessage({
+              type: 'SRT_REQUEST_AUTH_TOKEN',
+              messageId: messageId
+            }, targetOrigin);
+          } catch (error) {
+            // If URL parsing fails, use window origin as fallback
+            window.postMessage({
+              type: 'SRT_REQUEST_AUTH_TOKEN',
+              messageId: messageId
+            }, window.location.origin);
+          }
+        } else {
+          // No tab available, use window origin
+          window.postMessage({
+            type: 'SRT_REQUEST_AUTH_TOKEN',
+            messageId: messageId
+          }, window.location.origin);
+        }
+      });
     });
   }
 

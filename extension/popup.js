@@ -1848,34 +1848,58 @@ class SmarTrackPopup {
     return new Promise((resolve) => {
       const messageId = `get-token-${Date.now()}-${Math.random()}`;
       
-      const handleResponse = (event) => {
-        if (!event.data) return;
-        
-        const { type, messageId: responseId, token } = event.data;
-        
-        if (type === 'SRT_AUTH_TOKEN_RESPONSE' && responseId === messageId) {
-          cleanup();
-          resolve(token && typeof token === 'string' ? token : null);
-        }
-      };
-      
-      const timeout = setTimeout(() => {
-        cleanup();
+      // Use chrome.tabs.sendMessage for secure extension communication
+      if (this.currentTab?.id) {
+        // First try chrome.tabs.sendMessage (preferred method)
+        chrome.tabs.sendMessage(
+          this.currentTab.id,
+          {
+            type: 'SRT_REQUEST_AUTH_TOKEN',
+            messageId: messageId
+          },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              // Content script might not be loaded, try postMessage as fallback
+              // But use specific origin for security
+              const handleResponse = (event) => {
+                if (!event.data) return;
+                
+                const { type, messageId: responseId, token } = event.data;
+                
+                if (type === 'SRT_AUTH_TOKEN_RESPONSE' && responseId === messageId) {
+                  cleanup();
+                  resolve(token && typeof token === 'string' ? token : null);
+                }
+              };
+              
+              const timeout = setTimeout(() => {
+                cleanup();
+                resolve(null);
+              }, 2000);
+              
+              const cleanup = () => {
+                window.removeEventListener('message', handleResponse);
+                clearTimeout(timeout);
+              };
+              
+              window.addEventListener('message', handleResponse);
+              
+              // Use current tab's origin for security (not wildcard)
+              const targetOrigin = this.currentTab?.url ? new URL(this.currentTab.url).origin : window.location.origin;
+              window.postMessage({
+                type: 'SRT_REQUEST_AUTH_TOKEN',
+                messageId: messageId
+              }, targetOrigin);
+            } else if (response && response.type === 'SRT_AUTH_TOKEN_RESPONSE' && response.messageId === messageId) {
+              resolve(response.token && typeof response.token === 'string' ? response.token : null);
+            } else {
+              resolve(null);
+            }
+          }
+        );
+      } else {
         resolve(null);
-      }, 2000);
-      
-      const cleanup = () => {
-        window.removeEventListener('message', handleResponse);
-        clearTimeout(timeout);
-      };
-      
-      window.addEventListener('message', handleResponse);
-      
-      // Request token from content script
-      window.postMessage({
-        type: 'SRT_REQUEST_AUTH_TOKEN',
-        messageId: messageId
-      }, '*');
+      }
     });
   }
 

@@ -945,19 +945,14 @@ class SmarTrackPopup {
   }
 
   /**
-   * Populates the UI with extracted page data
+   * Renders title and URL elements
+   * @param {string} title - Page title
+   * @param {string} url - Page URL
    * @returns {void}
    */
-  populateUI() {
+  renderTitleAndUrl(title, url) {
     const titleEl = getElement(CONSTANTS.SELECTORS.PAGE_TITLE);
     const urlEl = getElement(CONSTANTS.SELECTORS.PAGE_URL);
-    const faviconEl = getElement(CONSTANTS.SELECTORS.FAVICON);
-    const thumbnailEl = getElement(CONSTANTS.SELECTORS.THUMBNAIL);
-    const titleInput = getElement(CONSTANTS.SELECTORS.TITLE_INPUT);
-    const descriptionInput = getElement(CONSTANTS.SELECTORS.DESCRIPTION_INPUT);
-    
-    const title = this.pageData.title || this.currentTab?.title || 'Untitled';
-    const url = this.pageData.url || this.currentTab?.url || '';
     
     // Truncate title if too long (max 60 chars for preview)
     const displayTitle = title.length > 60 ? title.substring(0, 57) + '...' : title;
@@ -970,111 +965,133 @@ class SmarTrackPopup {
       urlEl.textContent = url;
       urlEl.setAttribute('title', url); // Tooltip for long URLs
     }
-    
-    // Display content type badge
+  }
+
+  /**
+   * Renders content type badge
+   * @param {string} contentType - Content type
+   * @returns {void}
+   */
+  renderContentTypeBadge(contentType) {
     const contentTypeBadge = getElement('contentTypeBadge');
     if (contentTypeBadge) {
-      const contentType = this.pageData.contentType || this.detectContentType(url);
       if (contentType && contentType !== 'website') {
         contentTypeBadge.textContent = contentType;
-        contentTypeBadge.setAttribute('data-type', contentType);
+        contentTypeBadge.dataset.type = contentType;
         contentTypeBadge.style.display = 'inline-block';
       } else {
         contentTypeBadge.style.display = 'none';
       }
     }
+  }
+
+  /**
+   * Renders thumbnail image
+   * @param {string} image - Image URL
+   * @param {string} url - Page URL for absolute URL conversion
+   * @returns {void}
+   */
+  renderThumbnail(image, url) {
+    const thumbnailEl = getElement(CONSTANTS.SELECTORS.THUMBNAIL);
+    const faviconEl = getElement(CONSTANTS.SELECTORS.FAVICON);
     
-    // Set thumbnail image (if available)
-    if (thumbnailEl) {
-      console.log('[SRT] populateUI - pageData:', this.pageData);
-      console.log('[SRT] populateUI - pageData.image:', this.pageData.image);
-      
-      if (this.pageData.image) {
-        try {
-          let imageUrl = this.pageData.image;
-          
-          // Ensure absolute URL
-          if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://') && !imageUrl.startsWith('data:')) {
-            try {
-              imageUrl = new URL(imageUrl, url).href;
-            } catch (e) {
-              console.error('[SRT] Failed to convert image URL to absolute:', e);
-            }
-          }
-          
-          console.log('[SRT] Setting thumbnail image:', imageUrl);
-          
-          // Clear any existing content
-          thumbnailEl.innerHTML = '';
-          
-          // Show thumbnail immediately (don't wait for image to load)
-          thumbnailEl.classList.add('has-image');
-          
-          // Set thumbnail container styles first
-          thumbnailEl.style.cssText = `
-            width: 48px;
-            height: 48px;
-            background: #e2e8f0;
-            border-radius: 8px;
-            overflow: hidden;
-            display: block;
-            flex-shrink: 0;
-          `;
-          
-          // Create and configure image element
-          const img = document.createElement('img');
-          img.src = imageUrl;
-          img.alt = 'Page thumbnail';
-          img.referrerPolicy = 'no-referrer';
-          img.style.cssText = `
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-          `;
-          
-          img.onerror = (e) => {
-            console.error('[SRT] Failed to load thumbnail image:', imageUrl, e);
-            thumbnailEl.classList.remove('has-image');
-            thumbnailEl.style.display = 'none';
-            thumbnailEl.innerHTML = '';
-          };
-          
-          img.onload = () => {
-            console.log('[SRT] Thumbnail image loaded successfully');
-            // Image loaded, ensure it's visible
-            thumbnailEl.classList.add('has-image');
-            thumbnailEl.style.display = 'block';
-            
-            // Hide favicon when thumbnail is present
-            if (faviconEl) {
-              faviconEl.style.display = 'none';
-            }
-          };
-          
-          thumbnailEl.appendChild(img);
-          
-        } catch (error) {
-          console.error('[SRT] Failed to set thumbnail:', error, error.stack);
-          thumbnailEl.classList.remove('has-image');
-          thumbnailEl.style.display = 'none';
-        }
-      } else {
-        console.log('[SRT] No image data available for thumbnail');
-        thumbnailEl.classList.remove('has-image');
-        thumbnailEl.style.display = 'none';
-        thumbnailEl.innerHTML = '';
-      }
-    } else {
+    if (!thumbnailEl) {
       console.error('[SRT] Thumbnail element not found!');
+      return;
     }
     
-    // Set favicon
-    if (faviconEl && this.pageData.favicon) {
+    if (image) {
       try {
-        const faviconUrl = this.pageData.favicon.startsWith('http')
-          ? this.pageData.favicon
-          : new URL(this.pageData.favicon, url).href;
+        let imageUrl = image;
+        
+        // Ensure absolute URL
+        if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://') && !imageUrl.startsWith('data:')) {
+          try {
+            imageUrl = new URL(imageUrl, url).href;
+          } catch (e) {
+            console.error('[SRT] Failed to convert image URL to absolute:', e);
+          }
+        }
+        
+        console.log('[SRT] Setting thumbnail image:', imageUrl);
+        
+        // Clear any existing content
+        thumbnailEl.innerHTML = '';
+        
+        // Show thumbnail immediately (don't wait for image to load)
+        thumbnailEl.classList.add('has-image');
+        
+        // Set thumbnail container styles first
+        thumbnailEl.style.cssText = `
+          width: 48px;
+          height: 48px;
+          background: #e2e8f0;
+          border-radius: 8px;
+          overflow: hidden;
+          display: block;
+          flex-shrink: 0;
+        `;
+        
+        // Create and configure image element
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        img.alt = 'Page thumbnail';
+        img.referrerPolicy = 'no-referrer';
+        img.style.cssText = `
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        `;
+        
+        img.onerror = (e) => {
+          console.error('[SRT] Failed to load thumbnail image:', imageUrl, e);
+          thumbnailEl.classList.remove('has-image');
+          thumbnailEl.style.display = 'none';
+          thumbnailEl.innerHTML = '';
+        };
+        
+        img.onload = () => {
+          console.log('[SRT] Thumbnail image loaded successfully');
+          // Image loaded, ensure it's visible
+          thumbnailEl.classList.add('has-image');
+          thumbnailEl.style.display = 'block';
+          
+          // Hide favicon when thumbnail is present
+          if (faviconEl) {
+            faviconEl.style.display = 'none';
+          }
+        };
+        
+        thumbnailEl.appendChild(img);
+        
+      } catch (error) {
+        console.error('[SRT] Failed to set thumbnail:', error, error.stack);
+        thumbnailEl.classList.remove('has-image');
+        thumbnailEl.style.display = 'none';
+      }
+    } else {
+      console.log('[SRT] No image data available for thumbnail');
+      thumbnailEl.classList.remove('has-image');
+      thumbnailEl.style.display = 'none';
+      thumbnailEl.innerHTML = '';
+    }
+  }
+
+  /**
+   * Renders favicon
+   * @param {string} favicon - Favicon URL
+   * @param {string} url - Page URL for absolute URL conversion
+   * @returns {void}
+   */
+  renderFavicon(favicon, url) {
+    const faviconEl = getElement(CONSTANTS.SELECTORS.FAVICON);
+    
+    if (faviconEl && favicon) {
+      try {
+        const faviconUrl = favicon.startsWith('http')
+          ? favicon
+          : new URL(favicon, url).href;
         
         faviconEl.style.cssText = `
           background-image: url(${faviconUrl});
@@ -1086,6 +1103,17 @@ class SmarTrackPopup {
         console.error('[SRT] Failed to set favicon:', error);
       }
     }
+  }
+
+  /**
+   * Fills form inputs with cleaned title and description
+   * @param {string} title - Page title
+   * @param {string} description - Page description
+   * @returns {void}
+   */
+  fillFormInputs(title, description) {
+    const titleInput = getElement(CONSTANTS.SELECTORS.TITLE_INPUT);
+    const descriptionInput = getElement(CONSTANTS.SELECTORS.DESCRIPTION_INPUT);
     
     // Auto-fill form inputs with cleaned title
     if (titleInput) {
@@ -1104,22 +1132,38 @@ class SmarTrackPopup {
     }
     
     // Only auto-fill description if meaningful content exists
-    if (descriptionInput && this.pageData.description) {
+    if (descriptionInput && description) {
       // Clean description: remove extra whitespace and normalize
-      let description = this.pageData.description
+      let cleanedDescription = description
         .replace(/\s+/g, ' ')  // Replace multiple spaces/newlines with single space
         .replace(/\n\s*\n/g, '\n')  // Remove multiple newlines
         .trim();
       
       // Limit to reasonable length (500 chars for description field)
-      if (description.length > 500) {
-        description = description.substring(0, 497) + '...';
+      if (cleanedDescription.length > 500) {
+        cleanedDescription = cleanedDescription.substring(0, 497) + '...';
       }
       
-      if (description.length >= CONSTANTS.SELECTED_TEXT_MIN_LENGTH) {
-        descriptionInput.value = description;
+      if (cleanedDescription.length >= CONSTANTS.SELECTED_TEXT_MIN_LENGTH) {
+        descriptionInput.value = cleanedDescription;
       }
     }
+  }
+
+  /**
+   * Populates the UI with extracted page data
+   * @returns {void}
+   */
+  populateUI() {
+    const title = this.pageData.title || this.currentTab?.title || 'Untitled';
+    const url = this.pageData.url || this.currentTab?.url || '';
+    const contentType = this.pageData.contentType || this.detectContentType(url);
+    
+    this.renderTitleAndUrl(title, url);
+    this.renderContentTypeBadge(contentType);
+    this.renderThumbnail(this.pageData.image, url);
+    this.renderFavicon(this.pageData.favicon, url);
+    this.fillFormInputs(title, this.pageData.description);
   }
 
   /**

@@ -202,6 +202,41 @@ export function sanitizeUrl(url: string): string {
 }
 
 /**
+ * Validate redirect URL to prevent open redirect vulnerabilities
+ * Only allows relative paths or URLs from the same origin
+ * @param url - URL or path to validate
+ * @returns {boolean} True if URL is safe to redirect to
+ */
+export function validateRedirectUrl(url: string | null | undefined): boolean {
+  if (!url || typeof url !== 'string') {
+    return false;
+  }
+
+  // Trim whitespace
+  const trimmedUrl = url.trim();
+  
+  // Allow relative paths starting with /
+  if (trimmedUrl.startsWith('/')) {
+    // Ensure it's a valid relative path (no protocol, no host)
+    // Reject paths with :// (protocol) or // (protocol-relative)
+    if (!trimmedUrl.includes('://') && !trimmedUrl.startsWith('//')) {
+      return true;
+    }
+    return false;
+  }
+
+  // For absolute URLs, only allow same origin
+  try {
+    const urlObj = new URL(trimmedUrl, window.location.origin);
+    // Only allow same origin (same protocol, host, and port)
+    return urlObj.origin === window.location.origin;
+  } catch {
+    // Invalid URL format
+    return false;
+  }
+}
+
+/**
  * Validate environment variables
  */
 export function validateEnvironment(): { isValid: boolean; missing: string[] } {

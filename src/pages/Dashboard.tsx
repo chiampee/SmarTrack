@@ -20,6 +20,7 @@ import { Link, Collection, Category } from '../types/Link'
 import { logger } from '../utils/logger'
 import { cacheManager } from '../utils/cacheManager'
 import { DashboardSkeleton } from '../components/LoadingSkeleton'
+import { validateRedirectUrl } from '../utils/validation'
 
 export const Dashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -72,13 +73,20 @@ export const Dashboard: React.FC = () => {
   // Check if we should redirect to analytics after login
   useEffect(() => {
     const redirectTo = searchParams.get('redirect')
-    if (redirectTo === 'analytics' && isAuthenticated) {
-      // Check if user is admin and navigate to analytics
-      // This will be handled by useAdminAccess, but we can help navigate
-      const timer = setTimeout(() => {
-        navigate('/analytics')
-      }, 1000) // Small delay to ensure auth state is ready
-      return () => clearTimeout(timer)
+    // Security: Only allow whitelisted redirect destinations
+    const allowedRedirects = ['analytics', 'dashboard']
+    
+    if (redirectTo && allowedRedirects.includes(redirectTo) && isAuthenticated) {
+      // Validate redirect destination
+      const redirectPath = redirectTo === 'analytics' ? '/analytics' : '/dashboard'
+      
+      // Additional security: validate the path
+      if (validateRedirectUrl(redirectPath)) {
+        const timer = setTimeout(() => {
+          navigate(redirectPath)
+        }, 1000) // Small delay to ensure auth state is ready
+        return () => clearTimeout(timer)
+      }
     }
   }, [searchParams, isAuthenticated, navigate])
 
@@ -191,7 +199,13 @@ export const Dashboard: React.FC = () => {
 
     // Persist current view for future visits
     try {
-      localStorage.setItem('dashboard:lastView', location.search || '?')
+      // Security: Only save safe query strings to localStorage
+      const searchString = location.search || '?'
+      // Validate that the search string doesn't contain malicious redirect patterns
+      const hasUnsafePatterns = /[<>"']|javascript:|data:|vbscript:/i.test(searchString)
+      if (!hasUnsafePatterns && searchString.startsWith('?')) {
+        localStorage.setItem('dashboard:lastView', searchString)
+      }
     } catch (_) { void 0 }
 
     if (!filter && !collection && !categoryParam) {
@@ -265,9 +279,36 @@ export const Dashboard: React.FC = () => {
       try {
         const last = localStorage.getItem('dashboard:lastView')
         if (last) {
-          navigate({ pathname: '/', search: last }, { replace: true })
+          // Security: Validate the stored search params before using them
+          // Only allow query strings (starting with ?) and validate they don't contain malicious redirects
+          if (last.startsWith('?') && !last.includes('redirect=')) {
+            // Additional validation: ensure it's a safe query string
+            // Check for common attack patterns
+            const hasUnsafePatterns = /[<>"']|javascript:|data:|vbscript:/i.test(last)
+            if (!hasUnsafePatterns) {
+              navigate({ pathname: '/', search: last }, { replace: true })
+            } else {
+              // Clear corrupted localStorage value
+              localStorage.removeItem('dashboard:lastView')
+            }
+          } else if (last.startsWith('?')) {
+            // If it contains redirect=, validate the redirect value
+            const urlParams = new URLSearchParams(last.substring(1))
+            const redirectParam = urlParams.get('redirect')
+            if (redirectParam && ['analytics', 'dashboard'].includes(redirectParam)) {
+              navigate({ pathname: '/', search: last }, { replace: true })
+            } else {
+              // Invalid redirect, clear it
+              localStorage.removeItem('dashboard:lastView')
+            }
+          }
         }
-      } catch (_) { void 0 }
+      } catch (_) { 
+        // Clear corrupted localStorage value on error
+        try {
+          localStorage.removeItem('dashboard:lastView')
+        } catch { void 0 }
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

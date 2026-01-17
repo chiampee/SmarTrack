@@ -264,21 +264,55 @@ class SmarTrackContentScript {
    */
   setupMessageListeners() {
     // Listen for token requests from popup
+    // Only accept messages from same origin or extension origin
     window.addEventListener('message', (event) => {
+      // Security: Only accept messages from same origin or extension origin
+      const allowedOrigins = [
+        window.location.origin,
+        chrome.runtime.getURL('').replace(/\/$/, '') // Extension origin
+      ];
+      
+      if (!allowedOrigins.includes(event.origin)) {
+        console.debug('[SRT] Rejected message from unauthorized origin:', event.origin);
+        return;
+      }
+      
       if (!event.data || typeof event.data !== 'object') {
         return;
       }
       
       if (event.data.type === CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.REQUEST_AUTH_TOKEN) {
-        this.handleTokenRequest(event.data.messageId).catch((error) => {
+        this.handleTokenRequest(event.data.messageId, event.origin).catch((error) => {
           console.error('[SRT] Token request handler failed:', error);
         });
       }
     });
 
-    // Listen for messages from background script
+    // Listen for messages from background script and popup
     if (chrome.runtime?.onMessage) {
       chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        // Handle token requests from popup/extension
+        if (request.type === CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.REQUEST_AUTH_TOKEN) {
+          this.handleTokenRequest(request.messageId, window.location.origin)
+            .then((token) => {
+              sendResponse({
+                type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
+                messageId: request.messageId,
+                token: token
+              });
+            })
+            .catch((error) => {
+              console.error('[SRT] Token request handler failed:', error);
+              sendResponse({
+                type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
+                messageId: request.messageId,
+                token: null
+              });
+            });
+          return true; // Keep channel open for async response
+        }
+        
+        // Handle other background messages
         this.handleBackgroundMessage(request, sender, sendResponse).catch((error) => {
           console.error('[SRT] Background message handler failed:', error);
           sendResponse({ success: false, error: error.message });
@@ -292,9 +326,10 @@ class SmarTrackContentScript {
    * Handles token request from popup
    * @async
    * @param {string} messageId - Message ID for response matching
+   * @param {string} targetOrigin - Origin to send response to (for security)
    * @returns {Promise<void>}
    */
-  async handleTokenRequest(messageId) {
+  async handleTokenRequest(messageId, targetOrigin = window.location.origin) {
     if (!messageId || typeof messageId !== 'string') {
       console.warn('[SRT] Invalid message ID in token request');
       return;
@@ -323,21 +358,21 @@ class SmarTrackContentScript {
         console.debug('[SRT] Could not access localStorage:', error);
       }
       
-      // Send response
+      // Send response - use provided targetOrigin for security (only send to authorized origin)
       window.postMessage({
         type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
         messageId: messageId,
         token: token
-      }, '*');
+      }, targetOrigin);
     } catch (error) {
       console.error('[SRT] Failed to handle token request:', error);
       
-      // Send error response
+      // Send error response - use provided targetOrigin for security
       window.postMessage({
         type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
         messageId: messageId,
         token: null
-      }, '*');
+      }, targetOrigin);
     }
   }
 

@@ -3,8 +3,8 @@ Configuration settings for SmarTrack Backend
 """
 
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
-from typing import List, Optional
+from pydantic import field_validator, Field
+from typing import List, Optional, Any, Union
 
 class Settings(BaseSettings):
     # Database - MUST be provided via environment variable
@@ -45,46 +45,94 @@ class Settings(BaseSettings):
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 60  # Reasonable limit for production
     ADMIN_RATE_LIMIT_REQUESTS_PER_MINUTE: int = 300  # Admin users get higher limit
     
-    # Admin Access - MUST be set via environment variable (comma-separated)
+    # Admin Access - MUST be set via environment variable (comma-separated or JSON array)
     # Example: ADMIN_EMAILS=admin1@example.com,admin2@example.com
+    # Or: ADMIN_EMAILS=["admin1@example.com","admin2@example.com"]
     # ✅ SECURITY: Validated and normalized to lowercase for secure comparison
-    ADMIN_EMAILS: List[str] = []
+    # ✅ FIX: Use Union type to allow both string and list, preventing JSONDecodeError
+    ADMIN_EMAILS: Union[List[str], str] = Field(default_factory=list)
     
     @field_validator("ADMIN_EMAILS", mode="before")
     @classmethod
-    def parse_admin_emails(cls, v):
-        """Parse comma-separated ADMIN_EMAILS string into list"""
-        if isinstance(v, str):
-            # Split by comma, strip whitespace, filter empty strings, and normalize to lowercase
-            emails = [email.strip().lower() for email in v.split(",") if email.strip()]
+    def parse_admin_emails(cls, v: Any) -> Union[List[str], str]:
+        """
+        Parse ADMIN_EMAILS - handles both JSON arrays and comma-separated strings.
+        Prevents EnvSettingsSource from trying json.loads on simple strings.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # Handle None, empty string, or whitespace-only strings
+            if not v or (isinstance(v, str) and not v.strip()):
+                logger.warning("[SECURITY] ADMIN_EMAILS not set or empty. Admin panel access will be disabled.")
+                return []
             
-            # Validate email format (basic validation)
+            # If already a list, return as-is (let Pydantic handle normalization)
+            if isinstance(v, list):
+                return v
+            
+            # Handle string input
+            if isinstance(v, str):
+                v_stripped = v.strip()
+                
+                # If string starts with '[' (JSON array), let Pydantic parse it as JSON
+                # This prevents us from trying to split a JSON string
+                if v_stripped.startswith('['):
+                    return v  # Return as-is, let Pydantic's JSON parser handle it
+                
+                # Otherwise, it's a plain comma-separated string - split it
+                # Split by comma, strip whitespace, filter empty strings
+                emails = [email.strip() for email in v_stripped.split(",") if email.strip()]
+                return emails  # Return list of strings for Pydantic to process
+            
+            # Fallback: return empty list for any other type
+            logger.warning(f"[SECURITY] Unexpected ADMIN_EMAILS type: {type(v)}. Returning empty list.")
+            return []
+        except Exception as e:
+            # Catch any unexpected errors and return empty list to prevent startup crash
+            logger.error(f"[SECURITY] Error parsing ADMIN_EMAILS: {e}. Returning empty list to allow startup.")
+            return []
+    
+    @field_validator("ADMIN_EMAILS", mode="after")
+    @classmethod
+    def validate_and_normalize_admin_emails(cls, v: Any) -> List[str]:
+        """
+        Validate and normalize admin emails after Pydantic has parsed the type.
+        This runs after the 'before' validator and type conversion.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # At this point, v should be a list (Pydantic converted it)
+            if not isinstance(v, list):
+                logger.warning(f"[SECURITY] ADMIN_EMAILS is not a list after parsing: {type(v)}. Returning empty list.")
+                return []
+            
+            # Normalize to lowercase and validate email format
             valid_emails = []
-            for email in emails:
+            for email in v:
+                if not isinstance(email, str):
+                    continue
+                
+                email_normalized = email.strip().lower()
+                
                 # Basic email validation - must contain @ and have valid structure
-                if "@" in email and "." in email.split("@")[1] and len(email) > 3:
-                    valid_emails.append(email)
+                if "@" in email_normalized and "." in email_normalized.split("@")[1] and len(email_normalized) > 3:
+                    valid_emails.append(email_normalized)
                 else:
-                    import logging
-                    logger = logging.getLogger(__name__)
                     logger.warning(f"[SECURITY] Invalid admin email format ignored: {email}")
             
-            # Ensure at least one valid admin email exists
+            # Log warning if no valid emails found
             if not valid_emails:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error("[SECURITY] No valid admin emails found! ADMIN_EMAILS must be set in environment variable.")
-                raise ValueError(
-                    "ADMIN_EMAILS environment variable must be set with at least one valid email address. "
-                    "Example: ADMIN_EMAILS=admin@example.com"
-                )
+                logger.warning("[SECURITY] No valid admin emails found in ADMIN_EMAILS. Admin panel access will be disabled.")
             
             return valid_emails
-        # If already a list, return as-is (normalize to lowercase)
-        if isinstance(v, list):
-            return [email.strip().lower() for email in v if email and isinstance(email, str) and email.strip()]
-        # If None or empty, return empty list (will fail validation if required)
-        return []
+        except Exception as e:
+            # Catch any unexpected errors and return empty list to prevent startup crash
+            logger.error(f"[SECURITY] Error validating ADMIN_EMAILS: {e}. Returning empty list to allow startup.")
+            return []
     
     @property
     def admin_emails_list(self) -> List[str]:
