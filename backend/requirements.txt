@@ -25,3 +25,11 @@ email-validator==2.1.0
 # Testing
 pytest==7.4.3
 httpx==0.26.0
+
+# Security Fixes - Transitive dependencies pinned to secure versions
+# These are required to fix vulnerabilities in dependencies of dependencies
+urllib3>=2.6.0  # Fixes CVE-2025-50181, CVE-2025-66471, CVE-2024-37891, CVE-2025-66418
+h11>=0.16.0  # Fixes CVE-2025-43859 (request smuggling)
+idna>=3.7  # Fixes CVE-2024-3651 (DoS vulnerability)
+anyio>=4.4.0  # Fixes thread race condition in multi-threaded environments
+certifi>=2024.0.0  # Updates CA certificate bundle

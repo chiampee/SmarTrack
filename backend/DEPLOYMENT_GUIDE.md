@@ -29,7 +29,7 @@ git push origin main
 
 **Build & Deploy:**
 - **Environment:** Python 3
-- **Build Command:** `pip install -r requirements.txt`
+- **Build Command:** `pip install --upgrade pip>=25.2 && pip install -r requirements.txt`
 - **Start Command:** `gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT`
 
 ### Step 4: Set Environment Variables

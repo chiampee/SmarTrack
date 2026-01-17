@@ -2,6 +2,7 @@
 Configuration settings for SmarTrack Backend
 """
 
+import os
 from pydantic_settings import BaseSettings
 from typing import List, Optional
 
@@ -44,10 +45,11 @@ class Settings(BaseSettings):
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 60  # Reasonable limit for production
     ADMIN_RATE_LIMIT_REQUESTS_PER_MINUTE: int = 300  # Admin users get higher limit
     
-    # Admin Access - Can be set via environment variable (comma-separated) or defaults to single admin
+    # Admin Access - MUST be set via environment variable (comma-separated)
     # Example: ADMIN_EMAILS=admin1@example.com,admin2@example.com
     # ✅ SECURITY: Validated and normalized to lowercase for secure comparison
-    ADMIN_EMAILS: str = "chaimpeer11@gmail.com"  # Comma-separated string from env var
+    # ⚠️ SECURITY: No hardcoded default - must be set via environment variable
+    ADMIN_EMAILS: str = os.getenv('ADMIN_EMAILS', 'admin@example.com')  # Placeholder if not set
     
     def __init__(self, **kwargs):
         """Initialize settings with admin emails validation"""
@@ -58,8 +60,12 @@ class Settings(BaseSettings):
     
     def _parse_admin_emails(self, value: str) -> List[str]:
         """Parse ADMIN_EMAILS string into list, validating and normalizing emails"""
-        if not value:
-            return ["chaimpeer11@gmail.com"]  # Default fallback
+        if not value or value == "admin@example.com":
+            # If using placeholder, warn and return empty (will fail validation)
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error("[SECURITY] ADMIN_EMAILS not set in environment variable! Using placeholder.")
+            return []  # Return empty to force explicit configuration
         
         # Split by comma and clean up
         emails = [email.strip().lower() for email in str(value).split(",") if email.strip()]
@@ -79,8 +85,11 @@ class Settings(BaseSettings):
         if not valid_emails:
             import logging
             logger = logging.getLogger(__name__)
-            logger.warning("[SECURITY] No valid admin emails found, using default")
-            return ["chaimpeer11@gmail.com"]  # Default fallback
+            logger.error("[SECURITY] No valid admin emails found! ADMIN_EMAILS must be set in environment variable.")
+            raise ValueError(
+                "ADMIN_EMAILS environment variable must be set with at least one valid email address. "
+                "Example: ADMIN_EMAILS=admin@example.com"
+            )
         
         return valid_emails
     
