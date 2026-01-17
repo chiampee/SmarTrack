@@ -111,7 +111,7 @@ jobs:
         working-directory: ./backend
         run: |
           pip install safety
-          safety check --file requirements.txt
+          safety check --file ./requirements.txt
 
   # License Compliance Scanning
   license-compliance:

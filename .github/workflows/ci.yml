@@ -95,7 +95,7 @@ jobs:
         run: |
           pip install safety
           # Check for vulnerabilities - this will fail the build if any are found
-          safety check --file requirements.txt
+          safety check --file ./requirements.txt
       
       - name: Test with pytest
         run: |

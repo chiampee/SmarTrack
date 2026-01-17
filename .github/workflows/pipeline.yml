@@ -237,6 +237,7 @@ jobs:
           command: test
 
       - name: Security Scan - Safety (Dependency Vulnerabilities)
+        working-directory: ./backend
         run: |
           pip install safety
           safety check --file requirements.txt
