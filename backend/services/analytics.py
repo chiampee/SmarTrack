@@ -996,7 +996,11 @@ class AnalyticsService:
             user_list = []
             for user in users:
                 user_id = user["_id"]
-                is_active = (datetime.now(timezone.utc) - user["lastLinkDate"]).days <= 30 if user.get("lastLinkDate") else False
+                # Fix: Ensure lastLinkDate is timezone-aware before subtracting
+                last_active = user.get("lastLinkDate")
+                if last_active and last_active.tzinfo is None:
+                    last_active = last_active.replace(tzinfo=timezone.utc)
+                is_active = (datetime.now(timezone.utc) - last_active).days <= 30 if last_active else False
                 
                 user_list.append({
                     "userId": user_id,
