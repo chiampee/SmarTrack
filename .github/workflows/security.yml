@@ -59,11 +59,10 @@ jobs:
       - name: Run Snyk security scan (Python)
         uses: snyk/actions/python@master
         continue-on-error: true
-        working-directory: ./backend
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high --fail-on=upgradable --file=requirements.txt
+          args: --severity-threshold=high --fail-on=upgradable --file=backend/requirements.txt
           command: test
 
   # Python Code Security Scanning with Bandit
@@ -154,11 +153,10 @@ jobs:
       - name: Run Snyk license check (Python)
         uses: snyk/actions/python@master
         continue-on-error: true
-        working-directory: ./backend
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: test --severity-threshold=high --fail-on=upgradable --json-file-output=snyk-python-results.json --file=requirements.txt
+          args: test --severity-threshold=high --fail-on=upgradable --json-file-output=snyk-python-results.json --file=backend/requirements.txt
           command: test
 
       - name: Install jq
