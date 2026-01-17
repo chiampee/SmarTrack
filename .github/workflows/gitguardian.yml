@@ -26,8 +26,7 @@ jobs:
         env:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
         with:
-          exit_zero: false  # Fail the workflow if secrets are found
-          verbose: true
+          args: scan ci
 
       - name: Upload scan results
         if: always()
