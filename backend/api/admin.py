@@ -159,7 +159,10 @@ async def get_admin_analytics(
             return cached
         
         # Run independent queries in parallel for better performance
-        async def get_total_users():
+        # ✅ FIX: Separate all-time totals from period-specific metrics
+        
+        async def get_total_users_all_time():
+            """Get total unique users who have ever created a link (all-time)"""
             try:
                 pipeline = [
                     {"$group": {"_id": "$userId"}},
@@ -168,10 +171,11 @@ async def get_admin_analytics(
                 result = await db.links.aggregate(pipeline).to_list(1)
                 return result[0]["total"] if result and result[0].get("total") is not None else 0
             except Exception as e:
-                logger.error(f"[ANALYTICS ERROR] get_total_users failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_total_users_all_time failed: {e}")
                 return 0
         
-        async def get_extension_users():
+        async def get_extension_users_all_time():
+            """Get total unique users who have ever used the extension (all-time)"""
             try:
                 pipeline = [
                     {"$match": {"source": "extension"}},
@@ -181,29 +185,64 @@ async def get_admin_analytics(
                 result = await db.links.aggregate(pipeline).to_list(1)
                 return result[0]["total"] if result and result[0].get("total") is not None else 0
             except Exception as e:
-                logger.error(f"[ANALYTICS ERROR] get_extension_users failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_extension_users_all_time failed: {e}")
                 return 0
         
-        async def get_total_links():
+        async def get_total_links_all_time():
+            """Get total links created all-time"""
+            try:
+                return await db.links.count_documents({})
+            except Exception as e:
+                logger.error(f"[ANALYTICS ERROR] get_total_links_all_time failed: {e}")
+                return 0
+        
+        async def get_links_in_period():
+            """Get links created in the specified date range"""
             try:
                 return await db.links.count_documents({
                     "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
                 })
             except Exception as e:
-                logger.error(f"[ANALYTICS ERROR] get_total_links failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_links_in_period failed: {e}")
                 return 0
         
-        async def get_extension_links():
+        async def get_extension_links_in_period():
+            """Get extension links created in the specified date range"""
             try:
                 return await db.links.count_documents({
                     "source": "extension",
                     "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
                 })
             except Exception as e:
-                logger.error(f"[ANALYTICS ERROR] get_extension_links failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_extension_links_in_period failed: {e}")
                 return 0
         
-        async def get_storage():
+        async def get_storage_all_time():
+            """Get total storage used by all links (all-time)"""
+            try:
+                pipeline = [
+                    {"$project": {
+                        "size": {
+                            "$add": [
+                                {"$strLenCP": {"$ifNull": ["$title", ""]}},
+                                {"$strLenCP": {"$ifNull": ["$url", ""]}},
+                                {"$strLenCP": {"$ifNull": ["$description", ""]}},
+                                {"$strLenCP": {"$ifNull": ["$content", ""]}},
+                                {"$multiply": [{"$size": {"$ifNull": ["$tags", []]}}, 50]},
+                                300  # MongoDB overhead
+                            ]
+                        }
+                    }},
+                    {"$group": {"_id": None, "total": {"$sum": "$size"}}}
+                ]
+                result = await db.links.aggregate(pipeline).to_list(1)
+                return result[0]["total"] if result and result[0].get("total") is not None else 0
+            except Exception as e:
+                logger.error(f"[ANALYTICS ERROR] get_storage_all_time failed: {e}")
+                return 0
+        
+        async def get_storage_in_period():
+            """Get storage used by links created in the specified date range"""
             try:
                 pipeline = [
                     {"$match": {
@@ -226,19 +265,21 @@ async def get_admin_analytics(
                 result = await db.links.aggregate(pipeline).to_list(1)
                 return result[0]["total"] if result and result[0].get("total") is not None else 0
             except Exception as e:
-                logger.error(f"[ANALYTICS ERROR] get_storage failed: {e}")
+                logger.error(f"[ANALYTICS ERROR] get_storage_in_period failed: {e}")
                 return 0
         
         # Execute independent queries in parallel
-        total_users, extension_users, total_links, extension_links, total_storage_bytes = await asyncio.gather(
-            get_total_users(),
-            get_extension_users(),
-            get_total_links(),
-            get_extension_links(),
-            get_storage()
+        total_users_all_time, extension_users_all_time, total_links_all_time, links_in_period, extension_links_in_period, storage_all_time, storage_in_period = await asyncio.gather(
+            get_total_users_all_time(),
+            get_extension_users_all_time(),
+            get_total_links_all_time(),
+            get_links_in_period(),
+            get_extension_links_in_period(),
+            get_storage_all_time(),
+            get_storage_in_period()
         )
         
-        web_links = total_links - extension_links
+        web_links_in_period = links_in_period - extension_links_in_period
         
         # Run remaining queries in parallel for better performance
         async def get_user_growth():
@@ -706,6 +747,14 @@ async def get_admin_analytics(
         async def get_feature_adoption():
             """Calculate feature adoption rates"""
             try:
+                # Get total users count for adoption rate calculation
+                total_users_pipeline = [
+                    {"$group": {"_id": "$userId"}},
+                    {"$count": "total"}
+                ]
+                total_users_result = await db.links.aggregate(total_users_pipeline).to_list(1)
+                total_users_count = total_users_result[0]["total"] if total_users_result and total_users_result[0].get("total") is not None else 0
+                
                 # Collection usage
                 users_with_collections = await db.collections.aggregate([
                     {"$group": {"_id": "$userId"}},
@@ -738,10 +787,10 @@ async def get_admin_analytics(
                 tags_users = users_with_tags[0]["total"] if users_with_tags and users_with_tags[0].get("total") else 0
                 
                 return {
-                    "collectionAdoption": round((collection_users / total_users * 100), 1) if total_users > 0 else 0,
-                    "favoriteAdoption": round((favorite_users / total_users * 100), 1) if total_users > 0 else 0,
-                    "archiveAdoption": round((archived_users / total_users * 100), 1) if total_users > 0 else 0,
-                    "tagsAdoption": round((tags_users / total_users * 100), 1) if total_users > 0 else 0,
+                    "collectionAdoption": round((collection_users / total_users_count * 100), 1) if total_users_count > 0 else 0,
+                    "favoriteAdoption": round((favorite_users / total_users_count * 100), 1) if total_users_count > 0 else 0,
+                    "archiveAdoption": round((archived_users / total_users_count * 100), 1) if total_users_count > 0 else 0,
+                    "tagsAdoption": round((tags_users / total_users_count * 100), 1) if total_users_count > 0 else 0,
                     "collectionUsers": collection_users,
                     "favoriteUsers": favorite_users,
                     "archiveUsers": archived_users,
@@ -776,21 +825,32 @@ async def get_admin_analytics(
             get_feature_adoption()
         )
         
-        inactive_users = total_users - active_users if total_users >= active_users else 0
+        inactive_users = total_users_all_time - active_users if total_users_all_time >= active_users else 0
         
         result = {
             "summary": {
-                "totalUsers": total_users,
-                "extensionUsers": extension_users,
-                "totalLinks": total_links,
-                "extensionLinks": extension_links,
-                "webLinks": web_links,
-                "totalStorageBytes": total_storage_bytes,
-                "totalStorageKB": round(total_storage_bytes / 1024, 2),
-                "totalStorageMB": round(total_storage_bytes / (1024 * 1024), 2),
+                # All-time totals (not filtered by date range)
+                "totalUsers": total_users_all_time,
+                "extensionUsers": extension_users_all_time,
+                "totalLinksAllTime": total_links_all_time,
+                "totalStorageBytes": storage_all_time,
+                "totalStorageKB": round(storage_all_time / 1024, 2),
+                "totalStorageMB": round(storage_all_time / (1024 * 1024), 2),
+                # Period-specific metrics (filtered by date range)
+                "linksInPeriod": links_in_period,
+                "extensionLinksInPeriod": extension_links_in_period,
+                "webLinksInPeriod": web_links_in_period,
+                "storageInPeriodBytes": storage_in_period,
+                "storageInPeriodKB": round(storage_in_period / 1024, 2),
+                "storageInPeriodMB": round(storage_in_period / (1024 * 1024), 2),
+                # Calculated metrics
                 "averageLinksPerUser": round(avg_links_per_user, 2),
                 "activeUsers": active_users,
-                "inactiveUsers": inactive_users
+                "inactiveUsers": inactive_users,
+                # Backward compatibility (deprecated - use linksInPeriod instead)
+                "totalLinks": links_in_period,
+                "extensionLinks": extension_links_in_period,
+                "webLinks": web_links_in_period
             },
             "growth": {
                 "userGrowth": user_growth,

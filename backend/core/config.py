@@ -2,8 +2,8 @@
 Configuration settings for SmarTrack Backend
 """
 
-import os
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from typing import List, Optional
 
 class Settings(BaseSettings):
@@ -48,56 +48,49 @@ class Settings(BaseSettings):
     # Admin Access - MUST be set via environment variable (comma-separated)
     # Example: ADMIN_EMAILS=admin1@example.com,admin2@example.com
     # ✅ SECURITY: Validated and normalized to lowercase for secure comparison
-    # ⚠️ SECURITY: No hardcoded default - must be set via environment variable
-    ADMIN_EMAILS: str = os.getenv('ADMIN_EMAILS', 'admin@example.com')  # Placeholder if not set
+    ADMIN_EMAILS: List[str] = []
     
-    def __init__(self, **kwargs):
-        """Initialize settings with admin emails validation"""
-        super().__init__(**kwargs)
-        # ✅ SECURITY: Validate and normalize admin emails on initialization
-        # This ensures emails are always in a consistent format for secure comparison
-        self._admin_emails_list = self._parse_admin_emails(self.ADMIN_EMAILS)
-    
-    def _parse_admin_emails(self, value: str) -> List[str]:
-        """Parse ADMIN_EMAILS string into list, validating and normalizing emails"""
-        if not value or value == "admin@example.com":
-            # If using placeholder, warn and return empty (will fail validation)
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error("[SECURITY] ADMIN_EMAILS not set in environment variable! Using placeholder.")
-            return []  # Return empty to force explicit configuration
-        
-        # Split by comma and clean up
-        emails = [email.strip().lower() for email in str(value).split(",") if email.strip()]
-        
-        # ✅ SECURITY: Validate email format (basic validation)
-        valid_emails = []
-        for email in emails:
-            # Basic email validation - must contain @ and have valid structure
-            if "@" in email and "." in email.split("@")[1] and len(email) > 3:
-                valid_emails.append(email)
-            else:
+    @field_validator("ADMIN_EMAILS", mode="before")
+    @classmethod
+    def parse_admin_emails(cls, v):
+        """Parse comma-separated ADMIN_EMAILS string into list"""
+        if isinstance(v, str):
+            # Split by comma, strip whitespace, filter empty strings, and normalize to lowercase
+            emails = [email.strip().lower() for email in v.split(",") if email.strip()]
+            
+            # Validate email format (basic validation)
+            valid_emails = []
+            for email in emails:
+                # Basic email validation - must contain @ and have valid structure
+                if "@" in email and "." in email.split("@")[1] and len(email) > 3:
+                    valid_emails.append(email)
+                else:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"[SECURITY] Invalid admin email format ignored: {email}")
+            
+            # Ensure at least one valid admin email exists
+            if not valid_emails:
                 import logging
                 logger = logging.getLogger(__name__)
-                logger.warning(f"[SECURITY] Invalid admin email format ignored: {email}")
-        
-        # ✅ SECURITY: Ensure at least one valid admin email exists
-        if not valid_emails:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error("[SECURITY] No valid admin emails found! ADMIN_EMAILS must be set in environment variable.")
-            raise ValueError(
-                "ADMIN_EMAILS environment variable must be set with at least one valid email address. "
-                "Example: ADMIN_EMAILS=admin@example.com"
-            )
-        
-        return valid_emails
+                logger.error("[SECURITY] No valid admin emails found! ADMIN_EMAILS must be set in environment variable.")
+                raise ValueError(
+                    "ADMIN_EMAILS environment variable must be set with at least one valid email address. "
+                    "Example: ADMIN_EMAILS=admin@example.com"
+                )
+            
+            return valid_emails
+        # If already a list, return as-is (normalize to lowercase)
+        if isinstance(v, list):
+            return [email.strip().lower() for email in v if email and isinstance(email, str) and email.strip()]
+        # If None or empty, return empty list (will fail validation if required)
+        return []
     
     @property
     def admin_emails_list(self) -> List[str]:
         """Get admin emails as list (normalized to lowercase for secure comparison)"""
         # ✅ SECURITY: Always return normalized lowercase emails for consistent comparison
-        return self._admin_emails_list
+        return self.ADMIN_EMAILS
     
     class Config:
         env_file = ".env"
