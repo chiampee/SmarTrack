@@ -6,7 +6,7 @@ version: 2
 # Secret scanning configuration
 secret:
   # Paths to ignore during scanning
-  ignored-paths:
+  ignored_paths:
     - "**/node_modules/**"
     - "**/dist/**"
     - "**/build/**"
@@ -21,9 +21,6 @@ secret:
     - "**/pnpm-lock.yaml"
     - "**/*.min.js"
     - "**/*.min.css"
-
-  # Minimum secret length (default: 20)
-  min-secret-length: 20
 
   # Ignore specific secret matches (add your own if needed)
   # ignored-matches:
