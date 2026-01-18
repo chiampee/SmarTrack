@@ -217,13 +217,34 @@ export const LoginPage: React.FC = () => {
             <motion.div
               variants={staggerItem}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-12"
+              className="mt-12 sm:mt-16"
             >
-              <img 
-                src="/image_50ae46.png" 
-                alt="SmarTrack Dashboard showing unified intelligence hub"
-                className="rounded-xl shadow-2xl max-w-5xl mx-auto w-full"
-              />
+              <div className="relative max-w-5xl mx-auto">
+                {/* Gradient border effect */}
+                <div className="absolute -inset-[2px] rounded-xl bg-gradient-to-br from-blue-400/20 via-slate-200/40 to-blue-400/20 blur-sm" />
+                
+                {/* Shadow container */}
+                <div className="absolute inset-0 rounded-xl shadow-2xl shadow-slate-900/20" />
+                
+                {/* Image container */}
+                <div className="relative rounded-xl overflow-hidden border border-slate-200/60 bg-white">
+                  <img 
+                    src="/image_50ae46.png" 
+                    alt="SmarTrack Dashboard showing unified intelligence hub with grid layout, platform cards, and unified search interface"
+                    className="w-full h-auto block"
+                    onError={(e) => {
+                      // Try alternative dashboard image paths
+                      const target = e.target as HTMLImageElement;
+                      const currentSrc = target.src;
+                      if (currentSrc.includes('image_50ae46')) {
+                        target.src = '/3_dashboard_view.png';
+                      } else {
+                        console.warn('Dashboard image not found. Please add the image to /public folder.');
+                      }
+                    }}
+                  />
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         </div>
@@ -254,13 +275,36 @@ export const LoginPage: React.FC = () => {
             viewport={{ once: true, margin: "-50px" }}
             variants={fadeInUp}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="mt-10"
+            className="mt-10 sm:mt-12"
           >
-            <img 
-              src="/Silo vs Hub.jpg" 
-              alt="Diagram showing the problem of fragmented knowledge silos vs unified SmarTrack hub"
-              className="max-w-4xl mx-auto w-full rounded-xl"
-            />
+            <div className="relative max-w-5xl mx-auto">
+              {/* Gradient border effect */}
+              <div className="absolute -inset-[2px] rounded-xl bg-gradient-to-br from-slate-300/30 via-slate-200/20 to-slate-300/30 blur-sm" />
+              
+              {/* Shadow container */}
+              <div className="absolute inset-0 rounded-xl shadow-xl shadow-slate-900/10" />
+              
+              {/* Image container */}
+              <div className="relative rounded-xl overflow-hidden border border-slate-200/60 bg-white">
+                <img 
+                  src="/Silo%20vs%20Hub.jpg" 
+                  alt="Diagram showing the problem of fragmented knowledge silos vs unified SmarTrack hub - Before: Your insights are trapped in someone else's app. After: One source of truth for everything you know."
+                  className="w-full h-auto block"
+                  onError={(e) => {
+                    // Try alternative paths if URL encoded doesn't work
+                    const target = e.target as HTMLImageElement;
+                    const currentSrc = target.src;
+                    if (currentSrc.includes('%20')) {
+                      target.src = '/Silo vs Hub.jpg';
+                    } else if (currentSrc.includes('Silo vs Hub')) {
+                      target.src = '/Silo-vs-Hub.jpg';
+                    } else {
+                      console.warn('Silo vs Hub image not found. Please add the image to /public folder with one of these names: "Silo vs Hub.jpg", "Silo-vs-Hub.jpg", or "Silo%20vs%20Hub.jpg"');
+                    }
+                  }}
+                />
+              </div>
+            </div>
           </motion.div>
         </div>
       </section>
