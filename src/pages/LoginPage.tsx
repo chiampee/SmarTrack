@@ -2,7 +2,6 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { 
   Chrome, 
-  CheckCircle2, 
   ScanEye, 
   ShieldCheck, 
   LayoutGrid, 
@@ -291,24 +290,10 @@ export const LoginPage = () => {
           </div>
           
           <h2 className="text-3xl sm:text-4xl font-bold mb-6">Intelligence Without Intrusion.</h2>
-          <p className="text-lg text-slate-300 max-w-2xl mx-auto mb-12">
+          <p className="text-lg text-slate-300 max-w-2xl mx-auto">
             Most tools demand passwords. SmarTrack is different. We use a <strong>Client-First Architecture</strong>. 
             The capture happens locally on your device. We never see your session data or passwords.
           </p>
-
-          <div className="flex flex-wrap justify-center gap-4 sm:gap-8">
-            {[
-              "No Data Selling",
-              "Client-Side Encryption",
-              "Zero-Trust Design",
-              "GDPR Ready"
-            ].map((badge) => (
-              <div key={badge} className="flex items-center gap-2 text-slate-200 font-medium">
-                <CheckCircle2 className="w-5 h-5 text-green-400" />
-                {badge}
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
