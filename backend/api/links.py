@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
+from urllib.parse import urlparse
 from services.mongodb import get_database
 from services.auth import get_current_user
 from core.config import settings
@@ -372,14 +373,35 @@ async def create_link(
             # Content extraction can be added later as a background task
             content_text = None
         
+        # Validate thumbnail and favicon URLs if provided (optional, but ensure they're valid if present)
+        validated_thumbnail = None
+        if link_data.thumbnail:
+            try:
+                # Only validate format, don't require it to be accessible
+                parsed_thumb = urlparse(link_data.thumbnail.strip())
+                if parsed_thumb.scheme and parsed_thumb.netloc:
+                    validated_thumbnail = link_data.thumbnail.strip()
+                # If invalid format, just set to None (don't fail the request)
+            except Exception:
+                validated_thumbnail = None
+        
+        validated_favicon = None
+        if link_data.favicon:
+            try:
+                parsed_fav = urlparse(link_data.favicon.strip())
+                if parsed_fav.scheme and parsed_fav.netloc:
+                    validated_favicon = link_data.favicon.strip()
+            except Exception:
+                validated_favicon = None
+        
         # All validations passed - create the link
         link_doc = {
             "userId": user_id,
             "url": validated_url,
             "title": validated_title,
             "description": validated_description,
-            "thumbnail": link_data.thumbnail,
-            "favicon": link_data.favicon,
+            "thumbnail": validated_thumbnail,
+            "favicon": validated_favicon,
             "category": link_data.category.lower() if link_data.category else "research",
             "tags": validated_tags,
             "contentType": link_data.contentType or "webpage",

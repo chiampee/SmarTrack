@@ -228,8 +228,18 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
 
           {/* Favicon */}
           <div className="flex-shrink-0">
-            {link.favicon ? (
-              <img src={link.favicon} alt="" className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg object-cover bg-gray-100" />
+            {link.favicon && link.favicon.startsWith('http') ? (
+              <img 
+                src={link.favicon} 
+                alt="" 
+                className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg object-cover bg-gray-100"
+                referrerPolicy="no-referrer-when-downgrade"
+                crossOrigin="anonymous"
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
             ) : (
               <div className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                 <Globe className="w-5 h-5 sm:w-4 sm:h-4 text-gray-400" />
@@ -488,17 +498,41 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       onClick={handleCardClick}
     >
       <div>
-        {link.thumbnail && (
+        {link.thumbnail && link.thumbnail.startsWith('http') && (
           <div className="aspect-video w-full overflow-hidden bg-gray-100">
-            <img src={link.thumbnail} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            <img 
+              src={link.thumbnail} 
+              alt="Post thumbnail" 
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              referrerPolicy="no-referrer-when-downgrade"
+              crossOrigin="anonymous"
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                console.warn('[LinkCard] Failed to load thumbnail:', link.thumbnail);
+              }}
+              onLoad={() => {
+                console.debug('[LinkCard] Thumbnail loaded successfully:', link.thumbnail);
+              }}
+            />
           </div>
         )}
 
         <div className="p-4">
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex items-center gap-2 min-w-0">
-              {link.favicon ? (
-                <img src={link.favicon} alt="" className="w-6 h-6 sm:w-5 sm:h-5 rounded flex-shrink-0" />
+              {link.favicon && link.favicon.startsWith('http') ? (
+                <img 
+                  src={link.favicon} 
+                  alt="" 
+                  className="w-6 h-6 sm:w-5 sm:h-5 rounded flex-shrink-0"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  crossOrigin="anonymous"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
               ) : (
                 <div className="w-6 h-6 sm:w-5 sm:h-5 rounded bg-gray-200 flex items-center justify-center flex-shrink-0">
                   <Globe className="w-4 h-4 sm:w-3 sm:h-3 text-gray-400" />

@@ -100,9 +100,29 @@ class LinkedInParser {
           }
         }
 
+        // Fix Image Validation: Ensure thumbnail is a valid absolute URL
+        if (thumbnail && !thumbnail.startsWith('http')) {
+          thumbnail = null; // Prevent chrome-extension://invalid errors
+        }
+
         // 3. Title & Description Extraction
-        const authorEl = item.querySelector('.app-aware-link');
-        const author = authorEl ? authorEl.innerText.trim() : 'LinkedIn User';
+        // Strategy A: Look for the specific Actor container first (Most reliable)
+        const actorNode = item.querySelector('.entity-result__content-actor .app-aware-link span[aria-hidden="true"]');
+        
+        // Strategy B: Look for the first link text in the title container
+        const titleNode = item.querySelector('.entity-result__title-text .app-aware-link span[aria-hidden="true"]');
+        
+        // Strategy C: Fallback to the raw link text
+        const rawLink = item.querySelector('.app-aware-link');
+        
+        let author = 'LinkedIn User';
+        if (actorNode) {
+          author = actorNode.innerText.trim();
+        } else if (titleNode) {
+          author = titleNode.innerText.trim();
+        } else if (rawLink) {
+          author = rawLink.innerText.trim();
+        }
         
         // Use the 'summary' class which contains the post text
         const summaryEl = item.querySelector('.entity-result__content-summary');
