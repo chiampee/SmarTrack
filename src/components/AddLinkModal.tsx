@@ -179,8 +179,8 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
       <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-2xl h-[95vh] sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header - Compact on mobile */}
-        <div className="flex items-center justify-between px-4 py-3 sm:p-6 border-b border-gray-200 bg-white flex-shrink-0">
+        {/* Header - Compact on mobile with safe top padding */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 sm:p-6 border-b border-gray-200 bg-white flex-shrink-0">
           <div className="flex-1 min-w-0 pr-2">
             <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Add New Link</h2>
             <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1 hidden sm:block">Save a new link to your research library</p>
@@ -194,9 +194,9 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
           </button>
         </div>
 
-        {/* Form - Compact spacing on mobile */}
+        {/* Form - Compact spacing on mobile with safe top padding */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-          <div className="px-4 py-3 sm:p-6 space-y-3 sm:space-y-5 pb-24 sm:pb-6">
+          <div className="px-4 pt-4 pb-3 sm:p-6 space-y-3 sm:space-y-5 pb-24 sm:pb-6">
             {/* URL */}
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
