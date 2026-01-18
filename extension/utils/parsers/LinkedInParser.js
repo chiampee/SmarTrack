@@ -72,15 +72,31 @@ class LinkedInParser {
         // ============================================================
         // 1. URL Extraction
         // ============================================================
-        // Look for ANY anchor tag that points to a post or update
-        // We look for multiple patterns to be robust
-        const anchor = item.querySelector('a[href*="/feed/update/"], a[href*="/posts/"], a[href*="linkedin.com/pulse/"]');
+        let url = null;
         
-        let url = anchor ? anchor.href : null;
+        // Strategy A: Specific Content Patterns (Best quality)
+        // Added support for: learning, events, video, and jobs
+        const specificAnchor = item.querySelector('a[href*="/feed/update/"], a[href*="/posts/"], a[href*="linkedin.com/pulse/"], a[href*="/learning/"], a[href*="/events/"], a[href*="/video/"], a[href*="/jobs/"]');
+        
+        if (specificAnchor) {
+          url = specificAnchor.href;
+        }
+        
+        // Strategy B: The Title Link (The General Fallback)
+        // If A failed, grab the main clickable link in the title area.
+        // This covers ANY content type (3rd party articles, weird formats, etc.)
+        if (!url) {
+          const titleAnchor = item.querySelector('.entity-result__title-text a.app-aware-link');
+          if (titleAnchor) {
+            url = titleAnchor.href;
+          }
+        }
         
         // Debugging: Log why we might skip this item
         if (!url) {
-          console.warn(`[SRT] Item ${index} skipped: No post URL found in item`);
+          // Try to log what kind of text we found to help debug future skips
+          const textPreview = item.innerText.substring(0, 50).replace(/\n/g, ' ');
+          console.warn(`[SRT] Item ${index} skipped: No URL found. Text: "${textPreview}..."`);
           return; // Continue to next item
         }
 
