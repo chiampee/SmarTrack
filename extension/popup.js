@@ -1845,12 +1845,15 @@ class SmarTrackPopup {
    * @returns {Promise<string|null>}
    */
   async requestTokenViaMessage() {
-    return new Promise((resolve) => {
-      const messageId = `get-token-${Date.now()}-${Math.random()}`;
-      
-      // Use chrome.tabs.sendMessage for secure extension communication
-      if (this.currentTab?.id) {
-        // First try chrome.tabs.sendMessage (preferred method)
+    if (!this.currentTab?.id) {
+      return null;
+    }
+
+    const messageId = `get-token-${Date.now()}`;
+
+    // 1. Try Content Script Message
+    try {
+      const response = await new Promise((resolve, reject) => {
         chrome.tabs.sendMessage(
           this.currentTab.id,
           {
@@ -1859,48 +1862,47 @@ class SmarTrackPopup {
           },
           (response) => {
             if (chrome.runtime.lastError) {
-              // Content script might not be loaded, try postMessage as fallback
-              // But use specific origin for security
-              const handleResponse = (event) => {
-                if (!event.data) return;
-                
-                const { type, messageId: responseId, token } = event.data;
-                
-                if (type === 'SRT_AUTH_TOKEN_RESPONSE' && responseId === messageId) {
-                  cleanup();
-                  resolve(token && typeof token === 'string' ? token : null);
-                }
-              };
-              
-              const timeout = setTimeout(() => {
-                cleanup();
-                resolve(null);
-              }, 2000);
-              
-              const cleanup = () => {
-                window.removeEventListener('message', handleResponse);
-                clearTimeout(timeout);
-              };
-              
-              window.addEventListener('message', handleResponse);
-              
-              // Use current tab's origin for security (not wildcard)
-              const targetOrigin = this.currentTab?.url ? new URL(this.currentTab.url).origin : window.location.origin;
-              window.postMessage({
-                type: 'SRT_REQUEST_AUTH_TOKEN',
-                messageId: messageId
-              }, targetOrigin);
-            } else if (response && response.type === 'SRT_AUTH_TOKEN_RESPONSE' && response.messageId === messageId) {
-              resolve(response.token && typeof response.token === 'string' ? response.token : null);
+              reject(new Error(chrome.runtime.lastError.message));
             } else {
-              resolve(null);
+              resolve(response);
             }
           }
         );
-      } else {
-        resolve(null);
+      });
+
+      if (response?.token) {
+        return response.token;
       }
-    });
+    } catch (e) {
+      // Content script might not be loaded or page is restricted
+      console.debug('[SRT] Content script message failed:', e.message);
+    }
+
+    // 2. Fallback: Direct Script Injection (reads localStorage if on Dashboard)
+    try {
+      // Check if URL is a system URL (cannot inject scripts)
+      const currentUrl = this.currentTab.url || '';
+      if (isSystemUrl(currentUrl)) {
+        console.debug('[SRT] Cannot inject script into system URL');
+        return null;
+      }
+
+      const [result] = await chrome.scripting.executeScript({
+        target: { tabId: this.currentTab.id },
+        func: () => {
+          try {
+            return localStorage.getItem('authToken');
+          } catch {
+            return null;
+          }
+        }
+      });
+
+      return result?.result || null;
+    } catch (e) {
+      console.debug('[SRT] Script injection failed:', e.message);
+      return null;
+    }
   }
 
   /**

@@ -551,14 +551,15 @@ async def delete_link(
         )
         
         if result.deleted_count == 0:
-            # ✅ SECURITY: Check if link exists but belongs to different user
-            # Use minimal query (only _id) to avoid potential data exposure
-            link_exists = await db.links.find_one({"_id": object_id}, {"_id": 1, "userId": 1})
-            if link_exists:
-                # Verify it doesn't belong to current user (double-check security)
-                if link_exists.get("userId") != user_id:
-                    raise HTTPException(status_code=403, detail="Not allowed to delete this link")
-            raise NotFoundError("Link", link_id)
+            # ✅ SECURITY: Strict user isolation - only check if link exists for current user
+            # If delete_one with userId filter returned 0, the link either doesn't exist
+            # or doesn't belong to this user. Return 404 in both cases to prevent information disclosure.
+            link_exists = await db.links.find_one(
+                build_user_filter(user_id, {"_id": object_id}),
+                {"_id": 1}
+            )
+            if not link_exists:
+                raise NotFoundError("Link", link_id)
         
         return {
             "message": "Link deleted successfully",

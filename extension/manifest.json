@@ -14,7 +14,8 @@
   ],
   "host_permissions": [
     "https://*/*",
-    "http://*/*"
+    "http://*/*",
+    "https://www.linkedin.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -31,6 +32,15 @@
       "matches": ["<all_urls>"],
       "js": ["contentScript.js"],
       "run_at": "document_end"
+    },
+    {
+      "matches": ["https://www.linkedin.com/my-items/saved-posts/*"],
+      "js": [
+        "utils/urlSanitizer.js",
+        "utils/parsers/LinkedInParser.js",
+        "content/linkedin_injector.js"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "background": {

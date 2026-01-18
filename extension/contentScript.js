@@ -263,13 +263,28 @@ class SmarTrackContentScript {
    * @returns {void}
    */
   setupMessageListeners() {
-    // Listen for token requests from popup
+    // Store extension origin outside callback to prevent crash if extension context is invalidated
+    let extensionOrigin = '';
+    try {
+      if (chrome.runtime?.id) {
+        extensionOrigin = chrome.runtime.getURL('').replace(/\/$/, '');
+      }
+    } catch (error) {
+      console.debug('[SRT] Could not get extension origin:', error);
+    }
+
+    // Listen for token requests from popup via window.postMessage
     // Only accept messages from same origin or extension origin
     window.addEventListener('message', (event) => {
+      // Check if extension context is still valid (prevents crash after extension reload)
+      if (!chrome.runtime?.id) {
+        return;
+      }
+
       // Security: Only accept messages from same origin or extension origin
       const allowedOrigins = [
         window.location.origin,
-        chrome.runtime.getURL('').replace(/\/$/, '') // Extension origin
+        extensionOrigin
       ];
       
       if (!allowedOrigins.includes(event.origin)) {
@@ -288,27 +303,32 @@ class SmarTrackContentScript {
       }
     });
 
-    // Listen for messages from background script and popup
+    // Listen for messages from background script and popup via chrome.runtime.onMessage
     if (chrome.runtime?.onMessage) {
       chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        // Check if extension context is still valid
+        if (!chrome.runtime?.id) {
+          return false;
+        }
+
         // Handle token requests from popup/extension
         if (request.type === CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.REQUEST_AUTH_TOKEN) {
-          this.handleTokenRequest(request.messageId, window.location.origin)
-            .then((token) => {
-              sendResponse({
-                type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
-                messageId: request.messageId,
-                token: token
-              });
-            })
-            .catch((error) => {
-              console.error('[SRT] Token request handler failed:', error);
-              sendResponse({
-                type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
-                messageId: request.messageId,
-                token: null
-              });
+          // Get token from localStorage if available
+          try {
+            const token = localStorage.getItem('authToken');
+            sendResponse({ 
+              type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
+              messageId: request.messageId,
+              token: token 
             });
+          } catch (error) {
+            console.error('[SRT] Failed to get token from localStorage:', error);
+            sendResponse({ 
+              type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
+              messageId: request.messageId,
+              token: null 
+            });
+          }
           return true; // Keep channel open for async response
         }
         

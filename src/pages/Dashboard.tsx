@@ -30,6 +30,7 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [slowLoading, setSlowLoading] = useState(false)
   const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set())
+  const lastSelectedIndexRef = useRef<number | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingLink, setEditingLink] = useState<Link | null>(null)
   const [showCreateCollectionModal, setShowCreateCollectionModal] = useState(false)
@@ -770,15 +771,55 @@ export const Dashboard: React.FC = () => {
     }
   }
 
-  // Toggle link selection
-  const toggleSelection = (linkId: string) => {
+  // Toggle link selection with Shift+click range selection support
+  const toggleSelection = (linkId: string, event?: React.MouseEvent) => {
+    const isShiftClick = event?.shiftKey || false
+    const currentIndex = filteredLinks.findIndex(link => link.id === linkId)
+
+    if (currentIndex === -1) {
+      console.warn('[Dashboard] Link not found in filteredLinks:', linkId)
+      return
+    }
+
     setSelectedLinks(prev => {
       const newSet = new Set(prev)
-      if (newSet.has(linkId)) {
-        newSet.delete(linkId)
+
+      // Handle Shift+click range selection
+      if (isShiftClick && lastSelectedIndexRef.current !== null && lastSelectedIndexRef.current !== currentIndex) {
+        // Range selection: select all links between last selected and current
+        const startIndex = Math.min(lastSelectedIndexRef.current, currentIndex)
+        const endIndex = Math.max(lastSelectedIndexRef.current, currentIndex)
+        
+        // Determine selection state based on the last selected item (before any changes)
+        const lastSelectedId = filteredLinks[lastSelectedIndexRef.current]?.id
+        const shouldSelect = lastSelectedId ? prev.has(lastSelectedId) : true
+
+        // Select/deselect all items in range
+        for (let i = startIndex; i <= endIndex; i++) {
+          const id = filteredLinks[i]?.id
+          if (id) {
+            if (shouldSelect) {
+              newSet.add(id)
+            } else {
+              newSet.delete(id)
+            }
+          }
+        }
+        
+        // Update last selected index to the end of the range (current click)
+        lastSelectedIndexRef.current = currentIndex
       } else {
-        newSet.add(linkId)
+        // Normal toggle selection (or Shift+click with no previous selection)
+        if (newSet.has(linkId)) {
+          newSet.delete(linkId)
+        } else {
+          newSet.add(linkId)
+        }
+        
+        // Update last selected index for next potential range selection
+        lastSelectedIndexRef.current = currentIndex
       }
+
       return newSet
     })
   }
@@ -786,11 +827,16 @@ export const Dashboard: React.FC = () => {
   // Select all links
   const selectAll = () => {
     setSelectedLinks(new Set(filteredLinks.map(l => l.id)))
+    // Set last selected to the last item in the list
+    if (filteredLinks.length > 0) {
+      lastSelectedIndexRef.current = filteredLinks.length - 1
+    }
   }
 
   // Clear selection
   const clearSelection = () => {
     setSelectedLinks(new Set())
+    lastSelectedIndexRef.current = null
   }
 
   // Use bulk operations hook (must be after clearSelection is defined)
@@ -1709,7 +1755,7 @@ export const Dashboard: React.FC = () => {
                                   link={link}
                                   viewMode={viewMode}
                                   isSelected={selectedLinks.has(link.id)}
-                                  onSelect={() => toggleSelection(link.id)}
+                                  onSelect={(e) => toggleSelection(link.id, e)}
                                   onAction={handleLinkAction}
                                   collections={collections}
                                   onCardClick={() => setEditingLink(link)}

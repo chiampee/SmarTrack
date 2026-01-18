@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # CORS - URGENT FIX: Comprehensive list of all frontend URLs
     # ⚠️ NOTE: Cannot use ["*"] when allow_credentials=True - must specify exact origins
     CORS_ORIGINS: List[str] = [
-        # Production Frontend URLs
+        # Production Frontend URLs - Custom Domain
         "https://smartrack.top",
         "https://www.smartrack.top",
         "https://smar-track.vercel.app",

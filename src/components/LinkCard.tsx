@@ -31,7 +31,7 @@ interface LinkCardProps {
   link: Link
   viewMode: 'grid' | 'list'
   isSelected: boolean
-  onSelect: () => void
+  onSelect: (e?: React.MouseEvent) => void
   onAction: (linkId: string, action: string, data?: any) => void
   collections?: Collection[]
   onCardClick?: () => void
@@ -202,13 +202,26 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4">
           {/* Checkbox with larger touch target */}
           <div className="flex items-center flex-shrink-0">
-            <label className="p-2 -m-2 cursor-pointer touch-manipulation">
+            <label 
+              className="p-2 -m-2 cursor-pointer touch-manipulation"
+              onClick={(e) => {
+                // Only handle if clicking directly on label (not checkbox)
+                if (e.target === e.currentTarget || (e.target as HTMLElement).tagName !== 'INPUT') {
+                  e.stopPropagation()
+                  onSelect(e)
+                }
+              }}
+            >
               <input 
                 type="checkbox" 
                 checked={isSelected} 
-                onChange={onSelect} 
+                readOnly
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onSelect(e)
+                }} 
                 className="w-5 h-5 sm:w-4 sm:h-4 rounded border-gray-300 text-blue-600 cursor-pointer" 
-                onClick={(e) => e.stopPropagation()} 
               />
             </label>
           </div>
@@ -494,13 +507,26 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               <span className="text-sm sm:text-xs text-gray-500 truncate">{getDomain(link.url)}</span>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
-              <label className={`p-1 cursor-pointer transition-opacity touch-manipulation ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+              <label 
+                className={`p-1 cursor-pointer transition-opacity touch-manipulation ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                onClick={(e) => {
+                  // Only handle if clicking directly on label (not checkbox)
+                  if (e.target === e.currentTarget || (e.target as HTMLElement).tagName !== 'INPUT') {
+                    e.stopPropagation()
+                    onSelect(e)
+                  }
+                }}
+              >
                 <input 
                   type="checkbox" 
                   checked={isSelected} 
-                  onChange={onSelect} 
+                  readOnly
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onSelect(e)
+                  }} 
                   className="w-5 h-5 sm:w-4 sm:h-4 rounded border-gray-300 text-blue-600 cursor-pointer" 
-                  onClick={(e) => e.stopPropagation()} 
                 />
               </label>
               <button 

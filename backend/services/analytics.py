@@ -998,9 +998,15 @@ class AnalyticsService:
                 user_id = user["_id"]
                 # Fix: Ensure lastLinkDate is timezone-aware before subtracting
                 last_active = user.get("lastLinkDate")
-                if last_active and last_active.tzinfo is None:
-                    last_active = last_active.replace(tzinfo=timezone.utc)
-                is_active = (datetime.now(timezone.utc) - last_active).days <= 30 if last_active else False
+                if last_active:
+                    # Fix: If DB date is naive, force it to UTC
+                    if last_active.tzinfo is None:
+                        last_active = last_active.replace(tzinfo=timezone.utc)
+                    
+                    # Now both are aware, subtraction is safe
+                    is_active = (datetime.now(timezone.utc) - last_active).days <= 30
+                else:
+                    is_active = False
                 
                 user_list.append({
                     "userId": user_id,

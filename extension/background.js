@@ -78,7 +78,8 @@ const BACKGROUND_CONSTANTS = {
     UPDATE_SETTINGS: 'UPDATE_SETTINGS',
     GET_LINKS: 'GET_LINKS',
     ENQUEUE_SAVE: 'ENQUEUE_SAVE',
-    SAVE_CURRENT_PAGE: 'SAVE_CURRENT_PAGE'
+    SAVE_CURRENT_PAGE: 'SAVE_CURRENT_PAGE',
+    BATCH_SAVE_LINKS: 'BATCH_SAVE_LINKS'
   }
 };
 
@@ -220,6 +221,11 @@ class SmarTrackBackground {
         this.enqueueSave(request.linkData);
         this.retryPendingSaves();
       }
+    );
+    
+    this.messageHandlers.set(
+      BACKGROUND_CONSTANTS.MESSAGE_TYPES.BATCH_SAVE_LINKS,
+      (request) => this.handleBatchSaveLinks(request.data)
     );
   }
 
@@ -886,7 +892,7 @@ class SmarTrackBackground {
       favicon: linkData.favicon || null,
       isFavorite: linkData.isFavorite === true,
       isArchived: linkData.isArchived === true,
-      source: 'extension',
+      source: linkData.source || 'extension',
       extensionVersion: version
     };
     
@@ -905,6 +911,108 @@ class SmarTrackBackground {
     }
     
     return await response.json();
+  }
+  
+  /**
+   * Handles batch save links request from content scripts
+   * @async
+   * @param {Array<Object>} batch - Array of link data objects to save
+   * @returns {Promise<Object>} Result object with success count and errors
+   */
+  async handleBatchSaveLinks(batch) {
+    if (!Array.isArray(batch) || batch.length === 0) {
+      throw new Error('Invalid batch data: expected non-empty array');
+    }
+    
+    // Retrieve auth token
+    const tokenResult = await chrome.storage.local.get([
+      BACKGROUND_CONSTANTS.STORAGE_KEYS.AUTH_TOKEN
+    ]);
+    const token = tokenResult[BACKGROUND_CONSTANTS.STORAGE_KEYS.AUTH_TOKEN];
+    
+    // If no token, open login page
+    if (!token || typeof token !== 'string') {
+      chrome.tabs.create({ url: `${BACKGROUND_CONSTANTS.DASHBOARD_URL}/login` });
+      throw new Error('Authentication required. Please log in to SmarTrack.');
+    }
+    
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: []
+    };
+    
+    // Process each item in the batch
+    for (let i = 0; i < batch.length; i++) {
+      const item = batch[i];
+      
+      if (!item || !item.url) {
+        results.failed++;
+        results.errors.push({
+          index: i,
+          error: 'Invalid item: missing url'
+        });
+        continue;
+      }
+      
+      try {
+        // Prepare link data according to plan specification
+        const linkData = {
+          url: item.url,
+          title: item.title || 'Untitled',
+          description: item.description || '',
+          category: item.category || 'research',
+          contentType: item.contentType || 'webpage',
+          source: item.source || 'linkedin',
+          thumbnail: item.image || item.thumbnail || null
+        };
+        
+        // Call existing saveLinkToBackend method
+        await this.saveLinkToBackend(linkData, token);
+        results.success++;
+      } catch (error) {
+        results.failed++;
+        
+        // Handle 401 (unauthorized) - token might be expired
+        if (error.message && error.message.includes('401')) {
+          // Open login page and stop processing
+          chrome.tabs.create({ url: `${BACKGROUND_CONSTANTS.DASHBOARD_URL}/login` });
+          throw new Error('Authentication expired. Please log in again.');
+        }
+        
+        // Handle network errors - enqueue for retry
+        if (error.message && (
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('NetworkError') ||
+          error.message.includes('network')
+        )) {
+          // Enqueue for offline retry
+          await this.enqueueSave({
+            url: item.url,
+            title: item.title || 'Untitled',
+            description: item.description || '',
+            category: item.category || 'research',
+            contentType: item.contentType || 'webpage',
+            source: item.source || 'linkedin',
+            thumbnail: item.image || item.thumbnail || null
+          });
+          results.errors.push({
+            index: i,
+            error: 'Network error - queued for retry',
+            url: item.url
+          });
+        } else {
+          // Other errors (e.g., 409 duplicate, validation errors)
+          results.errors.push({
+            index: i,
+            error: error.message || 'Unknown error',
+            url: item.url
+          });
+        }
+      }
+    }
+    
+    return results;
   }
   
   /**
