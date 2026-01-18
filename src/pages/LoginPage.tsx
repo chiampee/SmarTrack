@@ -280,19 +280,19 @@ export const LoginPage: React.FC = () => {
               {/* Image container */}
               <div className="relative rounded-xl overflow-hidden border border-slate-200/60 bg-white">
                 <img 
-                  src="/Silo%20vs%20Hub.jpg" 
+                  src="/Silo vs Hub.jpg" 
                   alt="Diagram showing the problem of fragmented knowledge silos vs unified SmarTrack hub - Before: Your insights are trapped in someone else's app. After: One source of truth for everything you know."
                   className="w-full h-auto block"
                   onError={(e) => {
-                    // Try alternative paths if URL encoded doesn't work
+                    // Try alternative paths if spaces don't work
                     const target = e.target as HTMLImageElement;
                     const currentSrc = target.src;
-                    if (currentSrc.includes('%20')) {
-                      target.src = '/Silo vs Hub.jpg';
-                    } else if (currentSrc.includes('Silo vs Hub')) {
+                    if (currentSrc.includes('Silo vs Hub')) {
                       target.src = '/Silo-vs-Hub.jpg';
+                    } else if (currentSrc.includes('Silo-vs-Hub')) {
+                      target.src = '/Silo%20vs%20Hub.jpg';
                     } else {
-                      console.warn('Silo vs Hub image not found. Please add the image to /public folder with one of these names: "Silo vs Hub.jpg", "Silo-vs-Hub.jpg", or "Silo%20vs%20Hub.jpg"');
+                      console.warn('Silo vs Hub image not found. Please add the image to /public folder with name: "Silo vs Hub.jpg"');
                     }
                   }}
                 />
