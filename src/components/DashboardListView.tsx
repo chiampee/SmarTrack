@@ -21,15 +21,15 @@ const fadeInUp = {
 
 export const DashboardListView = () => {
   return (
-    <div className="w-full bg-white rounded-xl overflow-hidden border border-slate-200 shadow-lg">
+    <div className="w-full bg-white rounded-lg sm:rounded-xl overflow-hidden border border-slate-200 shadow-lg">
       {/* Header with gradient */}
-      <div className="h-16 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center">
-        <h2 className="text-white font-bold text-lg">Research Dashboard</h2>
+      <div className="h-12 sm:h-14 lg:h-16 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center px-4">
+        <h2 className="text-white font-bold text-sm sm:text-base lg:text-lg truncate">Research Dashboard</h2>
       </div>
 
-      <div className="flex h-[500px] overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-56 bg-slate-100 border-r border-slate-200 flex flex-col flex-shrink-0 overflow-y-auto">
+      <div className="flex h-[400px] sm:h-[450px] lg:h-[500px] overflow-hidden">
+        {/* Left Sidebar - Hidden on mobile */}
+        <div className="hidden lg:flex w-56 bg-slate-100 border-r border-slate-200 flex-col flex-shrink-0 overflow-y-auto">
           {/* Navigation */}
           <div className="p-4 space-y-1">
             <div className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:bg-slate-200 rounded-lg text-sm cursor-pointer">
@@ -80,71 +80,76 @@ export const DashboardListView = () => {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 bg-white flex flex-col min-w-0 overflow-hidden">
+        <div className="flex-1 bg-white flex flex-col min-w-0 overflow-hidden w-full">
           {/* Top Bar */}
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex-shrink-0">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4 text-sm text-slate-600">
+          <div className="px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-4 border-b border-slate-200 bg-slate-50 flex-shrink-0">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-2 sm:mb-3">
+              <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-slate-600">
                 <span className="font-medium">2 links</span>
                 <span>0 favorites</span>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
-                  <Download className="w-4 h-4" />
-                  Export
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                <button className="px-2 sm:px-3 py-1 sm:py-1.5 border border-slate-300 rounded-md sm:rounded-lg text-xs sm:text-sm text-slate-700 hover:bg-slate-100 active:bg-slate-200 flex items-center gap-1 sm:gap-2 whitespace-nowrap touch-manipulation">
+                  <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Export</span>
                 </button>
-                <button className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2 whitespace-nowrap">
-                  <Plus className="w-4 h-4" />
-                  + Add Link
+                <button className="px-2.5 sm:px-4 py-1 sm:py-1.5 bg-blue-600 text-white rounded-md sm:rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700 active:bg-blue-800 flex items-center gap-1 sm:gap-2 whitespace-nowrap touch-manipulation">
+                  <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">+ Add Link</span>
+                  <span className="sm:hidden">Add</span>
                 </button>
               </div>
             </div>
             
             {/* Search Bar */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search your research library..."
-                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 bg-white border border-slate-300 rounded-md sm:rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 readOnly
               />
             </div>
           </div>
 
           {/* List Header */}
-          <div className="px-6 py-3 border-b border-slate-200 bg-white flex-shrink-0">
+          <div className="px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 border-b border-slate-200 bg-white flex-shrink-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-slate-900">articles</h3>
-              <span className="text-sm text-slate-500">2 links</span>
+              <h3 className="font-semibold text-sm sm:text-base text-slate-900">articles</h3>
+              <span className="text-xs sm:text-sm text-slate-500">2 links</span>
             </div>
           </div>
 
           {/* Articles List */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-3 min-h-0">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 space-y-2 sm:space-y-3 min-h-0">
             {/* Article 1 */}
             <motion.div
               initial="hidden"
               animate="visible"
               variants={fadeInUp}
-              className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all min-w-0"
+              className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-white border border-slate-200 rounded-md sm:rounded-lg hover:border-blue-300 hover:shadow-sm transition-all min-w-0"
             >
-              <CheckSquare className="w-5 h-5 text-slate-400 flex-shrink-0" />
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <div className="font-medium text-slate-900 text-sm mb-1 truncate">
-                  Friday stocks by analyst calls like Nvidia
+              <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="font-medium text-slate-900 text-xs sm:text-sm mb-0.5 sm:mb-1 line-clamp-2 sm:truncate">
+                    Friday stocks by analyst calls like Nvidia
+                  </div>
+                  <div className="text-[10px] sm:text-xs text-slate-500 truncate">
+                    https://www.cnbc.com/2005/11/21/friday-stocks-by-analyst-calls-like-nvidia.html
+                  </div>
                 </div>
-                <div className="text-xs text-slate-500 truncate">
-                  https://www.cnbc.com/2005/11/21/friday-stocks-by-analyst-calls-like-nvidia.html
+              </div>
+              <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3 flex-shrink-0">
+                <div className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] sm:text-xs font-medium whitespace-nowrap">
+                  articles
                 </div>
+                <div className="text-[10px] sm:text-xs text-slate-500 whitespace-nowrap">
+                  Nov 20, 2005
+                </div>
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-slate-100 rounded flex-shrink-0 hidden sm:block" />
               </div>
-              <div className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium flex-shrink-0 whitespace-nowrap">
-                articles
-              </div>
-              <div className="text-xs text-slate-500 flex-shrink-0 whitespace-nowrap">
-                Nov 20, 2005
-              </div>
-              <div className="w-6 h-6 bg-slate-100 rounded flex-shrink-0" />
             </motion.div>
 
             {/* Article 2 */}
@@ -153,24 +158,28 @@ export const DashboardListView = () => {
               animate="visible"
               variants={fadeInUp}
               transition={{ delay: 0.1 }}
-              className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all min-w-0"
+              className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-white border border-slate-200 rounded-md sm:rounded-lg hover:border-blue-300 hover:shadow-sm transition-all min-w-0"
             >
-              <CheckSquare className="w-5 h-5 text-slate-400 flex-shrink-0" />
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <div className="font-medium text-slate-900 text-sm mb-1 truncate">
-                  CNBC Pro-Premium Lhe...
+              <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="font-medium text-slate-900 text-xs sm:text-sm mb-0.5 sm:mb-1 line-clamp-2 sm:truncate">
+                    CNBC Pro-Premium Lhe...
+                  </div>
+                  <div className="text-[10px] sm:text-xs text-slate-500 truncate">
+                    https://www.cnbc.com/pro/
+                  </div>
                 </div>
-                <div className="text-xs text-slate-500 truncate">
-                  https://www.cnbc.com/pro/
+              </div>
+              <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3 flex-shrink-0">
+                <div className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] sm:text-xs font-medium whitespace-nowrap">
+                  articles
                 </div>
+                <div className="text-[10px] sm:text-xs text-slate-500 whitespace-nowrap">
+                  Nov 22, 2025
+                </div>
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-slate-100 rounded flex-shrink-0 hidden sm:block" />
               </div>
-              <div className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium flex-shrink-0 whitespace-nowrap">
-                articles
-              </div>
-              <div className="text-xs text-slate-500 flex-shrink-0 whitespace-nowrap">
-                Nov 22, 2025
-              </div>
-              <div className="w-6 h-6 bg-slate-100 rounded flex-shrink-0" />
             </motion.div>
           </div>
         </div>

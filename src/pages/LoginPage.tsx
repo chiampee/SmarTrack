@@ -243,7 +243,7 @@ export const LoginPage = () => {
             {/* Card 3: Built for Workflow - Full Width Horizontal Layout */}
             <motion.div 
               variants={fadeIn}
-              className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-all"
+              className="lg:col-span-2 bg-white rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-all"
             >
               <div className="flex flex-col lg:flex-row">
                 {/* Dashboard on Left (Desktop) / Top (Mobile) */}
@@ -251,9 +251,9 @@ export const LoginPage = () => {
                   <DashboardListView />
                 </div>
                 {/* Text on Right (Desktop) / Bottom (Mobile) */}
-                <div className="lg:w-1/3 p-8 lg:p-10 flex flex-col justify-center bg-gradient-to-br from-slate-50 to-white">
-                  <h3 className="text-2xl font-bold text-slate-900 mb-3">Built for Workflow</h3>
-                  <p className="text-slate-600 text-lg leading-relaxed">Track competitors, build swipe files, and recall prospect details with rich metadata tags.</p>
+                <div className="lg:w-1/3 p-4 sm:p-6 lg:p-8 xl:p-10 flex flex-col justify-center bg-gradient-to-br from-slate-50 to-white">
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2 sm:mb-3">Built for Workflow</h3>
+                  <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">Track competitors, build swipe files, and recall prospect details with rich metadata tags.</p>
                 </div>
               </div>
             </motion.div>
