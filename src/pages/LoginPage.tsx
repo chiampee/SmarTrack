@@ -115,7 +115,7 @@ export const LoginPage = () => {
             </motion.h1>
             
             <motion.p variants={fadeIn} className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Centralize your research from LinkedIn, X, and the Open Web into one searchable intelligence hub. Capture the context, not just the link.
+              Centralize your research from LinkedIn, X, and the Open Web into one searchable intelligence hub. Capture the context instead of just the link.
             </motion.p>
             
             <motion.div variants={fadeIn} className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
@@ -123,8 +123,7 @@ export const LoginPage = () => {
                 onClick={() => loginWithRedirect()}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full text-lg shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-1"
               >
-                <Chrome className="w-5 h-5" />
-                Install Chrome Extension
+                Sign In
               </button>
               <p className="text-sm text-slate-500 font-medium">Free forever for personal use</p>
             </motion.div>
@@ -149,7 +148,7 @@ export const LoginPage = () => {
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Your Knowledge is Fragmented.</h2>
             <p className="text-lg text-slate-600">
-              You save a chart on LinkedIn. You bookmark a report on Chrome. But when you need them, they're buried by algorithms. 
+              You save a chart on LinkedIn. You bookmark a report on Chrome. But when you need them, they are buried by algorithms. 
               <span className="font-semibold text-slate-900"> If you can't find it, you didn't save it.</span>
             </p>
           </div>
@@ -165,7 +164,7 @@ export const LoginPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-20">
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Escape the Walled Gardens.</h2>
-            <p className="text-lg text-slate-600">SmarTrack is the bridge between your social feeds and your personal library.</p>
+            <p className="text-lg text-slate-600">SmarTrack works as the bridge between your social feeds and your personal library.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-12 relative">
@@ -176,7 +175,7 @@ export const LoginPage = () => {
               {
                 icon: ScanEye,
                 title: "1. Capture",
-                desc: "Extract full context—author, image, and text directly from the post."
+                desc: "Auto-extract the author, image, and full context. No screenshots required."
               },
               {
                 icon: ShieldCheck,
@@ -186,7 +185,7 @@ export const LoginPage = () => {
               {
                 icon: LayoutGrid,
                 title: "3. Centralize",
-                desc: "Insights land in one unified, searchable dashboard instantly."
+                desc: "Your research lands in one searchable library where it is tagged and ready."
               }
             ].map((step, i) => (
               <div key={i} className="flex flex-col items-center text-center bg-white p-4">
@@ -222,7 +221,7 @@ export const LoginPage = () => {
               </div>
               <div className="p-4 sm:p-6 lg:p-8">
                 <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">Visual Recall</h3>
-                <p className="text-sm sm:text-base text-slate-600">Don't just save the URL. Capture the thumbnail, author, and summary. Recognize your research instantly.</p>
+                <p className="text-sm sm:text-base text-slate-600">Don't just save the URL. Capture the thumbnail, author, and summary, so you recognize your research instantly.</p>
               </div>
             </motion.div>
 
@@ -236,7 +235,7 @@ export const LoginPage = () => {
               </div>
               <div className="p-4 sm:p-6 lg:p-8">
                 <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">Platform Agnostic</h3>
-                <p className="text-sm sm:text-base text-slate-600">Treat LinkedIn like the Open Web. PDF, Tweet, or Post—it all lives in one standardized format.</p>
+                <p className="text-sm sm:text-base text-slate-600">Capture LinkedIn posts, PDFs, and Tweets as standard articles. No more screenshots.</p>
               </div>
             </motion.div>
 
@@ -253,7 +252,7 @@ export const LoginPage = () => {
                 {/* Text on Right (Desktop) / Bottom (Mobile) */}
                 <div className="lg:w-1/3 p-4 sm:p-6 lg:p-8 xl:p-10 flex flex-col justify-center bg-gradient-to-br from-slate-50 to-white">
                   <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2 sm:mb-3">Built for Workflow</h3>
-                  <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">Track competitors, build swipe files, and recall prospect details with rich metadata tags.</p>
+                  <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">Track competitors, build swipe files, and recall prospect details. Your research lands in a single searchable library, tagged and ready.</p>
                 </div>
               </div>
             </motion.div>
@@ -273,8 +272,7 @@ export const LoginPage = () => {
           
           <h2 className="text-3xl sm:text-4xl font-bold mb-6">Intelligence Without Intrusion.</h2>
           <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-            Most tools demand passwords. SmarTrack is different. We use a <strong>Client-First Architecture</strong>. 
-            The capture happens locally on your device. We never see your session data or passwords.
+            Most tools demand passwords. SmarTrack is different. We use a <strong>Client-First Architecture</strong> in which capture occurs locally on your device. We never see your session data or passwords.
           </p>
         </div>
       </section>
