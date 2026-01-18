@@ -217,7 +217,7 @@ export const LoginPage = () => {
               variants={fadeIn}
               className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
             >
-              <div className="h-72 bg-white relative overflow-hidden p-4 flex items-center justify-center">
+              <div className="h-72 bg-white relative overflow-hidden pt-6 px-4 pb-4 flex items-center justify-center">
                 <ExtensionPopupPreview />
               </div>
               <div className="p-8">
@@ -231,7 +231,7 @@ export const LoginPage = () => {
               variants={fadeIn}
               className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
             >
-              <div className="h-72 bg-white relative overflow-hidden p-4 flex items-center justify-center">
+              <div className="h-72 bg-white relative overflow-hidden pt-6 px-4 pb-4 flex items-center justify-center">
                 <CategorySelectionPreview />
               </div>
               <div className="p-8">

@@ -5,14 +5,14 @@ export const ExtensionPopupPreview = () => {
   return (
     <div className="w-full max-w-sm mx-auto bg-white rounded-xl shadow-xl border border-slate-200/60 overflow-hidden">
       {/* Header with gradient */}
-      <div className="relative bg-gradient-to-br from-purple-600 via-purple-500 to-blue-500 px-4 py-3.5">
-        <button className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
+      <div className="relative bg-gradient-to-br from-purple-600 via-purple-500 to-blue-500 px-4 py-4">
+        <button className="absolute top-3 right-3 w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
           <X className="w-3.5 h-3.5 text-white" />
         </button>
-        <div className="text-white text-center">
+        <div className="text-white text-center pt-1">
           <h3 className="font-semibold text-sm">Save to SmarTrack</h3>
         </div>
-        <div className="flex items-center justify-center gap-2 mt-2">
+        <div className="flex items-center justify-center gap-2 mt-2.5">
           <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
             <Globe className="w-3.5 h-3.5 text-white" />
           </div>
@@ -21,7 +21,7 @@ export const ExtensionPopupPreview = () => {
       </div>
 
       {/* Form Content */}
-      <div className="p-4 space-y-3.5 bg-white">
+      <div className="px-4 pt-5 pb-4 space-y-3.5 bg-white">
         {/* URL Field */}
         <div>
           <label className="block text-xs font-medium text-slate-600 mb-1.5">Source</label>

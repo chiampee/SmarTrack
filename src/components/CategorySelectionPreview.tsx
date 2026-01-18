@@ -5,14 +5,14 @@ export const CategorySelectionPreview = () => {
   return (
     <div className="w-full max-w-sm mx-auto bg-white rounded-xl shadow-xl border border-slate-200/60 overflow-hidden">
       {/* Header with gradient */}
-      <div className="bg-gradient-to-br from-purple-600 via-purple-500 to-blue-500 px-4 py-3.5">
-        <div className="text-white text-center">
+      <div className="bg-gradient-to-br from-purple-600 via-purple-500 to-blue-500 px-4 py-4">
+        <div className="text-white text-center pt-1">
           <h3 className="font-semibold text-sm">Save to SmarTrack</h3>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-4 space-y-3.5 bg-white">
+      <div className="px-4 pt-5 pb-4 space-y-3.5 bg-white">
         {/* Category Label */}
         <div className="flex items-center gap-2">
           <Tag className="w-4 h-4 text-slate-500" />
