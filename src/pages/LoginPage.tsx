@@ -130,13 +130,13 @@ export const LoginPage = () => {
             {/* Dashboard Visual */}
             <motion.div 
               variants={fadeIn}
-              className="relative rounded-xl bg-slate-900 p-2 sm:p-3 shadow-2xl ring-1 ring-slate-900/10"
+              className="relative rounded-2xl bg-white p-4 sm:p-6 shadow-2xl shadow-blue-900/10 ring-1 ring-slate-200/60 border border-slate-200"
             >
-              <div className="rounded-lg overflow-hidden bg-slate-800 aspect-[16/10] relative">
+              <div className="rounded-xl overflow-hidden bg-white aspect-[16/10] sm:aspect-[16/9] relative">
                  <img 
                   src="/3_dashboard_view.png" 
                   alt="SmarTrack Dashboard Interface showing organized cards from LinkedIn, YouTube, and Web" 
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     if (!target.src.includes('image_50ae46')) {
@@ -234,12 +234,11 @@ export const LoginPage = () => {
               variants={fadeIn}
               className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
             >
-              <div className="h-72 bg-slate-100 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-50/50 z-10 pointer-events-none" />
+              <div className="h-72 bg-white relative overflow-hidden p-4 flex items-center justify-center">
                  <img 
                   src="/1_save_link_popup.png" 
                   alt="Browser extension popup showing Visual Recall feature"
-                  className="w-full h-full object-cover object-top"
+                  className="w-full h-full object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     if (!target.src.includes('image_01344c')) {
@@ -259,12 +258,11 @@ export const LoginPage = () => {
               variants={fadeIn}
               className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
             >
-              <div className="h-72 bg-slate-100 relative overflow-hidden p-8 flex items-center justify-center">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-50/50 z-10 pointer-events-none" />
+              <div className="h-72 bg-white relative overflow-hidden p-6 flex items-center justify-center">
                  <img 
                   src="/2_category_selection.png" 
                   alt="Category selection interface showing Platform Agnostic feature"
-                  className="w-full h-auto object-contain relative z-0"
+                  className="w-full h-auto object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     if (!target.src.includes('image_50adcc')) {
@@ -282,16 +280,15 @@ export const LoginPage = () => {
             {/* Card 3: Built for Workflow - Full Width Horizontal Layout */}
             <motion.div 
               variants={fadeIn}
-              className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
+              className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-all"
             >
               <div className="flex flex-col lg:flex-row">
                 {/* Image on Left (Desktop) / Top (Mobile) */}
-                <div className="lg:w-2/3 h-80 lg:h-96 bg-slate-100 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-50/50 z-10 pointer-events-none" />
+                <div className="lg:w-2/3 h-96 lg:h-[500px] bg-white relative overflow-hidden p-4 lg:p-6 flex items-center justify-center">
                   <img 
                     src="/3_dashboard_view.png" 
                     alt="Dashboard list view showing Built for Workflow feature with rich metadata"
-                    className="w-full h-full object-cover object-top"
+                    className="w-full h-full object-contain"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       if (!target.src.includes('image_00bf70')) {
@@ -301,7 +298,7 @@ export const LoginPage = () => {
                   />
                 </div>
                 {/* Text on Right (Desktop) / Bottom (Mobile) */}
-                <div className="lg:w-1/3 p-8 flex flex-col justify-center">
+                <div className="lg:w-1/3 p-8 lg:p-10 flex flex-col justify-center bg-gradient-to-br from-slate-50 to-white">
                   <h3 className="text-2xl font-bold text-slate-900 mb-3">Built for Workflow</h3>
                   <p className="text-slate-600 text-lg leading-relaxed">Track competitors, build swipe files, and recall prospect details with rich metadata tags.</p>
                 </div>
