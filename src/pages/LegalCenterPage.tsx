@@ -2,7 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Chrome, Shield, Eye, Database, Lock, UserCheck, FileText, Scale, AlertTriangle, XCircle, CheckCircle, Mail } from 'lucide-react'
+import { ArrowLeft, Chrome, Shield, Eye, Database, Lock, UserCheck, FileText, Scale, AlertTriangle, XCircle, CheckCircle, Mail, Search } from 'lucide-react'
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -161,12 +161,15 @@ export const LegalCenterPage: React.FC = () => {
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <img 
-                src="/logo.svg" 
-                alt="SmarTrack" 
-                className="h-6 sm:h-7 w-auto cursor-pointer"
+              <div 
+                className="flex items-center gap-1.5 sm:gap-2 cursor-pointer"
                 onClick={() => navigate('/')}
-              />
+              >
+                <div className="bg-blue-600 p-1 sm:p-1.5 rounded-md sm:rounded-lg">
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[3]" />
+                </div>
+                <span className="font-bold text-lg sm:text-xl tracking-tight text-slate-900">SmarTrack</span>
+              </div>
             </div>
             
             <motion.button
