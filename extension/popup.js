@@ -1067,35 +1067,20 @@ class SmarTrackPopup {
     }
     
     // Set favicon
-    if (faviconEl) {
+    if (faviconEl && this.pageData.favicon) {
       try {
-        if (this.pageData.favicon) {
-          const faviconUrl = this.pageData.favicon.startsWith('http')
-            ? this.pageData.favicon
-            : new URL(this.pageData.favicon, url).href;
-          
-          faviconEl.style.cssText = `
-            display: flex;
-            background-image: url(${faviconUrl});
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-color: #f1f5f9;
-            width: 64px;
-            height: 64px;
-            border-radius: 12px;
-          `;
-          console.log('[SRT] Favicon set successfully:', faviconUrl);
-        } else {
-          // Fallback: hide favicon if not available
-          faviconEl.style.display = 'none';
-        }
+        const faviconUrl = this.pageData.favicon.startsWith('http')
+          ? this.pageData.favicon
+          : new URL(this.pageData.favicon, url).href;
+        
+        faviconEl.style.cssText = `
+          background-image: url(${faviconUrl});
+          background-size: cover;
+          background-position: center;
+          background-color: #e2e8f0;
+        `;
       } catch (error) {
         console.error('[SRT] Failed to set favicon:', error);
-        // Hide on error
-        if (faviconEl) {
-          faviconEl.style.display = 'none';
-        }
       }
     }
     
@@ -1121,9 +1106,9 @@ class SmarTrackPopup {
         }
       }
       
-      // Limit to 120 chars for better UX (user can edit if needed)
-      if (cleanedTitle.length > 120) {
-        cleanedTitle = cleanedTitle.substring(0, 117) + '...';
+      // Limit to 70 chars for better UX in popup (user can edit if needed)
+      if (cleanedTitle.length > 70) {
+        cleanedTitle = cleanedTitle.substring(0, 67) + '...';
       }
       
       titleInput.value = cleanedTitle;

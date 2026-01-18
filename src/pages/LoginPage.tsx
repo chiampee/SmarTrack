@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Chrome, FileText, FolderTree, Search, ArrowRight, CheckCircle2, LogIn, BookOpen, ExternalLink, Sparkles, ChevronUp, Link2, File, MessageSquare, Globe } from 'lucide-react'
-import { LinkedInLogo, XLogo, RedditLogo, WebIcon, PDFIcon } from '../components/BrandLogos'
+import { Chrome, FileText, FolderTree, Search, ArrowRight, CheckCircle2, LogIn, BookOpen, ExternalLink, Sparkles, ChevronUp, Link2 } from 'lucide-react'
 import { DashboardPreview } from '../components/DashboardPreview'
 import { ExtensionPreview } from '../components/ExtensionPreview'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
+import { LinkedInLogo, XLogo, RedditLogo, WebIcon, PDFIcon } from '../components/BrandLogos'
 
 // Scroll to Top Button Component
 const ScrollToTopButton: React.FC = () => {
@@ -274,7 +274,7 @@ export const LoginPage: React.FC = () => {
                 icon: <LinkedInLogo className="w-6 h-6 sm:w-7 sm:h-7" />,
                 color: 'from-blue-500 to-blue-600',
                 bgColor: 'bg-blue-50',
-                textColor: 'text-[#0077B5]',
+                textColor: 'text-blue-600',
                 description: 'Posts & Articles'
               },
               {
@@ -282,7 +282,7 @@ export const LoginPage: React.FC = () => {
                 icon: <XLogo className="w-6 h-6 sm:w-7 sm:h-7" />,
                 color: 'from-slate-900 to-slate-800',
                 bgColor: 'bg-slate-50',
-                textColor: 'text-slate-900',
+                textColor: 'text-slate-700',
                 description: 'Threads & Tweets'
               },
               {
@@ -290,7 +290,7 @@ export const LoginPage: React.FC = () => {
                 icon: <RedditLogo className="w-6 h-6 sm:w-7 sm:h-7" />,
                 color: 'from-orange-500 to-orange-600',
                 bgColor: 'bg-orange-50',
-                textColor: 'text-[#FF4500]',
+                textColor: 'text-orange-600',
                 description: 'Discussions & Posts'
               },
               {
