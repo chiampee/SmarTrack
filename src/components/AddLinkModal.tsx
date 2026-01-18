@@ -208,10 +208,11 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://example.com"
-                className={`input-field text-sm sm:text-sm py-2.5 sm:py-3 ${errors.url ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
+                className={`input-field text-base sm:text-sm py-3 sm:py-3 ${errors.url ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
                 autoCapitalize="off"
                 autoCorrect="off"
                 autoComplete="url"
+                inputMode="url"
               />
               {errors.url && (
                 <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.url}</p>
@@ -229,9 +230,10 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter link title"
-                className={`input-field text-sm sm:text-sm py-2.5 sm:py-3 ${errors.title ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
+                className={`input-field text-base sm:text-sm py-3 sm:py-3 ${errors.title ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
                 autoCapitalize="sentences"
                 autoComplete="off"
+                inputMode="text"
               />
               {errors.title && (
                 <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.title}</p>
@@ -247,8 +249,8 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter link description"
-                rows={2}
-                className="input-field resize-none text-sm sm:text-sm py-2.5 sm:py-3"
+                rows={3}
+                className="input-field resize-none text-base sm:text-sm py-3 sm:py-3"
                 autoCapitalize="sentences"
               />
             </div>
@@ -268,10 +270,11 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
                     onChange={(e) => handleCategoryChange(e.target.value)}
                     onFocus={() => setShowCategorySuggestions(true)}
                     placeholder="Type or select"
-                    className={`input-field pr-10 text-sm sm:text-sm py-2.5 sm:py-3 ${errors.category ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
+                    className={`input-field pr-10 text-base sm:text-sm py-3 sm:py-3 ${errors.category ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
                     required
                     autoCapitalize="words"
                     autoComplete="off"
+                    inputMode="text"
                   />
                   <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   
@@ -317,7 +320,7 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
                 <select
                   value={contentType}
                   onChange={(e) => setContentType(e.target.value as Link['contentType'])}
-                  className="input-field text-sm sm:text-sm py-2.5 sm:py-3"
+                  className="input-field text-base sm:text-sm py-3 sm:py-3"
                 >
                   {contentTypes.map((type) => (
                     <option key={type.value} value={type.value}>
@@ -339,9 +342,10 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
                 placeholder="research, article, example"
-                className="input-field text-sm sm:text-sm py-2.5 sm:py-3"
+                className="input-field text-base sm:text-sm py-3 sm:py-3"
                 autoCapitalize="none"
                 autoComplete="off"
+                inputMode="text"
               />
               <p className="mt-1 text-xs text-gray-500 leading-tight">
                 Separate tags with commas
@@ -358,7 +362,7 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
                 <select
                   value={collectionId}
                   onChange={(e) => setCollectionId(e.target.value)}
-                  className="input-field text-sm sm:text-sm py-2.5 sm:py-3"
+                  className="input-field text-base sm:text-sm py-3 sm:py-3"
                 >
                   <option value="">None - Add to general library</option>
                   {collections.map((collection) => (
@@ -394,18 +398,18 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
             </div>
           </div>
 
-          {/* Actions - Always visible on mobile */}
-          <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-end gap-3 shadow-lg sm:shadow-none flex-shrink-0">
+          {/* Actions - Always visible on mobile with better mobile UX */}
+          <div className="sticky bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 px-4 sm:px-6 py-4 sm:py-4 flex items-center justify-between sm:justify-end gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] sm:shadow-none flex-shrink-0 safe-area-inset-bottom">
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] sm:min-h-0"
+              className="px-5 py-3 text-base sm:text-sm font-semibold sm:font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl sm:rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-all min-h-[48px] sm:min-h-0 flex-1 sm:flex-initial touch-manipulation"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm min-h-[44px] sm:min-h-0"
+              className="px-5 py-3 text-base sm:text-sm font-semibold sm:font-medium text-white bg-blue-600 rounded-xl sm:rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-all shadow-lg sm:shadow-sm min-h-[48px] sm:min-h-0 flex-1 sm:flex-initial touch-manipulation"
             >
               Add Link
             </button>
