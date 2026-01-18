@@ -232,7 +232,7 @@ export const LoginPage: React.FC = () => {
                     src="/3_dashboard_view.png" 
                     alt="SmarTrack Dashboard showing unified intelligence hub with grid layout, platform cards, and unified search interface"
                     className="w-full h-auto block"
-                    onError={(e) => {
+                    onError={() => {
                       console.warn('Dashboard image not found. Please ensure /3_dashboard_view.png exists in /public folder.');
                     }}
                   />
