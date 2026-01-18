@@ -1002,8 +1002,8 @@ export const Dashboard: React.FC = () => {
   // Handle extension download
   const handleDownloadExtension = () => {
     const linkElement = document.createElement('a')
-    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.0.zip')
-    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.0.zip')
+    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.1.zip')
+    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.1.zip')
     linkElement.click()
     toast.success('Extension download started!')
   }
