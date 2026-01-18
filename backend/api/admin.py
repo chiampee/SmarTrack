@@ -103,6 +103,12 @@ def set_cached_analytics(cache_key: str, data: Any):
     _analytics_cache[cache_key] = data
     _cache_timestamps[cache_key] = time.time()
 
+def clear_analytics_cache():
+    """Clear all analytics cache"""
+    _analytics_cache.clear()
+    _cache_timestamps.clear()
+    logger.info("[CACHE] Analytics cache cleared")
+
 @router.get("/admin/check")
 async def check_admin_status(
     credentials: HTTPAuthorizationCredentials = Depends(security)
@@ -140,14 +146,28 @@ async def get_admin_analytics(
         end_date_obj = datetime.now(timezone.utc)
         if end_date:
             try:
-                end_date_obj = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                # Set end date to end of day (23:59:59.999) to include the entire day
+                end_date_obj = datetime.strptime(end_date, "%Y-%m-%d").replace(
+                    tzinfo=timezone.utc,
+                    hour=23,
+                    minute=59,
+                    second=59,
+                    microsecond=999999
+                )
             except ValueError:
                 raise HTTPException(status_code=400, detail=ERR_DATE_FMT.format(field="end_date"))
         
         start_date_obj = end_date_obj - timedelta(days=7)
         if start_date:
             try:
-                start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                # Set start date to beginning of day (00:00:00) to include the entire day
+                start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").replace(
+                    tzinfo=timezone.utc,
+                    hour=0,
+                    minute=0,
+                    second=0,
+                    microsecond=0
+                )
             except ValueError:
                 raise HTTPException(status_code=400, detail=ERR_DATE_FMT.format(field="start_date"))
         
@@ -1580,3 +1600,149 @@ async def reset_user_limits(
         }, current_user.get("sub") if current_user else None, "error")
         raise HTTPException(status_code=500, detail=f"Failed to reset user limits: {str(e)}")
 
+
+
+@router.post("/admin/analytics/cache/clear")
+async def clear_analytics_cache_endpoint(
+    current_user: dict = Depends(check_admin_access)
+):
+    """
+    Clear analytics cache
+    Useful when data has been updated and cache needs to be invalidated
+    """
+    try:
+        clear_analytics_cache()
+        await log_system_event("admin_analytics_cache_cleared", {
+            "adminEmail": current_user.get("email")
+        }, current_user.get("sub"), "info")
+        return {
+            "message": "Analytics cache cleared successfully",
+            "clearedAt": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        await log_system_event("admin_analytics_cache_clear_error", {
+            "error": str(e)
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Failed to clear cache: {str(e)}")
+
+
+@router.get("/admin/analytics/validate")
+async def validate_analytics_data(
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    current_user: dict = Depends(check_admin_access),
+    db = Depends(get_database)
+):
+    """
+    Debug/validation endpoint to check database state and query results
+    Returns diagnostic information about:
+    - Total links count (raw MongoDB query)
+    - Sample link datetimes (check if naive/aware)
+    - Date range being used in queries
+    - Actual query results vs expected
+    """
+    try:
+        # Parse date range (same as analytics endpoint)
+        end_date_obj = datetime.now(timezone.utc)
+        if end_date:
+            try:
+                end_date_obj = datetime.strptime(end_date, "%Y-%m-%d").replace(
+                    tzinfo=timezone.utc,
+                    hour=23,
+                    minute=59,
+                    second=59,
+                    microsecond=999999
+                )
+            except ValueError:
+                raise HTTPException(status_code=400, detail=ERR_DATE_FMT.format(field="end_date"))
+        
+        start_date_obj = end_date_obj - timedelta(days=7)
+        if start_date:
+            try:
+                start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").replace(
+                    tzinfo=timezone.utc,
+                    hour=0,
+                    minute=0,
+                    second=0,
+                    microsecond=0
+                )
+            except ValueError:
+                raise HTTPException(status_code=400, detail=ERR_DATE_FMT.format(field="start_date"))
+        
+        # Get total links count (raw query)
+        total_links = await db.links.count_documents({})
+        
+        # Get sample links to check datetime format
+        sample_links = await db.links.find({}).sort("createdAt", -1).limit(10).to_list(10)
+        sample_datetimes = []
+        for link in sample_links:
+            created_at = link.get("createdAt")
+            if created_at:
+                sample_datetimes.append({
+                    "linkId": str(link.get("_id")),
+                    "createdAt": created_at.isoformat() if hasattr(created_at, "isoformat") else str(created_at),
+                    "isTimezoneAware": created_at.tzinfo is not None,
+                    "timezone": str(created_at.tzinfo) if created_at.tzinfo else "None (naive)"
+                })
+        
+        # Count links in date range (raw query)
+        links_in_range_raw = await db.links.count_documents({
+            "createdAt": {"$gte": start_date_obj, "$lte": end_date_obj}
+        })
+        
+        # Count links in date range with normalized dates (for comparison)
+        from services.analytics import AnalyticsService
+        normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+        links_in_range_normalized = await db.links.count_documents({
+            "createdAt": {"$gte": normalized_start, "$lte": normalized_end}
+        })
+        
+        # Get cache status
+        cache_key = f"analytics_{start_date_obj.date()}_{end_date_obj.date()}"
+        cache_status = {
+            "isCached": cache_key in _analytics_cache,
+            "cacheKey": cache_key,
+            "cacheAge": None
+        }
+        if cache_key in _cache_timestamps:
+            cache_age = time.time() - _cache_timestamps[cache_key]
+            cache_status["cacheAge"] = f"{cache_age:.2f} seconds"
+            cache_status["isExpired"] = cache_age >= settings.ANALYTICS_CACHE_TTL_SECONDS
+        
+        return {
+            "validation": {
+                "totalLinks": total_links,
+                "dateRange": {
+                    "startDate": start_date_obj.isoformat(),
+                    "endDate": end_date_obj.isoformat(),
+                    "normalizedStartDate": normalized_start.isoformat(),
+                    "normalizedEndDate": normalized_end.isoformat()
+                },
+                "linksInRange": {
+                    "rawQuery": links_in_range_raw,
+                    "normalizedQuery": links_in_range_normalized
+                },
+                "sampleDatetimes": sample_datetimes,
+                "cacheStatus": cache_status
+            },
+            "diagnostics": {
+                "timezoneAwareCount": sum(1 for dt in sample_datetimes if dt["isTimezoneAware"]),
+                "naiveCount": sum(1 for dt in sample_datetimes if not dt["isTimezoneAware"]),
+                "dateRangeIncludesFullDay": (
+                    start_date_obj.hour == 0 and start_date_obj.minute == 0 and
+                    end_date_obj.hour == 23 and end_date_obj.minute == 59
+                )
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error(f"[VALIDATION ERROR] {error_trace}")
+        await log_system_event("admin_analytics_validation_error", {
+            "error": str(e),
+            "traceback": error_trace
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Validation failed: {str(e)}")

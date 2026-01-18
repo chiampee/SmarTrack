@@ -5,7 +5,7 @@ Refactored to use utility functions for better maintainability
 
 from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel
 from urllib.parse import urlparse
 from services.mongodb import get_database
@@ -411,8 +411,8 @@ async def create_link(
             "content": content_text,
             "source": link_data.source or "web",  # Track source: web or extension
             "extensionVersion": link_data.extensionVersion,  # Extension version if applicable
-            "createdAt": datetime.utcnow(),
-            "updatedAt": datetime.utcnow(),
+            "createdAt": datetime.now(timezone.utc),
+            "updatedAt": datetime.now(timezone.utc),
             "clickCount": 0
         }
         
@@ -454,8 +454,8 @@ async def test_delete_link(
             "isArchived": False,
             "collectionId": None,
             "content": None,
-            "createdAt": datetime.utcnow(),
-            "updatedAt": datetime.utcnow(),
+            "createdAt": datetime.now(timezone.utc),
+            "updatedAt": datetime.now(timezone.utc),
             "clickCount": 0,
         }
 
@@ -492,7 +492,7 @@ async def update_link(
         object_id = validate_object_id(link_id, "Link")
         
         # Build update data
-        update_data = {"updatedAt": datetime.utcnow()}
+        update_data = {"updatedAt": datetime.now(timezone.utc)}
         
         # Process update fields with validation
         for field, value in link_data.dict(exclude_unset=True).items():
@@ -668,7 +668,7 @@ async def bulk_update_links(
                 raise HTTPException(status_code=400, detail=f"Invalid link ID: {link_id}")
         
         # Build update data (same validation as single update)
-        update_data = {"updatedAt": datetime.utcnow()}
+        update_data = {"updatedAt": datetime.now(timezone.utc)}
         for field, value in request.updates.dict(exclude_unset=True).items():
             if value is not None:
                 if field == "title":

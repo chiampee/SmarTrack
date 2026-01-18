@@ -59,6 +59,31 @@ class AnalyticsService:
     """Service class for analytics calculations"""
     
     @staticmethod
+    def normalize_datetime(dt: datetime) -> datetime:
+        """
+        Normalize a datetime to timezone-aware UTC for backward compatibility.
+        If datetime is naive (no timezone), assume it's UTC and add timezone info.
+        If datetime is already timezone-aware, return as-is.
+        """
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            # Naive datetime - assume UTC and add timezone
+            return dt.replace(tzinfo=timezone.utc)
+        # Already timezone-aware, return as-is
+        return dt
+    
+    @staticmethod
+    def normalize_date_range(start_date: datetime, end_date: datetime) -> tuple[datetime, datetime]:
+        """
+        Normalize both start and end dates to timezone-aware UTC.
+        Ensures date range queries work with both naive and timezone-aware datetimes.
+        """
+        normalized_start = AnalyticsService.normalize_datetime(start_date)
+        normalized_end = AnalyticsService.normalize_datetime(end_date)
+        return normalized_start, normalized_end
+    
+    @staticmethod
     async def get_total_users_all_time(db: Database) -> int:
         """Get total unique users (all-time) - includes users from links, user_limits, and system_logs"""
         try:
@@ -98,7 +123,8 @@ class AnalyticsService:
             all_users = users_from_links | users_from_limits | users_from_logs
             total_count = len(all_users)
             
-            logger.info(f"[ANALYTICS] Total users: {total_count} (links: {len(users_from_links)}, limits: {len(users_from_limits)}, logs: {len(users_from_logs)})")
+            logger.info(f"[ANALYTICS] get_total_users_all_time - Query result: {total_count} total users (links: {len(users_from_links)}, limits: {len(users_from_limits)}, logs: {len(users_from_logs)})")
+            logger.info(f"[ANALYTICS] get_total_users_all_time - Returning: {total_count}")
             
             return total_count
         except Exception as e:
@@ -109,13 +135,18 @@ class AnalyticsService:
     async def get_extension_users_all_time(db: Database) -> int:
         """Get total unique users who have ever used the extension (all-time)"""
         try:
+            logger.info(f"[ANALYTICS] get_extension_users_all_time - Input: no date range (all-time)")
             pipeline = [
                 {OP_MATCH: {"source": "extension"}},
                 {OP_GROUP: {"_id": F_USERID}},
                 {OP_COUNT: "total"}
             ]
+            logger.info(f"[ANALYTICS] get_extension_users_all_time - Pipeline: {pipeline}")
             result = await db.links.aggregate(pipeline).to_list(1)
-            return result[0]["total"] if result and result[0].get("total") is not None else 0
+            extension_users = result[0]["total"] if result and result[0].get("total") is not None else 0
+            logger.info(f"[ANALYTICS] get_extension_users_all_time - Query result: {extension_users} extension users found")
+            logger.info(f"[ANALYTICS] get_extension_users_all_time - Returning: {extension_users}")
+            return extension_users
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_extension_users_all_time failed: {e}")
             return 0
@@ -124,7 +155,13 @@ class AnalyticsService:
     async def get_total_links_all_time(db: Database) -> int:
         """Get total links created all-time"""
         try:
-            return await db.links.count_documents({})
+            logger.info(f"[ANALYTICS] get_total_links_all_time - Input: no date range (all-time)")
+            query = {}
+            logger.info(f"[ANALYTICS] get_total_links_all_time - Query: {query}")
+            result = await db.links.count_documents(query)
+            logger.info(f"[ANALYTICS] get_total_links_all_time - Query result: {result} total links found")
+            logger.info(f"[ANALYTICS] get_total_links_all_time - Returning: {result}")
+            return result
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_total_links_all_time failed: {e}")
             return 0
@@ -133,9 +170,19 @@ class AnalyticsService:
     async def get_links_in_period(db: Database, start_date_obj: datetime, end_date_obj: datetime) -> int:
         """Get links created in the specified date range"""
         try:
-            return await db.links.count_documents({
-                F_CREATED: {"$gte": start_date_obj, "$lte": end_date_obj}
-            })
+            # Normalize date range
+            normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+            logger.info(f"[ANALYTICS] get_links_in_period - Input: start={start_date_obj} (normalized={normalized_start}), end={end_date_obj} (normalized={normalized_end})")
+            
+            query = {
+                F_CREATED: {"$gte": normalized_start, "$lte": normalized_end}
+            }
+            logger.info(f"[ANALYTICS] get_links_in_period - Query: {query}")
+            
+            result = await db.links.count_documents(query)
+            logger.info(f"[ANALYTICS] get_links_in_period - Query result: {result} links found")
+            logger.info(f"[ANALYTICS] get_links_in_period - Returning: {result}")
+            return result
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_links_in_period failed: {e}")
             return 0
@@ -144,10 +191,20 @@ class AnalyticsService:
     async def get_extension_links_in_period(db: Database, start_date_obj: datetime, end_date_obj: datetime) -> int:
         """Get extension links created in the specified date range"""
         try:
-            return await db.links.count_documents({
+            # Normalize date range
+            normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+            logger.info(f"[ANALYTICS] get_extension_links_in_period - Input: start={start_date_obj} (normalized={normalized_start}), end={end_date_obj} (normalized={normalized_end})")
+            
+            query = {
                 F_SOURCE: "extension",
-                F_CREATED: {"$gte": start_date_obj, "$lte": end_date_obj}
-            })
+                F_CREATED: {"$gte": normalized_start, "$lte": normalized_end}
+            }
+            logger.info(f"[ANALYTICS] get_extension_links_in_period - Query: {query}")
+            
+            result = await db.links.count_documents(query)
+            logger.info(f"[ANALYTICS] get_extension_links_in_period - Query result: {result} extension links found")
+            logger.info(f"[ANALYTICS] get_extension_links_in_period - Returning: {result}")
+            return result
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_extension_links_in_period failed: {e}")
             return 0
@@ -156,6 +213,7 @@ class AnalyticsService:
     async def get_storage_all_time(db: Database) -> int:
         """Get total storage used by all links (all-time)"""
         try:
+            logger.info(f"[ANALYTICS] get_storage_all_time - Input: no date range (all-time)")
             pipeline = [
                 {OP_PROJECT: {
                     "size": {
@@ -171,8 +229,12 @@ class AnalyticsService:
                 }},
                 {OP_GROUP: {"_id": None, "total": {OP_SUM: "$size"}}}
             ]
+            logger.info(f"[ANALYTICS] get_storage_all_time - Pipeline: {pipeline}")
             result = await db.links.aggregate(pipeline).to_list(1)
-            return result[0]["total"] if result and result[0].get("total") is not None else 0
+            storage_bytes = result[0]["total"] if result and result[0].get("total") is not None else 0
+            logger.info(f"[ANALYTICS] get_storage_all_time - Query result: {storage_bytes} bytes")
+            logger.info(f"[ANALYTICS] get_storage_all_time - Returning: {storage_bytes}")
+            return storage_bytes
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_storage_all_time failed: {e}")
             return 0
@@ -181,9 +243,13 @@ class AnalyticsService:
     async def get_storage_in_period(db: Database, start_date_obj: datetime, end_date_obj: datetime) -> int:
         """Get storage used by links created in the specified date range"""
         try:
+            # Normalize date range
+            normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+            logger.info(f"[ANALYTICS] get_storage_in_period - Input: start={start_date_obj} (normalized={normalized_start}), end={end_date_obj} (normalized={normalized_end})")
+            
             pipeline = [
                 {OP_MATCH: {
-                    F_CREATED: {"$gte": start_date_obj, "$lte": end_date_obj}
+                    F_CREATED: {"$gte": normalized_start, "$lte": normalized_end}
                 }},
                 {OP_PROJECT: {
                     "size": {
@@ -199,8 +265,12 @@ class AnalyticsService:
                 }},
                 {OP_GROUP: {"_id": None, "total": {OP_SUM: "$size"}}}
             ]
+            logger.info(f"[ANALYTICS] get_storage_in_period - Pipeline: {pipeline}")
             result = await db.links.aggregate(pipeline).to_list(1)
-            return result[0]["total"] if result and result[0].get("total") is not None else 0
+            storage_bytes = result[0]["total"] if result and result[0].get("total") is not None else 0
+            logger.info(f"[ANALYTICS] get_storage_in_period - Query result: {storage_bytes} bytes")
+            logger.info(f"[ANALYTICS] get_storage_in_period - Returning: {storage_bytes}")
+            return storage_bytes
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_storage_in_period failed: {e}")
             return 0
@@ -209,13 +279,17 @@ class AnalyticsService:
     async def get_user_growth(db: Database, start_date_obj: datetime, end_date_obj: datetime) -> List[Dict[str, Any]]:
         """Get user growth over time"""
         try:
+            # Normalize date range
+            normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+            logger.info(f"[ANALYTICS] get_user_growth - Input: start={start_date_obj} (normalized={normalized_start}), end={end_date_obj} (normalized={normalized_end})")
+            
             pipeline = [
                 {OP_GROUP: {
                     "_id": F_USERID,
                     "firstSeen": {"$min": F_CREATED}
                 }},
                 {OP_MATCH: {
-                    "firstSeen": {"$gte": start_date_obj, "$lte": end_date_obj}
+                    "firstSeen": {"$gte": normalized_start, "$lte": normalized_end}
                 }},
                 {OP_GROUP: {
                     "_id": {
@@ -237,7 +311,11 @@ class AnalyticsService:
                 }},
                 {OP_SORT: {"date": 1}}
             ]
-            return await db.links.aggregate(pipeline).to_list(1000)
+            logger.info(f"[ANALYTICS] get_user_growth - Pipeline: {pipeline}")
+            result = await db.links.aggregate(pipeline).to_list(1000)
+            logger.info(f"[ANALYTICS] get_user_growth - Query result: {len(result)} growth data points")
+            logger.info(f"[ANALYTICS] get_user_growth - Returning: {len(result)} entries")
+            return result
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_user_growth failed: {e}")
             return []
@@ -246,9 +324,13 @@ class AnalyticsService:
     async def get_links_growth(db: Database, start_date_obj: datetime, end_date_obj: datetime) -> List[Dict[str, Any]]:
         """Get links growth over time"""
         try:
+            # Normalize date range
+            normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+            logger.info(f"[ANALYTICS] get_links_growth - Input: start={start_date_obj} (normalized={normalized_start}), end={end_date_obj} (normalized={normalized_end})")
+            
             pipeline = [
                 {OP_MATCH: {
-                    F_CREATED: {"$gte": start_date_obj, "$lte": end_date_obj}
+                    F_CREATED: {"$gte": normalized_start, "$lte": normalized_end}
                 }},
                 {OP_GROUP: {
                     "_id": {
@@ -275,7 +357,11 @@ class AnalyticsService:
                 }},
                 {OP_SORT: {"date": 1}}
             ]
-            return await db.links.aggregate(pipeline).to_list(1000)
+            logger.info(f"[ANALYTICS] get_links_growth - Pipeline: {pipeline}")
+            result = await db.links.aggregate(pipeline).to_list(1000)
+            logger.info(f"[ANALYTICS] get_links_growth - Query result: {len(result)} growth data points")
+            logger.info(f"[ANALYTICS] get_links_growth - Returning: {len(result)} entries")
+            return result
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_links_growth failed: {e}")
             return []
@@ -284,9 +370,13 @@ class AnalyticsService:
     async def get_top_categories(db: Database, start_date_obj: datetime, end_date_obj: datetime) -> List[Dict[str, Any]]:
         """Get top categories by usage"""
         try:
+            # Normalize date range
+            normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+            logger.info(f"[ANALYTICS] get_top_categories - Input: start={start_date_obj} (normalized={normalized_start}), end={end_date_obj} (normalized={normalized_end})")
+            
             pipeline = [
                 {OP_MATCH: {
-                    F_CREATED: {"$gte": start_date_obj, "$lte": end_date_obj}
+                    F_CREATED: {"$gte": normalized_start, "$lte": normalized_end}
                 }},
                 {OP_GROUP: {
                     "_id": F_CATEGORY,
@@ -301,7 +391,11 @@ class AnalyticsService:
                 {OP_SORT: {"linkCount": -1}},
                 {OP_LIMIT: 20}
             ]
-            return await db.links.aggregate(pipeline).to_list(20)
+            logger.info(f"[ANALYTICS] get_top_categories - Pipeline: {pipeline}")
+            result = await db.links.aggregate(pipeline).to_list(20)
+            logger.info(f"[ANALYTICS] get_top_categories - Query result: {len(result)} categories found")
+            logger.info(f"[ANALYTICS] get_top_categories - Returning: {len(result)} categories")
+            return result
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_top_categories failed: {e}")
             return []
@@ -310,9 +404,13 @@ class AnalyticsService:
     async def get_content_types(db: Database, start_date_obj: datetime, end_date_obj: datetime) -> List[Dict[str, Any]]:
         """Get content types distribution"""
         try:
+            # Normalize date range
+            normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+            logger.info(f"[ANALYTICS] get_content_types - Input: start={start_date_obj} (normalized={normalized_start}), end={end_date_obj} (normalized={normalized_end})")
+            
             pipeline = [
                 {OP_MATCH: {
-                    F_CREATED: {"$gte": start_date_obj, "$lte": end_date_obj}
+                    F_CREATED: {"$gte": normalized_start, "$lte": normalized_end}
                 }},
                 {OP_GROUP: {
                     "_id": "$contentType",
@@ -324,7 +422,11 @@ class AnalyticsService:
                 }},
                 {OP_SORT: {"count": -1}}
             ]
-            return await db.links.aggregate(pipeline).to_list(100)
+            logger.info(f"[ANALYTICS] get_content_types - Pipeline: {pipeline}")
+            result = await db.links.aggregate(pipeline).to_list(100)
+            logger.info(f"[ANALYTICS] get_content_types - Query result: {len(result)} content types found")
+            logger.info(f"[ANALYTICS] get_content_types - Returning: {len(result)} content types")
+            return result
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_content_types failed: {e}")
             return []
@@ -333,9 +435,13 @@ class AnalyticsService:
     async def get_avg_links_per_user(db: Database, start_date_obj: datetime, end_date_obj: datetime) -> float:
         """Get average links per user in period"""
         try:
+            # Normalize date range
+            normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+            logger.info(f"[ANALYTICS] get_avg_links_per_user - Input: start={start_date_obj} (normalized={normalized_start}), end={end_date_obj} (normalized={normalized_end})")
+            
             pipeline = [
                 {OP_MATCH: {
-                    F_CREATED: {"$gte": start_date_obj, "$lte": end_date_obj}
+                    F_CREATED: {"$gte": normalized_start, "$lte": normalized_end}
                 }},
                 {OP_GROUP: {
                     "_id": F_USERID,
@@ -348,8 +454,12 @@ class AnalyticsService:
                     "min": {"$min": "$linkCount"}
                 }}
             ]
+            logger.info(f"[ANALYTICS] get_avg_links_per_user - Pipeline: {pipeline}")
             result = await db.links.aggregate(pipeline).to_list(1)
-            return result[0]["avg"] if result and result[0].get("avg") else 0
+            avg_links = result[0]["avg"] if result and result[0].get("avg") else 0
+            logger.info(f"[ANALYTICS] get_avg_links_per_user - Query result: avg={avg_links}, max={result[0].get('max') if result else None}, min={result[0].get('min') if result else None}")
+            logger.info(f"[ANALYTICS] get_avg_links_per_user - Returning: {avg_links}")
+            return avg_links
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_avg_links_per_user failed: {e}")
             return 0
@@ -358,18 +468,26 @@ class AnalyticsService:
     async def get_active_users(db: Database, start_date_obj: datetime, end_date_obj: datetime) -> int:
         """Get count of active users in period"""
         try:
+            # Normalize date range
+            normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+            logger.info(f"[ANALYTICS] get_active_users - Input: start={start_date_obj} (normalized={normalized_start}), end={end_date_obj} (normalized={normalized_end})")
+            
             pipeline = [
                 {OP_MATCH: {
                     "$or": [
-                        {F_CREATED: {"$gte": start_date_obj, "$lte": end_date_obj}},
-                        {F_UPDATED: {"$gte": start_date_obj, "$lte": end_date_obj}}
+                        {F_CREATED: {"$gte": normalized_start, "$lte": normalized_end}},
+                        {F_UPDATED: {"$gte": normalized_start, "$lte": normalized_end}}
                     ]
                 }},
                 {OP_GROUP: {"_id": F_USERID}},
                 {OP_COUNT: "total"}
             ]
+            logger.info(f"[ANALYTICS] get_active_users - Pipeline: {pipeline}")
             result = await db.links.aggregate(pipeline).to_list(1)
-            return result[0]["total"] if result and result[0].get("total") is not None else 0
+            active_count = result[0]["total"] if result and result[0].get("total") is not None else 0
+            logger.info(f"[ANALYTICS] get_active_users - Query result: {active_count} active users found")
+            logger.info(f"[ANALYTICS] get_active_users - Returning: {active_count}")
+            return active_count
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_active_users failed: {e}")
             return 0
@@ -378,11 +496,13 @@ class AnalyticsService:
     async def get_users_approaching(db: Database) -> List[Dict[str, Any]]:
         """Get users approaching their limits"""
         try:
+            logger.info(f"[ANALYTICS] get_users_approaching - Input: no date range (all-time)")
             # Get all user limits (including custom overrides)
             user_limits_map = {}
             try:
                 user_limits_docs = await db.user_limits.find({}).to_list(1000)
                 user_limits_map = {doc["userId"]: doc for doc in user_limits_docs}
+                logger.info(f"[ANALYTICS] get_users_approaching - Found {len(user_limits_map)} user limit overrides")
             except Exception as e:
                 logger.warning(f"[ANALYTICS WARNING] Could not fetch user_limits: {e}")
             
@@ -401,9 +521,11 @@ class AnalyticsService:
                             ]
                         }
                     }
-                }}
+                }                }
             ]
+            logger.info(f"[ANALYTICS] get_users_approaching - Pipeline: {pipeline}")
             user_usage = await db.links.aggregate(pipeline).to_list(10000)
+            logger.info(f"[ANALYTICS] get_users_approaching - Query result: {len(user_usage)} users found")
             
             # Filter users approaching their specific limits (85% threshold)
             approaching = []
@@ -424,6 +546,8 @@ class AnalyticsService:
                 if link_count >= (links_limit * 0.85) or storage >= (storage_limit * 0.85):
                     approaching.append(user)
             
+            logger.info(f"[ANALYTICS] get_users_approaching - Found {len(approaching)} users approaching limits")
+            logger.info(f"[ANALYTICS] get_users_approaching - Returning: {len(approaching)} users")
             return approaching
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_users_approaching failed: {e}")
@@ -433,11 +557,15 @@ class AnalyticsService:
     async def get_extension_versions(db: Database, start_date_obj: datetime, end_date_obj: datetime) -> List[Dict[str, Any]]:
         """Get extension versions distribution"""
         try:
+            # Normalize date range
+            normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+            logger.info(f"[ANALYTICS] get_extension_versions - Input: start={start_date_obj} (normalized={normalized_start}), end={end_date_obj} (normalized={normalized_end})")
+            
             pipeline = [
                 {OP_MATCH: {
                     F_SOURCE: "extension", 
                     F_EXT_VER: {OP_EXISTS: True, "$ne": None},
-                    F_CREATED: {"$gte": start_date_obj, "$lte": end_date_obj}
+                    F_CREATED: {"$gte": normalized_start, "$lte": normalized_end}
                 }},
                 {OP_GROUP: {
                     "_id": F_EXT_VER,
@@ -451,7 +579,11 @@ class AnalyticsService:
                 }},
                 {OP_SORT: {"linkCount": -1}}
             ]
-            return await db.links.aggregate(pipeline).to_list(50)
+            logger.info(f"[ANALYTICS] get_extension_versions - Pipeline: {pipeline}")
+            result = await db.links.aggregate(pipeline).to_list(50)
+            logger.info(f"[ANALYTICS] get_extension_versions - Query result: {len(result)} extension versions found")
+            logger.info(f"[ANALYTICS] get_extension_versions - Returning: {len(result)} versions")
+            return result
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_extension_versions failed: {e}")
             return []
@@ -460,6 +592,10 @@ class AnalyticsService:
     async def get_user_segmentation(db: Database, start_date_obj: datetime, end_date_obj: datetime) -> Dict[str, int]:
         """Segment users into new, returning, power users, casual users"""
         try:
+            # Normalize date range
+            normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+            logger.info(f"[ANALYTICS] get_user_segmentation - Input: start={start_date_obj} (normalized={normalized_start}), end={end_date_obj} (normalized={normalized_end})")
+            
             # Get all users with their first link date and total links
             pipeline = [
                 {OP_GROUP: {
@@ -471,8 +607,8 @@ class AnalyticsService:
                         OP_SUM: {
                             "$cond": [
                                 {"$and": [
-                                    {"$gte": [F_CREATED, start_date_obj]},
-                                    {"$lte": [F_CREATED, end_date_obj]}
+                                    {"$gte": [F_CREATED, normalized_start]},
+                                    {"$lte": [F_CREATED, normalized_end]}
                                 ]},
                                 1, 0
                             ]
@@ -480,7 +616,9 @@ class AnalyticsService:
                     }
                 }}
             ]
+            logger.info(f"[ANALYTICS] get_user_segmentation - Pipeline: {pipeline}")
             users_data = await db.links.aggregate(pipeline).to_list(10000)
+            logger.info(f"[ANALYTICS] get_user_segmentation - Query result: {len(users_data)} users found")
             
             new_users = 0
             returning_users = 0
@@ -488,8 +626,8 @@ class AnalyticsService:
             casual_users = 0  # 1-5 links
             moderate_users = 0  # 6-19 links
             
-            period_start = start_date_obj
-            period_end = end_date_obj
+            period_start = normalized_start
+            period_end = normalized_end
             
             for user in users_data:
                 first_link = user.get("firstLinkDate")
@@ -511,13 +649,16 @@ class AnalyticsService:
                 elif total_links >= 1:
                     casual_users += 1
             
-            return {
+            result = {
                 "newUsers": new_users,
                 "returningUsers": returning_users,
                 "powerUsers": power_users,
                 "moderateUsers": moderate_users,
                 "casualUsers": casual_users
             }
+            logger.info(f"[ANALYTICS] get_user_segmentation - Segmentation result: {result}")
+            logger.info(f"[ANALYTICS] get_user_segmentation - Returning: {result}")
+            return result
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_user_segmentation failed: {e}")
             return {"newUsers": 0, "returningUsers": 0, "powerUsers": 0, "moderateUsers": 0, "casualUsers": 0}
@@ -526,12 +667,16 @@ class AnalyticsService:
     async def get_engagement_metrics(db: Database, start_date_obj: datetime, end_date_obj: datetime) -> Dict[str, Any]:
         """Calculate engagement depth metrics"""
         try:
+            # Normalize date range
+            normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+            logger.info(f"[ANALYTICS] get_engagement_metrics - Input: start={start_date_obj} (normalized={normalized_start}), end={end_date_obj} (normalized={normalized_end})")
+            
             # Links per active user in period
             pipeline = [
                 {OP_MATCH: {
                     "$or": [
-                        {F_CREATED: {"$gte": start_date_obj, "$lte": end_date_obj}},
-                        {F_UPDATED: {"$gte": start_date_obj, "$lte": end_date_obj}}
+                        {F_CREATED: {"$gte": normalized_start, "$lte": normalized_end}},
+                        {F_UPDATED: {"$gte": normalized_start, "$lte": normalized_end}}
                     ]
                 }},
                 {OP_GROUP: {
@@ -540,8 +685,8 @@ class AnalyticsService:
                         OP_SUM: {
                             "$cond": [
                                 {"$and": [
-                                    {"$gte": [F_CREATED, start_date_obj]},
-                                    {"$lte": [F_CREATED, end_date_obj]}
+                                    {"$gte": [F_CREATED, normalized_start]},
+                                    {"$lte": [F_CREATED, normalized_end]}
                                 ]},
                                 1, 0
                             ]
@@ -551,8 +696,8 @@ class AnalyticsService:
                         OP_SUM: {
                             "$cond": [
                                 {"$and": [
-                                    {"$gte": [F_UPDATED, start_date_obj]},
-                                    {"$lte": [F_UPDATED, end_date_obj]},
+                                    {"$gte": [F_UPDATED, normalized_start]},
+                                    {"$lte": [F_UPDATED, normalized_end]},
                                     {"$ne": [F_CREATED, F_UPDATED]}
                                 ]},
                                 1, 0
@@ -570,7 +715,9 @@ class AnalyticsService:
                     "collectionsCount": {"$size": {"$filter": {"input": "$collectionsUsed", "as": "col", "cond": {"$ne": ["$$col", None]}}}}
                 }}
             ]
+            logger.info(f"[ANALYTICS] get_engagement_metrics - Pipeline: {pipeline}")
             engagement_data = await db.links.aggregate(pipeline).to_list(10000)
+            logger.info(f"[ANALYTICS] get_engagement_metrics - Query result: {len(engagement_data)} active users found")
             
             if not engagement_data:
                 return {
@@ -589,7 +736,7 @@ class AnalyticsService:
             
             active_user_count = len(engagement_data)
             
-            return {
+            result = {
                 "avgLinksPerActiveUser": round(total_links_created / active_user_count, 2) if active_user_count > 0 else 0,
                 "avgCategoriesPerUser": round(total_categories / active_user_count, 2) if active_user_count > 0 else 0,
                 "avgCollectionsPerUser": round(total_collections / active_user_count, 2) if active_user_count > 0 else 0,
@@ -597,6 +744,9 @@ class AnalyticsService:
                 "usersWithMultipleCategories": users_multiple_categories,
                 "collectionAdoptionRate": round((users_with_collections / active_user_count * 100), 1) if active_user_count > 0 else 0
             }
+            logger.info(f"[ANALYTICS] get_engagement_metrics - Engagement result: {result}")
+            logger.info(f"[ANALYTICS] get_engagement_metrics - Returning: {result}")
+            return result
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_engagement_metrics failed: {e}")
             return {
@@ -612,12 +762,16 @@ class AnalyticsService:
     async def get_retention_metrics(db: Database, start_date_obj: datetime, end_date_obj: datetime, active_users: int) -> Dict[str, Any]:
         """Calculate retention and churn indicators"""
         try:
+            # Normalize date range
+            normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+            logger.info(f"[ANALYTICS] get_retention_metrics - Input: start={start_date_obj} (normalized={normalized_start}), end={end_date_obj} (normalized={normalized_end}), active_users={active_users}")
+            
             # Users who were active in previous period
-            previous_period_start = start_date_obj - (end_date_obj - start_date_obj)
-            previous_period_end = start_date_obj
+            previous_period_start = normalized_start - (normalized_end - normalized_start)
+            previous_period_end = normalized_start
             
             # Users active in previous period
-            previous_active = await db.links.aggregate([
+            previous_active_pipeline = [
                 {OP_MATCH: {
                     "$or": [
                         {F_CREATED: {"$gte": previous_period_start, "$lte": previous_period_end}},
@@ -626,7 +780,10 @@ class AnalyticsService:
                 }},
                 {OP_GROUP: {"_id": F_USERID}},
                 {OP_COUNT: "total"}
-            ]).to_list(1)
+            ]
+            logger.info(f"[ANALYTICS] get_retention_metrics - Previous period: {previous_period_start} to {previous_period_end}")
+            logger.info(f"[ANALYTICS] get_retention_metrics - Previous active pipeline: {previous_active_pipeline}")
+            previous_active = await db.links.aggregate(previous_active_pipeline).to_list(1)
             
             previous_active_count = previous_active[0]["total"] if previous_active and previous_active[0].get("total") else 0
             
@@ -634,7 +791,7 @@ class AnalyticsService:
             current_active = active_users  # Already calculated
             
             # Users active in both periods (retained)
-            retained_users = await db.links.aggregate([
+            retained_users_pipeline = [
                 {OP_MATCH: {
                     "$or": [
                         {F_CREATED: {"$gte": previous_period_start, "$lte": previous_period_end}},
@@ -643,22 +800,29 @@ class AnalyticsService:
                 }},
                 {OP_GROUP: {"_id": F_USERID}},
                 {OP_PROJECT: {"userId": "$_id"}}
-            ]).to_list(10000)
+            ]
+            logger.info(f"[ANALYTICS] get_retention_metrics - Retained users pipeline: {retained_users_pipeline}")
+            retained_users = await db.links.aggregate(retained_users_pipeline).to_list(10000)
             
             retained_user_ids = {u["userId"] for u in retained_users}
+            logger.info(f"[ANALYTICS] get_retention_metrics - Previous period users: {len(retained_user_ids)}")
             
-            current_active_users = await db.links.aggregate([
+            current_active_users_pipeline = [
                 {OP_MATCH: {
                     "$or": [
-                        {F_CREATED: {"$gte": start_date_obj, "$lte": end_date_obj}},
-                        {F_UPDATED: {"$gte": start_date_obj, "$lte": end_date_obj}}
+                        {F_CREATED: {"$gte": normalized_start, "$lte": normalized_end}},
+                        {F_UPDATED: {"$gte": normalized_start, "$lte": normalized_end}}
                     ]
                 }},
                 {OP_GROUP: {"_id": F_USERID}},
                 {OP_PROJECT: {"userId": "$_id"}}
-            ]).to_list(10000)
+            ]
+            logger.info(f"[ANALYTICS] get_retention_metrics - Current active users pipeline: {current_active_users_pipeline}")
+            current_active_users = await db.links.aggregate(current_active_users_pipeline).to_list(10000)
             
             current_active_user_ids = {u["userId"] for u in current_active_users}
+            logger.info(f"[ANALYTICS] get_retention_metrics - Current period users: {len(current_active_user_ids)}")
+            
             retained_count = len(retained_user_ids & current_active_user_ids)
             
             # Churned users (active in previous but not current)
@@ -667,13 +831,16 @@ class AnalyticsService:
             retention_rate = round((retained_count / previous_active_count * 100), 1) if previous_active_count > 0 else 0
             churn_rate = round((churned_count / previous_active_count * 100), 1) if previous_active_count > 0 else 0
             
-            return {
+            result = {
                 "retentionRate": retention_rate,
                 "churnRate": churn_rate,
                 "retainedUsers": retained_count,
                 "churnedUsers": churned_count,
                 "previousPeriodActive": previous_active_count
             }
+            logger.info(f"[ANALYTICS] get_retention_metrics - Retention result: {result}")
+            logger.info(f"[ANALYTICS] get_retention_metrics - Returning: {result}")
+            return result
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_retention_metrics failed: {e}")
             return {
@@ -688,46 +855,61 @@ class AnalyticsService:
     async def get_feature_adoption(db: Database) -> Dict[str, Any]:
         """Calculate feature adoption rates"""
         try:
+            logger.info(f"[ANALYTICS] get_feature_adoption - Input: no date range (all-time)")
             # Get total users count for adoption rate calculation
             total_users_pipeline = [
                 {OP_GROUP: {"_id": F_USERID}},
                 {OP_COUNT: "total"}
             ]
+            logger.info(f"[ANALYTICS] get_feature_adoption - Total users pipeline: {total_users_pipeline}")
             total_users_result = await db.links.aggregate(total_users_pipeline).to_list(1)
             total_users_count = total_users_result[0]["total"] if total_users_result and total_users_result[0].get("total") is not None else 0
+            logger.info(f"[ANALYTICS] get_feature_adoption - Total users: {total_users_count}")
             
             # Collection usage
-            users_with_collections = await db.collections.aggregate([
+            collection_pipeline = [
                 {OP_GROUP: {"_id": F_USERID}},
                 {OP_COUNT: "total"}
-            ]).to_list(1)
+            ]
+            logger.info(f"[ANALYTICS] get_feature_adoption - Collection pipeline: {collection_pipeline}")
+            users_with_collections = await db.collections.aggregate(collection_pipeline).to_list(1)
             collection_users = users_with_collections[0]["total"] if users_with_collections and users_with_collections[0].get("total") else 0
+            logger.info(f"[ANALYTICS] get_feature_adoption - Collection users: {collection_users}")
             
             # Favorite usage
-            users_with_favorites = await db.links.aggregate([
+            favorite_pipeline = [
                 {OP_MATCH: {F_IS_FAV: True}},
                 {OP_GROUP: {"_id": F_USERID}},
                 {OP_COUNT: "total"}
-            ]).to_list(1)
+            ]
+            logger.info(f"[ANALYTICS] get_feature_adoption - Favorite pipeline: {favorite_pipeline}")
+            users_with_favorites = await db.links.aggregate(favorite_pipeline).to_list(1)
             favorite_users = users_with_favorites[0]["total"] if users_with_favorites and users_with_favorites[0].get("total") else 0
+            logger.info(f"[ANALYTICS] get_feature_adoption - Favorite users: {favorite_users}")
             
             # Archive usage
-            users_with_archived = await db.links.aggregate([
+            archive_pipeline = [
                 {OP_MATCH: {F_IS_ARCH: True}},
                 {OP_GROUP: {"_id": F_USERID}},
                 {OP_COUNT: "total"}
-            ]).to_list(1)
+            ]
+            logger.info(f"[ANALYTICS] get_feature_adoption - Archive pipeline: {archive_pipeline}")
+            users_with_archived = await db.links.aggregate(archive_pipeline).to_list(1)
             archived_users = users_with_archived[0]["total"] if users_with_archived and users_with_archived[0].get("total") else 0
+            logger.info(f"[ANALYTICS] get_feature_adoption - Archived users: {archived_users}")
             
             # Tags usage (users who have links with tags)
-            users_with_tags = await db.links.aggregate([
+            tags_pipeline = [
                 {OP_MATCH: {F_TAGS: {OP_EXISTS: True, "$ne": [], "$not": {"$size": 0}}}},
                 {OP_GROUP: {"_id": F_USERID}},
                 {OP_COUNT: "total"}
-            ]).to_list(1)
+            ]
+            logger.info(f"[ANALYTICS] get_feature_adoption - Tags pipeline: {tags_pipeline}")
+            users_with_tags = await db.links.aggregate(tags_pipeline).to_list(1)
             tags_users = users_with_tags[0]["total"] if users_with_tags and users_with_tags[0].get("total") else 0
+            logger.info(f"[ANALYTICS] get_feature_adoption - Tags users: {tags_users}")
             
-            return {
+            result = {
                 "collectionAdoption": round((collection_users / total_users_count * 100), 1) if total_users_count > 0 else 0,
                 "favoriteAdoption": round((favorite_users / total_users_count * 100), 1) if total_users_count > 0 else 0,
                 "archiveAdoption": round((archived_users / total_users_count * 100), 1) if total_users_count > 0 else 0,
@@ -737,6 +919,9 @@ class AnalyticsService:
                 "archiveUsers": archived_users,
                 "tagsUsers": tags_users
             }
+            logger.info(f"[ANALYTICS] get_feature_adoption - Feature adoption result: {result}")
+            logger.info(f"[ANALYTICS] get_feature_adoption - Returning: {result}")
+            return result
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_feature_adoption failed: {e}")
             return {
@@ -754,12 +939,17 @@ class AnalyticsService:
     async def get_users_with_links(db: Database) -> int:
         """Get count of users who have created at least one link"""
         try:
+            logger.info(f"[ANALYTICS] get_users_with_links - Input: no date range (all-time)")
             pipeline = [
                 {OP_GROUP: {"_id": F_USERID}},
                 {OP_COUNT: "total"}
             ]
+            logger.info(f"[ANALYTICS] get_users_with_links - Pipeline: {pipeline}")
             result = await db.links.aggregate(pipeline).to_list(1)
-            return result[0]["total"] if result and result[0].get("total") is not None else 0
+            users_count = result[0]["total"] if result and result[0].get("total") is not None else 0
+            logger.info(f"[ANALYTICS] get_users_with_links - Query result: {users_count} users with links found")
+            logger.info(f"[ANALYTICS] get_users_with_links - Returning: {users_count}")
+            return users_count
         except Exception as e:
             logger.error(f"[ANALYTICS ERROR] get_users_with_links failed: {e}")
             return 0
@@ -767,6 +957,11 @@ class AnalyticsService:
     @staticmethod
     async def generate_report(db: Database, start_date_obj: datetime, end_date_obj: datetime) -> Dict[str, Any]:
         """Generate comprehensive analytics report"""
+        logger.info(f"[ANALYTICS] generate_report - Input: start={start_date_obj}, end={end_date_obj}")
+        # Normalize date range to handle both naive and timezone-aware datetimes
+        start_date_obj, end_date_obj = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
+        logger.info(f"[ANALYTICS] generate_report - Normalized dates: start={start_date_obj}, end={end_date_obj}")
+        
         # Run independent queries in parallel for better performance
         total_users_all_time, extension_users_all_time, total_links_all_time, links_in_period, extension_links_in_period, storage_all_time, storage_in_period = await asyncio.gather(
             AnalyticsService.get_total_users_all_time(db),
