@@ -215,28 +215,28 @@ export const LoginPage = () => {
             {/* Card 1: Visual Recall */}
             <motion.div 
               variants={fadeIn}
-              className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
+              className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
             >
-              <div className="h-72 bg-white relative overflow-hidden pt-6 px-4 pb-4 flex items-center justify-center">
+              <div className="h-64 sm:h-72 bg-white relative overflow-hidden pt-4 sm:pt-6 px-3 sm:px-4 pb-3 sm:pb-4 flex items-center justify-center">
                 <ExtensionPopupPreview />
               </div>
-              <div className="p-8">
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Visual Recall</h3>
-                <p className="text-slate-600">Don't just save the URL. Capture the thumbnail, author, and summary. Recognize your research instantly.</p>
+              <div className="p-4 sm:p-6 lg:p-8">
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">Visual Recall</h3>
+                <p className="text-sm sm:text-base text-slate-600">Don't just save the URL. Capture the thumbnail, author, and summary. Recognize your research instantly.</p>
               </div>
             </motion.div>
 
             {/* Card 2: Platform Agnostic */}
             <motion.div 
               variants={fadeIn}
-              className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
+              className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
             >
-              <div className="h-72 bg-white relative overflow-hidden pt-6 px-4 pb-4 flex items-center justify-center">
+              <div className="h-64 sm:h-72 bg-white relative overflow-hidden pt-4 sm:pt-6 px-3 sm:px-4 pb-3 sm:pb-4 flex items-center justify-center">
                 <CategorySelectionPreview />
               </div>
-              <div className="p-8">
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Platform Agnostic</h3>
-                <p className="text-slate-600">Treat LinkedIn like the Open Web. PDF, Tweet, or Post—it all lives in one standardized format.</p>
+              <div className="p-4 sm:p-6 lg:p-8">
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">Platform Agnostic</h3>
+                <p className="text-sm sm:text-base text-slate-600">Treat LinkedIn like the Open Web. PDF, Tweet, or Post—it all lives in one standardized format.</p>
               </div>
             </motion.div>
 
