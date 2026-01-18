@@ -67,8 +67,8 @@ export const ExtensionPopupPreview = () => {
           <div className="relative">
             <select
               value="Articles"
-              readOnly
-              className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded bg-white text-slate-700 appearance-none pr-8"
+              disabled
+              className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded bg-white text-slate-700 appearance-none pr-8 cursor-not-allowed"
             >
               <option>Articles</option>
             </select>
