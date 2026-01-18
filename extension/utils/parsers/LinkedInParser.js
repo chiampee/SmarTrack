@@ -21,50 +21,35 @@ class LinkedInParser {
   }
 
   /**
-   * Helper to find the best image in a list item using Regex Scanner
-   * Scans raw HTML for LinkedIn image URLs regardless of attribute location
+   * Helper to find the best image in a list item using specific DOM selectors
+   * Targets the user's specific HTML structure for reliable image extraction
    * @param {HTMLElement} item - The list item element
    * @returns {string|null} Image URL or null
    */
   findBestImage(item) {
-    // 1. Target the specific image container on the left
-    const container = item.querySelector('.entity-result__universal-image') ||
-                      item.querySelector('.entity-result__image');
-    
-    if (!container) {
-      // Fallback: try to find any image container
-      const fallbackContainer = item.querySelector('[class*="image"]');
-      if (fallbackContainer) {
-        const html = fallbackContainer.innerHTML;
-        const urlMatch = html.match(/https:\/\/[a-z0-9-]+\.licdn\.com\/[^"'\s)]+/);
-        if (urlMatch) {
-          // Decode HTML entities (e.g. &amp; -> &) just in case
-          const image = urlMatch[0].replace(/&amp;/g, '&');
-          console.log('[SRT] Image Scanner result: Found (fallback)', image);
-          return image;
-        }
+    // Priority 1: The 'Content' Image (The specific class found in user's HTML)
+    const contentImg = item.querySelector('img.entity-result__embedded-object-image');
+    if (contentImg && contentImg.src && !contentImg.src.includes('data:image/gif')) {
+      console.log('[SRT] Image Scanner result: Found (content image)', contentImg.src);
+      return contentImg.src;
+    }
+
+    // Priority 2: Any image in the 'right side' content container
+    // (Excludes the profile pic on the left)
+    const rightContainer = item.querySelector('.entity-result__content-inner-container--right-padding');
+    if (rightContainer) {
+      const anyRightImg = rightContainer.querySelector('img');
+      if (anyRightImg && anyRightImg.src && !anyRightImg.src.includes('data:image/gif')) {
+        console.log('[SRT] Image Scanner result: Found (right container)', anyRightImg.src);
+        return anyRightImg.src;
       }
-      console.log('[SRT] Image Scanner result: Missed (no container)');
-      return null;
     }
 
-    // 2. Regex Scan: Extract any licdn.com image URL from the raw HTML
-    // This catches src="...", data-delayed-url="...", or background-image: url(...)
-    const html = container.innerHTML;
-    const urlMatch = html.match(/https:\/\/[a-z0-9-]+\.licdn\.com\/[^"'\s)]+/);
-
-    if (urlMatch) {
-      // Decode HTML entities (e.g. &amp; -> &) just in case
-      const image = urlMatch[0].replace(/&amp;/g, '&');
-      console.log('[SRT] Image Scanner result: Found', image);
-      return image;
-    }
-
-    // 3. Fallback: Check for Profile Picture if no post image found
-    const actorImg = item.querySelector('.entity-result__primary-image img');
-    if (actorImg && actorImg.src) {
-      console.log('[SRT] Image Scanner result: Found (profile pic fallback)', actorImg.src);
-      return actorImg.src;
+    // Priority 3: Fallback to Profile Picture (class 'presence-entity__image')
+    const profileImg = item.querySelector('img.presence-entity__image');
+    if (profileImg && profileImg.src && !profileImg.src.includes('data:image/gif')) {
+      console.log('[SRT] Image Scanner result: Found (profile pic fallback)', profileImg.src);
+      return profileImg.src;
     }
 
     console.log('[SRT] Image Scanner result: Missed');

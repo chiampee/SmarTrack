@@ -105,9 +105,13 @@
 
       // Use LinkedInParser to extract saved items
       const parser = new window.LinkedInParser();
-      const validLinks = parser.getSavedItems();
+      let validLinks = parser.getSavedItems();
 
       console.log(`[SmarTrack] Valid links found: ${validLinks.length}`);
+      
+      // Check how many links have images
+      const linksWithImages = validLinks.filter(link => link.thumbnail).length;
+      const missingImages = validLinks.length - linksWithImages;
       
       if (validLinks.length === 0) {
         btn.innerText = '❌ No posts found';
@@ -119,6 +123,18 @@
           btn.style.opacity = '1';
         }, 3000);
         return;
+      }
+
+      // Show scroll hint if many links are missing images (likely lazy loading)
+      if (validLinks.length > 3 && missingImages > validLinks.length * 0.5) {
+        btn.innerText = '💡 Tip: Scroll down to load images first';
+        btn.style.backgroundColor = '#3B82F6'; // Blue
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Re-extract after hint - images may have loaded by now
+        const reExtractedLinks = parser.getSavedItems();
+        if (reExtractedLinks.length > 0) {
+          validLinks = reExtractedLinks;
+        }
       }
 
       // 2. Batch Sending with Jitter
