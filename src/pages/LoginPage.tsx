@@ -3,7 +3,6 @@ import { motion } from 'framer-motion'
 import { 
   Chrome, 
   CheckCircle2, 
-  ArrowRight, 
   ScanEye, 
   ShieldCheck, 
   LayoutGrid, 
