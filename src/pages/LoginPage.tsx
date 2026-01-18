@@ -10,44 +10,221 @@ import {
   Sparkles,
   Menu,
   X,
-  Image as ImageIcon
+  Lock,
+  Star
 } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
+import { LinkedInLogo, XLogo, RedditLogo, WebIcon, YouTubeLogo } from '../components/BrandLogos'
 
-// Component to handle Silo vs Hub image with fallbacks
-const SiloVsHubImage: React.FC = () => {
-  const [imageError, setImageError] = useState(false)
-  const [currentSrc, setCurrentSrc] = useState('/Silo vs Hub.jpg')
-
-  const handleError = () => {
-    if (currentSrc === '/Silo vs Hub.jpg') {
-      setCurrentSrc('/Silo%20vs%20Hub.jpg')
-    } else if (currentSrc === '/Silo%20vs%20Hub.jpg') {
-      setCurrentSrc('/Silo-vs-Hub.jpg')
-    } else {
-      setImageError(true)
-    }
-  }
-
-  if (imageError) {
-    return (
-      <div className="h-96 flex flex-col items-center justify-center bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">
-        <ImageIcon className="w-16 h-16 text-slate-400 mb-4" />
-        <p className="text-slate-600 font-medium mb-2">Silo vs Hub Diagram</p>
-        <p className="text-sm text-slate-500 text-center px-4">
-          Please add "Silo vs Hub.jpg" to the /public folder
-        </p>
-      </div>
-    )
-  }
-
+// CSS-based Silo vs Hub Diagram Component
+const SiloVsHubDiagram: React.FC = () => {
   return (
-    <img 
-      src={currentSrc}
-      alt="Diagram comparing fragmented silos vs the unified SmarTrack hub - Before: Your insights are trapped in someone else's app. After: One source of truth for everything you know."
-      className="w-full h-auto rounded-lg"
-      onError={handleError}
-    />
+    <div className="w-full bg-slate-50 rounded-lg p-6 sm:p-8 md:p-12">
+      {/* Main Title */}
+      <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center mb-8 sm:mb-12">
+        The Silo vs. The Hub
+      </h3>
+
+      {/* Two Column Layout */}
+      <div className="grid md:grid-cols-2 gap-8 md:gap-12 lg:gap-16">
+        
+        {/* LEFT: BEFORE (The Silo) */}
+        <div className="relative">
+          <h4 className="text-lg sm:text-xl font-bold text-slate-900 text-center mb-6">BEFORE (The Silo)</h4>
+          
+          {/* Confused Person */}
+          <div className="flex justify-center mb-8 relative">
+            <div className="relative">
+              {/* Person figure - simplified */}
+              <div className="w-16 h-20 sm:w-20 sm:h-24 mx-auto relative">
+                {/* Head */}
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-slate-300 rounded-full mx-auto mb-1"></div>
+                {/* Body */}
+                <div className="w-10 h-12 sm:w-12 sm:h-14 bg-blue-600 rounded-lg mx-auto"></div>
+                {/* Question mark bubble */}
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-8 h-8 bg-white border-2 border-slate-400 rounded-full flex items-center justify-center">
+                  <span className="text-slate-700 font-bold text-lg">?</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Silo Boxes */}
+          <div className="grid grid-cols-2 gap-4 sm:gap-6">
+            {/* Silo 1: X & LinkedIn */}
+            <div className="relative group">
+              <div className="bg-gradient-to-br from-slate-200 to-slate-300 rounded-lg p-3 sm:p-4 shadow-lg relative border-2 border-slate-400 transition-transform group-hover:scale-105">
+                <div className="absolute top-2 right-2">
+                  <Lock className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
+                </div>
+                <div className="space-y-2 mb-2">
+                  <div className="bg-white rounded-md p-1.5 shadow-sm flex items-center justify-center border border-slate-200">
+                    <XLogo className="w-4 h-4 sm:w-5 sm:h-5 text-slate-900" />
+                  </div>
+                  <div className="bg-white rounded-md p-1.5 shadow-sm flex items-center justify-center border border-slate-200">
+                    <LinkedInLogo className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                  </div>
+                </div>
+                <p className="text-[10px] sm:text-xs text-slate-600 text-center font-medium">X / LinkedIn</p>
+              </div>
+            </div>
+
+            {/* Silo 2: LinkedIn */}
+            <div className="relative group">
+              <div className="bg-gradient-to-br from-slate-200 to-slate-300 rounded-lg p-3 sm:p-4 shadow-lg relative border-2 border-slate-400 transition-transform group-hover:scale-105">
+                <div className="absolute top-2 right-2">
+                  <Lock className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
+                </div>
+                <div className="space-y-2 mb-2">
+                  <div className="bg-white rounded-md p-1.5 shadow-sm flex items-center justify-center border border-slate-200">
+                    <LinkedInLogo className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                  </div>
+                  <div className="bg-white rounded-md p-1.5 shadow-sm flex items-center justify-center border border-slate-200">
+                    <LinkedInLogo className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                  </div>
+                </div>
+                <p className="text-[10px] sm:text-xs text-slate-600 text-center font-medium">LinkedIn</p>
+              </div>
+            </div>
+
+            {/* Silo 3: Chrome Bookmarks */}
+            <div className="relative group">
+              <div className="bg-gradient-to-br from-slate-200 to-slate-300 rounded-lg p-3 sm:p-4 shadow-lg relative border-2 border-slate-400 transition-transform group-hover:scale-105">
+                <div className="absolute top-2 right-2">
+                  <Lock className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
+                </div>
+                <div className="space-y-2 mb-2">
+                  <div className="bg-white rounded-md p-1.5 shadow-sm flex items-center justify-center gap-1 border border-slate-200">
+                    <Chrome className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+                    <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500 fill-yellow-500" />
+                  </div>
+                  <div className="bg-white rounded-md p-1.5 shadow-sm flex items-center justify-center gap-1 border border-slate-200">
+                    <Chrome className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+                    <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500 fill-yellow-500" />
+                  </div>
+                </div>
+                <p className="text-[10px] sm:text-xs text-slate-600 text-center font-medium">Chrome</p>
+              </div>
+            </div>
+
+            {/* Silo 4: YouTube & Reddit */}
+            <div className="relative group">
+              <div className="bg-gradient-to-br from-slate-200 to-slate-300 rounded-lg p-3 sm:p-4 shadow-lg relative border-2 border-slate-400 transition-transform group-hover:scale-105">
+                <div className="absolute top-2 right-2">
+                  <Lock className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
+                </div>
+                <div className="space-y-2 mb-2">
+                  <div className="bg-white rounded-md p-1.5 shadow-sm flex items-center justify-center border border-slate-200">
+                    <YouTubeLogo className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
+                  </div>
+                  <div className="bg-white rounded-md p-1.5 shadow-sm flex items-center justify-center border border-slate-200">
+                    <RedditLogo className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
+                  </div>
+                </div>
+                <p className="text-[10px] sm:text-xs text-slate-600 text-center font-medium">YouTube / Reddit</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Caption */}
+          <p className="text-sm sm:text-base text-slate-600 text-center mt-6 font-medium">
+            Your insights are trapped in someone else's app.
+          </p>
+        </div>
+
+        {/* RIGHT: AFTER (The Hub) */}
+        <div className="relative">
+          <h4 className="text-lg sm:text-xl font-bold text-slate-900 text-center mb-6">AFTER (The Hub)</h4>
+          
+          {/* Data Streams */}
+          <div className="relative mb-8 h-40 sm:h-48">
+            {/* Curved lines flowing into funnel */}
+            <svg className="absolute inset-0 w-full h-full" style={{ overflow: 'visible' }} viewBox="0 0 100 100" preserveAspectRatio="none">
+              {/* Open Web - Blue */}
+              <path d="M 5 15 Q 35 25 75 35" stroke="#3b82f6" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              <text x="2" y="18" fontSize="8" fill="#64748b" fontWeight="500">Open Web</text>
+              
+              {/* LinkedIn - Light Blue */}
+              <path d="M 5 30 Q 35 40 75 45" stroke="#0a66c2" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              <text x="2" y="33" fontSize="8" fill="#64748b" fontWeight="500">LinkedIn</text>
+              
+              {/* YouTube - Red */}
+              <path d="M 5 45 Q 35 50 75 55" stroke="#ff0000" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              <text x="2" y="48" fontSize="8" fill="#64748b" fontWeight="500">YouTube</text>
+              
+              {/* Chrome Bookmarks - Green */}
+              <path d="M 5 60 Q 35 60 75 65" stroke="#10b981" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              <text x="2" y="63" fontSize="8" fill="#64748b" fontWeight="500">Chrome</text>
+              
+              {/* X - Black */}
+              <path d="M 5 75 Q 35 70 75 75" stroke="#000000" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              <text x="2" y="78" fontSize="8" fill="#64748b" fontWeight="500">X</text>
+              
+              {/* Reddit - Orange */}
+              <path d="M 5 90 Q 35 80 75 85" stroke="#ff4500" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              <text x="2" y="93" fontSize="8" fill="#64748b" fontWeight="500">Reddit</text>
+            </svg>
+            
+            {/* Funnel (SmarTrack Extension) */}
+            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+              <div className="bg-gradient-to-br from-slate-300 to-slate-400 rounded-lg p-2.5 sm:p-3 shadow-xl border-2 border-slate-500">
+                <div className="bg-blue-600 rounded-md p-1.5 sm:p-2 flex items-center justify-center">
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                </div>
+                <p className="text-[10px] sm:text-xs text-slate-700 mt-1.5 text-center font-semibold">SmarTrack Extension</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Person & Dashboard */}
+          <div className="flex items-start gap-4 sm:gap-6">
+            {/* Person */}
+            <div className="w-16 h-20 sm:w-20 sm:h-24 flex-shrink-0">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-slate-300 rounded-full mx-auto mb-1"></div>
+              <div className="w-10 h-12 sm:w-12 sm:h-14 bg-blue-600 rounded-lg mx-auto"></div>
+            </div>
+
+            {/* Dashboard */}
+            <div className="flex-1 bg-white rounded-lg border-2 border-slate-300 shadow-lg p-3 sm:p-4">
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-200">
+                <Search className="w-4 h-4 text-blue-600" />
+                <span className="text-xs sm:text-sm font-bold text-slate-900">SmarTrack Dashboard</span>
+              </div>
+              
+              {/* Dashboard Cards Grid */}
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                {/* Card 1: LinkedIn Profile */}
+                <div className="bg-blue-50 rounded p-2 flex items-center gap-2">
+                  <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">NL</div>
+                  <LinkedInLogo className="w-4 h-4 text-blue-600" />
+                </div>
+                
+                {/* Card 2: YouTube */}
+                <div className="bg-red-50 rounded p-2 flex items-center justify-center">
+                  <YouTubeLogo className="w-5 h-5 text-red-600" />
+                </div>
+                
+                {/* Card 3: Chrome */}
+                <div className="bg-yellow-50 rounded p-2 flex items-center justify-center gap-1">
+                  <Chrome className="w-4 h-4 text-blue-500" />
+                  <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                </div>
+                
+                {/* Card 4: X */}
+                <div className="bg-slate-900 rounded p-2 flex items-center justify-center">
+                  <XLogo className="w-4 h-4 text-white" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Caption */}
+          <p className="text-sm sm:text-base text-slate-600 text-center mt-6 font-medium">
+            One source of truth for everything you know.
+          </p>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -209,7 +386,7 @@ export const LoginPage = () => {
           </div>
           
           <div className="relative rounded-2xl bg-white p-4 sm:p-8 shadow-xl border border-slate-100">
-            <SiloVsHubImage />
+            <SiloVsHubDiagram />
           </div>
         </div>
       </section>
