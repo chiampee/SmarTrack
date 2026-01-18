@@ -40,7 +40,7 @@
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!.*\\.(jpg|jpeg|png|gif|svg|webp|ico|zip|pdf|css|js|woff|woff2|ttf|eot)).*)",
       "destination": "/index.html"
     }
   ]
