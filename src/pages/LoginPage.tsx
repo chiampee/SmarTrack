@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Chrome, 
@@ -9,9 +9,47 @@ import {
   Search, 
   Sparkles,
   Menu,
-  X
+  X,
+  Image as ImageIcon
 } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
+
+// Component to handle Silo vs Hub image with fallbacks
+const SiloVsHubImage: React.FC = () => {
+  const [imageError, setImageError] = useState(false)
+  const [currentSrc, setCurrentSrc] = useState('/Silo vs Hub.jpg')
+
+  const handleError = () => {
+    if (currentSrc === '/Silo vs Hub.jpg') {
+      setCurrentSrc('/Silo%20vs%20Hub.jpg')
+    } else if (currentSrc === '/Silo%20vs%20Hub.jpg') {
+      setCurrentSrc('/Silo-vs-Hub.jpg')
+    } else {
+      setImageError(true)
+    }
+  }
+
+  if (imageError) {
+    return (
+      <div className="h-96 flex flex-col items-center justify-center bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">
+        <ImageIcon className="w-16 h-16 text-slate-400 mb-4" />
+        <p className="text-slate-600 font-medium mb-2">Silo vs Hub Diagram</p>
+        <p className="text-sm text-slate-500 text-center px-4">
+          Please add "Silo vs Hub.jpg" to the /public folder
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <img 
+      src={currentSrc}
+      alt="Diagram comparing fragmented silos vs the unified SmarTrack hub - Before: Your insights are trapped in someone else's app. After: One source of truth for everything you know."
+      className="w-full h-auto rounded-lg"
+      onError={handleError}
+    />
+  )
+}
 
 export const LoginPage = () => {
   const { loginWithRedirect } = useAuth0()
@@ -171,26 +209,7 @@ export const LoginPage = () => {
           </div>
           
           <div className="relative rounded-2xl bg-white p-4 sm:p-8 shadow-xl border border-slate-100">
-             <img 
-              src="/Silo vs Hub.jpg" 
-              alt="Diagram comparing fragmented silos vs the unified SmarTrack hub" 
-              className="w-full h-auto rounded-lg"
-              onError={(e) => {
-                // Fallback logic for various filename formats
-                const target = e.target as HTMLImageElement;
-                if (!target.src.includes('Silo%20vs%20Hub.jpg')) {
-                   target.src = '/Silo%20vs%20Hub.jpg';
-                } else if (!target.src.includes('Silo-vs-Hub.jpg')) {
-                   target.src = '/Silo-vs-Hub.jpg';
-                } else {
-                   target.style.display = 'none';
-                   const parent = target.parentElement;
-                   if (parent) {
-                     parent.innerHTML = '<div class="h-64 flex items-center justify-center bg-slate-50 text-slate-400 rounded-lg">Silo vs Hub Diagram Missing - Please add "Silo vs Hub.jpg" to /public folder</div>';
-                   }
-                }
-              }}
-            />
+            <SiloVsHubImage />
           </div>
         </div>
       </section>
