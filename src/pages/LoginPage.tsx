@@ -1,535 +1,368 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
+import { motion } from 'framer-motion'
+import { 
+  Chrome, 
+  CheckCircle2, 
+  ArrowRight, 
+  ScanEye, 
+  ShieldCheck, 
+  LayoutGrid, 
+  Search, 
+  Sparkles,
+  Menu,
+  X
+} from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
-import { useNavigate, Link } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Chrome, ArrowRight, ChevronUp, ScanLine, ShieldCheck, LayoutGrid } from 'lucide-react'
-import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 
-// Scroll to Top Button Component
-const ScrollToTopButton: React.FC = () => {
-  const [isVisible, setIsVisible] = useState(false)
+export const LoginPage = () => {
+  const { loginWithRedirect } = useAuth0()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
-  useEffect(() => {
-    const toggleVisibility = () => {
-      setIsVisible(window.scrollY > 500)
+  const fadeIn = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  }
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
     }
-    window.addEventListener('scroll', toggleVisibility, { passive: true })
-    return () => window.removeEventListener('scroll', toggleVisibility)
-  }, [])
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.button
-          initial={{ opacity: 0, scale: 0.8, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.8, y: 20 }}
-          transition={{ duration: 0.2 }}
-          onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-40 p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-lg shadow-blue-600/30 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:hidden"
-          aria-label="Scroll to top"
-        >
-          <ChevronUp className="w-5 h-5" />
-        </motion.button>
-      )}
-    </AnimatePresence>
-  )
-}
-
-// Animation variants for scroll reveal
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0 }
-}
-
-const fadeInScale = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: { opacity: 1, scale: 1 }
-}
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.1
-    }
-  }
-}
-
-const staggerItem = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0 }
-}
-
-// Feature Pillar Component with card lift effect
-const FeaturePillar: React.FC<{
-  icon: React.ReactNode
-  title: string
-  description: string
-  index: number
-}> = ({ icon, title, description, index }) => (
-  <motion.div
-    initial="hidden"
-    whileInView="visible"
-    viewport={{ once: true, margin: "-50px" }}
-    variants={fadeInUp}
-    transition={{ duration: 0.6, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
-    className="relative bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 p-6 sm:p-8 hover:border-blue-200 hover:shadow-xl transition-all duration-300 cursor-default group overflow-hidden"
-  >
-    <div className="relative">
-      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 group-hover:bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 mb-4 sm:mb-5 transition-colors">
-        {icon}
-      </div>
-      <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-2 sm:mb-3">{title}</h3>
-      <p className="text-sm sm:text-base text-slate-600 leading-relaxed">{description}</p>
-    </div>
-  </motion.div>
-)
-
-export const LoginPage: React.FC = () => {
-  const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0()
-  const navigate = useNavigate()
-  const { prefersReducedMotion } = useMobileOptimizations()
-
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      navigate('/dashboard', { replace: true })
-    }
-  }, [isAuthenticated, isLoading, navigate])
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="inline-block h-10 w-10 border-4 border-slate-200 border-t-blue-600 rounded-full mb-4"
-          />
-          <p className="text-slate-600">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (isAuthenticated) {
-    return null
-  }
-
-  const shouldAnimate = !prefersReducedMotion
-
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Skip to Content Link for Accessibility */}
-      <a href="#main-content" className="skip-to-content">
-        Skip to main content
-      </a>
-
-      {/* Scroll to Top Button - Mobile Only */}
-      <ScrollToTopButton />
-
-      {/* Top Navigation */}
-      <motion.nav
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/80"
-      >
+    <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
+      
+      {/* 1. Navbar */}
+      <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-14 sm:h-16">
-            <img 
-              src="/logo.svg" 
-              alt="SmarTrack" 
-              className="h-7 sm:h-8 w-auto cursor-pointer" 
-            />
-            
-            {/* Install Extension Button */}
-            <button
-              onClick={() => loginWithRedirect()}
-              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all shadow-lg shadow-blue-600/25"
-            >
-              <Chrome className="w-4 h-4" />
-              Install Extension
-            </button>
+          <div className="flex justify-between items-center h-16 sm:h-20">
+            {/* Logo */}
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-600 p-1.5 rounded-lg">
+                <Search className="w-5 h-5 text-white stroke-[3]" />
+              </div>
+              <span className="font-bold text-xl tracking-tight text-slate-900">SmarTrack</span>
+            </div>
+
+            {/* Desktop Nav */}
+            <div className="hidden md:flex items-center gap-4">
+              <button 
+                onClick={() => loginWithRedirect()}
+                className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+              >
+                Sign In
+              </button>
+              <button 
+                onClick={() => loginWithRedirect()}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-full transition-all shadow-sm hover:shadow-md active:transform active:scale-95"
+              >
+                <Chrome className="w-4 h-4" />
+                Install Extension
+              </button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-slate-600">
+                {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
           </div>
         </div>
-      </motion.nav>
 
-      {/* Hero Section */}
-      <section id="main-content" className="relative overflow-hidden" tabIndex={-1}>
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/50 via-white to-white pointer-events-none" />
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20 lg:py-28">
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-white border-b border-slate-200 px-4 py-4 space-y-3">
+             <button 
+                onClick={() => loginWithRedirect()}
+                className="block w-full text-left px-4 py-2 text-slate-600 font-medium"
+              >
+                Sign In
+              </button>
+              <button 
+                onClick={() => loginWithRedirect()}
+                className="block w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg text-center"
+              >
+                Install Extension
+              </button>
+          </div>
+        )}
+      </nav>
+
+      {/* 2. Hero Section */}
+      <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-24 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={staggerContainer}
-            className="text-center max-w-4xl mx-auto"
+            className="max-w-4xl mx-auto"
           >
-            {/* Headline */}
-            <motion.h1
-              variants={staggerItem}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-4 sm:mb-6 leading-tight tracking-tight"
-            >
-              Stop Losing Insights to the Feed.
+            <motion.div variants={fadeIn} className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-100 rounded-full text-blue-700 text-xs font-semibold uppercase tracking-wide mb-8">
+              <Sparkles className="w-3 h-3" />
+              New: LinkedIn & YouTube Parsers
+            </motion.div>
+            
+            <motion.h1 variants={fadeIn} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-6">
+              Stop Losing Insights <br className="hidden sm:block" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">to the Feed.</span>
             </motion.h1>
-
-            {/* Subheadline */}
-            <motion.p
-              variants={staggerItem}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="text-base sm:text-lg md:text-xl text-slate-600 mb-8 sm:mb-10 max-w-3xl mx-auto leading-relaxed px-2"
-            >
+            
+            <motion.p variants={fadeIn} className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
               Centralize your research from LinkedIn, X, and the Open Web into one searchable intelligence hub. Capture the context, not just the link.
             </motion.p>
-
-            {/* CTA */}
-            <motion.div
-              variants={staggerItem}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col items-center justify-center gap-3 sm:gap-4 mb-4 px-2"
-            >
-              <motion.button
+            
+            <motion.div variants={fadeIn} className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+              <button 
                 onClick={() => loginWithRedirect()}
-                whileTap={{ scale: 0.98 }}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3.5 sm:py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/25 transition-all duration-300 text-base sm:text-lg"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full text-lg shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-1"
               >
                 <Chrome className="w-5 h-5" />
-                <span>Install Chrome Extension</span>
-              </motion.button>
-              <motion.p
-                variants={staggerItem}
-                transition={{ duration: 0.5 }}
-                className="text-xs sm:text-sm text-slate-500"
-              >
-                Free forever for personal use
-              </motion.p>
+                Install Chrome Extension
+              </button>
+              <p className="text-sm text-slate-500 font-medium">Free forever for personal use</p>
             </motion.div>
 
-            {/* Dashboard Screenshot */}
-            <motion.div
-              variants={staggerItem}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-12 sm:mt-16"
+            {/* Dashboard Visual */}
+            <motion.div 
+              variants={fadeIn}
+              className="relative rounded-xl bg-slate-900 p-2 sm:p-3 shadow-2xl ring-1 ring-slate-900/10"
             >
-              <div className="relative max-w-5xl mx-auto">
-                {/* Gradient border effect */}
-                <div className="absolute -inset-[2px] rounded-xl bg-gradient-to-br from-blue-400/20 via-slate-200/40 to-blue-400/20 blur-sm" />
-                
-                {/* Shadow container */}
-                <div className="absolute inset-0 rounded-xl shadow-2xl shadow-slate-900/20" />
-                
-                {/* Image container */}
-                <div className="relative rounded-xl overflow-hidden border border-slate-200/60 bg-white">
-                  <img 
-                    src="/3_dashboard_view.png" 
-                    alt="SmarTrack Dashboard showing unified intelligence hub with grid layout, platform cards, and unified search interface"
-                    className="w-full h-auto block"
-                    onError={() => {
-                      console.warn('Dashboard image not found. Please ensure /3_dashboard_view.png exists in /public folder.');
-                    }}
-                  />
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Problem Section */}
-      <section className="bg-slate-50 py-20 sm:py-24 md:py-28">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={shouldAnimate ? "hidden" : "visible"}
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={fadeInUp}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-10"
-          >
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 sm:mb-6">
-              Your Knowledge is Fragmented.
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed px-2">
-              You save a chart on LinkedIn. You bookmark a report on Chrome. But when you need them, they're buried by algorithms. If you can't find it, you didn't save it.
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={shouldAnimate ? "hidden" : "visible"}
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={fadeInUp}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="mt-10 sm:mt-12"
-          >
-            <div className="relative max-w-5xl mx-auto">
-              {/* Gradient border effect */}
-              <div className="absolute -inset-[2px] rounded-xl bg-gradient-to-br from-slate-300/30 via-slate-200/20 to-slate-300/30 blur-sm" />
-              
-              {/* Shadow container */}
-              <div className="absolute inset-0 rounded-xl shadow-xl shadow-slate-900/10" />
-              
-              {/* Image container */}
-              <div className="relative rounded-xl overflow-hidden border border-slate-200/60 bg-white">
-                <img 
-                  src="/Silo vs Hub.jpg" 
-                  alt="Diagram showing the problem of fragmented knowledge silos vs unified SmarTrack hub - Before: Your insights are trapped in someone else's app. After: One source of truth for everything you know."
-                  className="w-full h-auto block"
+              <div className="rounded-lg overflow-hidden bg-slate-800 aspect-[16/10] relative">
+                 <img 
+                  src="/3_dashboard_view.png" 
+                  alt="SmarTrack Dashboard Interface showing organized cards from LinkedIn, YouTube, and Web" 
+                  className="w-full h-full object-cover"
                   onError={(e) => {
-                    // Try alternative paths if spaces don't work
                     const target = e.target as HTMLImageElement;
-                    const currentSrc = target.src;
-                    if (currentSrc.includes('Silo vs Hub')) {
-                      target.src = '/Silo-vs-Hub.jpg';
-                    } else if (currentSrc.includes('Silo-vs-Hub')) {
-                      target.src = '/Silo%20vs%20Hub.jpg';
+                    if (!target.src.includes('image_50ae46')) {
+                      target.src = '/image_50ae46.png';
                     } else {
-                      console.warn('Silo vs Hub image not found. Please add the image to /public folder with name: "Silo vs Hub.jpg"');
+                      target.style.display = 'none';
+                      const parent = target.parentElement;
+                      if (parent) {
+                        parent.classList.add('flex', 'items-center', 'justify-center', 'text-slate-500');
+                        parent.innerHTML = '<span class="text-sm">Dashboard Preview (image missing)</span>';
+                      }
                     }
                   }}
                 />
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
+        
+        {/* Background Gradients */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-100/40 rounded-full blur-3xl -z-10 opacity-50 pointer-events-none" />
       </section>
 
-      {/* Solution Section */}
-      <section className="bg-white py-20 sm:py-24 md:py-28">
+      {/* 3. The Problem Section (Silo vs Hub) */}
+      <section className="py-24 bg-slate-50 border-y border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={shouldAnimate ? "hidden" : "visible"}
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={fadeInUp}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12 sm:mb-16"
-          >
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 sm:mb-6">
-              Escape the Walled Gardens.
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed px-2">
-              SmarTrack is the bridge between your social feeds and your personal library.
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Your Knowledge is Fragmented.</h2>
+            <p className="text-lg text-slate-600">
+              You save a chart on LinkedIn. You bookmark a report on Chrome. But when you need them, they're buried by algorithms. 
+              <span className="font-semibold text-slate-900"> If you can't find it, you didn't save it.</span>
             </p>
-          </motion.div>
-
-          <div className="grid sm:grid-cols-3 gap-6 md:gap-8">
-            <FeaturePillar
-              icon={<ScanLine className="w-5 h-5 sm:w-6 sm:h-6" />}
-              title="Capture"
-              description="Extract full context—author, image, and text."
-              index={0}
-            />
-            <FeaturePillar
-              icon={<ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />}
-              title="Sanitize"
-              description="Strip tracking pixels locally on your device."
-              index={1}
-            />
-            <FeaturePillar
-              icon={<LayoutGrid className="w-5 h-5 sm:w-6 sm:h-6" />}
-              title="Centralize"
-              description="Insights land in one unified dashboard."
-              index={2}
+          </div>
+          
+          <div className="relative rounded-2xl bg-white p-4 sm:p-8 shadow-xl border border-slate-100">
+             <img 
+              src="/Silo vs Hub.jpg" 
+              alt="Diagram comparing fragmented silos vs the unified SmarTrack hub" 
+              className="w-full h-auto rounded-lg"
+              onError={(e) => {
+                // Fallback logic for various filename formats
+                const target = e.target as HTMLImageElement;
+                if (!target.src.includes('Silo%20vs%20Hub.jpg')) {
+                   target.src = '/Silo%20vs%20Hub.jpg';
+                } else if (!target.src.includes('Silo-vs-Hub.jpg')) {
+                   target.src = '/Silo-vs-Hub.jpg';
+                } else {
+                   target.style.display = 'none';
+                   const parent = target.parentElement;
+                   if (parent) {
+                     parent.innerHTML = '<div class="h-64 flex items-center justify-center bg-slate-50 text-slate-400 rounded-lg">Silo vs Hub Diagram Missing - Please add "Silo vs Hub.jpg" to /public folder</div>';
+                   }
+                }
+              }}
             />
           </div>
         </div>
       </section>
 
-      {/* Key Features Grid */}
-      <section id="features" className="py-20 sm:py-24 md:py-28 bg-gradient-to-b from-white to-slate-50/80">
+      {/* 4. The Solution Section (The Bridge) */}
+      <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid sm:grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
-            {/* Visual Recall Card */}
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              variants={fadeInUp}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 p-6 sm:p-8 hover:border-blue-200 hover:shadow-xl transition-all duration-300 overflow-hidden group"
-            >
-              <div className="mb-6 rounded-xl overflow-hidden">
-                <img 
+          <div className="text-center max-w-3xl mx-auto mb-20">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Escape the Walled Gardens.</h2>
+            <p className="text-lg text-slate-600">SmarTrack is the bridge between your social feeds and your personal library.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-12 relative">
+            {/* Connecting Line (Desktop) */}
+            <div className="hidden md:block absolute top-12 left-0 w-full h-0.5 bg-gradient-to-r from-blue-100 via-blue-200 to-blue-100 -z-10" />
+
+            {[
+              {
+                icon: ScanEye,
+                title: "1. Capture",
+                desc: "Extract full context—author, image, and text directly from the post."
+              },
+              {
+                icon: ShieldCheck,
+                title: "2. Sanitize",
+                desc: "We strip tracking pixels and clean URLs locally on your device."
+              },
+              {
+                icon: LayoutGrid,
+                title: "3. Centralize",
+                desc: "Insights land in one unified, searchable dashboard instantly."
+              }
+            ].map((step, i) => (
+              <div key={i} className="flex flex-col items-center text-center bg-white p-4">
+                <div className="w-24 h-24 rounded-2xl bg-blue-50 flex items-center justify-center mb-6 shadow-sm border border-blue-100">
+                  <step.icon className="w-10 h-10 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">{step.title}</h3>
+                <p className="text-slate-600 leading-relaxed">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Key Features Grid */}
+      <section className="py-24 bg-slate-50 border-t border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-3 gap-8">
+            
+            {/* Card 1 */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+              <div className="aspect-[4/3] bg-slate-100 relative">
+                 <img 
                   src="/1_save_link_popup.png" 
-                  alt="Extension popup showing visual recall features"
-                  className="w-full h-auto rounded-xl group-hover:scale-105 transition-transform duration-300"
+                  alt="Browser extension popup"
+                  className="w-full h-full object-cover object-top"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    target.src = '/image_01344c.png';
+                    if (!target.src.includes('image_01344c')) {
+                      target.src = '/image_01344c.png';
+                    }
                   }}
                 />
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-3">
-                Don't just save the URL. Capture the thumbnail, author, and summary.
-              </h3>
-            </motion.div>
+              <div className="p-8">
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Visual Recall</h3>
+                <p className="text-slate-600">Don't just save the URL. Capture the thumbnail, author, and summary. Recognize your research instantly.</p>
+              </div>
+            </div>
 
-            {/* Platform Agnostic Card */}
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              variants={fadeInUp}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 p-6 sm:p-8 hover:border-blue-200 hover:shadow-xl transition-all duration-300 overflow-hidden group"
-            >
-              <div className="mb-6 rounded-xl overflow-hidden">
-                <img 
+             {/* Card 2 */}
+             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+              <div className="aspect-[4/3] bg-slate-100 relative p-8 flex items-center justify-center">
+                 <img 
                   src="/2_category_selection.png" 
-                  alt="Platform logos showing universal support"
-                  className="w-full h-auto rounded-xl group-hover:scale-105 transition-transform duration-300"
+                  alt="Supported platforms logos"
+                  className="w-full h-auto object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    if (target.src.includes('2_category_selection')) {
+                    if (!target.src.includes('image_50adcc')) {
                       target.src = '/image_50adcc.png';
                     }
                   }}
                 />
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-3">
-                Treat LinkedIn like the Open Web. PDF, Tweet, or Post—it all lives in one hub.
-              </h3>
-            </motion.div>
+              <div className="p-8">
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Platform Agnostic</h3>
+                <p className="text-slate-600">Treat LinkedIn like the Open Web. PDF, Tweet, or Post—it all lives in one standardized format.</p>
+              </div>
+            </div>
 
-            {/* Workflow Card */}
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              variants={fadeInUp}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200/80 p-6 sm:p-8 hover:border-blue-200 hover:shadow-xl transition-all duration-300 overflow-hidden group"
-            >
-              <div className="mb-6 rounded-xl overflow-hidden">
-                <img 
+             {/* Card 3 */}
+             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+              <div className="aspect-[4/3] bg-slate-100 relative">
+                 <img 
                   src="/3_dashboard_view.png" 
-                  alt="List view showing research workflow"
-                  className="w-full h-auto rounded-xl group-hover:scale-105 transition-transform duration-300"
+                  alt="List view of saved items"
+                  className="w-full h-full object-cover object-top"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    if (target.src.includes('3_dashboard_view')) {
+                    if (!target.src.includes('image_00bf70')) {
                       target.src = '/image_00bf70.png';
                     }
                   }}
                 />
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-3">
-                Built for Researchers. Track competitors, build swipe files, and recall prospect details.
-              </h3>
-            </motion.div>
+              <div className="p-8">
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Built for Workflow</h3>
+                <p className="text-slate-600">Track competitors, build swipe files, and recall prospect details with rich metadata tags.</p>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
 
-      {/* Trust & Privacy Section */}
-      <section className="relative bg-slate-900 py-20 lg:py-28 overflow-hidden">
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={shouldAnimate ? "hidden" : "visible"}
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={staggerContainer}
-            className="text-center"
-          >
-            <motion.h2
-              variants={fadeInUp}
-              transition={{ duration: 0.6 }}
-              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6"
-            >
-              Intelligence Without Intrusion.
-            </motion.h2>
-            <motion.p
-              variants={fadeInUp}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-base sm:text-lg md:text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed mb-10 sm:mb-12"
-            >
-              Most tools demand passwords. SmarTrack is different. We use a Client-First Architecture. The capture happens locally on your device. We never see your session data.
-            </motion.p>
-            
-            <motion.div
-              variants={fadeInUp}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="flex flex-wrap items-center justify-center gap-4 sm:gap-6"
-            >
-              <div className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-slate-800/50 border border-slate-700 rounded-xl">
-                <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-                <span className="text-sm sm:text-base font-medium text-white">No Data Selling</span>
-              </div>
-              <div className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-slate-800/50 border border-slate-700 rounded-xl">
-                <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-                <span className="text-sm sm:text-base font-medium text-white">Client-Side Encryption</span>
-              </div>
-              <div className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-slate-800/50 border border-slate-700 rounded-xl">
-                <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-                <span className="text-sm sm:text-base font-medium text-white">Zero-Trust</span>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
+      {/* 6. Trust & Privacy */}
+      <section className="py-24 bg-slate-900 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-blue-900/20 pattern-grid-lg opacity-20" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-sm font-medium mb-8">
+            <ShieldCheck className="w-4 h-4" />
+            Privacy First Architecture
+          </div>
+          
+          <h2 className="text-3xl sm:text-4xl font-bold mb-6">Intelligence Without Intrusion.</h2>
+          <p className="text-lg text-slate-300 max-w-2xl mx-auto mb-12">
+            Most tools demand passwords. SmarTrack is different. We use a <strong>Client-First Architecture</strong>. 
+            The capture happens locally on your device. We never see your session data or passwords.
+          </p>
 
-      {/* Footer CTA */}
-      <section className="relative bg-white py-20 sm:py-24 md:py-28 overflow-hidden">
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={shouldAnimate ? "hidden" : "visible"}
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={staggerContainer}
-          >
-            <motion.h2
-              variants={fadeInUp}
-              transition={{ duration: 0.6 }}
-              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 sm:mb-6"
-            >
-              Reclaim Your Digital Memory.
-            </motion.h2>
-            <motion.div
-              variants={fadeInScale}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <motion.button
-                onClick={() => loginWithRedirect()}
-                whileTap={{ scale: 0.98 }}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 sm:gap-3 px-8 sm:px-10 py-4 sm:py-5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-xl shadow-blue-600/30 transition-all duration-300 text-base sm:text-lg"
-              >
-                <Chrome className="w-5 h-5 sm:w-6 sm:h-6" />
-                <span>Add to Chrome - It's Free</span>
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-              </motion.button>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-8 sm:py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center gap-6">
-            {/* Links - Mobile: 2 columns, Desktop: row */}
-            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-8 text-sm text-slate-500">
-              <Link to="/docs" className="hover:text-slate-900 transition-colors">Docs</Link>
-              <Link to="/faq" className="hover:text-slate-900 transition-colors">FAQ</Link>
-              <Link to="/legal" className="hover:text-slate-900 transition-colors">Legal</Link>
-              <a href="mailto:smart.track.appp@gmail.com" className="hover:text-slate-900 transition-colors">Contact</a>
-            </div>
-            {/* Copyright */}
-            <div className="flex items-center gap-3">
-              <img src="/logo.svg" alt="SmarTrack" className="h-5 sm:h-6 w-auto" />
-              <span className="text-slate-400 text-xs sm:text-sm">© {new Date().getFullYear()} SmarTrack</span>
-            </div>
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-8">
+            {[
+              "No Data Selling",
+              "Client-Side Encryption",
+              "Zero-Trust Design",
+              "GDPR Ready"
+            ].map((badge) => (
+              <div key={badge} className="flex items-center gap-2 text-slate-200 font-medium">
+                <CheckCircle2 className="w-5 h-5 text-green-400" />
+                {badge}
+              </div>
+            ))}
           </div>
         </div>
-      </footer>
+      </section>
+
+      {/* 7. Footer CTA */}
+      <section className="py-24 bg-white text-center">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-6 tracking-tight">Reclaim Your Digital Memory.</h2>
+          <p className="text-xl text-slate-600 mb-10">Join the researchers who have stopped bookmarking and started capturing.</p>
+          <button 
+            onClick={() => loginWithRedirect()}
+            className="inline-flex items-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-lg shadow-xl shadow-blue-600/30 transition-transform hover:-translate-y-1"
+          >
+            <Chrome className="w-6 h-6" />
+            Add to Chrome - It's Free
+          </button>
+          <div className="mt-12 flex items-center justify-center gap-8 text-sm text-slate-500">
+            <a href="/legal" className="hover:text-slate-900 transition-colors">Privacy Policy</a>
+            <a href="/legal" className="hover:text-slate-900 transition-colors">Terms of Service</a>
+            <a href="mailto:smart.track.appp@gmail.com" className="hover:text-slate-900 transition-colors">Contact Support</a>
+          </div>
+          <p className="mt-8 text-xs text-slate-400">© {new Date().getFullYear()} SmarTrack Intelligence. All rights reserved.</p>
+        </div>
+      </section>
+
     </div>
   )
 }
+
+export default LoginPage
