@@ -13,6 +13,8 @@ import {
 import { useAuth0 } from '@auth0/auth0-react'
 import { SiloVsHubVisualization } from '../components/SiloVsHubVisualization'
 import { DashboardListView } from '../components/DashboardListView'
+import { ExtensionPopupPreview } from '../components/ExtensionPopupPreview'
+import { CategorySelectionPreview } from '../components/CategorySelectionPreview'
 
 export const LoginPage = () => {
   const { loginWithRedirect } = useAuth0()
@@ -216,17 +218,7 @@ export const LoginPage = () => {
               className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
             >
               <div className="h-72 bg-white relative overflow-hidden p-4 flex items-center justify-center">
-                 <img 
-                  src="/1_save_link_popup.png" 
-                  alt="Browser extension popup showing Visual Recall feature"
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    if (!target.src.includes('image_01344c')) {
-                      target.src = '/image_01344c.png';
-                    }
-                  }}
-                />
+                <ExtensionPopupPreview />
               </div>
               <div className="p-8">
                 <h3 className="text-xl font-bold text-slate-900 mb-2">Visual Recall</h3>
@@ -239,18 +231,8 @@ export const LoginPage = () => {
               variants={fadeIn}
               className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
             >
-              <div className="h-72 bg-white relative overflow-hidden p-6 flex items-center justify-center">
-                 <img 
-                  src="/2_category_selection.png" 
-                  alt="Category selection interface showing Platform Agnostic feature"
-                  className="w-full h-auto object-contain"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    if (!target.src.includes('image_50adcc')) {
-                      target.src = '/image_50adcc.png';
-                    }
-                  }}
-                />
+              <div className="h-72 bg-white relative overflow-hidden p-4 flex items-center justify-center">
+                <CategorySelectionPreview />
               </div>
               <div className="p-8">
                 <h3 className="text-xl font-bold text-slate-900 mb-2">Platform Agnostic</h3>
