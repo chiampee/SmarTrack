@@ -3,16 +3,28 @@ import { useBackendApi } from '../hooks/useBackendApi'
 export interface AdminAnalytics {
   summary: {
     totalUsers: number
+    usersWithLinks: number
+    usersWithoutLinks: number
     extensionUsers: number
-    totalLinks: number
-    extensionLinks: number
-    webLinks: number
+    totalLinksAllTime: number
     totalStorageBytes: number
     totalStorageKB: number
     totalStorageMB: number
+    // Period-specific metrics (filtered by date range)
+    linksInPeriod: number
+    extensionLinksInPeriod: number
+    webLinksInPeriod: number
+    storageInPeriodBytes: number
+    storageInPeriodKB: number
+    storageInPeriodMB: number
+    // Calculated metrics
     averageLinksPerUser: number
     activeUsers: number
     inactiveUsers: number
+    // Backward compatibility (deprecated - use linksInPeriod instead)
+    totalLinks: number
+    extensionLinks: number
+    webLinks: number
   }
   growth: {
     userGrowth: Array<{

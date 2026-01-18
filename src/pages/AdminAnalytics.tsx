@@ -602,10 +602,10 @@ const AnalyticsTab: React.FC<{
           />
           <EnhancedStatCard
             title="Total Links"
-            value={analytics.summary.totalLinks}
-            change={linksGrowthRate}
-            changeLabel="vs last week"
-            subtitle={`${analytics.summary.extensionLinks} extension, ${analytics.summary.webLinks} web`}
+            value={analytics.summary.totalLinksAllTime}
+            change={analytics.summary.linksInPeriod}
+            changeLabel={`${analytics.summary.linksInPeriod} in period`}
+            subtitle={`${analytics.summary.extensionLinksInPeriod} extension, ${analytics.summary.webLinksInPeriod} web (this period)`}
             icon={LinkIcon}
             color="green"
             trend={parseFloat(linksGrowthRate) >= 0 ? 'up' : 'down'}
@@ -615,7 +615,7 @@ const AnalyticsTab: React.FC<{
             value={`${extensionAdoptionRate}%`}
             change={analytics.summary.extensionUsers}
             changeLabel="users"
-            subtitle={`${analytics.summary.extensionLinks} links via extension`}
+            subtitle={`${analytics.summary.extensionLinksInPeriod} links via extension (this period)`}
             icon={TrendingUp}
             color="purple"
             trend="up"
@@ -708,7 +708,7 @@ const AnalyticsTab: React.FC<{
               description={`Only ${activeUserRate}% of users are active. Consider re-engagement campaigns.`}
             />
           )}
-          {analytics.summary.extensionLinks > analytics.summary.webLinks && (
+          {analytics.summary.extensionLinksInPeriod > analytics.summary.webLinksInPeriod && (
             <InsightCard
               type="success"
               title="Extension is Primary Channel"
@@ -733,8 +733,8 @@ const AnalyticsTab: React.FC<{
               userCount={cat.userCount}
               maxCount={analytics.topCategories[0]?.linkCount || 1}
               rank={index + 1}
-              percentage={analytics.summary.totalLinks > 0 
-                ? ((cat.linkCount / analytics.summary.totalLinks) * 100).toFixed(1)
+              percentage={analytics.summary.linksInPeriod > 0 
+                ? ((cat.linkCount / analytics.summary.linksInPeriod) * 100).toFixed(1)
                 : '0'}
             />
           ))}
@@ -747,8 +747,8 @@ const AnalyticsTab: React.FC<{
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {analytics.contentTypes.map((ct) => {
-              const percentage = analytics.summary.totalLinks > 0
-                ? ((ct.count / analytics.summary.totalLinks) * 100).toFixed(1)
+              const percentage = analytics.summary.linksInPeriod > 0
+                ? ((ct.count / analytics.summary.linksInPeriod) * 100).toFixed(1)
                 : '0'
               return (
                 <div key={ct.contentType} className="text-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
@@ -760,7 +760,7 @@ const AnalyticsTab: React.FC<{
             })}
           </div>
           <div className="flex items-center justify-center">
-            <ContentTypeChart data={analytics.contentTypes} total={analytics.summary.totalLinks} />
+            <ContentTypeChart data={analytics.contentTypes} total={analytics.summary.linksInPeriod} />
           </div>
         </div>
       </div>
