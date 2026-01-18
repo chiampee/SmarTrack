@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { SiloVsHubVisualization } from '../components/SiloVsHubVisualization'
+import { DashboardListView } from '../components/DashboardListView'
 
 export const LoginPage = () => {
   const { loginWithRedirect } = useAuth0()
@@ -130,28 +131,9 @@ export const LoginPage = () => {
             {/* Dashboard Visual */}
             <motion.div 
               variants={fadeIn}
-              className="relative rounded-2xl bg-white p-4 sm:p-6 shadow-2xl shadow-blue-900/10 ring-1 ring-slate-200/60 border border-slate-200"
+              className="relative rounded-2xl overflow-hidden shadow-2xl shadow-blue-900/10 ring-1 ring-slate-200/60 border border-slate-200"
             >
-              <div className="rounded-xl overflow-hidden bg-white aspect-[16/10] sm:aspect-[16/9] relative">
-                 <img 
-                  src="/3_dashboard_view.png" 
-                  alt="SmarTrack Dashboard Interface showing organized cards from LinkedIn, YouTube, and Web" 
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    if (!target.src.includes('image_50ae46')) {
-                      target.src = '/image_50ae46.png';
-                    } else {
-                      target.style.display = 'none';
-                      const parent = target.parentElement;
-                      if (parent) {
-                        parent.classList.add('flex', 'items-center', 'justify-center', 'text-slate-500');
-                        parent.innerHTML = '<span class="text-sm">Dashboard Preview (image missing)</span>';
-                      }
-                    }
-                  }}
-                />
-              </div>
+              <DashboardListView />
             </motion.div>
           </motion.div>
         </div>
@@ -283,19 +265,9 @@ export const LoginPage = () => {
               className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-all"
             >
               <div className="flex flex-col lg:flex-row">
-                {/* Image on Left (Desktop) / Top (Mobile) */}
-                <div className="lg:w-2/3 h-96 lg:h-[500px] bg-white relative overflow-hidden p-4 lg:p-6 flex items-center justify-center">
-                  <img 
-                    src="/3_dashboard_view.png" 
-                    alt="Dashboard list view showing Built for Workflow feature with rich metadata"
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      if (!target.src.includes('image_00bf70')) {
-                        target.src = '/image_00bf70.png';
-                      }
-                    }}
-                  />
+                {/* Dashboard on Left (Desktop) / Top (Mobile) */}
+                <div className="lg:w-2/3 bg-white relative overflow-hidden">
+                  <DashboardListView />
                 </div>
                 {/* Text on Right (Desktop) / Bottom (Mobile) */}
                 <div className="lg:w-1/3 p-8 lg:p-10 flex flex-col justify-center bg-gradient-to-br from-slate-50 to-white">
