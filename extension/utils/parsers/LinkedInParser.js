@@ -73,37 +73,34 @@ class LinkedInParser {
 
     items.forEach((item, index) => {
       try {
-        // 1. Image Extraction (Priority: Embedded Object -> Large Image -> Profile)
-        let thumbnail = null;
+        // 1. URL Extraction (Remove class dependency)
+        // Look for ANY anchor tag that points to a post or update
+        const anchor = item.querySelector('a[href*="/feed/update/"], a[href*="/posts/"], a[href*="linkedin.com/pulse/"]');
+        
+        let url = anchor ? anchor.href : null;
+        
+        // Debugging: Log why we might skip this item
+        if (!url) {
+          console.warn(`[SRT] Item ${index} skipped: No post URL found in item`, item);
+          return; // Continue to next item
+        }
 
-        // A. Try the specific class seen in your HTML dump
-        const embeddedImg = item.querySelector('img.entity-result__embedded-object-image');
+        // 2. Image Extraction (Use the specific classes from the user's HTML dump)
+        let thumbnail = null;
+        const embeddedImg = item.querySelector('.entity-result__embedded-object-image, .ivm-view-attr__img--centered');
         if (embeddedImg && embeddedImg.src && !embeddedImg.src.includes('data:image/gif')) {
           thumbnail = embeddedImg.src;
         }
         
-        // B. Fallback: Find the largest image in the 'right-padding' container
+        // Fallback to profile pic if main image missing
         if (!thumbnail) {
-          const rightContainer = item.querySelector('.entity-result__content-inner-container--right-padding');
-          if (rightContainer) {
-            const imgs = Array.from(rightContainer.querySelectorAll('img'));
-            // Find the first image that is NOT a ghost pixel
-            const validImg = imgs.find(img => img.src && img.src.startsWith('http') && !img.src.includes('data:image/gif'));
-            if (validImg) {
-              thumbnail = validImg.src;
-            }
-          }
-        }
-        
-        // C. Final fallback: Profile picture
-        if (!thumbnail) {
-          const profileImg = item.querySelector('img.presence-entity__image');
+          const profileImg = item.querySelector('.presence-entity__image');
           if (profileImg && profileImg.src && !profileImg.src.includes('data:image/gif')) {
             thumbnail = profileImg.src;
           }
         }
 
-        // 2. Title & Description Extraction
+        // 3. Title & Description Extraction
         const authorEl = item.querySelector('.app-aware-link');
         const author = authorEl ? authorEl.innerText.trim() : 'LinkedIn User';
         
@@ -117,42 +114,41 @@ class LinkedInParser {
         
         const title = cleanDescription ? `${author}: ${snippet}${snippet.length >= 60 ? '...' : ''}` : `${author} (Saved Post)`;
         
-        // 3. URL Extraction
-        const anchor = item.querySelector('a.app-aware-link[href*="/feed/update/"], a.app-aware-link[href*="/posts/"]');
-        let url = anchor ? anchor.href : null;
-        
-        if (url) {
-          try {
-            // Sanitize URL using the sanitizer if available
-            const cleanUrl = window.sanitizeLinkedInUrl ? window.sanitizeLinkedInUrl(url) : null;
-            if (cleanUrl) {
-              validLinks.push({
-                title,
-                url: cleanUrl,
-                description: cleanDescription,
-                thumbnail,
-                category: 'LinkedIn Saved Posts',
-                source: 'linkedin',
-                contentType: 'post'
-              });
-              
-              console.log(`[SRT] Extracted item ${index}:`, {
-                title: title.substring(0, 60),
-                hasDescription: cleanDescription.length > 0,
-                hasThumbnail: !!thumbnail
-              });
-            } else {
-              console.debug(`[SRT] Item ${index}: URL sanitization failed`);
-            }
-          } catch (e) {
-            console.warn(`[SRT] Item ${index}: URL processing error`, e);
+        // 4. Sanitize and validate URL
+        try {
+          // Sanitize URL using the sanitizer if available
+          const cleanUrl = window.sanitizeLinkedInUrl ? window.sanitizeLinkedInUrl(url) : null;
+          if (cleanUrl) {
+            validLinks.push({
+              title,
+              url: cleanUrl,
+              description: cleanDescription,
+              thumbnail,
+              category: 'LinkedIn Saved Posts',
+              source: 'linkedin',
+              contentType: 'post'
+            });
+            
+            console.log(`[SRT] Extracted item ${index}:`, {
+              title: title.substring(0, 60),
+              hasDescription: cleanDescription.length > 0,
+              hasThumbnail: !!thumbnail
+            });
+          } else {
+            console.warn(`[SRT] Item ${index}: URL sanitization failed`, url);
           }
-        } else {
-          console.debug(`[SRT] Item ${index}: No valid URL found`);
+        } catch (e) {
+          console.warn(`[SRT] Item ${index}: URL processing error`, e);
         }
       } catch (e) {
         console.error(`[SRT] Item ${index} parse error`, e);
       }
+    });
+
+    // Add verbose logging before returning
+    console.log('[SRT] Parsing Report:', { 
+      foundItems: items.length, 
+      validLinks: validLinks.length 
     });
 
     return validLinks;
