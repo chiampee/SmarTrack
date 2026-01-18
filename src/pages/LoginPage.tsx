@@ -218,17 +218,27 @@ export const LoginPage = () => {
         </div>
       </section>
 
-      {/* 5. Key Features Grid */}
+      {/* 5. Key Features Grid - Bento Layout */}
       <section className="py-24 bg-slate-50 border-t border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-3 gap-8">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+          >
             
-            {/* Card 1 */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
-              <div className="aspect-[4/3] bg-slate-100 relative">
+            {/* Card 1: Visual Recall */}
+            <motion.div 
+              variants={fadeIn}
+              className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
+            >
+              <div className="h-72 bg-slate-100 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-50/50 z-10 pointer-events-none" />
                  <img 
                   src="/1_save_link_popup.png" 
-                  alt="Browser extension popup"
+                  alt="Browser extension popup showing Visual Recall feature"
                   className="w-full h-full object-cover object-top"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -242,15 +252,19 @@ export const LoginPage = () => {
                 <h3 className="text-xl font-bold text-slate-900 mb-2">Visual Recall</h3>
                 <p className="text-slate-600">Don't just save the URL. Capture the thumbnail, author, and summary. Recognize your research instantly.</p>
               </div>
-            </div>
+            </motion.div>
 
-             {/* Card 2 */}
-             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
-              <div className="aspect-[4/3] bg-slate-100 relative p-8 flex items-center justify-center">
+            {/* Card 2: Platform Agnostic */}
+            <motion.div 
+              variants={fadeIn}
+              className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
+            >
+              <div className="h-72 bg-slate-100 relative overflow-hidden p-8 flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-50/50 z-10 pointer-events-none" />
                  <img 
                   src="/2_category_selection.png" 
-                  alt="Supported platforms logos"
-                  className="w-full h-auto object-contain"
+                  alt="Category selection interface showing Platform Agnostic feature"
+                  className="w-full h-auto object-contain relative z-0"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     if (!target.src.includes('image_50adcc')) {
@@ -263,30 +277,38 @@ export const LoginPage = () => {
                 <h3 className="text-xl font-bold text-slate-900 mb-2">Platform Agnostic</h3>
                 <p className="text-slate-600">Treat LinkedIn like the Open Web. PDF, Tweet, or Post—it all lives in one standardized format.</p>
               </div>
-            </div>
+            </motion.div>
 
-             {/* Card 3 */}
-             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
-              <div className="aspect-[4/3] bg-slate-100 relative">
-                 <img 
-                  src="/3_dashboard_view.png" 
-                  alt="List view of saved items"
-                  className="w-full h-full object-cover object-top"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    if (!target.src.includes('image_00bf70')) {
-                      target.src = '/image_00bf70.png';
-                    }
-                  }}
-                />
+            {/* Card 3: Built for Workflow - Full Width Horizontal Layout */}
+            <motion.div 
+              variants={fadeIn}
+              className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
+            >
+              <div className="flex flex-col lg:flex-row">
+                {/* Image on Left (Desktop) / Top (Mobile) */}
+                <div className="lg:w-2/3 h-80 lg:h-96 bg-slate-100 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-50/50 z-10 pointer-events-none" />
+                  <img 
+                    src="/3_dashboard_view.png" 
+                    alt="Dashboard list view showing Built for Workflow feature with rich metadata"
+                    className="w-full h-full object-cover object-top"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (!target.src.includes('image_00bf70')) {
+                        target.src = '/image_00bf70.png';
+                      }
+                    }}
+                  />
+                </div>
+                {/* Text on Right (Desktop) / Bottom (Mobile) */}
+                <div className="lg:w-1/3 p-8 flex flex-col justify-center">
+                  <h3 className="text-2xl font-bold text-slate-900 mb-3">Built for Workflow</h3>
+                  <p className="text-slate-600 text-lg leading-relaxed">Track competitors, build swipe files, and recall prospect details with rich metadata tags.</p>
+                </div>
               </div>
-              <div className="p-8">
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Built for Workflow</h3>
-                <p className="text-slate-600">Track competitors, build swipe files, and recall prospect details with rich metadata tags.</p>
-              </div>
-            </div>
+            </motion.div>
 
-          </div>
+          </motion.div>
         </div>
       </section>
 
