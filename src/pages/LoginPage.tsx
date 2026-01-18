@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { motion } from 'framer-motion'
 import { 
   Chrome, 
@@ -14,7 +14,7 @@ import {
   Star
 } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
-import { LinkedInLogo, XLogo, RedditLogo, WebIcon, YouTubeLogo } from '../components/BrandLogos'
+import { LinkedInLogo, XLogo, RedditLogo, YouTubeLogo } from '../components/BrandLogos'
 
 // CSS-based Silo vs Hub Diagram Component
 const SiloVsHubDiagram: React.FC = () => {
