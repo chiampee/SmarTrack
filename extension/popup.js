@@ -1067,20 +1067,35 @@ class SmarTrackPopup {
     }
     
     // Set favicon
-    if (faviconEl && this.pageData.favicon) {
+    if (faviconEl) {
       try {
-        const faviconUrl = this.pageData.favicon.startsWith('http')
-          ? this.pageData.favicon
-          : new URL(this.pageData.favicon, url).href;
-        
-        faviconEl.style.cssText = `
-          background-image: url(${faviconUrl});
-          background-size: cover;
-          background-position: center;
-          background-color: #e2e8f0;
-        `;
+        if (this.pageData.favicon) {
+          const faviconUrl = this.pageData.favicon.startsWith('http')
+            ? this.pageData.favicon
+            : new URL(this.pageData.favicon, url).href;
+          
+          faviconEl.style.cssText = `
+            display: flex;
+            background-image: url(${faviconUrl});
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: #f1f5f9;
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
+          `;
+          console.log('[SRT] Favicon set successfully:', faviconUrl);
+        } else {
+          // Fallback: hide favicon if not available
+          faviconEl.style.display = 'none';
+        }
       } catch (error) {
         console.error('[SRT] Failed to set favicon:', error);
+        // Hide on error
+        if (faviconEl) {
+          faviconEl.style.display = 'none';
+        }
       }
     }
     

@@ -59,8 +59,17 @@ export const ExtensionPreview: React.FC = () => {
           <div className="relative p-4 sm:p-6 space-y-4 sm:space-y-5">
             {/* Page preview card */}
             <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-slate-50/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-slate-200/60">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/20">
-                <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              <div 
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg bg-white border-2 border-slate-200"
+                style={{
+                  backgroundImage: 'url(https://www.google.com/s2/favicons?domain=economist.com&sz=64)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat'
+                }}
+              >
+                {/* Fallback icon if favicon fails to load */}
+                <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400 hidden" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="font-semibold text-slate-900 text-xs sm:text-sm mb-1 line-clamp-2">Global Semiconductor Supply Chain Report 2026</div>

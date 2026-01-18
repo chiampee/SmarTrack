@@ -3,6 +3,7 @@ import { useAuth0 } from '@auth0/auth0-react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Chrome, FileText, FolderTree, Search, ArrowRight, CheckCircle2, LogIn, BookOpen, ExternalLink, Sparkles, ChevronUp, Link2, File, MessageSquare, Globe } from 'lucide-react'
+import { LinkedInLogo, XLogo, RedditLogo, WebIcon, PDFIcon } from '../components/BrandLogos'
 import { DashboardPreview } from '../components/DashboardPreview'
 import { ExtensionPreview } from '../components/ExtensionPreview'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
@@ -270,31 +271,31 @@ export const LoginPage: React.FC = () => {
             {[
               {
                 name: 'LinkedIn',
-                icon: <MessageSquare className="w-6 h-6 sm:w-7 sm:h-7" />,
+                icon: <LinkedInLogo className="w-6 h-6 sm:w-7 sm:h-7" />,
                 color: 'from-blue-500 to-blue-600',
                 bgColor: 'bg-blue-50',
-                textColor: 'text-blue-600',
+                textColor: 'text-[#0077B5]',
                 description: 'Posts & Articles'
               },
               {
                 name: 'X (Twitter)',
-                icon: <MessageSquare className="w-6 h-6 sm:w-7 sm:h-7" />,
+                icon: <XLogo className="w-6 h-6 sm:w-7 sm:h-7" />,
                 color: 'from-slate-900 to-slate-800',
                 bgColor: 'bg-slate-50',
-                textColor: 'text-slate-700',
+                textColor: 'text-slate-900',
                 description: 'Threads & Tweets'
               },
               {
                 name: 'Reddit',
-                icon: <MessageSquare className="w-6 h-6 sm:w-7 sm:h-7" />,
+                icon: <RedditLogo className="w-6 h-6 sm:w-7 sm:h-7" />,
                 color: 'from-orange-500 to-orange-600',
                 bgColor: 'bg-orange-50',
-                textColor: 'text-orange-600',
+                textColor: 'text-[#FF4500]',
                 description: 'Discussions & Posts'
               },
               {
                 name: 'Web Pages',
-                icon: <Globe className="w-6 h-6 sm:w-7 sm:h-7" />,
+                icon: <WebIcon className="w-6 h-6 sm:w-7 sm:h-7" />,
                 color: 'from-green-500 to-green-600',
                 bgColor: 'bg-green-50',
                 textColor: 'text-green-600',
@@ -302,7 +303,7 @@ export const LoginPage: React.FC = () => {
               },
               {
                 name: 'PDFs',
-                icon: <File className="w-6 h-6 sm:w-7 sm:h-7" />,
+                icon: <PDFIcon className="w-6 h-6 sm:w-7 sm:h-7" />,
                 color: 'from-red-500 to-red-600',
                 bgColor: 'bg-red-50',
                 textColor: 'text-red-600',

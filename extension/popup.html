@@ -178,6 +178,33 @@
       opacity: 0.9;
     }
 
+    .preview-favicon {
+      width: 64px;
+      height: 64px;
+      border-radius: 12px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border: 2px solid #ffffff;
+      transition: transform 0.25s;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .preview-favicon:hover {
+      transform: scale(1.05);
+    }
+
+    /* Hide favicon when thumbnail is visible */
+    .preview-thumbnail.has-image ~ .preview-favicon {
+      display: none !important;
+    }
+
     .preview-content {
       flex: 1;
       min-width: 0;
