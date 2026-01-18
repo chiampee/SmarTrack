@@ -229,18 +229,11 @@ export const LoginPage: React.FC = () => {
                 {/* Image container */}
                 <div className="relative rounded-xl overflow-hidden border border-slate-200/60 bg-white">
                   <img 
-                    src="/image_50ae46.png" 
+                    src="/3_dashboard_view.png" 
                     alt="SmarTrack Dashboard showing unified intelligence hub with grid layout, platform cards, and unified search interface"
                     className="w-full h-auto block"
                     onError={(e) => {
-                      // Try alternative dashboard image paths
-                      const target = e.target as HTMLImageElement;
-                      const currentSrc = target.src;
-                      if (currentSrc.includes('image_50ae46')) {
-                        target.src = '/3_dashboard_view.png';
-                      } else {
-                        console.warn('Dashboard image not found. Please add the image to /public folder.');
-                      }
+                      console.warn('Dashboard image not found. Please ensure /3_dashboard_view.png exists in /public folder.');
                     }}
                   />
                 </div>
@@ -366,9 +359,13 @@ export const LoginPage: React.FC = () => {
             >
               <div className="mb-6 rounded-xl overflow-hidden">
                 <img 
-                  src="/image_01344c.png" 
+                  src="/1_save_link_popup.png" 
                   alt="Extension popup showing visual recall features"
                   className="w-full h-auto rounded-xl group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/image_01344c.png';
+                  }}
                 />
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-3">
@@ -387,9 +384,15 @@ export const LoginPage: React.FC = () => {
             >
               <div className="mb-6 rounded-xl overflow-hidden">
                 <img 
-                  src="/image_50adcc.png" 
+                  src="/2_category_selection.png" 
                   alt="Platform logos showing universal support"
                   className="w-full h-auto rounded-xl group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (target.src.includes('2_category_selection')) {
+                      target.src = '/image_50adcc.png';
+                    }
+                  }}
                 />
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-3">
@@ -408,9 +411,15 @@ export const LoginPage: React.FC = () => {
             >
               <div className="mb-6 rounded-xl overflow-hidden">
                 <img 
-                  src="/image_00bf70.png" 
+                  src="/3_dashboard_view.png" 
                   alt="List view showing research workflow"
                   className="w-full h-auto rounded-xl group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (target.src.includes('3_dashboard_view')) {
+                      target.src = '/image_00bf70.png';
+                    }
+                  }}
                 />
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-3">
