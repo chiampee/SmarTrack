@@ -58,51 +58,104 @@ class LinkedInParser {
 
   /**
    * Extracts saved items from the LinkedIn Saved Posts page
+   * Uses "Inside-Out" strategy to bypass randomized top-level classes
    * @returns {Array<Object>} Array of extracted post objects
    */
   getSavedItems() {
-    const items = [];
-
-    // 1. List Container Selection
-    let listContainer = document.querySelector('ul.reusable-search__entity-result-list');
+    const validLinks = [];
     
-    if (!listContainer) {
-      // Fallback: try ul[role="list"]
-      const lists = document.querySelectorAll('ul[role="list"]');
-      if (lists.length > 0) {
-        listContainer = lists[0];
-      }
-    }
+    // STRATEGY: Find the stable content container, then find its parent LI
+    // This bypasses the randomized class names on the LI elements
+    const contentContainers = Array.from(document.querySelectorAll('.entity-result__content-container'));
+    const items = contentContainers.map(container => container.closest('li')).filter(li => li);
+    
+    console.log(`[SRT] Found ${items.length} items using Inside-Out strategy`);
 
-    if (!listContainer) {
-      console.warn('[SmarTrack] No list container found');
-      return items;
-    }
-
-    // Iterate through direct li children
-    const listItems = Array.from(listContainer.querySelectorAll('li'));
-    console.log(`[SmarTrack] Found ${listItems.length} list items`);
-
-    listItems.forEach((item, index) => {
+    items.forEach((item, index) => {
       try {
-        const extracted = this.extractItemData(item, index);
-        if (extracted) {
-          // Log extraction for debugging
-          console.log(`[SmarTrack] Extracted item ${index}:`, {
-            title: extracted.title.substring(0, 60),
-            hasDescription: extracted.description.length > 0,
-            hasThumbnail: !!extracted.thumbnail
-          });
-          items.push(extracted);
-        } else {
-          console.debug(`[SmarTrack] Item ${index}: Extraction returned null`);
+        // 1. Image Extraction (Priority: Embedded Object -> Large Image -> Profile)
+        let thumbnail = null;
+
+        // A. Try the specific class seen in your HTML dump
+        const embeddedImg = item.querySelector('img.entity-result__embedded-object-image');
+        if (embeddedImg && embeddedImg.src && !embeddedImg.src.includes('data:image/gif')) {
+          thumbnail = embeddedImg.src;
         }
-      } catch (error) {
-        console.warn(`[SmarTrack] Error extracting item ${index}:`, error);
+        
+        // B. Fallback: Find the largest image in the 'right-padding' container
+        if (!thumbnail) {
+          const rightContainer = item.querySelector('.entity-result__content-inner-container--right-padding');
+          if (rightContainer) {
+            const imgs = Array.from(rightContainer.querySelectorAll('img'));
+            // Find the first image that is NOT a ghost pixel
+            const validImg = imgs.find(img => img.src && img.src.startsWith('http') && !img.src.includes('data:image/gif'));
+            if (validImg) {
+              thumbnail = validImg.src;
+            }
+          }
+        }
+        
+        // C. Final fallback: Profile picture
+        if (!thumbnail) {
+          const profileImg = item.querySelector('img.presence-entity__image');
+          if (profileImg && profileImg.src && !profileImg.src.includes('data:image/gif')) {
+            thumbnail = profileImg.src;
+          }
+        }
+
+        // 2. Title & Description Extraction
+        const authorEl = item.querySelector('.app-aware-link');
+        const author = authorEl ? authorEl.innerText.trim() : 'LinkedIn User';
+        
+        // Use the 'summary' class which contains the post text
+        const summaryEl = item.querySelector('.entity-result__content-summary');
+        const rawDescription = summaryEl ? summaryEl.innerText.trim() : '';
+        
+        // Clean up the description (remove "see more", newlines)
+        const cleanDescription = rawDescription.replace(/\n+/g, ' ').replace('…see more', '').replace('… see more', '').trim();
+        const snippet = cleanDescription.substring(0, 60);
+        
+        const title = cleanDescription ? `${author}: ${snippet}${snippet.length >= 60 ? '...' : ''}` : `${author} (Saved Post)`;
+        
+        // 3. URL Extraction
+        const anchor = item.querySelector('a.app-aware-link[href*="/feed/update/"], a.app-aware-link[href*="/posts/"]');
+        let url = anchor ? anchor.href : null;
+        
+        if (url) {
+          try {
+            // Sanitize URL using the sanitizer if available
+            const cleanUrl = window.sanitizeLinkedInUrl ? window.sanitizeLinkedInUrl(url) : null;
+            if (cleanUrl) {
+              validLinks.push({
+                title,
+                url: cleanUrl,
+                description: cleanDescription,
+                thumbnail,
+                category: 'LinkedIn Saved Posts',
+                source: 'linkedin',
+                contentType: 'post'
+              });
+              
+              console.log(`[SRT] Extracted item ${index}:`, {
+                title: title.substring(0, 60),
+                hasDescription: cleanDescription.length > 0,
+                hasThumbnail: !!thumbnail
+              });
+            } else {
+              console.debug(`[SRT] Item ${index}: URL sanitization failed`);
+            }
+          } catch (e) {
+            console.warn(`[SRT] Item ${index}: URL processing error`, e);
+          }
+        } else {
+          console.debug(`[SRT] Item ${index}: No valid URL found`);
+        }
+      } catch (e) {
+        console.error(`[SRT] Item ${index} parse error`, e);
       }
     });
 
-    return items;
+    return validLinks;
   }
 
   /**
