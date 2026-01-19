@@ -87,6 +87,15 @@ origins = [
     "https://smar-track-git-staging-chiampee.vercel.app", # Vercel Staging
 ]
 
+# Explicit allowed headers - REQUIRED when allow_credentials=True
+# Cannot use wildcard ["*"] with credentials - browsers reject it
+allowed_headers = [
+    "Authorization",      # Required for Bearer token authentication
+    "Content-Type",       # Required for JSON requests
+    "Accept",            # Standard header
+    "X-Requested-With",  # Common header
+]
+
 # Global exception handler to ensure CORS headers are always sent
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -155,7 +164,7 @@ async def global_exception_handler(request: Request, exc: Exception):
             "Access-Control-Allow-Origin": allowed_origin,
             "Access-Control-Allow-Credentials": "true",
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Headers": ", ".join(allowed_headers),
         }
     )
 
@@ -167,8 +176,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=allowed_headers,
 )
 
 # Add rate limiting middleware
