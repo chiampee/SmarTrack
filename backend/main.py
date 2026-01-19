@@ -100,8 +100,10 @@ allowed_headers = [
     "Expires",                # Cache expiration
     "If-Modified-Since",      # Browser caching check
     "If-None-Match",          # ETag caching check
-    "sentry-trace",           # Sentry (trace propagation)
-    "baggage",                # Sentry (trace context)
+    "sentry-trace",           # Sentry
+    "baggage",                # Sentry
+    "DNT",                    # Do Not Track (Privacy header)
+    "Priority",               # Request priority header
 ]
 
 # Global exception handler to ensure CORS headers are always sent
