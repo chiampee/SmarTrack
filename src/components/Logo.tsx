@@ -29,7 +29,7 @@ export const Logo: React.FC<LogoProps> = ({
     ? `flex items-center gap-1.5 sm:gap-2 cursor-pointer ${className}`
     : `flex items-center gap-1.5 sm:gap-2 ${className}`
 
-  // Magnifying glass SVG component
+  // Magnifying glass SVG component - positioned with circle upper-left, handle bottom-right
   const MagnifyingGlassIcon: React.FC<{ size: string }> = ({ size }) => (
     <svg 
       width={size} 
@@ -39,23 +39,28 @@ export const Logo: React.FC<LogoProps> = ({
       xmlns="http://www.w3.org/2000/svg"
       className="text-white"
     >
-      {/* Circle (lens) positioned upper-left */}
-      <circle cx="5" cy="5" r="4" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+      {/* Circle (lens) positioned upper-left - centered at (5, 5) */}
+      <circle cx="5" cy="5" r="3.5" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
       {/* Handle pointing bottom-right */}
-      <line x1="8.5" y1="8.5" x2="12.5" y2="12.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+      <line x1="8" y1="8" x2="11.5" y2="11.5" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
     </svg>
   )
 
   const iconSizes = {
-    sm: '12',
-    md: '14',
-    lg: '16'
+    sm: '14',
+    md: '16',
+    lg: '18'
   }
 
   return (
     <div className={containerClasses} onClick={onClick}>
-      {/* Blue gradient rounded square icon */}
-      <div className={`${sizeClasses[iconSize]} rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center`}>
+      {/* Blue gradient rounded square icon - gradient from lighter (top-left) to darker (bottom-right) */}
+      <div 
+        className={`${sizeClasses[iconSize]} rounded-lg sm:rounded-xl flex items-center justify-center shadow-sm`}
+        style={{
+          background: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 50%, #1E40AF 100%)'
+        }}
+      >
         <MagnifyingGlassIcon size={iconSizes[iconSize]} />
       </div>
       {showText && (
