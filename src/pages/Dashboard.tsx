@@ -363,11 +363,32 @@ export const Dashboard: React.FC = () => {
         const cachedCollections = userId ? await cacheManager.getCollections(userId) : null
         
         const cols = await makeRequest<Collection[]>('/api/folders').catch(async (error) => {
+          const errorMsg = error instanceof Error ? error.message : String(error)
+          console.warn('[Collections] Request failed:', errorMsg)
+          
           // If rate limited, use cached data if available
           if (error?.status === 429 && cachedCollections) {
             console.warn('[Collections] Rate limited during refetch, using cached data')
             return cachedCollections
           }
+          
+          // If network error, try health check to see if backend is up
+          if (errorMsg.includes('Failed to fetch') || errorMsg.includes('Network error')) {
+            try {
+              const health = await backendApi.healthCheck()
+              console.log('[Collections] Backend is healthy, but request failed. Retrying...', health)
+              // Retry once
+              return await makeRequest<Collection[]>('/api/folders')
+            } catch (healthError) {
+              console.warn('[Collections] Backend health check also failed:', healthError)
+              // Use cached data if available
+              if (cachedCollections) {
+                console.warn('[Collections] Using cached data due to backend unavailability')
+                return cachedCollections
+              }
+            }
+          }
+          
           throw error
         })
         
@@ -427,6 +448,15 @@ export const Dashboard: React.FC = () => {
         
         // Then fetch collections (with fallback to cache)
         try {
+          // Pre-flight health check to ensure backend is ready (helps with cold starts)
+          try {
+            await backendApi.healthCheck()
+            console.log('[Dashboard] ✅ Backend health check passed, fetching collections...')
+          } catch (healthError) {
+            console.warn('[Dashboard] ⚠️ Backend health check failed, backend may be cold starting')
+            console.warn('[Dashboard] Will attempt request anyway (may take 30-60s on Render free tier)')
+          }
+          
           const cols = await makeRequest<Collection[]>('/api/folders')
           setCollections(cols || [])
           
@@ -435,13 +465,25 @@ export const Dashboard: React.FC = () => {
             await cacheManager.saveCollections(userId, cols)
           }
         } catch (error: any) {
+          const errorMsg = error instanceof Error ? error.message : String(error)
+          const errorType = error?.type || (error instanceof Error ? error.name : typeof error)
+          
+          console.warn('[Dashboard] ❌ Failed to fetch collections')
+          console.warn('[Dashboard] Error type:', errorType)
+          console.warn('[Dashboard] Error message:', errorMsg)
+          
           // If rate limited or network error, use cached data if available
-          if ((error?.status === 429 || error?.type === 'NETWORK_ERROR') && cachedCollections) {
-            console.warn('[Collections] Request failed, using cached data')
+          if ((error?.status === 429 || error?.type === 'NETWORK_ERROR' || errorMsg.includes('Failed to fetch')) && cachedCollections) {
+            console.warn('[Dashboard] Using cached collections due to network/rate limit error')
+            setCollections(cachedCollections)
+          } else if (cachedCollections) {
+            // Use cached data for any error if available
+            console.warn('[Dashboard] Using cached collections as fallback')
             setCollections(cachedCollections)
           } else {
+            console.warn('[Dashboard] No cached collections available, using empty array')
+            setCollections([])
             // Only log if not a network/rate limit error
-            const errorMsg = error instanceof Error ? error.message : String(error)
             if (!errorMsg.includes('429') && !errorMsg.includes('Too many requests') && !errorMsg.includes('Network error')) {
               logger.error('Failed to load collections', { component: 'Dashboard', action: 'fetchMetadata' }, error)
             }
