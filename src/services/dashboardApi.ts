@@ -155,7 +155,7 @@ class DashboardApiService {
 
   // Categories
   async getCategories(): Promise<Category[]> {
-    return this.makeRequest<Category[]>('/api/categories');
+    return this.makeRequest<Category[]>('/api/types');
   }
 
   // Search

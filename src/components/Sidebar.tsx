@@ -90,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
     const newName = prompt(`Rename category "${currentName}" (will update ${linkCount} links)`, currentName)
     if (!newName || newName.trim() === '' || newName === currentName) return
     try {
-      await makeRequest(`/api/categories/${encodeURIComponent(currentName)}`, {
+      await makeRequest(`/api/types/${encodeURIComponent(currentName)}`, {
         method: 'PUT',
         body: JSON.stringify({ newName: newName.trim() }),
       })
@@ -115,7 +115,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
   const deleteCategory = async (name: string, linkCount: number) => {
     if (!confirm(`Delete category "${name}"? ${linkCount} links will be moved to "other".`)) return
     try {
-      await makeRequest(`/api/categories/${encodeURIComponent(name)}`, { method: 'DELETE' })
+      await makeRequest(`/api/types/${encodeURIComponent(name)}`, { method: 'DELETE' })
       window.location.reload() // Refresh to show updated categories
     } catch (e) {
       alert('Failed to delete category')

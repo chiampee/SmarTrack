@@ -418,7 +418,7 @@ export const Dashboard: React.FC = () => {
         // Fetch categories first (lighter request)
         let cats: Category[] = []
         try {
-          cats = await makeRequest<Category[]>('/api/categories')
+          cats = await makeRequest<Category[]>('/api/types')
           setCategoriesState(cats || [])
         } catch (error) {
           console.warn('[Dashboard] Failed to fetch categories, using empty array')
