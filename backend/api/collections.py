@@ -49,7 +49,7 @@ class CollectionResponse(BaseModel):
     createdAt: datetime
     updatedAt: datetime
 
-@router.get("/collections", response_model=List[CollectionResponse])
+@router.get("/folders", response_model=List[CollectionResponse])
 async def get_collections(
     current_user: dict = Depends(get_current_user),
     db = Depends(get_database)
@@ -102,7 +102,7 @@ async def get_collections(
             return []
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.post("/collections", response_model=CollectionResponse)
+@router.post("/folders", response_model=CollectionResponse)
 async def create_collection(
     collection_data: CollectionCreate,
     current_user: dict = Depends(get_current_user),
@@ -154,7 +154,7 @@ async def create_collection(
         error_msg = f"Error creating collection: {str(e)}"
         raise HTTPException(status_code=500, detail=error_msg)
 
-@router.put("/collections/{collection_id}", response_model=CollectionResponse)
+@router.put("/folders/{collection_id}", response_model=CollectionResponse)
 async def update_collection(
     collection_id: str,
     collection_data: CollectionUpdate,
@@ -214,7 +214,7 @@ async def update_collection(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/collections/{collection_id}")
+@router.delete("/folders/{collection_id}")
 async def delete_collection(
     collection_id: str,
     current_user: dict = Depends(get_current_user),
