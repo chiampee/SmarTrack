@@ -263,17 +263,17 @@ export const useBackendApi = () => {
 
     const url = `${API_BASE_URL}${endpoint}`
     
+    // ✅ REQUEST DEDUPLICATION: Prevent duplicate concurrent requests
+    const requestController = getRequestController(endpoint)
+    
+    // Apply a default timeout to avoid infinite loading UI
+    // Admin endpoints need 90 seconds to handle cold starts + complex queries
+    // Regular endpoints need 60 seconds to handle Render free tier cold starts (30-60s)
+    const isAdminEndpoint = endpoint.startsWith('/api/admin')
+    const timeoutDuration = isAdminEndpoint ? 90000 : 60000  // 90s for admin (cold start + queries), 60s for regular
+    
     try {
       setIsLoading(true)
-      
-      // ✅ REQUEST DEDUPLICATION: Prevent duplicate concurrent requests
-      const requestController = getRequestController(endpoint)
-      
-      // Apply a default timeout to avoid infinite loading UI
-      // Admin endpoints need 90 seconds to handle cold starts + complex queries
-      // Regular endpoints need 60 seconds to handle Render free tier cold starts (30-60s)
-      const isAdminEndpoint = endpoint.startsWith('/api/admin')
-      const timeoutDuration = isAdminEndpoint ? 90000 : 60000  // 90s for admin (cold start + queries), 60s for regular
       const timeoutId = setTimeout(() => requestController.abort(), timeoutDuration)
 
       try {
