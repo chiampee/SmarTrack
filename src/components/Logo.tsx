@@ -1,4 +1,5 @@
 import React from 'react'
+// Logo component with blue gradient and magnifying glass icon
 
 interface LogoProps {
   className?: string

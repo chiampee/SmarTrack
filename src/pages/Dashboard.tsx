@@ -576,17 +576,20 @@ export const Dashboard: React.FC = () => {
   // Handle link actions
   const handleLinkAction = async (linkId: string, action: string, data?: any) => {
     // #region agent log
+    console.log('[ClickTrack] Dashboard handleLinkAction:', {linkId,action,hasData:!!data,clickCount:data?.clickCount});
     fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:577',message:'handleLinkAction entry',data:{linkId,action,hasData:!!data,clickCount:data?.clickCount},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
     // #endregion
     switch (action) {
       case 'click':
         // #region agent log
+        console.log('[ClickTrack] Dashboard click case:', {linkId,data,clickCountDefined:data?.clickCount!==undefined});
         fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:580',message:'Click action case entered',data:{linkId,data,clickCountDefined:data?.clickCount!==undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
         // #endregion
         // Update link with new clickCount from server
         if (data?.clickCount !== undefined) {
           // #region agent log
           const linkBefore = links.find(l => l.id === linkId)
+          console.log('[ClickTrack] Dashboard before update:', {linkId,oldClickCount:linkBefore?.clickCount,newClickCount:data.clickCount,linksArrayLength:links.length});
           fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:584',message:'Before state update',data:{linkId,oldClickCount:linkBefore?.clickCount,newClickCount:data.clickCount,linksArrayLength:links.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
           // #endregion
           setLinks(currentLinks => {
@@ -595,6 +598,7 @@ export const Dashboard: React.FC = () => {
             )
             // #region agent log
             const linkAfter = updated.find(l => l.id === linkId)
+            console.log('[ClickTrack] Dashboard after update:', {linkId,newClickCount:linkAfter?.clickCount});
             fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:590',message:'After state update',data:{linkId,newClickCount:linkAfter?.clickCount},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
             // #endregion
             return updated
