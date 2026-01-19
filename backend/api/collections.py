@@ -241,7 +241,8 @@ async def delete_collection(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-        # Folders alias router (to bypass ad-blockers)
+
+# Folders alias router (to bypass ad-blockers)
 # Reuses the same handlers but with /folders paths
 folders_router = APIRouter()
 
