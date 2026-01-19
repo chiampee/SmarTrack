@@ -1,5 +1,4 @@
 import React from 'react'
-import { Search } from 'lucide-react'
 
 interface LogoProps {
   className?: string
@@ -15,15 +14,9 @@ export const Logo: React.FC<LogoProps> = ({
   onClick 
 }) => {
   const sizeClasses = {
-    sm: 'p-1 rounded-md',
-    md: 'p-1 sm:p-1.5 rounded-md sm:rounded-lg',
-    lg: 'p-1.5 sm:p-2 rounded-lg sm:rounded-xl'
-  }
-  
-  const iconSizes = {
-    sm: 'w-3 h-3 sm:w-4 sm:h-4',
-    md: 'w-4 h-4 sm:w-5 sm:h-5',
-    lg: 'w-5 h-5 sm:w-6 sm:h-6'
+    sm: 'w-6 h-6 sm:w-7 sm:h-7',
+    md: 'w-8 h-8 sm:w-9 sm:h-9',
+    lg: 'w-10 h-10 sm:w-12 sm:h-12'
   }
   
   const textSizes = {
@@ -36,13 +29,37 @@ export const Logo: React.FC<LogoProps> = ({
     ? `flex items-center gap-1.5 sm:gap-2 cursor-pointer ${className}`
     : `flex items-center gap-1.5 sm:gap-2 ${className}`
 
+  // Magnifying glass SVG component
+  const MagnifyingGlassIcon: React.FC<{ size: string }> = ({ size }) => (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 16 16" 
+      fill="none" 
+      xmlns="http://www.w3.org/2000/svg"
+      className="text-white"
+    >
+      {/* Circle (lens) positioned upper-left */}
+      <circle cx="5" cy="5" r="4" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+      {/* Handle pointing bottom-right */}
+      <line x1="8.5" y1="8.5" x2="12.5" y2="12.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+    </svg>
+  )
+
+  const iconSizes = {
+    sm: '12',
+    md: '14',
+    lg: '16'
+  }
+
   return (
     <div className={containerClasses} onClick={onClick}>
-      <div className={`bg-blue-600 ${sizeClasses[iconSize]}`}>
-        <Search className={`${iconSizes[iconSize]} text-white stroke-[3]`} />
+      {/* Blue gradient rounded square icon */}
+      <div className={`${sizeClasses[iconSize]} rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center`}>
+        <MagnifyingGlassIcon size={iconSizes[iconSize]} />
       </div>
       {showText && (
-        <span className={`font-bold ${textSizes[iconSize]} tracking-tight text-slate-900`}>
+        <span className={`font-bold ${textSizes[iconSize]} tracking-tight text-slate-800`}>
           SmarTrack
         </span>
       )}
