@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmarTrack - Promotional Image Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f3f4f6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #111827;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .image-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .image-section h2 {
+            margin-bottom: 10px;
+            color: #1f2937;
+        }
+
+        .dimensions {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .canvas-container {
+            border: 2px dashed #d1d5db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f9fafb;
+        }
+
+        canvas {
+            display: block;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 100%;
+            height: auto;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .instructions {
+            background: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .instructions h3 {
+            color: #1e40af;
+            margin-bottom: 8px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #1e3a8a;
+        }
+
+        .instructions li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 SmarTrack Promotional Images Generator</h1>
+
+        <div class="instructions">
+            <h3>📋 How to Use:</h3>
+            <ol>
+                <li>Click "Generate Image" for each size below</li>
+                <li>Right-click on the canvas and "Save image as..."</li>
+                <li>Save with the recommended filename</li>
+                <li>Upload to Chrome Web Store when publishing</li>
+            </ol>
+        </div>
+
+        <!-- Small Tile -->
+        <div class="image-section">
+            <h2>1. Small Tile (Required)</h2>
+            <p class="dimensions">440×280 pixels | Filename: smartrack-small-tile.png</p>
+            <p style="color: #6b7280; margin-bottom: 15px;">
+                This appears in search results and browse pages
+            </p>
+            <div class="canvas-container">
+                <canvas id="smallTile" width="440" height="280"></canvas>
+            </div>
+            <button onclick="generateSmallTile()">Generate Small Tile</button>
+        </div>
+
+        <!-- Marquee -->
+        <div class="image-section">
+            <h2>2. Marquee (Optional but Recommended)</h2>
+            <p class="dimensions">1400×560 pixels | Filename: smartrack-marquee.png</p>
+            <p style="color: #6b7280; margin-bottom: 15px;">
+                Large promotional banner for featured extensions
+            </p>
+            <div class="canvas-container">
+                <canvas id="marquee" width="1400" height="560"></canvas>
+            </div>
+            <button onclick="generateMarquee()">Generate Marquee</button>
+        </div>
+
+        <!-- Screenshot Template -->
+        <div class="image-section">
+            <h2>3. Screenshots (Need 3-5 total)</h2>
+            <p class="dimensions">1280×800 pixels recommended</p>
+            <div class="instructions">
+                <h3>You need to capture real screenshots:</h3>
+                <ol>
+                    <li><strong>Extension Popup:</strong> Open your extension and press Ctrl+Shift+P (or Cmd+Shift+P) to take a screenshot</li>
+                    <li><strong>Dashboard View:</strong> Screenshot of https://smar-track.vercel.app showing your saved links</li>
+                    <li><strong>Collections:</strong> Screenshot showing organized collections/projects</li>
+                    <li><strong>Settings/Stats:</strong> Screenshot of settings or usage statistics</li>
+                    <li><strong>Search/Filter:</strong> Screenshot showing search or filtering features</li>
+                </ol>
+            </div>
+            <p style="margin-top: 15px; color: #6b7280;">
+                <strong>Tip:</strong> Use Chrome DevTools (F12) → Toggle device toolbar → Set to 1280x800 → Take screenshots
+            </p>
+        </div>
+
+        <div class="instructions">
+            <h3>✅ After Generating:</h3>
+            <ol>
+                <li>Save both the Small Tile and Marquee</li>
+                <li>Take 3-5 real screenshots (1280×800)</li>
+                <li>Place all images in your <code>/store_images/</code> folder</li>
+                <li>Upload to Chrome Web Store when publishing</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function generateSmallTile() {
+            const canvas = document.getElementById('smallTile');
+            const ctx = canvas.getContext('2d');
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, 440, 280);
+            gradient.addColorStop(0, '#2563eb');
+            gradient.addColorStop(1, '#1d4ed8');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 440, 280);
+
+            // Icon circle background
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.beginPath();
+            ctx.arc(110, 140, 60, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Icon (bookmark symbol)
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 60px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🔖', 110, 140);
+
+            // Text
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 32px -apple-system, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('SmarTrack', 190, 120);
+
+            ctx.font = '18px -apple-system, sans-serif';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillText('Save & Organize Research Links', 190, 155);
+
+            alert('Small Tile generated! Right-click and "Save image as..." → smartrack-small-tile.png');
+        }
+
+        function generateMarquee() {
+            const canvas = document.getElementById('marquee');
+            const ctx = canvas.getContext('2d');
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, 560);
+            gradient.addColorStop(0, '#1e40af');
+            gradient.addColorStop(1, '#2563eb');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1400, 560);
+
+            // Decorative circles
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.beginPath();
+            ctx.arc(1200, 100, 150, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(1300, 450, 120, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(200, 500, 100, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Main icon
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.beginPath();
+            ctx.arc(250, 280, 100, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 100px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🔖', 250, 280);
+
+            // Title
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 72px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('SmarTrack', 400, 200);
+
+            // Subtitle
+            ctx.font = 'bold 36px -apple-system, sans-serif';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.fillText('Your Smart Research Companion', 400, 270);
+
+            // Features
+            ctx.font = '24px -apple-system, sans-serif';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            const features = [
+                '📚  Save research links with one click',
+                '🏷️  Organize with tags and collections',
+                '🔍  Powerful search and filtering',
+                '☁️  Sync across all your devices'
+            ];
+            
+            features.forEach((feature, i) => {
+                ctx.fillText(feature, 400, 340 + (i * 40));
+            });
+
+            alert('Marquee generated! Right-click and "Save image as..." → smartrack-marquee.png');
+        }
+
+        // Auto-generate on load
+        window.onload = function() {
+            generateSmallTile();
+            generateMarquee();
+        };
+    </script>
+</body>
+</html>
