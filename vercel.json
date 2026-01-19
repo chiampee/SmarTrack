@@ -66,15 +66,8 @@
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html",
-      "has": [
-        {
-          "type": "header",
-          "key": "accept",
-          "value": "text/html"
-        }
-      ]
+      "source": "/((?!.*\\.(jpg|jpeg|png|gif|svg|webp|ico|zip|pdf|css|js|woff|woff2|ttf|eot)).*)",
+      "destination": "/index.html"
     }
   ]
 }
