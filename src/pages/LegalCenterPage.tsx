@@ -162,10 +162,9 @@ export const LegalCenterPage: React.FC = () => {
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <Logo 
+              <Logo linkToHome={true}
                 iconSize="sm" 
                 className="h-6 sm:h-7"
-                onClick={() => navigate('/')}
               />
             </div>
             

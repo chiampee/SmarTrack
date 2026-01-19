@@ -1032,10 +1032,9 @@ export const DocsPage: React.FC = () => {
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <Logo 
+              <Logo linkToHome={true}
                 iconSize="md" 
                 className="h-7"
-                onClick={() => navigate('/')}
               />
               <span className="hidden sm:inline text-slate-300">|</span>
               <span className="hidden sm:inline text-slate-600 font-medium">Documentation</span>

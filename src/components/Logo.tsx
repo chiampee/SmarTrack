@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 // Logo component with blue gradient and magnifying glass icon
 
 interface LogoProps {
@@ -6,13 +7,15 @@ interface LogoProps {
   showText?: boolean
   iconSize?: 'sm' | 'md' | 'lg'
   onClick?: () => void
+  linkToHome?: boolean
 }
 
 export const Logo: React.FC<LogoProps> = ({ 
   className = '', 
   showText = false,
   iconSize = 'md',
-  onClick 
+  onClick,
+  linkToHome = false
 }) => {
   const sizeClasses = {
     sm: 'w-6 h-6 sm:w-7 sm:h-7',
@@ -26,7 +29,7 @@ export const Logo: React.FC<LogoProps> = ({
     lg: 'text-lg sm:text-xl'
   }
 
-  const containerClasses = onClick 
+  const containerClasses = (onClick || linkToHome)
     ? `flex items-center gap-1.5 sm:gap-2 cursor-pointer ${className}`
     : `flex items-center gap-1.5 sm:gap-2 ${className}`
 
@@ -53,8 +56,8 @@ export const Logo: React.FC<LogoProps> = ({
     lg: '18'
   }
 
-  return (
-    <div className={containerClasses} onClick={onClick}>
+  const logoContent = (
+    <>
       {/* Blue gradient rounded square icon - gradient from lighter (top-left) to darker (bottom-right) */}
       <div 
         className={`${sizeClasses[iconSize]} rounded-lg sm:rounded-xl flex items-center justify-center shadow-sm`}
@@ -69,6 +72,21 @@ export const Logo: React.FC<LogoProps> = ({
           SmarTrack
         </span>
       )}
+    </>
+  )
+
+  // If linkToHome is true, wrap in Link component
+  if (linkToHome) {
+    return (
+      <Link to="/" className={containerClasses} onClick={onClick}>
+        {logoContent}
+      </Link>
+    )
+  }
+
+  return (
+    <div className={containerClasses} onClick={onClick}>
+      {logoContent}
     </div>
   )
 }
