@@ -171,3 +171,34 @@ async def delete_category(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# Types alias router (to bypass ad-blockers)
+# Reuses the same handlers but with /types paths
+types_router = APIRouter()
+
+@types_router.get("/types", response_model=List[CategoryResponse])
+async def get_types(
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Get predefined types (alias for categories)"""
+    return await get_categories(current_user, db)
+
+@types_router.put("/types/{category_name}")
+async def rename_type(
+    category_name: str,
+    rename_data: CategoryRename,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Rename a type (alias for categories)"""
+    return await rename_category(category_name, rename_data, current_user, db)
+
+@types_router.delete("/types/{category_name}")
+async def delete_type(
+    category_name: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Delete a type (alias for categories)"""
+    return await delete_category(category_name, current_user, db)

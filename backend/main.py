@@ -197,7 +197,9 @@ async def rate_limit_middleware(request: Request, call_next):
     skip_paths = [
         "/api/health",
         "/api/categories",  # Lightweight read-only endpoint (predefined categories)
+        "/api/types",  # Alias for categories (to bypass ad-blockers)
         "/api/collections",  # User-specific but lightweight (cached on frontend)
+        "/api/folders",  # Alias for collections (to bypass ad-blockers)
     ]
     if request.url.path in skip_paths:
         response = await call_next(request)
@@ -245,7 +247,9 @@ async def rate_limit_middleware(request: Request, call_next):
 app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(links.router, prefix="/api", tags=["Links"])
 app.include_router(collections.router, prefix="/api", tags=["Collections"])
+app.include_router(collections.folders_router, prefix="/api", tags=["Folders"])
 app.include_router(categories.router, prefix="/api", tags=["Categories"])
+app.include_router(categories.types_router, prefix="/api", tags=["Types"])
 app.include_router(users.router, prefix="/api", tags=["Users"])
 app.include_router(admin.router, prefix="/api", tags=["Admin"])
 

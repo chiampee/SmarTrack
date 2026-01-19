@@ -241,3 +241,42 @@ async def delete_collection(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+        # Folders alias router (to bypass ad-blockers)
+# Reuses the same handlers but with /folders paths
+folders_router = APIRouter()
+
+@folders_router.get("/folders", response_model=List[CollectionResponse])
+async def get_folders(
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Get user's folders (alias for collections)"""
+    return await get_collections(current_user, db)
+
+@folders_router.post("/folders", response_model=CollectionResponse)
+async def create_folder(
+    collection_data: CollectionCreate,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Create a new folder (alias for collections)"""
+    return await create_collection(collection_data, current_user, db)
+
+@folders_router.put("/folders/{collection_id}", response_model=CollectionResponse)
+async def update_folder(
+    collection_id: str,
+    collection_data: CollectionUpdate,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Update a folder (alias for collections)"""
+    return await update_collection(collection_id, collection_data, current_user, db)
+
+@folders_router.delete("/folders/{collection_id}")
+async def delete_folder(
+    collection_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Delete a folder (alias for collections)"""
+    return await delete_collection(collection_id, current_user, db)
