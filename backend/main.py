@@ -100,8 +100,8 @@ allowed_headers = [
     "Expires",                # Cache expiration
     "If-Modified-Since",      # Browser caching check
     "If-None-Match",          # ETag caching check
-    "sentry-trace",           # Sentry
-    "baggage",                # Sentry
+    "sentry-trace",           # Sentry (trace propagation)
+    "baggage",                # Sentry (trace context)
     "DNT",                    # Do Not Track (Privacy header)
     "Priority",               # Request priority header
 ]
