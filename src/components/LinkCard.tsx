@@ -149,33 +149,19 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
 
   // Open link when clicking on title
   const handleLinkClick = async (e: React.MouseEvent) => {
-    // #region agent log
-    console.log('[ClickTrack] ⚡⚡⚡ HANDLE LINK CLICK CALLED ⚡⚡⚡', {linkId:link.id,linkTitle:link.title,currentClickCount:link.clickCount,localClickCount:localClickCount});
-    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LinkCard.tsx:138',message:'handleLinkClick entry',data:{linkId:link.id,linkTitle:link.title,currentClickCount:link.clickCount,localClickCount:localClickCount},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     e.stopPropagation()
     e.preventDefault() // Prevent any default link behavior
     
     // Optimistically update UI
     const prevCount = localClickCount
     setLocalClickCount(prev => prev + 1)
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LinkCard.tsx:143',message:'Optimistic update applied',data:{prevCount,newCount:prevCount+1},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
     
     // Track click using navigator.sendBeacon for reliable tracking
     // sendBeacon ensures the request is sent even if the tab closes/navigates immediately
     // Note: sendBeacon doesn't support custom headers, so we pass the token via FormData
     const authToken = localStorage.getItem('authToken')
-    // #region agent log
-    console.log('[ClickTrack] Auth check:', {hasToken:!!authToken,tokenLength:authToken?.length||0});
-    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LinkCard.tsx:147',message:'Auth token check',data:{hasToken:!!authToken,tokenLength:authToken?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     
     if (!authToken) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LinkCard.tsx:151',message:'No auth token - reverting',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       setLocalClickCount(prev => Math.max(0, prev - 1))
       window.open(link.url, '_blank', 'noopener,noreferrer')
       return
@@ -183,10 +169,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     
     const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
     const url = `${apiBaseUrl}/api/links/${link.id}/track-click`
-    // #region agent log
-    console.log('[ClickTrack] URL prepared:', {apiBaseUrl,url,linkId:link.id});
-    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LinkCard.tsx:156',message:'Request URL prepared',data:{apiBaseUrl,url,linkId:link.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     
     // Use sendBeacon with FormData to pass the auth token
     // sendBeacon is specifically designed for analytics/tracking that must complete even if page unloads
@@ -194,17 +176,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     formData.append('token', authToken)
     
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LinkCard.tsx:162',message:'sendBeacon request starting',data:{url,method:'sendBeacon'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-      // #endregion
-      
       // sendBeacon returns true if the request was queued successfully
       const beaconSent = navigator.sendBeacon(url, formData)
-      
-      // #region agent log
-      console.log('[ClickTrack] sendBeacon result:', {beaconSent});
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LinkCard.tsx:175',message:'sendBeacon queued',data:{beaconSent},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-      // #endregion
       
       if (!beaconSent) {
         // If sendBeacon fails (e.g., payload too large), fall back to fetch with keepalive
@@ -236,9 +209,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         // optimistic update and the next page load will show the correct count
       }
     } catch (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LinkCard.tsx:196',message:'Network error caught',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-      // #endregion
       // Revert optimistic update on error
       console.error('Failed to track click:', error)
       setLocalClickCount(prev => Math.max(0, prev - 1))
