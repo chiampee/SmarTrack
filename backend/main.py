@@ -75,6 +75,18 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# CORS Configuration: Secure whitelist of trusted origins
+# Do not use regex or wildcards - only specific domains
+# This list is used by both the CORS middleware and exception handler
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",           # Local Development (Vite default)
+    "http://localhost:3000",           # Local Alternative
+    "http://localhost:5554",           # Local Development (custom port)
+    "https://www.smartrack.top",       # Production Domain
+    "https://smartrack.top",           # Production Domain (no www)
+    "https://smar-track.vercel.app",   # Vercel Deployment
+]
+
 # Global exception handler to ensure CORS headers are always sent
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -126,10 +138,13 @@ async def global_exception_handler(request: Request, exc: Exception):
         logger.error(f"❌ [GLOBAL ERROR HANDLER] Path: {request.url.path}")
         logger.error(f"❌ [GLOBAL ERROR HANDLER] Traceback: {traceback.format_exc()}")
     
-    # DEBUG: Use wildcard origin for permissive CORS (matching middleware config)
-    origin_header = request.headers.get("origin", "*")
+    # Validate origin against whitelist (same as CORS middleware)
+    # Reference ALLOWED_ORIGINS defined at module level
+    origin_header = request.headers.get("origin", "")
+    # Only set CORS header if origin is in whitelist (security: don't reflect arbitrary origins)
+    allowed_origin = origin_header if origin_header in ALLOWED_ORIGINS else ""
     
-    # Return response with proper status code and permissive CORS headers
+    # Return response with proper status code and secure CORS headers
     return JSONResponse(
         status_code=status_code,
         content={
@@ -137,24 +152,23 @@ async def global_exception_handler(request: Request, exc: Exception):
             "detail": error_detail if (status_code != 500 or settings.DEBUG) else "An unexpected error occurred"
         },
         headers={
-            "Access-Control-Allow-Origin": "*",  # Permissive for debugging
-            "Access-Control-Allow-Methods": "*",  # Allow all methods
-            "Access-Control-Allow-Headers": "*",  # Allow all headers including Authorization
+            "Access-Control-Allow-Origin": allowed_origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
         }
     )
 
 # Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
-# Add CORS middleware
-# DEBUG: Fully permissive CORS for debugging (allows all origins, methods, and headers)
-# ⚠️ NOTE: When allow_origins=["*"], allow_credentials must be False (browser security restriction)
+# Add CORS middleware (uses ALLOWED_ORIGINS defined above)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins (Netlify, Vercel, localhost)
-    allow_credentials=False,  # Must be False when using wildcard origins
-    allow_methods=["*"],  # Crucial: Allow POST, PUT, DELETE, OPTIONS
-    allow_headers=["*"],  # Crucial: Allow Authorization header
+    allow_origins=ALLOWED_ORIGINS,     # Only allow these specific domains
+    allow_credentials=True,             # Safe because the origin list is restricted
+    allow_methods=["*"],                # Allow all HTTP methods (GET, POST, PUT, DELETE, OPTIONS)
+    allow_headers=["*"],                # Allow all headers including Authorization
 )
 
 # Add rate limiting middleware
