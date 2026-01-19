@@ -24,16 +24,16 @@ const activeRequests = new Map<string, AbortController>()
 
 /**
  * Get or create an abort controller for a request endpoint
- * If a request is already in flight, return its abort controller
+ * If a request is already in flight, check if it's aborted and create a new one if needed
  */
 const getRequestController = (endpoint: string): AbortController => {
   const requestKey = endpoint
   const existing = activeRequests.get(requestKey)
-  if (existing) {
-    // Request already in flight, return existing controller
+  if (existing && !existing.signal.aborted) {
+    // Request already in flight with active controller, return existing
     return existing
   }
-  // Create new controller for this request
+  // Create new controller (either no existing request, or existing was aborted)
   const controller = new AbortController()
   activeRequests.set(requestKey, controller)
   return controller
