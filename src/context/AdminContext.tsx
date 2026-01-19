@@ -141,6 +141,31 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           return
         }
 
+        // Handle timeout errors gracefully (backend cold start)
+        const isTimeoutError = error?.message?.includes('timeout') || 
+                              error?.message?.includes('Request timeout') ||
+                              error?.type === 'UNKNOWN_ERROR' && error?.message?.includes('timeout')
+        
+        if (isTimeoutError) {
+          console.warn('[AdminContext] Admin check timed out (likely cold start), using cached result or defaulting to non-admin')
+          // Use cached result if available
+          if (adminCheckCache.lastResult !== null) {
+            setIsAdmin(adminCheckCache.lastResult)
+            setIsChecking(false)
+            if (!adminCheckCache.lastResult && isAdminRoute) {
+              navigate('/404')
+            }
+          } else {
+            // No cached result, assume not admin for security
+            setIsAdmin(false)
+            setIsChecking(false)
+            if (isAdminRoute) {
+              navigate('/404')
+            }
+          }
+          return
+        }
+
         // For other errors, assume not admin for security
         console.error('Failed to check admin status:', error)
         setIsAdmin(false)
