@@ -1035,6 +1035,7 @@ export const DocsPage: React.FC = () => {
               <Logo 
                 iconSize="md" 
                 className="h-7"
+                showText={true}
                 onClick={() => navigate('/')}
               />
               <span className="hidden sm:inline text-slate-300">|</span>
