@@ -22,7 +22,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenu }) => {
           </button>
           <Link to="/" className="flex items-center gap-2">
             <img 
-              src="/logo.svg" 
+              src="/logo.svg?v=2" 
               alt="SmarTrack" 
               className="h-8 w-auto"
             />

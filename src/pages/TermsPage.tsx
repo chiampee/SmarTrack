@@ -164,7 +164,7 @@ export const TermsPage: React.FC = () => {
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <img 
-                src="/logo.svg" 
+                src="/logo.svg?v=2" 
                 alt="SmarTrack" 
                 className="h-6 sm:h-7 w-auto cursor-pointer"
                 onClick={() => navigate('/')}
