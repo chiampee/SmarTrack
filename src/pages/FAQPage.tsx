@@ -254,7 +254,6 @@ export const FAQPage: React.FC = () => {
               <Logo 
                 iconSize="sm" 
                 className="h-6 sm:h-7"
-                showText={true}
                 onClick={() => navigate('/')}
               />
             </div>
