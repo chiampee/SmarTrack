@@ -5,7 +5,6 @@ import {
   ScanEye, 
   ShieldCheck, 
   LayoutGrid, 
-  Search, 
   Sparkles,
   Menu,
   X
