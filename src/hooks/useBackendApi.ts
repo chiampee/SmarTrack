@@ -444,6 +444,7 @@ export const useBackendApi = () => {
               console.error(`[API ERROR] Backend is reachable but returned error`)
             }
           }).catch((healthError) => {
+            clearTimeout(healthCheckTimeout)
             console.error(`[API ERROR] ❌ Backend health check failed:`, healthError)
             console.error(`[API ERROR] This confirms the backend is unreachable - likely cold starting or down`)
             console.error(`[API ERROR] Health check error details:`, {
