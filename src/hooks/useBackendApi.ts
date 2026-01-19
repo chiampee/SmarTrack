@@ -360,22 +360,34 @@ export const useBackendApi = () => {
         const isResourceError = error.message.includes('ERR_INSUFFICIENT_RESOURCES') || 
                                 (error as any).code === 'ERR_INSUFFICIENT_RESOURCES'
         
+        // Check if request was aborted
+        const wasAborted = requestController.signal.aborted
+        
         if (isResourceError) {
           console.error('🚨 [API ERROR] Browser resource exhaustion - Too many concurrent requests')
           console.error(`[API ERROR] This usually means too many requests are being made simultaneously`)
           console.error(`[API ERROR] Active requests: ${activeRequests.size}`)
           console.error(`[API ERROR] Consider reducing concurrent API calls or implementing request queuing`)
+        } else if (wasAborted) {
+          console.error('🚨 [API ERROR] Request was aborted (likely timeout or cancelled)')
+          console.error(`[API ERROR] Endpoint: ${endpoint}`)
+          console.error(`[API ERROR] Timeout duration: ${timeoutDuration}ms`)
+          console.error(`[API ERROR] This might be a cold start - backend took longer than ${timeoutDuration/1000}s to respond`)
         } else {
           console.error('🚨 [API ERROR] Network error - Failed to fetch')
           console.error(`[API ERROR] Full URL: ${url}`)
           console.error(`[API ERROR] Backend base URL: ${API_BASE_URL}`)
           console.error(`[API ERROR] Environment variable VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL || '❌ NOT SET (using default)'}`)
           console.error(`[API ERROR] Test backend health: ${API_BASE_URL}/api/health`)
+          console.error(`[API ERROR] Request was aborted: ${wasAborted}`)
+          console.error(`[API ERROR] Active requests: ${activeRequests.size}`)
           console.error(`[API ERROR] This usually means:`)
           console.error(`  1. Backend URL is wrong`)
-          console.error(`  2. Backend is down`)
+          console.error(`  2. Backend is down or cold starting`)
           console.error(`  3. CORS is blocking the request`)
-          console.error(`  4. VITE_BACKEND_URL not set in Vercel environment variables`)
+          console.error(`  4. Browser extension/ad-blocker is blocking the request`)
+          console.error(`  5. Network connectivity issue`)
+          console.error(`  6. VITE_BACKEND_URL not set in Vercel environment variables`)
         }
       }
       
