@@ -36,7 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
         
         if (!isMounted) return
         
-        const cols = await makeRequest<Array<{ id: string; name: string }>>('/api/folders')
+        const cols = await makeRequest<Array<{ id: string; name: string }>>('/api/collections')
         
         if (isMounted) {
           setCollections(cols || [])
@@ -65,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
     const newName = prompt('Rename collection', currentName)
     if (!newName || newName.trim() === '' || newName === currentName) return
     try {
-      await makeRequest(`/api/folders/${id}`, {
+      await makeRequest(`/api/collections/${id}`, {
         method: 'PUT',
         body: JSON.stringify({ name: newName.trim() }),
       })
@@ -78,7 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
   const deleteCollection = async (id: string, name: string) => {
     if (!confirm(`Delete collection "${name}"? This won't delete the links; they will appear under All Links.`)) return
     try {
-      await makeRequest(`/api/folders/${id}`, { method: 'DELETE' })
+      await makeRequest(`/api/collections/${id}`, { method: 'DELETE' })
       setCollections(prev => prev.filter(c => c.id !== id))
       onClose()
     } catch (e) {

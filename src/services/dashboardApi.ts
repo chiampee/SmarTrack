@@ -130,25 +130,25 @@ class DashboardApiService {
 
   // Collections CRUD operations
   async getCollections(): Promise<Collection[]> {
-    return this.makeRequest<Collection[]>('/api/folders');
+    return this.makeRequest<Collection[]>('/api/collections');
   }
 
   async createCollection(collection: Omit<Collection, 'id' | 'userId' | 'linkCount' | 'createdAt' | 'updatedAt'>): Promise<Collection> {
-    return this.makeRequest<Collection>('/api/folders', {
+    return this.makeRequest<Collection>('/api/collections', {
       method: 'POST',
       body: JSON.stringify(collection),
     });
   }
 
   async updateCollection(id: string, updates: Partial<Collection>): Promise<Collection> {
-    return this.makeRequest<Collection>(`/api/folders/${id}`, {
+    return this.makeRequest<Collection>(`/api/collections/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
   }
 
   async deleteCollection(id: string): Promise<void> {
-    await this.makeRequest(`/api/folders/${id}`, {
+    await this.makeRequest(`/api/collections/${id}`, {
       method: 'DELETE',
     });
   }

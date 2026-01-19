@@ -362,7 +362,7 @@ export const Dashboard: React.FC = () => {
         const userId = backendApi.getUserId()
         const cachedCollections = userId ? await cacheManager.getCollections(userId) : null
         
-        const cols = await makeRequest<Collection[]>('/api/folders').catch(async (error) => {
+        const cols = await makeRequest<Collection[]>('/api/collections').catch(async (error) => {
           // If rate limited, use cached data if available
           if (error?.status === 429 && cachedCollections) {
             console.warn('[Collections] Rate limited during refetch, using cached data')
@@ -427,7 +427,7 @@ export const Dashboard: React.FC = () => {
         
         // Then fetch collections (with fallback to cache)
         try {
-          const cols = await makeRequest<Collection[]>('/api/folders')
+          const cols = await makeRequest<Collection[]>('/api/collections')
           setCollections(cols || [])
           
           // Update cache with fresh collections data
@@ -944,7 +944,7 @@ export const Dashboard: React.FC = () => {
     try {
       logger.info('Creating collection', { component: 'Dashboard', action: 'createCollection', metadata: { name: collectionData.name } })
       
-      const createdCollection = await makeRequest<Collection>('/api/folders', {
+      const createdCollection = await makeRequest<Collection>('/api/collections', {
         method: 'POST',
         body: JSON.stringify(collectionData),
       })
