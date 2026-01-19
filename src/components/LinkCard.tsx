@@ -126,11 +126,50 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     }
   }
 
+  // Local state for optimistic click count update
+  const [localClickCount, setLocalClickCount] = useState(link.clickCount || 0)
+
+  // Update local click count when link prop changes
+  React.useEffect(() => {
+    setLocalClickCount(link.clickCount || 0)
+  }, [link.clickCount])
+
   // Open link when clicking on title
-  const handleTitleClick = (e: React.MouseEvent) => {
+  const handleLinkClick = (e: React.MouseEvent) => {
     e.stopPropagation()
+    
+    // Optimistically update UI
+    setLocalClickCount(prev => prev + 1)
+    
+    // Track click using fetch with keepalive for reliable tracking
+    // Note: sendBeacon doesn't support custom headers (Authorization), so we use fetch with keepalive
+    // which provides the same reliability (request persists even when tab closes)
+    const authToken = localStorage.getItem('authToken')
+    if (authToken) {
+      const apiBaseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+      const url = `${apiBaseUrl}/api/links/${link.id}/track-click`
+      
+      const data = JSON.stringify({})
+      
+      // Use fetch with keepalive for reliable tracking (works like sendBeacon but supports headers)
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: data,
+        keepalive: true, // Ensures request completes even if user navigates away
+      }).catch((error) => {
+        // Revert optimistic update on error (optional, since keepalive is fire-and-forget)
+        console.error('Failed to track click:', error)
+        setLocalClickCount(prev => Math.max(0, prev - 1))
+      })
+    }
+    
+    // Open link
     window.open(link.url, '_blank', 'noopener,noreferrer')
-    handleAction('click') // Track click
+    handleAction('click') // Track click for analytics events
   }
 
   const copyToClipboard = async () => {
@@ -252,7 +291,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <h3 
                 data-link-title
-                onClick={handleTitleClick}
+                onClick={handleLinkClick}
                 className="font-medium text-blue-600 hover:text-blue-800 active:text-blue-900 hover:underline text-base sm:text-sm cursor-pointer line-clamp-1 touch-manipulation"
                 title="Click to open link"
               >
@@ -421,7 +460,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                       <Clock className="w-4 h-4" />{formatFullDate(link.createdAt)}
                     </div>
                     <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 rounded-full text-sm text-blue-600">
-                      <MousePointer className="w-4 h-4" />{link.clickCount || 0} clicks
+                      <MousePointer className="w-4 h-4" />{localClickCount} clicks
                     </div>
                     {link.collectionId && (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 rounded-full text-sm text-green-700">
@@ -575,7 +614,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
           {/* Title is the clickable link */}
           <h3 
             data-link-title
-            onClick={handleTitleClick}
+            onClick={handleLinkClick}
             className="font-semibold text-blue-600 hover:text-blue-800 active:text-blue-900 hover:underline text-base sm:text-sm line-clamp-2 mb-2 leading-snug cursor-pointer touch-manipulation"
             title="Click to open link"
           >
@@ -754,7 +793,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   </div>
                   <div className="p-3 bg-blue-50 rounded-lg">
                     <div className="text-blue-600 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><MousePointer className="w-4 h-4" /> Clicks</div>
-                    <div className="text-blue-800 text-base sm:text-sm">{link.clickCount || 0}</div>
+                    <div className="text-blue-800 text-base sm:text-sm">{localClickCount}</div>
                   </div>
                 </div>
 

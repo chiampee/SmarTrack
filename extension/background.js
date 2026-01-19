@@ -59,7 +59,8 @@ const BACKGROUND_CONSTANTS = {
   CONTEXT_MENU_IDS: {
     OPEN_DASHBOARD: 'smartrack-open-dashboard',
     SAVE_LINK: 'smartrack-save-link',
-    SAVE_LINK_PAGE: 'smartrack-save-link-page'
+    SAVE_LINK_PAGE: 'smartrack-save-link-page',
+    DISCOVERY_SAVE: 'smartrack-discovery-save'
   },
   
   // Default Settings
@@ -80,6 +81,16 @@ const BACKGROUND_CONSTANTS = {
     ENQUEUE_SAVE: 'ENQUEUE_SAVE',
     SAVE_CURRENT_PAGE: 'SAVE_CURRENT_PAGE',
     BATCH_SAVE_LINKS: 'BATCH_SAVE_LINKS'
+  },
+  
+  // Smart Discovery Constants
+  SMART_DISCOVERY: {
+    VISIT_THRESHOLD: 5,
+    SUGGESTION_COOLDOWN_HOURS: 24,
+    STORAGE_KEY: 'daily_visits',
+    SAVED_URLS_CACHE_KEY: 'saved_urls_cache',
+    BADGE_TEXT: '!',
+    FILTERED_DOMAINS: ['localhost', 'google.com', '127.0.0.1']
   }
 };
 
@@ -121,10 +132,16 @@ class SmarTrackBackground {
     this.setupEventListeners();
     this.setupAlarms();
     this.registerMessageHandlers();
+    this.setupTabTracking();
     
     // Retry pending saves on startup
     this.retryPendingSaves().catch((error) => {
       console.error('[SRT] Startup retry failed:', error);
+    });
+    
+    // Reset daily visits on startup (cleanup old entries)
+    this.resetDailyVisits().catch((error) => {
+      console.error('[SRT] Daily visits reset failed:', error);
     });
   }
 
@@ -350,6 +367,24 @@ class SmarTrackBackground {
             console.error('[SRT] Failed to save page from context menu:', error);
             this.showNotification('Save Failed', 'Could not save page. Please try again.');
           });
+        } else if (info.menuItemId === BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.DISCOVERY_SAVE) {
+          // Save the page from discovery suggestion
+          if (tab && tab.url) {
+            this.handleSavePageFromContextMenu(tab).catch((error) => {
+              console.error('[SRT] Failed to save page from discovery:', error);
+              this.showNotification('Save Failed', 'Could not save page. Please try again.');
+            });
+            
+            // Remove badge and context menu item after saving
+            if (chrome.action?.setBadgeText) {
+              chrome.action.setBadgeText({ text: '' });
+            }
+            try {
+              chrome.contextMenus.remove(BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.DISCOVERY_SAVE);
+            } catch (e) {
+              // Ignore errors
+            }
+          }
         }
       });
     } catch (error) {
@@ -1024,6 +1059,382 @@ class SmarTrackBackground {
   handleStorageChange(changes, namespace) {
     if (namespace === 'local' && changes[BACKGROUND_CONSTANTS.STORAGE_KEYS.LINKS]) {
       console.log('[SRT] Links storage changed');
+    }
+  }
+
+  /**
+   * Sets up tab tracking for Smart Discovery
+   * @returns {void}
+   */
+  setupTabTracking() {
+    if (!chrome.tabs?.onUpdated) {
+      console.debug('[SRT] Tabs API not available - skipping tab tracking');
+      return;
+    }
+
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+      // Only track when page is fully loaded
+      if (changeInfo.status === 'complete' && tab.url) {
+        // Skip system URLs
+        if (this.isSystemUrl(tab.url)) {
+          return;
+        }
+
+        // Skip filtered domains
+        try {
+          const urlObj = new URL(tab.url);
+          const hostname = urlObj.hostname.toLowerCase();
+          if (BACKGROUND_CONSTANTS.SMART_DISCOVERY.FILTERED_DOMAINS.some(domain => 
+            hostname === domain || hostname.endsWith('.' + domain)
+          )) {
+            return;
+          }
+        } catch (e) {
+          // Invalid URL, skip
+          return;
+        }
+
+        // Track visit
+        this.trackVisit(tab.url, tabId).catch((error) => {
+          console.error('[SRT] Failed to track visit:', error);
+        });
+      }
+    });
+  }
+
+  /**
+   * Tracks a visit to a URL
+   * @async
+   * @param {string} url - URL to track
+   * @param {number} tabId - Tab ID
+   * @returns {Promise<void>}
+   */
+  async trackVisit(url, tabId) {
+    if (!url || typeof url !== 'string') {
+      return;
+    }
+
+    try {
+      // Normalize URL for tracking
+      const normalizedUrl = this.normalizeUrlForTracking(url);
+      
+      // Get current daily visits
+      const result = await chrome.storage.local.get([
+        BACKGROUND_CONSTANTS.SMART_DISCOVERY.STORAGE_KEY
+      ]);
+      
+      const dailyVisits = result[BACKGROUND_CONSTANTS.SMART_DISCOVERY.STORAGE_KEY] || {};
+      const now = Date.now();
+      
+      // Initialize or update visit count
+      if (!dailyVisits[normalizedUrl]) {
+        dailyVisits[normalizedUrl] = {
+          count: 0,
+          last_visit: now,
+          last_suggestion: null
+        };
+      }
+      
+      // Increment count
+      dailyVisits[normalizedUrl].count += 1;
+      dailyVisits[normalizedUrl].last_visit = now;
+      
+      // Save updated visits
+      await chrome.storage.local.set({
+        [BACKGROUND_CONSTANTS.SMART_DISCOVERY.STORAGE_KEY]: dailyVisits
+      });
+      
+      // Check threshold and suggest if needed
+      await this.checkAndSuggest(normalizedUrl, dailyVisits[normalizedUrl].count, url);
+    } catch (error) {
+      console.error('[SRT] Failed to track visit:', error);
+    }
+  }
+
+  /**
+   * Normalizes URL for tracking (strips query params except video IDs)
+   * @param {string} url - URL to normalize
+   * @returns {string} Normalized URL hash
+   */
+  normalizeUrlForTracking(url) {
+    if (!url || typeof url !== 'string') {
+      return '';
+    }
+
+    try {
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname.toLowerCase();
+      const pathname = urlObj.pathname;
+      
+      // Preserve video ID patterns for YouTube, Vimeo, etc.
+      const videoIdPatterns = ['v=', 'id=', 'video_id=', 'watch?v='];
+      let videoId = null;
+      
+      for (const pattern of videoIdPatterns) {
+        const index = url.indexOf(pattern);
+        if (index !== -1) {
+          const start = index + pattern.length;
+          const end = url.indexOf('&', start);
+          if (end === -1) {
+            videoId = url.substring(start);
+          } else {
+            videoId = url.substring(start, end);
+          }
+          break;
+        }
+      }
+      
+      // Create normalized URL hash
+      let normalized = `${hostname}${pathname}`;
+      if (videoId) {
+        normalized += `?video_id=${videoId}`;
+      }
+      
+      // Use a simple hash function to create a short identifier
+      let hash = 0;
+      for (let i = 0; i < normalized.length; i++) {
+        const char = normalized.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+      }
+      
+      return `url_${Math.abs(hash).toString(36)}`;
+    } catch (e) {
+      // If URL parsing fails, use a hash of the entire URL
+      let hash = 0;
+      for (let i = 0; i < url.length; i++) {
+        const char = url.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return `url_${Math.abs(hash).toString(36)}`;
+    }
+  }
+
+  /**
+   * Checks visit count and suggests saving if threshold is met
+   * @async
+   * @param {string} normalizedUrl - Normalized URL hash
+   * @param {number} count - Visit count
+   * @param {string} originalUrl - Original URL for saving
+   * @returns {Promise<void>}
+   */
+  async checkAndSuggest(normalizedUrl, count, originalUrl) {
+    if (count < BACKGROUND_CONSTANTS.SMART_DISCOVERY.VISIT_THRESHOLD) {
+      return;
+    }
+
+    try {
+      // Get daily visits to check last_suggestion timestamp
+      const result = await chrome.storage.local.get([
+        BACKGROUND_CONSTANTS.SMART_DISCOVERY.STORAGE_KEY
+      ]);
+      
+      const dailyVisits = result[BACKGROUND_CONSTANTS.SMART_DISCOVERY.STORAGE_KEY] || {};
+      const visitData = dailyVisits[normalizedUrl];
+      
+      if (!visitData) {
+        return;
+      }
+      
+      const now = Date.now();
+      const cooldownMs = BACKGROUND_CONSTANTS.SMART_DISCOVERY.SUGGESTION_COOLDOWN_HOURS * 60 * 60 * 1000;
+      
+      // Check if we've suggested recently
+      if (visitData.last_suggestion && (now - visitData.last_suggestion) < cooldownMs) {
+        return;
+      }
+      
+      // Check if URL is already saved
+      const isSaved = await this.isUrlAlreadySaved(originalUrl);
+      if (isSaved) {
+        return;
+      }
+      
+      // Update badge
+      if (chrome.action?.setBadgeText) {
+        chrome.action.setBadgeText({
+          text: BACKGROUND_CONSTANTS.SMART_DISCOVERY.BADGE_TEXT
+        });
+        chrome.action.setBadgeBackgroundColor({ color: '#3b82f6' });
+      }
+      
+      // Add context menu item
+      await this.addDiscoveryContextMenu(originalUrl);
+      
+      // Update last_suggestion timestamp
+      visitData.last_suggestion = now;
+      dailyVisits[normalizedUrl] = visitData;
+      await chrome.storage.local.set({
+        [BACKGROUND_CONSTANTS.SMART_DISCOVERY.STORAGE_KEY]: dailyVisits
+      });
+    } catch (error) {
+      console.error('[SRT] Failed to check and suggest:', error);
+    }
+  }
+
+  /**
+   * Adds discovery context menu item
+   * @async
+   * @param {string} url - URL to suggest saving
+   * @returns {Promise<void>}
+   */
+  async addDiscoveryContextMenu(url) {
+    if (!chrome.contextMenus?.create) {
+      return;
+    }
+
+    try {
+      // Remove existing discovery menu item if it exists
+      try {
+        chrome.contextMenus.remove(BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.DISCOVERY_SAVE, () => {
+          // Ignore errors if item doesn't exist
+        });
+      } catch (e) {
+        // Ignore
+      }
+
+      // Create new discovery menu item
+      chrome.contextMenus.create({
+        id: BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.DISCOVERY_SAVE,
+        title: 'SmarTrack: You visit this often. Save it?',
+        contexts: ['page', 'action']
+      });
+    } catch (error) {
+      console.error('[SRT] Failed to add discovery context menu:', error);
+    }
+  }
+
+  /**
+   * Checks if a URL is already saved
+   * @async
+   * @param {string} url - URL to check
+   * @returns {Promise<boolean>}
+   */
+  async isUrlAlreadySaved(url) {
+    if (!url || typeof url !== 'string') {
+      return false;
+    }
+
+    try {
+      // Check local cache first
+      const result = await chrome.storage.local.get([
+        BACKGROUND_CONSTANTS.SMART_DISCOVERY.SAVED_URLS_CACHE_KEY
+      ]);
+      
+      const cache = result[BACKGROUND_CONSTANTS.SMART_DISCOVERY.SAVED_URLS_CACHE_KEY] || {};
+      const now = Date.now();
+      const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+      
+      // Check if cache is stale (>1 hour old)
+      if (!cache.lastSync || (now - cache.lastSync) > CACHE_TTL_MS) {
+        // Refresh cache from API
+        const refreshed = await this.refreshSavedUrlsCache();
+        if (refreshed) {
+          return refreshed.includes(url);
+        }
+        // If refresh failed, use existing cache if available
+        if (cache.urls && Array.isArray(cache.urls)) {
+          return cache.urls.includes(url);
+        }
+        return false;
+      }
+      
+      // Use cached data
+      if (cache.urls && Array.isArray(cache.urls)) {
+        return cache.urls.includes(url);
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('[SRT] Failed to check if URL is saved:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Refreshes the saved URLs cache from API
+   * @async
+   * @returns {Promise<Array<string>|null>} Array of saved URLs or null if failed
+   */
+  async refreshSavedUrlsCache() {
+    try {
+      // Get auth token
+      const tokenResult = await chrome.storage.local.get([
+        BACKGROUND_CONSTANTS.STORAGE_KEYS.AUTH_TOKEN
+      ]);
+      const token = tokenResult[BACKGROUND_CONSTANTS.STORAGE_KEYS.AUTH_TOKEN];
+      
+      if (!token || typeof token !== 'string') {
+        return null;
+      }
+      
+      // Fetch links from API
+      const url = `${BACKGROUND_CONSTANTS.API_BASE_URL}${BACKGROUND_CONSTANTS.LINKS_ENDPOINT}?limit=1000`;
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      const links = data.links || [];
+      
+      // Extract URLs
+      const urls = links.map(link => link.url).filter(Boolean);
+      
+      // Update cache
+      await chrome.storage.local.set({
+        [BACKGROUND_CONSTANTS.SMART_DISCOVERY.SAVED_URLS_CACHE_KEY]: {
+          urls: urls,
+          lastSync: Date.now()
+        }
+      });
+      
+      return urls;
+    } catch (error) {
+      console.error('[SRT] Failed to refresh saved URLs cache:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Resets daily visits (cleanup old entries)
+   * @async
+   * @returns {Promise<void>}
+   */
+  async resetDailyVisits() {
+    try {
+      const result = await chrome.storage.local.get([
+        BACKGROUND_CONSTANTS.SMART_DISCOVERY.STORAGE_KEY
+      ]);
+      
+      const dailyVisits = result[BACKGROUND_CONSTANTS.SMART_DISCOVERY.STORAGE_KEY] || {};
+      const now = Date.now();
+      const DAY_MS = 24 * 60 * 60 * 1000;
+      
+      // Remove entries older than 24 hours
+      const cleaned = {};
+      for (const [key, value] of Object.entries(dailyVisits)) {
+        if (value.last_visit && (now - value.last_visit) < DAY_MS) {
+          cleaned[key] = value;
+        }
+      }
+      
+      // Only update if we removed entries
+      if (Object.keys(cleaned).length !== Object.keys(dailyVisits).length) {
+        await chrome.storage.local.set({
+          [BACKGROUND_CONSTANTS.SMART_DISCOVERY.STORAGE_KEY]: cleaned
+        });
+        console.log('[SRT] Cleaned up old daily visits');
+      }
+    } catch (error) {
+      console.error('[SRT] Failed to reset daily visits:', error);
     }
   }
 }

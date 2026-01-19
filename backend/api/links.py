@@ -266,6 +266,50 @@ async def get_link(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/links/{link_id}/track-click")
+async def track_link_click(
+    link_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Increment click count for a link"""
+    try:
+        user_id = current_user["sub"]
+        
+        # Validate ObjectId format
+        object_id = validate_object_id(link_id, "Link")
+        
+        # Find link with user filter (security: ensure user owns the link)
+        link = await db.links.find_one(build_user_filter(user_id, {"_id": object_id}))
+        
+        if not link:
+            raise NotFoundError("Link", link_id)
+        
+        # Use MongoDB $inc operator to atomically increment clickCount
+        result = await db.links.update_one(
+            build_user_filter(user_id, {"_id": object_id}),
+            {
+                "$inc": {"clickCount": 1},
+                "$set": {"lastAccessedAt": datetime.now(timezone.utc)}
+            }
+        )
+        
+        if result.matched_count == 0:
+            raise NotFoundError("Link", link_id)
+        
+        # Get updated link to return new click count
+        updated_link = await db.links.find_one(build_user_filter(user_id, {"_id": object_id}))
+        
+        return {
+            "clickCount": updated_link.get("clickCount", 0),
+            "lastAccessedAt": updated_link.get("lastAccessedAt")
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/links", response_model=LinkResponse)
 async def create_link(
     link_data: LinkCreate,
