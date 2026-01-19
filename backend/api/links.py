@@ -3,13 +3,13 @@ Links API endpoints
 Refactored to use utility functions for better maintainability
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Query, Request
+from fastapi import APIRouter, HTTPException, Depends, Query, Request, Form, Request
 from typing import List, Optional
 from datetime import datetime, timezone
 from pydantic import BaseModel
 from urllib.parse import urlparse
 from services.mongodb import get_database
-from services.auth import get_current_user
+from services.auth import get_current_user, get_current_user_from_formdata
 from core.config import settings
 import logging
 
@@ -269,7 +269,8 @@ async def get_link(
 @router.post("/links/{link_id}/track-click")
 async def track_link_click(
     link_id: str,
-    current_user: dict = Depends(get_current_user),
+    request: Request,
+    current_user: dict = Depends(get_current_user_from_formdata),
     db = Depends(get_database)
 ):
     """Increment click count for a link"""

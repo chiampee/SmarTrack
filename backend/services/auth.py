@@ -2,7 +2,7 @@
 Authentication service
 """
 
-from fastapi import HTTPException, Depends, status
+from fastapi import HTTPException, Depends, status, Request, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from jose.exceptions import ExpiredSignatureError, JWTClaimsError
@@ -121,13 +121,20 @@ def extract_email_from_payload(payload: dict) -> str:
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Get current authenticated user with JWT signature verification"""
+    """Get current authenticated user with JWT signature verification (from Authorization header)"""
+    token = credentials.credentials
+    return await get_current_user_from_token(token)
+
+
+async def get_current_user_from_token(token: str) -> dict:
+    """
+    Extract user info from a JWT token (shared logic for both header and FormData auth)
+    This is used by get_current_user and get_current_user_from_formdata
+    """
     import logging
     logger = logging.getLogger(__name__)
     
     try:
-        token = credentials.credentials
-        
         # SECURITY: Verify JWT signature, audience, and expiration
         try:
             # Fetch JWKS for signature verification
@@ -239,8 +246,9 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
                     else:
                         del _user_email_cache[user_id]
                 else:
+                    # Legacy format: cache_entry is just the email string
                     email = cache_entry
-                    _user_email_cache[user_id] = {'email': cached_email, 'cached_at': current_time}
+                    _user_email_cache[user_id] = {'email': email, 'cached_at': current_time}
             
             if not email:
                 email = await fetch_email_from_auth0(token, user_id)
@@ -261,6 +269,37 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials"
         )
+
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get current authenticated user with JWT signature verification (from Authorization header)"""
+    token = credentials.credentials
+    return await get_current_user_from_token(token)
+
+
+async def get_current_user_from_formdata(
+    request: Request,
+    token: Optional[str] = Form(None)
+):
+    """
+    Get current authenticated user from FormData (for sendBeacon requests)
+    Falls back to Authorization header if FormData token is not provided
+    """
+    # Try FormData token first (for sendBeacon)
+    if token:
+        return await get_current_user_from_token(token)
+    
+    # Fallback to Authorization header (for normal requests)
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+        return await get_current_user_from_token(token)
+    
+    # No token found
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials - no token provided"
+    )
 
 
 async def fetch_email_from_auth0(token: str, user_id: str) -> str:
