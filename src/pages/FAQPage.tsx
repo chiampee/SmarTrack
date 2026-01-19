@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Logo } from '../components/Logo'
 import { 
   ChevronDown, 
   ArrowLeft, 
@@ -250,10 +251,9 @@ export const FAQPage: React.FC = () => {
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <img 
-                src="/logo.svg?v=2" 
-                alt="SmarTrack" 
-                className="h-6 sm:h-7 w-auto cursor-pointer"
+              <Logo 
+                iconSize="sm" 
+                className="h-6 sm:h-7"
                 onClick={() => navigate('/')}
               />
             </div>

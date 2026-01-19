@@ -11,6 +11,7 @@ import {
   X
 } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
+import { Logo } from '../components/Logo'
 import { SiloVsHubVisualization } from '../components/SiloVsHubVisualization'
 import { DashboardListView } from '../components/DashboardListView'
 import { ExtensionPopupPreview } from '../components/ExtensionPopupPreview'
@@ -43,12 +44,7 @@ export const LoginPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 sm:h-20">
             {/* Logo */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <div className="bg-blue-600 p-1 sm:p-1.5 rounded-md sm:rounded-lg">
-                <Search className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[3]" />
-              </div>
-              <span className="font-bold text-lg sm:text-xl tracking-tight text-slate-900">SmarTrack</span>
-            </div>
+            <Logo showText={true} iconSize="md" />
 
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-4">

@@ -1,6 +1,7 @@
 import React from 'react'
 import { Menu } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { Logo } from './Logo'
 
 interface HeaderProps {
   onMenu: () => void
@@ -21,11 +22,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenu }) => {
             <Menu className="w-6 h-6 sm:w-6 sm:h-6" />
           </button>
           <Link to="/" className="flex items-center gap-2">
-            <img 
-              src="/logo.svg?v=2" 
-              alt="SmarTrack" 
-              className="h-8 w-auto"
-            />
+            <Logo iconSize="md" className="h-8" />
           </Link>
         </div>
       </div>

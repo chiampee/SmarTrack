@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { motion } from 'framer-motion'
+import { Logo } from '../components/Logo'
 import { 
   ArrowLeft, 
   Chrome, 
@@ -1031,10 +1032,9 @@ export const DocsPage: React.FC = () => {
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <img 
-                src="/logo.svg?v=2" 
-                alt="SmarTrack" 
-                className="h-7 w-auto cursor-pointer"
+              <Logo 
+                iconSize="md" 
+                className="h-7"
                 onClick={() => navigate('/')}
               />
               <span className="hidden sm:inline text-slate-300">|</span>

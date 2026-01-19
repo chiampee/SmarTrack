@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Chrome, Shield, Eye, Database, Lock, UserCheck, FileText, Scale, AlertTriangle, XCircle, CheckCircle, Mail } from 'lucide-react'
+import { Logo } from '../components/Logo'
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -161,10 +162,9 @@ export const LegalCenterPage: React.FC = () => {
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <img 
-                src="/logo.svg?v=2" 
-                alt="SmarTrack" 
-                className="h-6 sm:h-7 w-auto cursor-pointer"
+              <Logo 
+                iconSize="sm" 
+                className="h-6 sm:h-7"
                 onClick={() => navigate('/')}
               />
             </div>
