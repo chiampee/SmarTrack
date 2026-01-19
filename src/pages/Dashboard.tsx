@@ -577,8 +577,14 @@ export const Dashboard: React.FC = () => {
   const handleLinkAction = async (linkId: string, action: string, data?: any) => {
     switch (action) {
       case 'click':
-        // Optimistic update already handled in LinkCard
-        // This case exists for future extensibility (e.g., analytics events)
+        // Update link with new clickCount from server
+        if (data?.clickCount !== undefined) {
+          setLinks(currentLinks => 
+            currentLinks.map(l => 
+              l.id === linkId ? { ...l, clickCount: data.clickCount } : l
+            )
+          )
+        }
         break
       case 'update': {
         const linkToEdit = links.find(l => l.id === linkId)

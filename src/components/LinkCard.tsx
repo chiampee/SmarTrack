@@ -135,7 +135,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   }, [link.clickCount])
 
   // Open link when clicking on title
-  const handleLinkClick = (e: React.MouseEvent) => {
+  const handleLinkClick = async (e: React.MouseEvent) => {
     e.stopPropagation()
     
     // Optimistically update UI
@@ -151,25 +151,43 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       
       const data = JSON.stringify({})
       
-      // Use fetch with keepalive for reliable tracking (works like sendBeacon but supports headers)
-      fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: data,
-        keepalive: true, // Ensures request completes even if user navigates away
-      }).catch((error) => {
-        // Revert optimistic update on error (optional, since keepalive is fire-and-forget)
+      try {
+        // Use fetch with keepalive for reliable tracking (works like sendBeacon but supports headers)
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: data,
+          keepalive: true, // Ensures request completes even if user navigates away
+        })
+        
+        if (response.ok) {
+          const json = await response.json()
+          // Get the new clickCount from server response
+          const newClickCount = json.clickCount ?? (link.clickCount ?? 0) + 1
+          setLocalClickCount(newClickCount)
+          // Notify parent component to update link state with new count
+          // onAction signature: (linkId: string, action: string, data?: any)
+          onAction(link.id, 'click', { clickCount: json.clickCount })
+        } else {
+          // Revert optimistic update on error
+          console.error('Failed to track click:', response.status, response.statusText)
+          setLocalClickCount(prev => Math.max(0, prev - 1))
+        }
+      } catch (error) {
+        // Revert optimistic update on error
         console.error('Failed to track click:', error)
         setLocalClickCount(prev => Math.max(0, prev - 1))
-      })
+      }
+    } else {
+      // No auth token, revert optimistic update
+      setLocalClickCount(prev => Math.max(0, prev - 1))
     }
     
     // Open link
     window.open(link.url, '_blank', 'noopener,noreferrer')
-    handleAction('click') // Track click for analytics events
   }
 
   const copyToClipboard = async () => {
