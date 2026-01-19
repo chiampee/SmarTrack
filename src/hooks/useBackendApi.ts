@@ -392,6 +392,15 @@ export const useBackendApi = () => {
         // Check if request was aborted
         const wasAborted = requestController.signal.aborted
         
+        // Extract additional error details
+        const errorDetails = {
+          name: (error as any).name,
+          message: (error as any).message,
+          code: (error as any).code,
+          cause: (error as any).cause,
+          stack: (error as any).stack?.substring(0, 500), // First 500 chars of stack
+        }
+        
         if (isResourceError) {
           console.error('🚨 [API ERROR] Browser resource exhaustion - Too many concurrent requests')
           console.error(`[API ERROR] This usually means too many requests are being made simultaneously`)
@@ -414,14 +423,45 @@ export const useBackendApi = () => {
           console.error(`[API ERROR] Request counts:`, Object.fromEntries(requestCounts))
           console.error(`[API ERROR] Browser: ${navigator.userAgent}`)
           console.error(`[API ERROR] Online status: ${navigator.onLine ? 'online' : 'offline'}`)
+          console.error(`[API ERROR] Error details:`, errorDetails)
+          
+          // Try to check backend health asynchronously (don't block error handling)
+          // Use a simple fetch without auth to check if backend is reachable
+          const healthCheckController = new AbortController()
+          const healthCheckTimeout = setTimeout(() => healthCheckController.abort(), 5000) // 5 second timeout
+          
+          fetch(`${API_BASE_URL}/api/health`, { 
+            method: 'GET',
+            signal: healthCheckController.signal
+          }).then(async (response) => {
+            clearTimeout(healthCheckTimeout)
+            if (response.ok) {
+              const health = await response.json().catch(() => ({ status: 'unknown' }))
+              console.log(`[API ERROR] ✅ Backend health check passed:`, health)
+              console.log(`[API ERROR] Backend is reachable - issue might be CORS, auth, or endpoint-specific`)
+            } else {
+              console.error(`[API ERROR] ⚠️ Backend health check returned status: ${response.status}`)
+              console.error(`[API ERROR] Backend is reachable but returned error`)
+            }
+          }).catch((healthError) => {
+            console.error(`[API ERROR] ❌ Backend health check failed:`, healthError)
+            console.error(`[API ERROR] This confirms the backend is unreachable - likely cold starting or down`)
+            console.error(`[API ERROR] Health check error details:`, {
+              name: (healthError as any)?.name,
+              message: (healthError as any)?.message,
+              code: (healthError as any)?.code,
+            })
+          })
+          
           console.error(`[API ERROR] This usually means:`)
-          console.error(`  1. Backend URL is wrong`)
-          console.error(`  2. Backend is down or cold starting`)
-          console.error(`  3. CORS is blocking the request`)
+          console.error(`  1. Backend is cold starting (Render free tier spins down after 15min inactivity)`)
+          console.error(`  2. Backend is down or unreachable`)
+          console.error(`  3. CORS is blocking the request (check Network tab for preflight failure)`)
           console.error(`  4. Browser extension/ad-blocker is blocking the request`)
-          console.error(`  5. Network connectivity issue`)
-          console.error(`  6. VITE_BACKEND_URL not set in Vercel environment variables`)
+          console.error(`  5. Network connectivity issue (despite browser reporting online)`)
+          console.error(`  6. DNS resolution failure`)
           console.error(`[API ERROR] 💡 Try: Check browser DevTools Network tab for more details`)
+          console.error(`[API ERROR] 💡 Look for: CORS errors, blocked requests, or connection refused`)
         }
       }
       
