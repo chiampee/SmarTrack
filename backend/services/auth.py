@@ -2,6 +2,7 @@
 Authentication service
 """
 
+from typing import Optional
 from fastapi import HTTPException, Depends, status, Request, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt

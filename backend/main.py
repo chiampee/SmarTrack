@@ -126,31 +126,10 @@ async def global_exception_handler(request: Request, exc: Exception):
         logger.error(f"❌ [GLOBAL ERROR HANDLER] Path: {request.url.path}")
         logger.error(f"❌ [GLOBAL ERROR HANDLER] Traceback: {traceback.format_exc()}")
     
-    # ✅ FIX: Validate origin against whitelist (never blindly reflect)
-    # This prevents malicious sites from making authenticated requests
-    def validate_origin(origin: str) -> str:
-        """Validate origin against CORS whitelist"""
-        if not origin:
-            return settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "https://smar-track.vercel.app"
-        
-        # Exact match
-        if origin in settings.CORS_ORIGINS:
-            return origin
-        
-        # URGENT FIX: Allow Vercel preview deployments (pattern matching)
-        # Vercel preview URLs follow pattern: https://project-name-*.vercel.app
-        if origin.endswith('.vercel.app'):
-            # Check if it's a known Vercel project pattern
-            if 'smar-track' in origin or 'smartrack' in origin:
-                return origin
-        
-        # Return first allowed origin as safe fallback (never wildcard with credentials)
-        return settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "https://smar-track.vercel.app"
+    # DEBUG: Use wildcard origin for permissive CORS (matching middleware config)
+    origin_header = request.headers.get("origin", "*")
     
-    origin_header = request.headers.get("origin", "")
-    allowed_origin = validate_origin(origin_header)
-    
-    # Return response with proper status code and validated CORS headers
+    # Return response with proper status code and permissive CORS headers
     return JSONResponse(
         status_code=status_code,
         content={
@@ -158,10 +137,9 @@ async def global_exception_handler(request: Request, exc: Exception):
             "detail": error_detail if (status_code != 500 or settings.DEBUG) else "An unexpected error occurred"
         },
         headers={
-            "Access-Control-Allow-Origin": allowed_origin,
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Origin": "*",  # Permissive for debugging
+            "Access-Control-Allow-Methods": "*",  # Allow all methods
+            "Access-Control-Allow-Headers": "*",  # Allow all headers including Authorization
         }
     )
 
@@ -169,15 +147,14 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.add_middleware(SecurityHeadersMiddleware)
 
 # Add CORS middleware
-# URGENT FIX: Use regex to allow Vercel preview deployments (pattern: https://*-*.vercel.app)
-# Combined with explicit allow_origins list for production URLs
+# DEBUG: Fully permissive CORS for debugging (allows all origins, methods, and headers)
+# ⚠️ NOTE: When allow_origins=["*"], allow_credentials must be False (browser security restriction)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_origin_regex=r"https://.*\.vercel\.app",  # Allow all Vercel preview deployments
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_origins=["*"],  # Allow all origins (Netlify, Vercel, localhost)
+    allow_credentials=False,  # Must be False when using wildcard origins
+    allow_methods=["*"],  # Crucial: Allow POST, PUT, DELETE, OPTIONS
+    allow_headers=["*"],  # Crucial: Allow Authorization header
 )
 
 # Add rate limiting middleware

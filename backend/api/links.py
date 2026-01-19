@@ -270,7 +270,7 @@ async def get_link(
 async def track_link_click(
     link_id: str,
     request: Request,
-    current_user: dict = Depends(get_current_user_from_formdata),
+    current_user: dict = Depends(get_current_user_from_formdata),  # Supports both FormData and Authorization header
     db = Depends(get_database)
 ):
     """Increment click count for a link"""
