@@ -75,16 +75,16 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS Configuration: Secure whitelist of trusted origins
-# Do not use regex or wildcards - only specific domains
-# This list is used by both the CORS middleware and exception handler
-ALLOWED_ORIGINS = [
-    "http://localhost:5173",           # Local Development (Vite default)
-    "http://localhost:3000",           # Local Alternative
-    "http://localhost:5554",           # Local Development (custom port)
-    "https://www.smartrack.top",       # Production Domain
-    "https://smartrack.top",           # Production Domain (no www)
-    "https://smar-track.vercel.app",   # Vercel Deployment
+# Secure CORS Configuration
+# Whitelist matches Auth0 Allowed Callback URLs
+origins = [
+    "http://localhost:5173",           # Local Dev (Vite)
+    "http://localhost:3000",           # Local Dev (Alternative)
+    "http://localhost:5554",           # Local Dev (Custom Port)
+    "https://www.smartrack.top",       # Production (www)
+    "https://smartrack.top",           # Production (root)
+    "https://smar-track.vercel.app",   # Vercel Production
+    "https://smar-track-git-staging-chiampee.vercel.app", # Vercel Staging
 ]
 
 # Global exception handler to ensure CORS headers are always sent
@@ -139,10 +139,10 @@ async def global_exception_handler(request: Request, exc: Exception):
         logger.error(f"❌ [GLOBAL ERROR HANDLER] Traceback: {traceback.format_exc()}")
     
     # Validate origin against whitelist (same as CORS middleware)
-    # Reference ALLOWED_ORIGINS defined at module level
+    # Reference origins defined at module level
     origin_header = request.headers.get("origin", "")
     # Only set CORS header if origin is in whitelist (security: don't reflect arbitrary origins)
-    allowed_origin = origin_header if origin_header in ALLOWED_ORIGINS else ""
+    allowed_origin = origin_header if origin_header in origins else ""
     
     # Return response with proper status code and secure CORS headers
     return JSONResponse(
@@ -162,13 +162,13 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
-# Add CORS middleware (uses ALLOWED_ORIGINS defined above)
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,     # Only allow these specific domains
-    allow_credentials=True,             # Safe because the origin list is restricted
-    allow_methods=["*"],                # Allow all HTTP methods (GET, POST, PUT, DELETE, OPTIONS)
-    allow_headers=["*"],                # Allow all headers including Authorization
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Add rate limiting middleware
