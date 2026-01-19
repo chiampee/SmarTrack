@@ -21,29 +21,44 @@ const apiDebugLogged = false
 
 // Request deduplication: Track in-flight requests to prevent duplicate concurrent requests
 const activeRequests = new Map<string, AbortController>()
+// Track how many requests are using each controller (for proper cleanup)
+const requestCounts = new Map<string, number>()
 
 /**
  * Get or create an abort controller for a request endpoint
  * If a request is already in flight, check if it's aborted and create a new one if needed
+ * Returns: { controller, isNew }
  */
-const getRequestController = (endpoint: string): AbortController => {
+const getRequestController = (endpoint: string): { controller: AbortController; isNew: boolean } => {
   const requestKey = endpoint
   const existing = activeRequests.get(requestKey)
   if (existing && !existing.signal.aborted) {
-    // Request already in flight with active controller, return existing
-    return existing
+    // Request already in flight with active controller, increment counter and return existing
+    const count = requestCounts.get(requestKey) || 0
+    requestCounts.set(requestKey, count + 1)
+    return { controller: existing, isNew: false }
   }
   // Create new controller (either no existing request, or existing was aborted)
   const controller = new AbortController()
   activeRequests.set(requestKey, controller)
-  return controller
+  requestCounts.set(requestKey, 1)
+  return { controller, isNew: true }
 }
 
 /**
  * Clean up request controller after request completes
+ * Only removes controller when all requests using it are done
  */
 const cleanupRequest = (endpoint: string) => {
-  activeRequests.delete(endpoint)
+  const count = requestCounts.get(endpoint) || 0
+  if (count <= 1) {
+    // Last request using this controller, clean up
+    activeRequests.delete(endpoint)
+    requestCounts.delete(endpoint)
+  } else {
+    // Other requests still using this controller, just decrement counter
+    requestCounts.set(endpoint, count - 1)
+  }
 }
 
 export interface UserStats {
@@ -264,7 +279,7 @@ export const useBackendApi = () => {
     const url = `${API_BASE_URL}${endpoint}`
     
     // ✅ REQUEST DEDUPLICATION: Prevent duplicate concurrent requests
-    const requestController = getRequestController(endpoint)
+    const { controller: requestController, isNew: isNewRequest } = getRequestController(endpoint)
     
     // Apply a default timeout to avoid infinite loading UI
     // Admin endpoints need 90 seconds to handle cold starts + complex queries
@@ -274,9 +289,23 @@ export const useBackendApi = () => {
     
     try {
       setIsLoading(true)
-      const timeoutId = setTimeout(() => requestController.abort(), timeoutDuration)
+      // Only set timeout for new requests - don't reset timeout for deduplicated requests
+      // This prevents aborting the original request prematurely when a duplicate comes in
+      const timeoutId = isNewRequest 
+        ? setTimeout(() => {
+            // Double-check signal isn't already aborted before aborting
+            if (!requestController.signal.aborted) {
+              requestController.abort()
+            }
+          }, timeoutDuration)
+        : null
 
       try {
+        // Check if signal is already aborted before making the request
+        if (requestController.signal.aborted) {
+          throw new DOMException('Request was aborted before fetch started', 'AbortError')
+        }
+        
         const response = await fetch(url, {
           ...options,
           headers: {
@@ -286,7 +315,7 @@ export const useBackendApi = () => {
           },
           signal: requestController.signal,
         })
-        clearTimeout(timeoutId)
+        if (timeoutId) clearTimeout(timeoutId)
         cleanupRequest(endpoint)
 
       if (!response.ok) {
@@ -338,7 +367,7 @@ export const useBackendApi = () => {
         const data = await response.json()
         return data as T
       } catch (fetchError) {
-        clearTimeout(timeoutId)
+        if (timeoutId) clearTimeout(timeoutId)
         cleanupRequest(endpoint)
         throw fetchError
       }
@@ -380,7 +409,11 @@ export const useBackendApi = () => {
           console.error(`[API ERROR] Environment variable VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL || '❌ NOT SET (using default)'}`)
           console.error(`[API ERROR] Test backend health: ${API_BASE_URL}/api/health`)
           console.error(`[API ERROR] Request was aborted: ${wasAborted}`)
+          console.error(`[API ERROR] Is new request: ${isNewRequest}`)
           console.error(`[API ERROR] Active requests: ${activeRequests.size}`)
+          console.error(`[API ERROR] Request counts:`, Object.fromEntries(requestCounts))
+          console.error(`[API ERROR] Browser: ${navigator.userAgent}`)
+          console.error(`[API ERROR] Online status: ${navigator.onLine ? 'online' : 'offline'}`)
           console.error(`[API ERROR] This usually means:`)
           console.error(`  1. Backend URL is wrong`)
           console.error(`  2. Backend is down or cold starting`)
@@ -388,6 +421,7 @@ export const useBackendApi = () => {
           console.error(`  4. Browser extension/ad-blocker is blocking the request`)
           console.error(`  5. Network connectivity issue`)
           console.error(`  6. VITE_BACKEND_URL not set in Vercel environment variables`)
+          console.error(`[API ERROR] 💡 Try: Check browser DevTools Network tab for more details`)
         }
       }
       
