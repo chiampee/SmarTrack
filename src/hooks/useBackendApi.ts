@@ -271,8 +271,9 @@ export const useBackendApi = () => {
       
       // Apply a default timeout to avoid infinite loading UI
       // Admin endpoints need more time for complex analytics queries (30 seconds)
+      // Regular endpoints need 60 seconds to handle Render free tier cold starts (30-60s)
       const isAdminEndpoint = endpoint.startsWith('/api/admin')
-      const timeoutDuration = isAdminEndpoint ? 30000 : 10000
+      const timeoutDuration = isAdminEndpoint ? 30000 : 60000  // 60s for cold starts
       const timeoutId = setTimeout(() => requestController.abort(), timeoutDuration)
 
       try {
