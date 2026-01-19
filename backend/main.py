@@ -90,10 +90,18 @@ origins = [
 # Explicit allowed headers - REQUIRED when allow_credentials=True
 # Cannot use wildcard ["*"] with credentials - browsers reject it
 allowed_headers = [
-    "Authorization",      # Required for Bearer token authentication
-    "Content-Type",       # Required for JSON requests
-    "Accept",            # Standard header
-    "X-Requested-With",  # Common header
+    "Authorization",          # Auth tokens
+    "Content-Type",           # JSON content
+    "Accept",                 # Response format
+    "Origin",                 # CORS origin
+    "X-Requested-With",       # AJAX requests
+    "Cache-Control",          # Caching
+    "Pragma",                 # Legacy caching
+    "Expires",                # Cache expiration
+    "If-Modified-Since",      # Browser caching check
+    "If-None-Match",          # ETag caching check
+    "sentry-trace",           # Sentry (trace propagation)
+    "baggage",                # Sentry (trace context)
 ]
 
 # Global exception handler to ensure CORS headers are always sent
