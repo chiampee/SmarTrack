@@ -153,7 +153,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     e.preventDefault() // Prevent any default link behavior
     
     // Optimistically update UI
-    const prevCount = localClickCount
     setLocalClickCount(prev => prev + 1)
     
     // Track click using navigator.sendBeacon for reliable tracking
