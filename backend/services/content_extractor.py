@@ -68,12 +68,16 @@ async def fetch_and_extract_content(url: str) -> Dict[str, Optional[str]]:
                     except:
                         continue
             
-            # Fallback to Google's favicon service if still no favicon
+            # Fallback to Icon Horse (CORS-friendly) if still no favicon
             if not favicon_url:
                 parsed_url = urlparse(url)
                 domain = parsed_url.netloc
-                # Use Google's favicon service as fallback
-                favicon_url = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+                if domain:
+                    # Remove www. prefix if present
+                    if domain.startswith('www.'):
+                        domain = domain[4:]
+                    # Use Icon Horse (CORS-friendly) as fallback
+                    favicon_url = f"https://icon.horse/icon/{domain}"
             
             # Remove script and style elements (but keep link for now if needed)
             for script in soup(["script", "style"]):
@@ -112,12 +116,17 @@ async def fetch_and_extract_content(url: str) -> Dict[str, Optional[str]]:
             }
             
         except requests.RequestException as e:
-            # Even if fetch fails, try to generate favicon from domain
+            # Even if fetch fails, try to generate favicon from domain using Icon Horse
             favicon_url = None
             try:
                 parsed_url = urlparse(url)
                 domain = parsed_url.netloc
-                favicon_url = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+                if domain:
+                    # Remove www. prefix if present
+                    if domain.startswith('www.'):
+                        domain = domain[4:]
+                    # Use Icon Horse (CORS-friendly) as fallback
+                    favicon_url = f"https://icon.horse/icon/{domain}"
             except:
                 pass
             return {

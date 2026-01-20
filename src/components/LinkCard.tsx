@@ -341,10 +341,11 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       return dbFavicon!.trim()
     }
     
-    // Tier 3: Generate from domain
+    // Tier 3: Generate from domain using CORS-friendly service
+    // Using Icon Horse (CORS-enabled) instead of Google's service which blocks CORS
     const domain = getCleanDomain(url)
     if (domain) {
-      return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`
+      return `https://icon.horse/icon/${encodeURIComponent(domain)}`
     }
     
     // No valid URL or domain, return null (Tier 4 fallback will show Globe icon)
@@ -456,7 +457,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   link.thumbnail ? 'object-cover' : 'object-contain'
                 }`}
                 referrerPolicy="no-referrer-when-downgrade"
-                crossOrigin="anonymous"
                 loading="lazy"
                 onError={(e) => {
                   // Tier 4: Image failed to load, show Globe icon fallback
@@ -971,7 +971,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                     link.thumbnail ? 'object-cover' : 'object-contain'
                   }`}
                   referrerPolicy="no-referrer-when-downgrade"
-                  crossOrigin="anonymous"
                   loading="lazy"
                   onError={() => {
                     // Tier 4: Image failed to load, show Globe icon fallback

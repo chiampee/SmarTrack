@@ -174,12 +174,16 @@ async def get_links(
                 link["tags"] = []
             
             # Auto-generate favicon if missing (for existing links)
+            # Using Icon Horse (CORS-friendly) instead of Google's service
             if not link.get("favicon") and link.get("url"):
                 try:
                     parsed_url = urlparse(link["url"])
                     domain = parsed_url.netloc
                     if domain:
-                        link["favicon"] = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+                        # Remove www. prefix if present
+                        if domain.startswith('www.'):
+                            domain = domain[4:]
+                        link["favicon"] = f"https://icon.horse/icon/{domain}"
                 except:
                     pass
         
@@ -243,13 +247,17 @@ async def search_links(
         normalized_links = normalize_documents(links)
         
         # Auto-generate favicons if missing
+        # Using Icon Horse (CORS-friendly) instead of Google's service
         for link in normalized_links:
             if not link.get("favicon") and link.get("url"):
                 try:
                     parsed_url = urlparse(link["url"])
                     domain = parsed_url.netloc
                     if domain:
-                        link["favicon"] = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+                        # Remove www. prefix if present
+                        if domain.startswith('www.'):
+                            domain = domain[4:]
+                        link["favicon"] = f"https://icon.horse/icon/{domain}"
                 except:
                     pass
         
@@ -283,12 +291,16 @@ async def get_link(
         normalized_link = normalize_document(link)
         
         # Auto-generate favicon if missing
+        # Using Icon Horse (CORS-friendly) instead of Google's service
         if not normalized_link.get("favicon") and normalized_link.get("url"):
             try:
                 parsed_url = urlparse(normalized_link["url"])
                 domain = parsed_url.netloc
                 if domain:
-                    normalized_link["favicon"] = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+                    # Remove www. prefix if present
+                    if domain.startswith('www.'):
+                        domain = domain[4:]
+                    normalized_link["favicon"] = f"https://icon.horse/icon/{domain}"
             except:
                 pass
         
@@ -473,12 +485,16 @@ async def create_link(
                 validated_favicon = None
         
         # Auto-generate favicon URL if not provided (fast, non-blocking)
+        # Using Icon Horse (CORS-friendly) instead of Google's service
         if not validated_favicon:
             try:
                 parsed_url = urlparse(validated_url)
                 domain = parsed_url.netloc
-                # Use Google's favicon service as reliable fallback
-                validated_favicon = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+                # Remove www. prefix if present
+                if domain and domain.startswith('www.'):
+                    domain = domain[4:]
+                # Use Icon Horse (CORS-friendly) as reliable fallback
+                validated_favicon = f"https://icon.horse/icon/{domain}" if domain else None
             except:
                 validated_favicon = None
         
@@ -640,12 +656,16 @@ async def update_link(
         normalized_link = normalize_document(link)
         
         # Auto-generate favicon if missing
+        # Using Icon Horse (CORS-friendly) instead of Google's service
         if not normalized_link.get("favicon") and normalized_link.get("url"):
             try:
                 parsed_url = urlparse(normalized_link["url"])
                 domain = parsed_url.netloc
                 if domain:
-                    normalized_link["favicon"] = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+                    # Remove www. prefix if present
+                    if domain.startswith('www.'):
+                        domain = domain[4:]
+                    normalized_link["favicon"] = f"https://icon.horse/icon/{domain}"
             except:
                 pass
         
