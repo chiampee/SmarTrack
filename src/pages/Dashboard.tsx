@@ -1128,6 +1128,32 @@ export const Dashboard: React.FC = () => {
                   />
                 </div>
               </div>
+              {/* Compact Stats - Inline with search on desktop */}
+              {filteredLinks.length > 0 && (() => {
+                const uniqueCategories = new Set(filteredLinks.map(l => l.category).filter(Boolean))
+                const favCount = filteredLinks.filter(l => l.isFavorite && !l.isArchived).length
+                return (
+                  <div className="hidden sm:flex items-center gap-4 mt-2 text-xs text-gray-600">
+                    <div className="flex items-center gap-1.5">
+                      <Archive className="w-3.5 h-3.5 text-gray-500" />
+                      <span className="font-medium text-gray-700">{filteredLinks.length}</span>
+                      <span className="text-gray-500">{filteredLinks.length === 1 ? 'link' : 'links'}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-blue-500" />
+                      <span className="font-medium text-blue-600">{uniqueCategories.size}</span>
+                      <span className="text-gray-500">categories</span>
+                    </div>
+                    {favCount > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                        <span className="font-medium text-amber-600">{favCount}</span>
+                        <span className="text-gray-500">favorites</span>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
 
             {/* Right: Action Buttons - mobile-first with perfect touch targets */}
@@ -1692,6 +1718,28 @@ export const Dashboard: React.FC = () => {
                       variants={staggerContainer}
                       className="relative z-0 space-y-6 sm:space-y-7 md:space-y-8"
                     >
+                      {/* Compact Stats - Minimal inline display */}
+                      {filteredLinks.length > 0 && (
+                        <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-200/60">
+                          <div className="flex items-center gap-1.5">
+                            <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
+                            <span className="font-medium text-gray-700">{filteredLinks.length}</span>
+                            <span className="text-gray-500">{filteredLinks.length === 1 ? 'link' : 'links'}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
+                            <span className="font-medium text-blue-600">{sortedCategories.length}</span>
+                            <span className="text-gray-500">categories</span>
+                          </div>
+                          {favoritesCount > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500" />
+                              <span className="font-medium text-amber-600">{favoritesCount}</span>
+                              <span className="text-gray-500">favorites</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Category Groups */}
                       {sortedCategories.map(([category, categoryLinks]) => (
