@@ -47,6 +47,18 @@ export const LoginPage = () => {
 
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-4">
+              <a 
+                href="/docs"
+                className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+              >
+                Documentation
+              </a>
+              <a 
+                href="/faq"
+                className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+              >
+                FAQ
+              </a>
               <button 
                 onClick={() => loginWithRedirect()}
                 className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
@@ -78,6 +90,20 @@ export const LoginPage = () => {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-white border-b border-slate-200 px-4 py-3 space-y-2">
+            <a 
+              href="/docs"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block w-full text-left px-4 py-3 text-slate-600 font-medium rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors touch-manipulation"
+            >
+              Documentation
+            </a>
+            <a 
+              href="/faq"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block w-full text-left px-4 py-3 text-slate-600 font-medium rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors touch-manipulation"
+            >
+              FAQ
+            </a>
              <button 
                 onClick={() => {
                   setIsMobileMenuOpen(false)
