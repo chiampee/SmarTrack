@@ -1104,7 +1104,6 @@ export const Dashboard: React.FC = () => {
   }
 
   const filteredLinksCount = filteredLinks.length
-  const favoritesCount = links.filter(l => l.isFavorite && !l.isArchived).length
 
   // Handle export
   const handleExport = () => {
