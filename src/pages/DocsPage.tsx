@@ -28,7 +28,7 @@ const docSections = [
     title: 'Getting Started',
     icon: Download,
     color: 'blue',
-    description: 'Enterprise-grade setup in minutes',
+    description: 'Get started in minutes',
     articles: [
       {
         title: 'Installation & Authentication',
@@ -48,19 +48,18 @@ SmarTrack is available as a Chrome extension. Installation is a simple process t
 
 ## Authentication
 
-SmarTrack uses **Auth0** for enterprise-grade authentication, providing:
+SmarTrack uses secure authentication, providing:
 
-- **OAuth 2.0** secure authentication flow
 - **Single Sign-On (SSO)** support for organizational accounts
 - **Multi-factor authentication (MFA)** compatibility
 - **Zero password storage** on our servers
 
 **First-Time Setup:**
 1. Click the SmarTrack extension icon or visit the dashboard
-2. Click "Sign In" to authenticate with Auth0
+2. Click "Sign In" to authenticate
 3. Choose your preferred authentication method (Google, email, etc.)
 4. Authorize SmarTrack to access your basic profile
-5. Your account is created automatically with secure token-based authentication
+5. Your account is created automatically
 
 ## Your First Capture
 
@@ -81,38 +80,24 @@ Your saved content appears in your dashboard within seconds, fully indexed and s
         title: 'System Requirements & Compatibility',
         content: `## Browser Compatibility
 
-SmarTrack is built on **Chromium Manifest V3**, ensuring compatibility with:
+SmarTrack works with all Chromium-based browsers:
 
 - **Google Chrome** (v90+)
-- **Microsoft Edge** (Chromium-based, all versions)
-- **Brave Browser** (all versions)
-- **Arc Browser** (all versions)
-- **Opera** (Chromium-based, all versions)
-
-**Technical Specifications:**
-- **Manifest Version**: V3 (latest Chrome extension standard)
-- **Storage API**: IndexedDB for offline capability
-- **Network Protocol**: HTTPS-only (TLS 1.3)
-- **Authentication**: OAuth 2.0 via Auth0
+- **Microsoft Edge**
+- **Brave Browser**
+- **Arc Browser**
+- **Opera**
 
 ## System Requirements
 
 **Minimum Requirements:**
-- Operating System: Windows 10+, macOS 10.15+, or modern Linux distribution
-- RAM: 2GB available (extension uses <50MB)
-- Disk Space: 50MB for extension installation
-- Network: Stable internet connection (HTTPS required)
+- Modern browser with automatic updates enabled
+- Stable internet connection
+- Windows 10+, macOS 10.15+, or modern Linux distribution
 
 **Recommended:**
-- Modern browser with automatic updates enabled
 - 4GB+ RAM for optimal performance with large libraries
-- Broadband connection for fast content extraction
-
-## Platform Roadmap
-
-**Q2 2026**: Firefox support (WebExtensions API)
-**Q3 2026**: Safari support (macOS/iOS)
-**Q4 2026**: Native mobile applications (iOS/Android)`
+- Broadband connection for fast content extraction`
       }
     ]
   },
@@ -121,7 +106,7 @@ SmarTrack is built on **Chromium Manifest V3**, ensuring compatibility with:
     title: 'Content Capture',
     icon: Globe,
     color: 'green',
-    description: 'Enterprise-grade content extraction and storage',
+    description: 'Smart content extraction and storage',
     articles: [
       {
         title: 'Capture Methods',
@@ -161,7 +146,7 @@ SmarTrack's content extraction engine captures:
 - **Favicon** - Site icon for visual identification
 
 **Content Extraction:**
-- **Main Content** - Clean text extraction using BeautifulSoup
+- **Main Content** - Clean, readable text extraction
 - **Content Type** - Automatic detection (webpage, PDF, article, video)
 - **Metadata** - Author, publish date (when available)
 
@@ -172,9 +157,9 @@ SmarTrack's content extraction engine captures:
 - **Collection Assignment** - Link to collections
 
 **Storage:**
-- Content is stored in MongoDB with full-text indexing
+- Full-text indexing for instant search
 - Automatic deduplication prevents duplicate saves
-- Offline queue ensures no data loss during network interruptions`
+- Your data is safely stored and accessible from any device`
       },
       {
         title: 'Content Type Support',
@@ -208,10 +193,9 @@ SmarTrack's extraction engine handles all standard web content types:
 - Creates permanent snapshot of accessible content
 - Useful for subscription-based research archives
 
-**Technical Limitations:**
-- Content extraction works best with HTML-based pages
-- JavaScript-rendered content requires page load completion
-- Some dynamic content may require manual review`
+**Note:**
+- Content extraction works best with standard web pages
+- Some dynamic content may require the page to fully load before capture`
       }
     ]
   },
@@ -279,7 +263,7 @@ Extension shortcuts can be customized via Chrome's native shortcut manager:
         title: 'Collections',
         content: `## Collection-Based Organization
 
-Collections are SmarTrack's primary organizational structure, enabling hierarchical knowledge management for research teams and individual power users.
+Collections are SmarTrack's primary organizational structure, enabling you to group related links together by topic or project.
 
 **Creating Collections:**
 1. Navigate to the dashboard
@@ -359,7 +343,7 @@ This three-tier system (Collections → Categories → Tags) provides comprehens
     title: 'Search & Discovery',
     icon: Search,
     color: 'blue',
-    description: 'Enterprise search across your entire knowledge base',
+    description: 'Search across your entire knowledge base',
     articles: [
       {
         title: 'Search Capabilities',
@@ -483,39 +467,25 @@ Beyond search, SmarTrack provides multiple discovery mechanisms:
         title: 'Content Extraction & Processing',
         content: `## Automated Content Extraction
 
-SmarTrack's content extraction engine processes every saved page:
-
-**Extraction Pipeline:**
-1. **HTML Parsing** - BeautifulSoup-based parsing for clean text extraction
-2. **Content Cleaning** - Removes navigation, ads, and non-content elements
-3. **Metadata Extraction** - Open Graph tags, meta descriptions, author info
-4. **Content Type Detection** - Automatic classification (webpage, PDF, article, video)
-5. **Text Indexing** - Full-text indexing for searchability
+SmarTrack automatically processes every saved page:
 
 **What Gets Extracted:**
-- **Main Content** - Clean, readable text (typically 50KB limit)
-- **Page Title** - From HTML title or Open Graph
+- **Main Content** - Clean, readable text from the page
+- **Page Title** - Automatically extracted
 - **Description** - Meta description or first paragraph
-- **Featured Image** - Open Graph image when available
+- **Featured Image** - When available
 - **Metadata** - Author, publish date, site information
 
-**Technical Specifications:**
-- **Extraction Engine**: BeautifulSoup with custom cleaning algorithms
-- **Content Limit**: ~50KB per page (prevents excessive storage)
-- **Processing Time**: Typically <2 seconds per page
-- **Error Handling**: Graceful fallback if extraction fails
-
-## Content Quality
+**Content Processing:**
+- Removes navigation, ads, and non-content elements
+- Preserves article structure and formatting
+- Full-text indexing for instant searchability
+- Automatic content type detection
 
 **Best Results:**
-- Well-structured HTML pages
-- Standard article/blog formats
-- Pages with semantic HTML markup
-
-**Limitations:**
-- JavaScript-heavy SPAs may require full page load
-- Some dynamic content may not be captured
-- Image-only content has limited text extraction`
+- Standard web pages and articles
+- Well-structured content
+- Pages with clear content structure`
       },
       {
         title: 'Organization Intelligence',
@@ -540,7 +510,6 @@ SmarTrack automatically assigns categories based on content analysis:
 **Manual Override:**
 - Edit category at any time from link details
 - Your manual assignments take precedence
-- System learns from your corrections
 
 ## Content Type Detection
 
@@ -583,50 +552,14 @@ SmarTrack provides comprehensive data export capabilities, ensuring you maintain
 
 **Export Process:**
 1. Click "Export All Links" in Settings
-2. JSON file downloads immediately
-3. File contains all your saved links with complete metadata
-4. File is named with timestamp for organization
+2. File downloads immediately with all your saved links
+3. File is named with timestamp for organization
 
 **Use Cases:**
 - **Backup** - Regular exports for data safety
 - **Migration** - Transfer data to other systems
-- **Analysis** - Import into analytics tools
-- **Compliance** - GDPR/CCPA data portability requirements
-
-**Technical Details:**
-- Export includes all user-generated content
-- Metadata preserved in structured format
-- No data loss during export process
-- File size depends on library size (typically <1MB per 100 links)`
+- **Analysis** - Import into analytics tools`
       },
-      {
-        title: 'Data Import (Coming Soon)',
-        content: `## Import Capabilities
-
-Data import functionality is currently in development and will support:
-
-**Planned Import Formats:**
-- **Chrome Bookmarks** - HTML export format
-- **Pocket Export** - JSON format
-- **CSV** - Spreadsheet format
-- **JSON** - SmarTrack export format (round-trip compatibility)
-
-**Import Workflow (Planned):**
-1. Navigate to Settings → Import/Export
-2. Select import format
-3. Upload your file
-4. Preview imported items
-5. Confirm and import
-
-**Post-Import Processing:**
-- Imported links will undergo content extraction
-- Automatic categorization and tagging
-- Full-text indexing for searchability
-- Processing time scales with import size
-
-**Status:**
-Import functionality is scheduled for Q2 2026 release. Export is available immediately for all users.`
-      }
     ]
   }
 ]
