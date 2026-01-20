@@ -414,13 +414,13 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       <div 
         data-link-id={link.id}
         className={`group bg-white rounded-xl border transition-all duration-200 cursor-pointer relative touch-manipulation ${
-          isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200 hover:shadow-md hover:border-blue-200 active:bg-gray-50'
+          isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200 hover:shadow-lg hover:border-blue-300 hover:scale-[1.02] active:bg-gray-50'
         }`}
         role="article"
         onClick={handleCardClick}
       >
         {/* Main Row - Enhanced for mobile */}
-        <div className="flex items-center gap-2 p-2.5 sm:p-4">
+        <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-4">
           {/* Checkbox with larger touch target */}
           <div className="flex items-center flex-shrink-0">
             <label 
@@ -482,20 +482,21 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             )}
           </div>
 
-          {/* Title & Domain */}
+          {/* Title & Domain - Full width from start to end */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            {/* Title - Full width from start to end */}
+            <div className="flex items-center gap-2 mb-1">
               <h3 
                 data-link-title
                 onClick={(e) => {
                   handleLinkClick(e);
                 }}
-                className="font-medium text-blue-600 hover:text-blue-800 active:text-blue-900 hover:underline text-base sm:text-sm cursor-pointer line-clamp-1 touch-manipulation"
-                title="Click to open link"
+                className="font-medium text-blue-600 hover:text-blue-800 active:text-blue-900 hover:underline text-base sm:text-sm cursor-pointer flex-1 min-w-0 truncate touch-manipulation"
+                title={link.title}
               >
                 {link.title}
               </h3>
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex items-center gap-1 flex-shrink-0 ml-1">
                 {link.description && <span title="Has notes"><StickyNote className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-amber-400" /></span>}
                 {link.isFavorite && <Star className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-amber-400 fill-current" />}
                 {link.isArchived && <Archive className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-gray-400" />}
@@ -503,12 +504,17 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             </div>
             {/* Domain and Category on same line for mobile */}
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
-              <p className="text-xs text-gray-500 truncate">{getCleanDomain(link.url) || link.url}</p>
+              <p className="text-xs text-gray-500 truncate font-semibold">{getCleanDomain(link.url) || link.url}</p>
               {link.category && (
-                <span className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs font-medium rounded-full flex-shrink-0">
+                <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full flex-shrink-0 border border-purple-200">
                   {link.category}
                 </span>
               )}
+              {/* Date display on desktop */}
+              <span className="hidden md:flex items-center gap-1 text-xs text-gray-400 ml-auto">
+                <Clock className="w-3 h-3" />
+                {formatDate(link.createdAt)}
+              </span>
             </div>
           </div>
 
@@ -517,7 +523,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1 ${contentTypeInfo.color}`}>
               <contentTypeInfo.icon className="w-3 h-3" />{contentTypeInfo.label}
             </span>
-            {link.category && <span className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs font-medium rounded-full">{link.category}</span>}
+            {link.category && <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full border border-purple-200">{link.category}</span>}
             {link.collectionId && (
               <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs font-medium rounded-full flex items-center gap-1">
                 <Folder className="w-3 h-3" />{getCollectionName(link.collectionId)}
@@ -934,8 +940,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   return (
     <div 
       className={`group bg-white rounded-xl border transition-all duration-200 cursor-pointer relative overflow-hidden touch-manipulation ${
-        isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200 hover:shadow-lg hover:border-blue-200 active:bg-gray-50'
-      } ${!isExpanded ? 'hover:-translate-y-0.5' : ''}`}
+        isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200 hover:shadow-xl hover:border-blue-300 hover:scale-[1.02] active:bg-gray-50'
+      } ${!isExpanded ? 'hover:-translate-y-1' : ''}`}
       role="article"
       onClick={handleCardClick}
     >
@@ -981,7 +987,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   <Globe className="w-5 h-5 sm:w-4 sm:h-4 text-slate-400" />
                 </div>
               )}
-              <span className="text-sm sm:text-xs text-gray-500 truncate">{getCleanDomain(link.url) || link.url}</span>
+              <span className="text-sm sm:text-xs text-gray-500 truncate font-semibold">{getCleanDomain(link.url) || link.url}</span>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
               <label 
@@ -1043,7 +1049,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   <contentTypeInfo.icon className="w-3.5 h-3.5 sm:w-3 sm:h-3" />{contentTypeInfo.label}
                 </span>
                 {link.category && (
-                  <span className="px-2.5 py-1 sm:px-2 sm:py-0.5 bg-purple-50 text-purple-700 text-sm sm:text-xs font-medium rounded-full">
+                  <span className="px-2.5 py-1 sm:px-2 sm:py-0.5 bg-purple-100 text-purple-800 text-sm sm:text-xs font-semibold rounded-full border border-purple-200">
                     {link.category}
                   </span>
                 )}

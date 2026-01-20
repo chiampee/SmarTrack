@@ -35,6 +35,7 @@ export const Dashboard: React.FC = () => {
   const [editingLink, setEditingLink] = useState<Link | null>(null)
   const [showCreateCollectionModal, setShowCreateCollectionModal] = useState(false)
   const [showExtensionInstallModal, setShowExtensionInstallModal] = useState(false)
+  const [showBulkMoveModal, setShowBulkMoveModal] = useState(false)
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null)
   const [activeFilterId, setActiveFilterId] = useState<string | null>(null)
   const [filters, setFilters] = useState({
@@ -1166,7 +1167,7 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-indigo-50/10 ${isMobile ? 'pb-24' : 'pb-8 sm:pb-6 md:pb-0'}`}>
-      <div className="max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6 lg:py-8">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6 lg:py-8">
         
         {/* Extension Install Banner - Removed per user request */}
         {false && !isExtensionInstalled && isAuthenticated && !isMobile && (
@@ -1231,11 +1232,11 @@ export const Dashboard: React.FC = () => {
           animate="visible"
           variants={fadeInUp}
           transition={{ delay: shouldAnimate ? 0.05 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-          className="relative z-20 bg-white/98 backdrop-blur-sm rounded-2xl sm:rounded-2xl shadow-lg shadow-gray-900/5 border border-gray-200/80 mb-3 sm:mb-4 md:mb-6 p-3 sm:p-4 md:p-5"
+          className="relative z-20 bg-white/98 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg shadow-gray-900/5 border border-gray-200/80 mb-3 sm:mb-4 md:mb-6 p-3 sm:p-4 md:p-5"
         >
-          <div className="flex flex-col gap-3 sm:gap-4">
+          <div className="flex flex-col gap-2.5 sm:gap-3 md:gap-4">
             {/* Search Bar Row */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 md:gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 md:gap-3">
               {/* Left: Search with integrated Filter */}
               <div className="flex-1 min-w-0 relative">
                 <div className="relative flex items-center">
@@ -1267,29 +1268,26 @@ export const Dashboard: React.FC = () => {
               </div>
 
               {/* Right: Action Buttons - New Link, Filter, Export */}
-              <div className="flex items-stretch sm:items-center gap-2 sm:gap-2.5 md:gap-3 flex-shrink-0 w-full sm:w-auto">
+              <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3 flex-shrink-0">
                 {/* New Link Button */}
                 <button 
                   onClick={() => setShowAddModal(true)}
-                  className="flex-1 sm:flex-initial px-4 sm:px-5 md:px-6 py-3.5 sm:py-2.5 md:py-2.5 text-base sm:text-sm font-bold sm:font-semibold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 active:from-blue-800 active:via-blue-800 active:to-indigo-800 transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:scale-[0.96] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2 min-h-[52px] sm:min-h-[44px] md:min-h-[42px] touch-manipulation"
+                  className="px-3.5 sm:px-4 md:px-5 py-2.5 sm:py-2 md:py-2 text-sm sm:text-sm font-semibold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 active:from-blue-800 active:via-blue-800 active:to-indigo-800 transition-all duration-200 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 active:scale-[0.96] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-1.5 sm:gap-2 min-h-[40px] sm:min-h-[38px] md:min-h-[36px] touch-manipulation"
                   aria-label="Add new link"
                 >
-                  <Plus className="w-5 h-5 sm:w-4.5 sm:h-4.5 flex-shrink-0" />
-                  <span className="sm:hidden font-semibold">Add Link</span>
-                  <span className="hidden sm:inline md:hidden">New</span>
-                  <span className="hidden md:inline">New Link</span>
+                  <Plus className="w-4 h-4 sm:w-4 sm:h-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">Add Link</span>
                 </button>
                 
                 {/* Export Button */}
                 <button 
                   onClick={handleExport}
                   disabled={filteredLinksCount === 0}
-                  className="flex-1 sm:flex-initial px-4 sm:px-5 md:px-6 py-3.5 sm:py-2.5 md:py-2.5 text-base sm:text-sm font-bold sm:font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 hover:shadow-md active:bg-gray-100 active:shadow-sm active:scale-[0.96] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm items-center justify-center gap-2 min-h-[52px] sm:min-h-[44px] md:min-h-[42px] touch-manipulation"
+                  className="px-3.5 sm:px-4 md:px-5 py-2.5 sm:py-2 md:py-2 text-sm sm:text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm active:bg-gray-100 active:shadow-sm active:scale-[0.96] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm items-center justify-center gap-1.5 sm:gap-2 min-h-[40px] sm:min-h-[38px] md:min-h-[36px] touch-manipulation"
                   aria-label="Export links"
                   title={filteredLinksCount === 0 ? 'No links to export' : 'Export filtered links'}
                 >
-                  <Download className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                  <span className="sm:hidden">Export</span>
+                  <Download className="w-4 h-4 sm:w-4 sm:h-4 flex-shrink-0" />
                   <span className="hidden sm:inline">Export</span>
                 </button>
               </div>
@@ -1688,7 +1686,7 @@ export const Dashboard: React.FC = () => {
                     initial={{ opacity: 0, y: -20, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                    className="mb-5 p-4 sm:p-5 md:p-5 bg-gradient-to-br from-blue-50 via-indigo-50/50 to-purple-50 border-2 border-blue-200/80 rounded-2xl shadow-lg shadow-blue-500/10 backdrop-blur-sm"
+                    className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 mb-5 p-4 sm:p-5 md:p-5 bg-white border-2 border-blue-200/80 rounded-2xl shadow-2xl shadow-blue-500/20 backdrop-blur-sm max-w-4xl w-[calc(100%-2rem)] sm:w-auto"
                   >
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
                       <span className="text-base sm:text-base md:text-lg font-bold text-blue-900 flex items-center gap-2.5">
@@ -1715,6 +1713,14 @@ export const Dashboard: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex flex-col sm:flex-row flex-wrap gap-2.5">
+                      <button 
+                        onClick={() => setShowBulkMoveModal(true)}
+                        disabled={isLoading}
+                        className="px-4 sm:px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-xl text-sm font-semibold hover:bg-green-50 hover:border-green-400 hover:text-green-700 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-sm flex items-center gap-2 shadow-sm"
+                      >
+                        <Folder className="w-4 h-4" />
+                        <span>Move</span>
+                      </button>
                       <button 
                         onClick={handleBulkArchive}
                         disabled={isLoading}
@@ -1846,7 +1852,7 @@ export const Dashboard: React.FC = () => {
 
                           {/* Links for this category - enhanced spacing */}
                           <div className={viewMode === 'grid' 
-                            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 md:gap-6' 
+                            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-5 md:gap-6' 
                             : 'flex flex-col gap-3 sm:gap-4'
                           }>
                             {categoryLinks.map((link, index) => (
@@ -1988,6 +1994,87 @@ export const Dashboard: React.FC = () => {
         >
           <Plus className="w-6 h-6" />
         </button>
+      )}
+
+      {/* Bulk Move Modal */}
+      {showBulkMoveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowBulkMoveModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Move {selectedLinks.size} link{selectedLinks.size > 1 ? 's' : ''} to Project</h3>
+            <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
+              <button
+                onClick={async () => {
+                  try {
+                    setLoading(true)
+                    const linkIds = Array.from(selectedLinks)
+                    await Promise.all(
+                      linkIds.map(linkId => 
+                        handleLinkAction(linkId, 'moveToProject', { collectionId: null })
+                      )
+                    )
+                    // Refresh links
+                    const refreshedLinks = await getLinks()
+                    setLinks(refreshedLinks)
+                    clearSelection()
+                    setShowBulkMoveModal(false)
+                    refetchCollections()
+                    toast.success(`Moved ${linkIds.length} link(s) to All Links`)
+                  } catch (error) {
+                    toast.error('Failed to move links. Please try again.')
+                  } finally {
+                    setLoading(false)
+                  }
+                }}
+                className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-blue-300 transition-colors"
+              >
+                <div className="font-medium text-gray-900">All Links</div>
+                <div className="text-sm text-gray-500">Remove from projects</div>
+              </button>
+              {collections.map(collection => (
+                <button
+                  key={collection.id}
+                  onClick={async () => {
+                    try {
+                      setLoading(true)
+                      const linkIds = Array.from(selectedLinks)
+                      await Promise.all(
+                        linkIds.map(linkId => 
+                          handleLinkAction(linkId, 'moveToProject', { collectionId: collection.id })
+                        )
+                      )
+                      // Refresh links
+                      const refreshedLinks = await getLinks()
+                      setLinks(refreshedLinks)
+                      clearSelection()
+                      setShowBulkMoveModal(false)
+                      refetchCollections()
+                      toast.success(`Moved ${linkIds.length} link(s) to "${collection.name}"`)
+                    } catch (error) {
+                      toast.error('Failed to move links. Please try again.')
+                    } finally {
+                      setLoading(false)
+                    }
+                  }}
+                  className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-blue-300 transition-colors"
+                >
+                  <div className="font-medium text-gray-900 flex items-center gap-2">
+                    <Folder className="w-4 h-4 text-blue-600" />
+                    {collection.name}
+                  </div>
+                  <div className="text-sm text-gray-500">{collection.linkCount || 0} links</div>
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowBulkMoveModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
