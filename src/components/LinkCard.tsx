@@ -25,7 +25,7 @@ import {
   Newspaper,
   Link2
 } from 'lucide-react'
-import { Link, Collection } from '../types/Link'
+import { Link, Collection, Category } from '../types/Link'
 
 interface LinkCardProps {
   link: Link
@@ -34,6 +34,7 @@ interface LinkCardProps {
   onSelect: (e?: React.MouseEvent) => void
   onAction: (linkId: string, action: string, data?: any) => void
   collections?: Collection[]
+  categories?: Category[]
   onCardClick?: () => void
 }
 
@@ -44,6 +45,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   onSelect, 
   onAction,
   collections = [],
+  categories = [],
   onCardClick
 }) => {
   // #region agent log
@@ -62,6 +64,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   const [editTags, setEditTags] = useState(link.tags?.join(', ') || '')
   const [editCollectionId, setEditCollectionId] = useState(link.collectionId || '')
   const [newTag, setNewTag] = useState('')
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
 
   const handleAction = (action: string, data?: any) => {
     onAction(link.id, action, data)
@@ -73,6 +77,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     setEditCategory(link.category || '')
     setEditTags(link.tags?.join(', ') || '')
     setEditCollectionId(link.collectionId || '')
+    setShowNewCategoryInput(false)
+    setNewCategoryName('')
     setIsEditing(true)
   }
 
@@ -338,6 +344,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 data-link-title
                 onClick={(e) => {
                   console.log('[ClickTrack] ⚡⚡⚡ TITLE CLICKED (LIST VIEW) ⚡⚡⚡');
+                  alert('Click handler fired! Check console for [ClickTrack] logs.');
                   handleLinkClick(e);
                 }}
                 className="font-medium text-blue-600 hover:text-blue-800 active:text-blue-900 hover:underline text-base sm:text-sm cursor-pointer line-clamp-1 touch-manipulation"
@@ -421,13 +428,76 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3">
                     <div>
                       <label className="text-sm font-medium text-gray-600 mb-1.5 block">Category</label>
-                      <input 
-                        type="text" 
-                        value={editCategory} 
-                        onChange={(e) => setEditCategory(e.target.value)} 
-                        className="w-full px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                        placeholder="e.g. tools, research" 
-                      />
+                      {!showNewCategoryInput ? (
+                        <div className="space-y-2">
+                          <select 
+                            value={editCategory} 
+                            onChange={(e) => {
+                              if (e.target.value === '__add_new__') {
+                                setShowNewCategoryInput(true)
+                                setNewCategoryName('')
+                              } else {
+                                setEditCategory(e.target.value)
+                              }
+                            }} 
+                            className="w-full px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                          >
+                            <option value="">None</option>
+                            {categories.map(cat => (
+                              <option key={cat.id || cat.name} value={cat.name}>
+                                {cat.name}
+                              </option>
+                            ))}
+                            <option value="__add_new__">+ Add new category</option>
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            value={newCategoryName} 
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                if (newCategoryName.trim()) {
+                                  setEditCategory(newCategoryName.trim())
+                                  setShowNewCategoryInput(false)
+                                  setNewCategoryName('')
+                                }
+                              } else if (e.key === 'Escape') {
+                                setShowNewCategoryInput(false)
+                                setNewCategoryName('')
+                              }
+                            }}
+                            placeholder="Enter new category name" 
+                            className="flex-1 px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (newCategoryName.trim()) {
+                                setEditCategory(newCategoryName.trim())
+                                setShowNewCategoryInput(false)
+                                setNewCategoryName('')
+                              }
+                            }}
+                            className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                          >
+                            Add
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowNewCategoryInput(false)
+                              setNewCategoryName('')
+                            }}
+                            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600 mb-1.5 block">Project</label>
@@ -664,6 +734,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             data-link-title
             onClick={(e) => {
               console.log('[ClickTrack] ⚡⚡⚡ TITLE CLICKED (GRID VIEW) ⚡⚡⚡');
+              alert('Click handler fired! Check console for [ClickTrack] logs.');
               handleLinkClick(e);
             }}
             className="font-semibold text-blue-600 hover:text-blue-800 active:text-blue-900 hover:underline text-base sm:text-sm line-clamp-2 mb-2 leading-snug cursor-pointer touch-manipulation"
