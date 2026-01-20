@@ -705,6 +705,21 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
     setTimeout(() => setCopiedCode(null), 2000)
   }
 
+  // Helper function to process bold and inline code in text
+  const processInlineFormatting = (text: string): React.ReactNode[] => {
+    // Split by bold markers and code markers, preserving them
+    const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g)
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-semibold text-slate-900">{part.slice(2, -2)}</strong>
+      }
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return <code key={i} className="bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono text-slate-800">{part.slice(1, -1)}</code>
+      }
+      return <React.Fragment key={i}>{part}</React.Fragment>
+    })
+  }
+
   const renderMarkdown = (text: string) => {
     const lines = text.split('\n')
     const elements: React.ReactNode[] = []
@@ -872,13 +887,13 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
           listType === 'ul' ? (
             <ul key={`list-${index}-start`} className="list-disc list-outside space-y-3 my-5 text-slate-700 ml-6">
               {listItems.map((item, i) => (
-                <li key={i} className="leading-7">{item}</li>
+                <li key={i} className="leading-7">{processInlineFormatting(item)}</li>
               ))}
             </ul>
           ) : (
             <ol key={`list-${index}-start`} className="list-decimal list-outside space-y-3 my-5 text-slate-700 ml-6">
               {listItems.map((item, i) => (
-                <li key={i} className="leading-7">{item}</li>
+                <li key={i} className="leading-7">{processInlineFormatting(item)}</li>
               ))}
             </ol>
           )
@@ -899,13 +914,13 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
           listType === 'ul' ? (
             <ul key={`list-${index}-start`} className="list-disc list-outside space-y-3 my-5 text-slate-700 ml-6">
               {listItems.map((item, i) => (
-                <li key={i} className="leading-7">{item}</li>
+                <li key={i} className="leading-7">{processInlineFormatting(item)}</li>
               ))}
             </ul>
           ) : (
             <ol key={`list-${index}-start`} className="list-decimal list-outside space-y-3 my-5 text-slate-700 ml-6">
               {listItems.map((item, i) => (
-                <li key={i} className="leading-7">{item}</li>
+                <li key={i} className="leading-7">{processInlineFormatting(item)}</li>
               ))}
             </ol>
           )
@@ -924,13 +939,13 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
           listType === 'ul' ? (
             <ul key={`list-${index}`} className="list-disc list-outside space-y-3 my-5 text-slate-700 ml-6">
               {listItems.map((item, i) => (
-                <li key={i} className="leading-7">{item}</li>
+                <li key={i} className="leading-7">{processInlineFormatting(item)}</li>
               ))}
             </ul>
           ) : (
             <ol key={`list-${index}`} className="list-decimal list-outside space-y-3 my-5 text-slate-700 ml-6">
               {listItems.map((item, i) => (
-                <li key={i} className="leading-7">{item}</li>
+                <li key={i} className="leading-7">{processInlineFormatting(item)}</li>
               ))}
             </ol>
           )
@@ -949,20 +964,9 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
 
       // Regular paragraphs (only if not in list or table)
       if (!inList && !inTable) {
-        const parts = line.split(/(\*\*.*?\*\*)/g)
-        const formattedLine = parts.map((part, i) => {
-          if (part.startsWith('**') && part.endsWith('**')) {
-            return <strong key={i} className="font-semibold text-slate-900">{part.slice(2, -2)}</strong>
-          }
-          if (part.startsWith('`') && part.endsWith('`')) {
-            return <code key={i} className="bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono text-slate-800">{part.slice(1, -1)}</code>
-          }
-          return part
-        })
-
         elements.push(
           <p key={index} className="text-slate-700 mb-5 text-base leading-7">
-            {formattedLine}
+            {processInlineFormatting(line)}
           </p>
         )
       }
@@ -974,13 +978,13 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
         listType === 'ul' ? (
           <ul key="list-final" className="list-disc list-outside space-y-3 my-5 text-slate-700 ml-6">
             {listItems.map((item, i) => (
-              <li key={i} className="leading-7">{item}</li>
+              <li key={i} className="leading-7">{processInlineFormatting(item)}</li>
             ))}
           </ul>
         ) : (
           <ol key="list-final" className="list-decimal list-outside space-y-3 my-5 text-slate-700 ml-6">
             {listItems.map((item, i) => (
-              <li key={i} className="leading-7">{item}</li>
+              <li key={i} className="leading-7">{processInlineFormatting(item)}</li>
             ))}
           </ol>
         )
