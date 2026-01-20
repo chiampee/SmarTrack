@@ -376,8 +376,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               <h3 
                 data-link-title
                 onClick={(e) => {
-                  console.log('[ClickTrack] ⚡⚡⚡ TITLE CLICKED (LIST VIEW) ⚡⚡⚡');
-                  alert('Click handler fired! Check console for [ClickTrack] logs.');
                   handleLinkClick(e);
                 }}
                 className="font-medium text-blue-600 hover:text-blue-800 active:text-blue-900 hover:underline text-base sm:text-sm cursor-pointer line-clamp-1 touch-manipulation"
@@ -908,8 +906,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
           <h3 
             data-link-title
             onClick={(e) => {
-              console.log('[ClickTrack] ⚡⚡⚡ TITLE CLICKED (GRID VIEW) ⚡⚡⚡');
-              alert('Click handler fired! Check console for [ClickTrack] logs.');
               handleLinkClick(e);
             }}
             className="font-semibold text-blue-600 hover:text-blue-800 active:text-blue-900 hover:underline text-base sm:text-sm line-clamp-2 mb-2 leading-snug cursor-pointer touch-manipulation"
