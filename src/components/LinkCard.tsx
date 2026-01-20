@@ -323,15 +323,22 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     favicon?: string | null, 
     iconUrl?: string | null
   ): string | null => {
+    // Helper to check if a string is a valid HTTP(S) URL
+    const isValidUrl = (str: string | null | undefined): boolean => {
+      if (!str || typeof str !== 'string') return false
+      const trimmed = str.trim()
+      return trimmed.length > 0 && (trimmed.startsWith('http://') || trimmed.startsWith('https://'))
+    }
+    
     // Tier 1: Check database thumbnail (og:image - often better quality)
-    if (thumbnail && typeof thumbnail === 'string' && thumbnail.startsWith('http')) {
-      return thumbnail
+    if (isValidUrl(thumbnail)) {
+      return thumbnail!.trim()
     }
     
     // Tier 2: Check database favicon/iconUrl
     const dbFavicon = favicon || iconUrl
-    if (dbFavicon && typeof dbFavicon === 'string' && dbFavicon.startsWith('http')) {
-      return dbFavicon
+    if (isValidUrl(dbFavicon)) {
+      return dbFavicon!.trim()
     }
     
     // Tier 3: Generate from domain
@@ -345,6 +352,28 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   }
 
   const faviconUrl = getFaviconUrl(link.url, link.thumbnail, link.favicon, (link as any).iconUrl)
+  
+  // Debug logging (temporary - only for first few links)
+  useEffect(() => {
+    // Only log for debugging - check first link
+    const isFirstLink = document.querySelector('[data-link-id]')?.getAttribute('data-link-id') === link.id
+    if (isFirstLink || !document.querySelector('[data-link-id]')) {
+      console.log('[LinkCard Debug]', {
+        linkId: link.id,
+        title: link.title.substring(0, 30),
+        url: link.url,
+        hasThumbnail: !!link.thumbnail,
+        thumbnail: link.thumbnail,
+        hasFavicon: !!link.favicon,
+        favicon: link.favicon,
+        hasIconUrl: !!(link as any).iconUrl,
+        iconUrl: (link as any).iconUrl,
+        generatedFaviconUrl: faviconUrl,
+        faviconError,
+        willShowGlobe: !faviconUrl || faviconError
+      })
+    }
+  }, [link.id, link.url, link.thumbnail, link.favicon, faviconUrl, faviconError])
   
   // Reset error state when favicon URL changes
   useEffect(() => {
@@ -382,6 +411,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   if (viewMode === 'list') {
     return (
       <div 
+        data-link-id={link.id}
         className={`group bg-white rounded-xl border transition-all duration-200 cursor-pointer relative touch-manipulation ${
           isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200 hover:shadow-md hover:border-blue-200 active:bg-gray-50'
         }`}
@@ -428,9 +458,21 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 referrerPolicy="no-referrer-when-downgrade"
                 crossOrigin="anonymous"
                 loading="lazy"
-                onError={() => {
+                onError={(e) => {
                   // Tier 4: Image failed to load, show Globe icon fallback
+                  console.warn('[LinkCard] Image failed to load:', {
+                    linkId: link.id,
+                    url: link.url,
+                    imageUrl: faviconUrl,
+                    error: e
+                  })
                   setFaviconError(true)
+                }}
+                onLoad={() => {
+                  // Successfully loaded
+                  if (link.id === document.querySelector('[data-link-id]')?.getAttribute('data-link-id')) {
+                    console.log('[LinkCard] Image loaded successfully:', faviconUrl)
+                  }
                 }}
               />
             ) : (
