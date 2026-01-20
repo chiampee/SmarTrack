@@ -383,7 +383,7 @@ export const useBackendApi = () => {
         throw timeoutError
       }
       
-      // Enhanced error logging for network errors - ALWAYS show in production
+      // Enhanced error logging for network errors
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         // Check if it's a resource exhaustion error
         const isResourceError = error.message.includes('ERR_INSUFFICIENT_RESOURCES') || 
@@ -392,95 +392,12 @@ export const useBackendApi = () => {
         // Check if request was aborted
         const wasAborted = requestController.signal.aborted
         
-        // Extract additional error details
-        const errorDetails = {
-          name: (error as any).name,
-          message: (error as any).message,
-          code: (error as any).code,
-          cause: (error as any).cause,
-          stack: (error as any).stack?.substring(0, 500), // First 500 chars of stack
-        }
-        
         if (isResourceError) {
-          console.error('🚨 [API ERROR] Browser resource exhaustion - Too many concurrent requests')
-          console.error(`[API ERROR] This usually means too many requests are being made simultaneously`)
-          console.error(`[API ERROR] Active requests: ${activeRequests.size}`)
-          console.error(`[API ERROR] Consider reducing concurrent API calls or implementing request queuing`)
+          console.error('[API ERROR] Browser resource exhaustion - too many concurrent requests')
         } else if (wasAborted) {
-          console.error('🚨 [API ERROR] Request was aborted (likely timeout or cancelled)')
-          console.error(`[API ERROR] Endpoint: ${endpoint}`)
-          console.error(`[API ERROR] Timeout duration: ${timeoutDuration}ms`)
-          console.error(`[API ERROR] This might be a cold start - backend took longer than ${timeoutDuration/1000}s to respond`)
+          console.error(`[API ERROR] Request timeout - backend may be cold starting`)
         } else {
-          console.error('🚨 [API ERROR] Network error - Failed to fetch')
-          console.error(`[API ERROR] Full URL: ${url}`)
-          console.error(`[API ERROR] Backend base URL: ${API_BASE_URL}`)
-          console.error(`[API ERROR] Environment variable VITE_BACKEND_URL: ${import.meta.env.VITE_BACKEND_URL || '❌ NOT SET (using default)'}`)
-          console.error(`[API ERROR] Test backend health: ${API_BASE_URL}/api/health`)
-          console.error(`[API ERROR] Request was aborted: ${wasAborted}`)
-          console.error(`[API ERROR] Is new request: ${isNewRequest}`)
-          console.error(`[API ERROR] Active requests: ${activeRequests.size}`)
-          console.error(`[API ERROR] Request counts:`, Object.fromEntries(requestCounts))
-          console.error(`[API ERROR] Browser: ${navigator.userAgent}`)
-          console.error(`[API ERROR] Online status: ${navigator.onLine ? 'online' : 'offline'}`)
-          console.error(`[API ERROR] Error details:`, errorDetails)
-          
-          // Try to check backend health asynchronously (don't block error handling)
-          // Use a simple fetch without auth to check if backend is reachable
-          try {
-            console.error(`[API ERROR] 🔍 Starting backend health check...`)
-            const healthCheckController = new AbortController()
-            const healthCheckTimeout = setTimeout(() => {
-              healthCheckController.abort()
-              console.error(`[API ERROR] ⏱️ Health check timed out after 5 seconds`)
-            }, 5000) // 5 second timeout
-            
-            fetch(`${API_BASE_URL}/api/health`, { 
-              method: 'GET',
-              signal: healthCheckController.signal
-            }).then(async (response) => {
-              clearTimeout(healthCheckTimeout)
-              if (response.ok) {
-                const health = await response.json().catch(() => ({ status: 'unknown' }))
-                console.error(`[API ERROR] ✅ Backend health check passed:`, health)
-                console.error(`[API ERROR] Backend is reachable - issue might be CORS, auth, or endpoint-specific`)
-              } else {
-                console.error(`[API ERROR] ⚠️ Backend health check returned status: ${response.status}`)
-                console.error(`[API ERROR] Backend is reachable but returned error`)
-              }
-            }).catch((healthError) => {
-              clearTimeout(healthCheckTimeout)
-              console.error(`[API ERROR] ❌ Backend health check failed:`, healthError)
-              console.error(`[API ERROR] This confirms the backend is unreachable - likely cold starting or down`)
-              console.error(`[API ERROR] Health check error details:`, {
-                name: (healthError as any)?.name,
-                message: (healthError as any)?.message,
-                code: (healthError as any)?.code,
-              })
-            })
-          } catch (healthCheckSetupError) {
-            console.error(`[API ERROR] ⚠️ Failed to setup health check:`, healthCheckSetupError)
-          }
-          
-          console.error(`[API ERROR] This usually means:`)
-          console.error(`  1. Backend is cold starting (Render free tier spins down after 15min inactivity)`)
-          console.error(`  2. Backend is down or unreachable`)
-          console.error(`  3. CORS is blocking the request (check Network tab for preflight failure)`)
-          console.error(`  4. Browser extension/ad-blocker is blocking the request`)
-          console.error(`  5. Network connectivity issue (despite browser reporting online)`)
-          console.error(`  6. DNS resolution failure`)
-          console.error(`[API ERROR] 💡 DIAGNOSTIC STEPS:`)
-          console.error(`[API ERROR]   1. Open DevTools (F12 or Cmd+Option+I)`)
-          console.error(`[API ERROR]   2. Go to Network tab`)
-          console.error(`[API ERROR]   3. Look for the failed request to: ${url}`)
-          console.error(`[API ERROR]   4. Check the Status column - what does it show?`)
-          console.error(`[API ERROR]      - (failed) = Connection refused / DNS error / Backend down`)
-          console.error(`[API ERROR]      - CORS error = Preflight failed (check Response headers)`)
-          console.error(`[API ERROR]      - (pending) = Request hanging (likely cold start)`)
-          console.error(`[API ERROR]   5. Click on the request to see details:`)
-          console.error(`[API ERROR]      - Headers tab: Check CORS headers`)
-          console.error(`[API ERROR]      - Response tab: See error message`)
-          console.error(`[API ERROR]      - Timing tab: See where it's stuck`)
+          console.error(`[API ERROR] Network error - Failed to fetch ${endpoint}`)
         }
       }
       
