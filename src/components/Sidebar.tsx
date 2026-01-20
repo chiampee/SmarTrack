@@ -263,10 +263,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                               ? 'bg-blue-50 text-blue-700 border border-blue-200' 
                               : 'text-gray-700 hover:bg-gray-100'
                           }`}
+                          title={`View collection: ${c.name} (${c.linkCount || 0} links)`}
                         >
                           <Link to={to} onClick={onClose} className="flex items-center gap-3 flex-1 min-w-0 touch-manipulation">
                             <Library className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                            <span className="flex-1 text-left truncate text-base sm:text-sm font-medium">
+                            <span className="flex-1 text-left text-base sm:text-sm font-medium break-words hyphens-auto" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                               {c.name}
                             </span>
                             {typeof c.linkCount === 'number' && (
@@ -343,14 +344,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                     const to = `/?category=${encodeURIComponent(category.name)}`
                     const active = isActivePath(to)
                     return (
-                      <div key={`${category.id}-${index}-${category.linkCount}`} className={`group flex items-center gap-2 px-3 py-3 sm:py-2 text-sm rounded-lg transition-colors min-h-[44px] sm:min-h-0 ${
-                        active ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-gray-700 hover:bg-gray-100'
-                      }`}>
-                        <Link to={to} onClick={onClose} className="flex items-center gap-3 flex-1 min-w-0 touch-manipulation">
+                      <div 
+                        key={`${category.id}-${index}-${category.linkCount}`} 
+                        className={`group flex items-center gap-2 px-3 py-3 sm:py-2 text-sm rounded-lg transition-colors min-h-[44px] sm:min-h-0 ${
+                          active ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                        title={`Filter by ${category.name} (${category.linkCount} links)`}
+                      >
+                        <Link to={to} onClick={onClose} className="flex items-center gap-3 flex-1 min-w-0 touch-manipulation group/link">
                           <div className={`p-1.5 sm:p-1 rounded flex-shrink-0 ${getColor()}`}>
                             {getIcon()}
                           </div>
-                          <span className="flex-1 text-left truncate text-base sm:text-sm font-medium">{category.name}</span>
+                          <span className="flex-1 text-left text-base sm:text-sm font-medium break-words hyphens-auto" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                            {category.name}
+                          </span>
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors flex-shrink-0 ${
                             active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700'
                           }`}>
