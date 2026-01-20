@@ -420,7 +420,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         onClick={handleCardClick}
       >
         {/* Main Row - Enhanced for mobile */}
-        <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4">
+        <div className="flex items-center gap-2 p-2.5 sm:p-4">
           {/* Checkbox with larger touch target */}
           <div className="flex items-center flex-shrink-0">
             <label 
@@ -453,7 +453,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               <img 
                 src={faviconUrl} 
                 alt="" 
-                className={`w-16 h-16 sm:w-14 sm:h-14 rounded-xl bg-slate-50 border-2 border-slate-200 p-1.5 shadow-sm ${
+                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-slate-50 border-2 border-slate-200 p-1.5 shadow-sm ${
                   link.thumbnail ? 'object-cover' : 'object-contain'
                 }`}
                 referrerPolicy="no-referrer-when-downgrade"
@@ -476,8 +476,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 }}
               />
             ) : (
-              <div className="w-16 h-16 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-200 flex items-center justify-center shadow-sm">
-                <Globe className="w-8 h-8 sm:w-7 sm:h-7 text-slate-400" />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-200 flex items-center justify-center shadow-sm">
+                <Globe className="w-6 h-6 sm:w-7 sm:h-7 text-slate-400" />
               </div>
             )}
           </div>
@@ -501,14 +501,14 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 {link.isArchived && <Archive className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-gray-400" />}
               </div>
             </div>
-            <p className="text-xs text-gray-500 truncate mt-0.5">{getCleanDomain(link.url) || link.url}</p>
-            
-            {/* Mobile: Show badges below domain */}
-            <div className="flex flex-wrap gap-1.5 mt-2 sm:hidden">
-              <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1 ${contentTypeInfo.color}`}>
-                <contentTypeInfo.icon className="w-3 h-3" />{contentTypeInfo.label}
-              </span>
-              {link.category && <span className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs font-medium rounded-full">{link.category}</span>}
+            {/* Domain and Category on same line for mobile */}
+            <div className="flex items-center gap-2 flex-wrap mt-0.5">
+              <p className="text-xs text-gray-500 truncate">{getCleanDomain(link.url) || link.url}</p>
+              {link.category && (
+                <span className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs font-medium rounded-full flex-shrink-0">
+                  {link.category}
+                </span>
+              )}
             </div>
           </div>
 
@@ -532,7 +532,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
 
           {/* Expand/Collapse - larger touch target */}
           <button 
-            className="flex-shrink-0 p-2 -m-1 rounded-lg hover:bg-gray-100 active:bg-gray-200 touch-manipulation"
+            className="flex-shrink-0 p-2 -m-1 rounded-lg hover:bg-gray-100 active:bg-gray-200 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
             onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded) }}
           >
             {isExpanded ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4 text-gray-500" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4 text-gray-400" />}
@@ -1007,7 +1007,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 />
               </label>
               <button 
-                className="p-1.5 rounded hover:bg-gray-100 active:bg-gray-200 touch-manipulation"
+                className="p-1.5 rounded hover:bg-gray-100 active:bg-gray-200 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
                 onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded) }}
               >
                 {isExpanded ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4 text-gray-500" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4 text-gray-400" />}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List, Download, Archive, Chrome, Tag, MessageSquare, Globe, File, Trash2, Star } from 'lucide-react'
+import { Plus, Grid, List, Download, Archive, Chrome, Tag, MessageSquare, Globe, File, Trash2, Star, Home, Search, Folder } from 'lucide-react'
 import { LinkedInLogo, XLogo, RedditLogo, WebIcon, PDFIcon, YouTubeLogo } from '../components/BrandLogos'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { useExtensionDetection } from '../hooks/useExtensionDetection'
@@ -1165,7 +1165,7 @@ export const Dashboard: React.FC = () => {
   const shouldAnimate = !prefersReducedMotion
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-indigo-50/10 pb-8 sm:pb-6 md:pb-0">
+    <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-indigo-50/10 ${isMobile ? 'pb-24' : 'pb-8 sm:pb-6 md:pb-0'}`}>
       <div className="max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6 lg:py-8">
         
         {/* Extension Install Banner - Removed per user request */}
@@ -1295,26 +1295,26 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Stats Row - Links count, Categories count, Favorites count */}
+            {/* Stats Row - Links count, Categories count, Favorites count - Enhanced as chips */}
             {filteredLinks.length > 0 && (() => {
               const uniqueCategories = new Set(filteredLinks.map(l => l.category).filter(Boolean))
               const favCount = filteredLinks.filter(l => l.isFavorite && !l.isArchived).length
               return (
-                <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-600 flex-wrap">
-                  <div className="flex items-center gap-1.5">
-                    <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
-                    <span className="font-medium text-gray-700">{filteredLinks.length}</span>
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs sm:text-sm">
+                    <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                    <span className="font-semibold text-gray-700">{filteredLinks.length}</span>
                     <span className="text-gray-500">{filteredLinks.length === 1 ? 'link' : 'links'}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
-                    <span className="font-medium text-blue-600">{uniqueCategories.size}</span>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-xs sm:text-sm">
+                    <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" />
+                    <span className="font-semibold text-blue-600">{uniqueCategories.size}</span>
                     <span className="text-gray-500">categories</span>
                   </div>
                   {favCount > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500" />
-                      <span className="font-medium text-amber-600">{favCount}</span>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full text-xs sm:text-sm">
+                      <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500 flex-shrink-0" />
+                      <span className="font-semibold text-amber-600">{favCount}</span>
                       <span className="text-gray-500">favorites</span>
                     </div>
                   )}
@@ -1923,6 +1923,72 @@ export const Dashboard: React.FC = () => {
         }}
         onCreate={handleCreateCollection}
       />
+
+      {/* Bottom Navigation Bar - Mobile Only */}
+      {isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg flex md:hidden">
+          <div className="flex items-center justify-around w-full h-16">
+            {/* Home Button */}
+            <button
+              onClick={() => {
+                navigate('/')
+                setSearchQuery('')
+                setActiveFilterId(null)
+                setSelectedCollectionId(null)
+                setCurrentCategoryName(null)
+                setFilters({
+                  category: '',
+                  dateRange: 'all_time',
+                  tags: [],
+                  contentType: ''
+                })
+              }}
+              className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50 transition-colors"
+              aria-label="Home"
+            >
+              <Home className="w-6 h-6 text-gray-600" />
+              <span className="text-xs text-gray-600 font-medium">Home</span>
+            </button>
+
+            {/* Search Button */}
+            <button
+              onClick={() => {
+                // Focus the search input
+                const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement
+                searchInput?.focus()
+              }}
+              className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50 transition-colors"
+              aria-label="Search"
+            >
+              <Search className="w-6 h-6 text-gray-600" />
+              <span className="text-xs text-gray-600 font-medium">Search</span>
+            </button>
+
+            {/* Folders Button */}
+            <button
+              onClick={() => {
+                setShowCreateCollectionModal(true)
+              }}
+              className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50 transition-colors"
+              aria-label="Folders"
+            >
+              <Folder className="w-6 h-6 text-gray-600" />
+              <span className="text-xs text-gray-600 font-medium">Folders</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Action Button - Mobile Only */}
+      {isMobile && (
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="fixed bottom-20 right-4 z-50 w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full shadow-lg shadow-blue-500/40 hover:shadow-xl hover:shadow-blue-500/50 active:scale-95 transition-all duration-200 flex items-center justify-center touch-manipulation md:hidden"
+          aria-label="Add new link"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      )}
     </div>
   )
 }
