@@ -720,7 +720,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                         Cancel
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2 text-center sm:text-left">
+                    <p className="hidden sm:block text-xs text-gray-500 mt-2 text-left">
                       Press <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">Esc</kbd> to cancel or <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">Enter</kbd> in tag field to add
                     </p>
                   </div>
@@ -1249,7 +1249,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                         Cancel
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2 text-center sm:text-left">
+                    <p className="hidden sm:block text-xs text-gray-500 mt-2 text-left">
                       Press <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">Esc</kbd> to cancel or <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">Enter</kbd> in tag field to add
                     </p>
                   </div>
