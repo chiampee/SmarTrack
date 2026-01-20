@@ -218,19 +218,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   }`}
                 >
                   <Clock className="w-4 h-4" />
-                  <span>Recent (Last 7 days)</span>
+                  <span className="font-medium text-base sm:text-sm">Recent (Last 7 days)</span>
                 </Link>
                 <Link
                   to="/?filter=archived"
                   onClick={onClose}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm ${
+                  className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm min-h-[44px] sm:min-h-0 touch-manipulation ${
                     isActivePath('/?filter=archived')
                       ? 'bg-gradient-to-r from-blue-50 via-blue-100/80 to-indigo-50 text-blue-700 border border-blue-200/80 shadow-md shadow-blue-500/10'
                       : 'text-slate-700 hover:bg-gradient-to-br hover:from-slate-50 hover:via-blue-50/20 hover:to-indigo-50/10'
                   }`}
                 >
                   <Archive className="w-4 h-4" />
-                  <span>Archived</span>
+                  <span className="font-medium text-base sm:text-sm">Archived</span>
                 </Link>
               </div>
               {/* My Projects */}
@@ -346,23 +346,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                     return (
                       <div 
                         key={`${category.id}-${index}-${category.linkCount}`} 
-                        className={`group flex items-center gap-2 px-2 sm:px-2.5 lg:px-3 py-3 sm:py-2 text-sm rounded-xl transition-colors min-h-[44px] sm:min-h-0 ${
+                        className={`group flex items-center gap-2 px-2 sm:px-2.5 lg:px-3 py-3 sm:py-2 rounded-xl text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 ${
                           active ? 'bg-gradient-to-r from-blue-50 via-blue-100/80 to-indigo-50 text-blue-700 border border-blue-200/80 shadow-md shadow-blue-500/10' : 'text-slate-700 hover:bg-gradient-to-br hover:from-slate-50 hover:via-blue-50/20 hover:to-indigo-50/10'
                         }`}
                         title={`Filter by ${category.name} (${category.linkCount} links)`}
                       >
-                        <Link to={to} onClick={onClose} className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-1 min-w-0 touch-manipulation group/link">
+                        <Link to={to} onClick={onClose} className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-1 min-w-0 touch-manipulation">
                           <div className={`p-1.5 sm:p-1 rounded flex-shrink-0 ${getColor()}`}>
                             {getIcon()}
                           </div>
                           <span className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium break-words hyphens-auto min-w-0" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                             {category.name}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors flex-shrink-0 ml-auto ${
-                            active ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600 group-hover:bg-blue-100 group-hover:text-blue-700'
-                          }`}>
-                            {category.linkCount}
-                          </span>
+                          {typeof category.linkCount === 'number' && (
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                              active ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600'
+                            }`}>
+                              {category.linkCount}
+                            </span>
+                          )}
                         </Link>
                         <button
                           aria-label="Rename category"
