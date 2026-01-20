@@ -138,9 +138,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
         />
       )}
 
-      {/* ✅ MOBILE RESPONSIVE: Sidebar with better mobile sizing */}
+      {/* ✅ MOBILE RESPONSIVE: Sidebar with better mobile sizing - wider on desktop */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-72 sm:w-64 bg-white/95 backdrop-blur-sm border-r border-gray-200/60 shadow-xl transform transition-transform duration-300 ${
+        className={`fixed top-0 left-0 z-50 h-full w-72 lg:w-80 xl:w-96 bg-white/95 backdrop-blur-sm border-r border-gray-200/60 shadow-xl transform transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -267,7 +267,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                         >
                           <Link to={to} onClick={onClose} className="flex items-center gap-3 flex-1 min-w-0 touch-manipulation">
                             <Library className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                            <span className="flex-1 text-left text-base sm:text-sm font-medium break-words hyphens-auto" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                            <span className="flex-1 text-left text-base sm:text-sm font-medium min-w-0" title={c.name}>
                               {c.name}
                             </span>
                             {typeof c.linkCount === 'number' && (
