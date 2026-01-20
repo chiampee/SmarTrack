@@ -311,29 +311,40 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   }
 
   /**
-   * 3-Tier Favicon Fallback System:
-   * Tier 1: Use link.favicon or link.iconUrl from database
-   * Tier 2: Generate favicon URL from domain using Google's service
-   * Tier 3: Fallback to Globe icon (handled via faviconError state)
+   * 4-Tier Image Fallback System (matching extension behavior):
+   * Tier 1: Use link.thumbnail (og:image - higher quality) from database
+   * Tier 2: Use link.favicon or link.iconUrl from database
+   * Tier 3: Generate favicon URL from domain using Google's service
+   * Tier 4: Fallback to Globe icon (handled via faviconError state)
    */
-  const getFaviconUrl = (url: string, favicon?: string | null, iconUrl?: string | null): string | null => {
-    // Tier 1: Check database favicon/iconUrl
+  const getFaviconUrl = (
+    url: string, 
+    thumbnail?: string | null,
+    favicon?: string | null, 
+    iconUrl?: string | null
+  ): string | null => {
+    // Tier 1: Check database thumbnail (og:image - often better quality)
+    if (thumbnail && typeof thumbnail === 'string' && thumbnail.startsWith('http')) {
+      return thumbnail
+    }
+    
+    // Tier 2: Check database favicon/iconUrl
     const dbFavicon = favicon || iconUrl
     if (dbFavicon && typeof dbFavicon === 'string' && dbFavicon.startsWith('http')) {
       return dbFavicon
     }
     
-    // Tier 2: Generate from domain
+    // Tier 3: Generate from domain
     const domain = getCleanDomain(url)
     if (domain) {
       return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`
     }
     
-    // No valid URL or domain, return null (Tier 3 fallback will show Globe icon)
+    // No valid URL or domain, return null (Tier 4 fallback will show Globe icon)
     return null
   }
 
-  const faviconUrl = getFaviconUrl(link.url, link.favicon, (link as any).iconUrl)
+  const faviconUrl = getFaviconUrl(link.url, link.thumbnail, link.favicon, (link as any).iconUrl)
   
   // Reset error state when favicon URL changes
   useEffect(() => {
@@ -405,18 +416,20 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             </label>
           </div>
 
-          {/* Favicon - 3-Tier Fallback System */}
+          {/* Favicon/Thumbnail - 4-Tier Fallback System */}
           <div className="flex-shrink-0">
             {faviconUrl && !faviconError ? (
               <img 
                 src={faviconUrl} 
                 alt="" 
-                className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg object-contain bg-slate-50 border border-slate-200 p-1"
+                className={`w-10 h-10 sm:w-8 sm:h-8 rounded-lg bg-slate-50 border border-slate-200 p-1 ${
+                  link.thumbnail ? 'object-cover' : 'object-contain'
+                }`}
                 referrerPolicy="no-referrer-when-downgrade"
                 crossOrigin="anonymous"
                 loading="lazy"
                 onError={() => {
-                  // Tier 3: Image failed to load, show Globe icon fallback
+                  // Tier 4: Image failed to load, show Globe icon fallback
                   setFaviconError(true)
                 }}
               />
@@ -912,12 +925,14 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 <img 
                   src={faviconUrl} 
                   alt="" 
-                  className="w-6 h-6 sm:w-5 sm:h-5 rounded object-contain bg-slate-50 border border-slate-200 p-0.5 flex-shrink-0"
+                  className={`w-6 h-6 sm:w-5 sm:h-5 rounded bg-slate-50 border border-slate-200 p-0.5 flex-shrink-0 ${
+                    link.thumbnail ? 'object-cover' : 'object-contain'
+                  }`}
                   referrerPolicy="no-referrer-when-downgrade"
                   crossOrigin="anonymous"
                   loading="lazy"
                   onError={() => {
-                    // Tier 3: Image failed to load, show Globe icon fallback
+                    // Tier 4: Image failed to load, show Globe icon fallback
                     setFaviconError(true)
                   }}
                 />
