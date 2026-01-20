@@ -427,6 +427,7 @@ export const useBackendApi = () => {
           
           // Try to check backend health asynchronously (don't block error handling)
           // Use a simple fetch without auth to check if backend is reachable
+          console.error(`[API ERROR] 🔍 Starting backend health check...`)
           const healthCheckController = new AbortController()
           const healthCheckTimeout = setTimeout(() => healthCheckController.abort(), 5000) // 5 second timeout
           
@@ -461,8 +462,18 @@ export const useBackendApi = () => {
           console.error(`  4. Browser extension/ad-blocker is blocking the request`)
           console.error(`  5. Network connectivity issue (despite browser reporting online)`)
           console.error(`  6. DNS resolution failure`)
-          console.error(`[API ERROR] 💡 Try: Check browser DevTools Network tab for more details`)
-          console.error(`[API ERROR] 💡 Look for: CORS errors, blocked requests, or connection refused`)
+          console.error(`[API ERROR] 💡 DIAGNOSTIC STEPS:`)
+          console.error(`[API ERROR]   1. Open DevTools (F12 or Cmd+Option+I)`)
+          console.error(`[API ERROR]   2. Go to Network tab`)
+          console.error(`[API ERROR]   3. Look for the failed request to: ${url}`)
+          console.error(`[API ERROR]   4. Check the Status column - what does it show?`)
+          console.error(`[API ERROR]      - (failed) = Connection refused / DNS error / Backend down`)
+          console.error(`[API ERROR]      - CORS error = Preflight failed (check Response headers)`)
+          console.error(`[API ERROR]      - (pending) = Request hanging (likely cold start)`)
+          console.error(`[API ERROR]   5. Click on the request to see details:`)
+          console.error(`[API ERROR]      - Headers tab: Check CORS headers`)
+          console.error(`[API ERROR]      - Response tab: See error message`)
+          console.error(`[API ERROR]      - Timing tab: See where it's stuck`)
         }
       }
       
