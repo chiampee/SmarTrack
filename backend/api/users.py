@@ -35,6 +35,7 @@ async def get_user_stats(
         this_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
         # Single aggregation for all counts
+        # ✅ SECURITY: Explicitly filter by userId in aggregation pipeline
         pipeline = [
             {"$match": {"userId": user_id}},
             {"$facet": {
@@ -56,8 +57,9 @@ async def get_user_stats(
         
         # Calculate actual storage used from links
         # Fetch only necessary fields for storage calculation
+        # ✅ SECURITY: Use build_user_filter for consistency and security
         all_links = await db.links.find(
-            {"userId": user_id},
+            build_user_filter(user_id),
             {"title": 1, "url": 1, "description": 1, "content": 1, "tags": 1, "_id": 0}
         ).to_list(10000)  # Increased limit for accurate calculation
         
