@@ -4,6 +4,8 @@ import { useAuth0 } from '@auth0/auth0-react'
 import { LoginPage } from './pages/LoginPage'
 import { FAQPage } from './pages/FAQPage'
 import { LegalCenterPage } from './pages/LegalCenterPage'
+import { PrivacyPage } from './pages/PrivacyPage'
+import { TermsPage } from './pages/TermsPage'
 import { DocsPage } from './pages/DocsPage'
 import { Dashboard } from './pages/Dashboard'
 import { MainPage } from './pages/MainPage'
@@ -38,8 +40,8 @@ function App() {
       <Routes>
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/legal" element={<LegalCenterPage />} />
-        <Route path="/privacy" element={<Navigate to="/legal" replace />} />
-        <Route path="/terms" element={<Navigate to="/legal" replace />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
         <Route path="/docs" element={<DocsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
@@ -63,6 +65,7 @@ function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/analytics" element={<AdminAnalytics />} />
             <Route path="/404" element={<NotFoundPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Layout>
       </CategoriesProvider>
