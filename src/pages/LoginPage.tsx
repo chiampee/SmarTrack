@@ -295,8 +295,10 @@ export const LoginPage = () => {
             <span className="whitespace-nowrap">Add to Chrome - It's Free</span>
           </button>
           <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 md:gap-8 text-xs sm:text-sm text-slate-500">
-            <a href="/legal" className="hover:text-slate-900 transition-colors touch-manipulation">Privacy Policy</a>
-            <a href="/legal" className="hover:text-slate-900 transition-colors touch-manipulation">Terms of Service</a>
+            <a href="/privacy" className="hover:text-slate-900 transition-colors touch-manipulation">Privacy Policy</a>
+            <a href="/terms" className="hover:text-slate-900 transition-colors touch-manipulation">Terms of Service</a>
+            <a href="/faq" className="hover:text-slate-900 transition-colors touch-manipulation">FAQ</a>
+            <a href="/docs" className="hover:text-slate-900 transition-colors touch-manipulation">Documentation</a>
             <a href="mailto:smart.track.appp@gmail.com" className="hover:text-slate-900 transition-colors touch-manipulation">Contact Support</a>
           </div>
           <p className="mt-6 sm:mt-8 text-[10px] sm:text-xs text-slate-400">© {new Date().getFullYear()} SmarTrack Intelligence. All rights reserved.</p>
