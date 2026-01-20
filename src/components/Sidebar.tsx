@@ -138,9 +138,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
         />
       )}
 
-      {/* ✅ MOBILE RESPONSIVE: Sidebar with better mobile sizing - wider on desktop */}
+      {/* ✅ MOBILE RESPONSIVE: Sidebar with better mobile sizing - wider on desktop to maximize space */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-72 lg:w-80 xl:w-96 bg-white/95 backdrop-blur-sm border-r border-gray-200/60 shadow-xl transform transition-transform duration-300 ${
+        className={`fixed top-0 left-0 z-50 h-full w-72 sm:w-64 lg:w-80 bg-white/95 backdrop-blur-sm border-r border-gray-200/60 shadow-xl transform transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -176,8 +176,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
             <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Navigation</h1>
           </div>
 
-          {/* ✅ MOBILE RESPONSIVE: Navigation with better touch targets */}
-          <nav className="flex-1 p-4 sm:p-6 space-y-1 sm:space-y-2 overflow-y-auto">
+          {/* ✅ MOBILE RESPONSIVE: Navigation with better touch targets - optimized padding for more space */}
+          <nav className="flex-1 p-3 sm:p-4 lg:p-5 space-y-1 sm:space-y-2 overflow-y-auto">
             {/* Main */}
             <Link
               to="/main"
@@ -258,16 +258,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       return (
                         <div 
                           key={c.id} 
-                          className={`group flex items-center gap-2 px-3 py-3 sm:py-2 rounded-lg text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 ${
+                          className={`group flex items-center gap-2 px-2 sm:px-2.5 lg:px-3 py-3 sm:py-2 rounded-lg text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 ${
                             active 
                               ? 'bg-blue-50 text-blue-700 border border-blue-200' 
                               : 'text-gray-700 hover:bg-gray-100'
                           }`}
                           title={`View collection: ${c.name} (${c.linkCount || 0} links)`}
                         >
-                          <Link to={to} onClick={onClose} className="flex items-center gap-3 flex-1 min-w-0 touch-manipulation">
+                          <Link to={to} onClick={onClose} className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-1 min-w-0 touch-manipulation">
                             <Library className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                            <span className="flex-1 text-left text-base sm:text-sm font-medium min-w-0" title={c.name}>
+                            <span className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium break-words hyphens-auto min-w-0" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                               {c.name}
                             </span>
                             {typeof c.linkCount === 'number' && (
@@ -346,19 +346,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                     return (
                       <div 
                         key={`${category.id}-${index}-${category.linkCount}`} 
-                        className={`group flex items-center gap-2 px-3 py-3 sm:py-2 text-sm rounded-lg transition-colors min-h-[44px] sm:min-h-0 ${
+                        className={`group flex items-center gap-2 px-2 sm:px-2.5 lg:px-3 py-3 sm:py-2 text-sm rounded-lg transition-colors min-h-[44px] sm:min-h-0 ${
                           active ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-gray-700 hover:bg-gray-100'
                         }`}
                         title={`Filter by ${category.name} (${category.linkCount} links)`}
                       >
-                        <Link to={to} onClick={onClose} className="flex items-center gap-3 flex-1 min-w-0 touch-manipulation group/link">
+                        <Link to={to} onClick={onClose} className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-1 min-w-0 touch-manipulation group/link">
                           <div className={`p-1.5 sm:p-1 rounded flex-shrink-0 ${getColor()}`}>
                             {getIcon()}
                           </div>
-                          <span className="flex-1 text-left text-base sm:text-sm font-medium break-words hyphens-auto" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                          <span className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium break-words hyphens-auto min-w-0" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                             {category.name}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors flex-shrink-0 ${
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors flex-shrink-0 ml-auto ${
                             active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700'
                           }`}>
                             {category.linkCount}
