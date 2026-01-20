@@ -447,13 +447,13 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             </label>
           </div>
 
-          {/* Favicon/Thumbnail - 4-Tier Fallback System */}
+          {/* Favicon/Thumbnail - 4-Tier Fallback System - Larger size for better visibility */}
           <div className="flex-shrink-0">
             {faviconUrl && !faviconError ? (
               <img 
                 src={faviconUrl} 
                 alt="" 
-                className={`w-10 h-10 sm:w-8 sm:h-8 rounded-lg bg-slate-50 border border-slate-200 p-1 ${
+                className={`w-16 h-16 sm:w-14 sm:h-14 rounded-xl bg-slate-50 border-2 border-slate-200 p-1.5 shadow-sm ${
                   link.thumbnail ? 'object-cover' : 'object-contain'
                 }`}
                 referrerPolicy="no-referrer-when-downgrade"
@@ -476,8 +476,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 }}
               />
             ) : (
-              <div className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center">
-                <Globe className="w-5 h-5 sm:w-4 sm:h-4 text-slate-400" />
+              <div className="w-16 h-16 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-200 flex items-center justify-center shadow-sm">
+                <Globe className="w-8 h-8 sm:w-7 sm:h-7 text-slate-400" />
               </div>
             )}
           </div>
@@ -947,7 +947,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               alt="Post thumbnail" 
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               referrerPolicy="no-referrer-when-downgrade"
-              crossOrigin="anonymous"
               loading="lazy"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
@@ -967,7 +966,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 <img 
                   src={faviconUrl} 
                   alt="" 
-                  className={`w-6 h-6 sm:w-5 sm:h-5 rounded bg-slate-50 border border-slate-200 p-0.5 flex-shrink-0 ${
+                  className={`w-8 h-8 sm:w-7 sm:h-7 rounded-lg bg-slate-50 border-2 border-slate-200 p-1 flex-shrink-0 shadow-sm ${
                     link.thumbnail ? 'object-cover' : 'object-contain'
                   }`}
                   referrerPolicy="no-referrer-when-downgrade"
@@ -978,8 +977,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   }}
                 />
               ) : (
-                <div className="w-6 h-6 sm:w-5 sm:h-5 rounded bg-slate-200 border border-slate-300 flex items-center justify-center flex-shrink-0">
-                  <Globe className="w-4 h-4 sm:w-3 sm:h-3 text-slate-400" />
+                <div className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg bg-slate-200 border-2 border-slate-300 flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <Globe className="w-5 h-5 sm:w-4 sm:h-4 text-slate-400" />
                 </div>
               )}
               <span className="text-sm sm:text-xs text-gray-500 truncate">{getCleanDomain(link.url) || link.url}</span>
