@@ -172,6 +172,16 @@ async def get_links(
             # Ensure tags is always a list (not None)
             if link.get("tags") is None:
                 link["tags"] = []
+            
+            # Auto-generate favicon if missing (for existing links)
+            if not link.get("favicon") and link.get("url"):
+                try:
+                    parsed_url = urlparse(link["url"])
+                    domain = parsed_url.netloc
+                    if domain:
+                        link["favicon"] = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+                except:
+                    pass
         
         return {
             "links": normalized_links,
@@ -232,6 +242,17 @@ async def search_links(
         # Normalize documents
         normalized_links = normalize_documents(links)
         
+        # Auto-generate favicons if missing
+        for link in normalized_links:
+            if not link.get("favicon") and link.get("url"):
+                try:
+                    parsed_url = urlparse(link["url"])
+                    domain = parsed_url.netloc
+                    if domain:
+                        link["favicon"] = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+                except:
+                    pass
+        
         return {"links": normalized_links}
         
     except HTTPException:
@@ -258,8 +279,20 @@ async def get_link(
         if not link:
             raise NotFoundError("Link", link_id)
         
-        # Normalize and return
-        return normalize_document(link)
+        # Normalize document
+        normalized_link = normalize_document(link)
+        
+        # Auto-generate favicon if missing
+        if not normalized_link.get("favicon") and normalized_link.get("url"):
+            try:
+                parsed_url = urlparse(normalized_link["url"])
+                domain = parsed_url.netloc
+                if domain:
+                    normalized_link["favicon"] = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+            except:
+                pass
+        
+        return normalized_link
         
     except HTTPException:
         raise
@@ -439,6 +472,16 @@ async def create_link(
             except Exception:
                 validated_favicon = None
         
+        # Auto-generate favicon URL if not provided (fast, non-blocking)
+        if not validated_favicon:
+            try:
+                parsed_url = urlparse(validated_url)
+                domain = parsed_url.netloc
+                # Use Google's favicon service as reliable fallback
+                validated_favicon = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+            except:
+                validated_favicon = None
+        
         # All validations passed - create the link
         link_doc = {
             "userId": user_id,
@@ -592,7 +635,21 @@ async def update_link(
         link = await db.links.find_one(build_user_filter(user_id, {"_id": object_id}))
         if not link:
             raise NotFoundError("Link", link_id)
-        return normalize_document(link)
+        
+        # Normalize document
+        normalized_link = normalize_document(link)
+        
+        # Auto-generate favicon if missing
+        if not normalized_link.get("favicon") and normalized_link.get("url"):
+            try:
+                parsed_url = urlparse(normalized_link["url"])
+                domain = parsed_url.netloc
+                if domain:
+                    normalized_link["favicon"] = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+            except:
+                pass
+        
+        return normalized_link
         
     except HTTPException:
         raise

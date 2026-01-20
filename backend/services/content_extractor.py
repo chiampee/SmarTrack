@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from typing import Dict, Optional
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import urlparse, urljoin
 
 # Use thread pool for blocking I/O operations
 executor = ThreadPoolExecutor(max_workers=5)
@@ -33,8 +34,49 @@ async def fetch_and_extract_content(url: str) -> Dict[str, Optional[str]]:
             # Parse HTML with BeautifulSoup
             soup = BeautifulSoup(response.text, 'html.parser')
             
-            # Remove script and style elements
-            for script in soup(["script", "style", "meta", "link"]):
+            # Extract favicon before removing link elements
+            favicon_url = None
+            # Try to find favicon in various ways
+            favicon_link = soup.find('link', rel=lambda x: x and ('icon' in x.lower() or 'shortcut' in x.lower()))
+            if favicon_link and favicon_link.get('href'):
+                favicon_href = favicon_link.get('href')
+                # Convert relative URLs to absolute
+                if favicon_href.startswith('//'):
+                    parsed_url = urlparse(url)
+                    favicon_url = f"{parsed_url.scheme}:{favicon_href}"
+                elif favicon_href.startswith('/'):
+                    parsed_url = urlparse(url)
+                    favicon_url = f"{parsed_url.scheme}://{parsed_url.netloc}{favicon_href}"
+                elif not favicon_href.startswith('http'):
+                    favicon_url = urljoin(url, favicon_href)
+                else:
+                    favicon_url = favicon_href
+            
+            # If no favicon found in HTML, try common favicon locations
+            if not favicon_url:
+                parsed_url = urlparse(url)
+                base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+                # Try common favicon paths
+                common_favicon_paths = ['/favicon.ico', '/favicon.png', '/apple-touch-icon.png']
+                for path in common_favicon_paths:
+                    try:
+                        test_url = base_url + path
+                        test_response = requests.head(test_url, headers=headers, timeout=3, allow_redirects=True)
+                        if test_response.status_code == 200:
+                            favicon_url = test_url
+                            break
+                    except:
+                        continue
+            
+            # Fallback to Google's favicon service if still no favicon
+            if not favicon_url:
+                parsed_url = urlparse(url)
+                domain = parsed_url.netloc
+                # Use Google's favicon service as fallback
+                favicon_url = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+            
+            # Remove script and style elements (but keep link for now if needed)
+            for script in soup(["script", "style"]):
                 script.decompose()
             
             # Extract title
@@ -64,23 +106,42 @@ async def fetch_and_extract_content(url: str) -> Dict[str, Optional[str]]:
                 'title': title,
                 'content': text_content,
                 'description': description[:500] if description else None,
+                'favicon': favicon_url,
                 'success': True,
                 'error': None
             }
             
         except requests.RequestException as e:
+            # Even if fetch fails, try to generate favicon from domain
+            favicon_url = None
+            try:
+                parsed_url = urlparse(url)
+                domain = parsed_url.netloc
+                favicon_url = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+            except:
+                pass
             return {
                 'title': None,
                 'content': None,
                 'description': None,
+                'favicon': favicon_url,
                 'success': False,
                 'error': f"Failed to fetch URL: {str(e)}"
             }
         except Exception as e:
+            # Even if extraction fails, try to generate favicon from domain
+            favicon_url = None
+            try:
+                parsed_url = urlparse(url)
+                domain = parsed_url.netloc
+                favicon_url = f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
+            except:
+                pass
             return {
                 'title': None,
                 'content': None,
                 'description': None,
+                'favicon': favicon_url,
                 'success': False,
                 'error': f"Failed to extract content: {str(e)}"
             }
