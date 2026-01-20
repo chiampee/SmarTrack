@@ -167,9 +167,41 @@ export const Dashboard: React.FC = () => {
           console.log('[Perf] Updated cache with fresh data')
         }
         
-        // Update categories with link counts
+        // Update categories with link counts (for sidebar)
         const computedCategories = computeCategories(data || [])
         setCategories(computedCategories)
+        
+        // ✅ ENHANCED: Also update categories state with user-created categories
+        // This ensures LinkCard dropdown shows all categories including user-created ones
+        const userCreatedCategories = new Set<string>()
+        ;(data || []).forEach(link => {
+          if (link.category && link.category.trim()) {
+            userCreatedCategories.add(link.category.trim())
+          }
+        })
+        
+        // Fetch predefined categories and combine with user-created ones
+        let predefinedCats: Category[] = []
+        try {
+          predefinedCats = await makeRequest<Category[]>('/api/types')
+        } catch (error) {
+          console.warn('[Dashboard] Failed to fetch predefined categories')
+        }
+        
+        const userCategories: Category[] = Array.from(userCreatedCategories)
+          .filter(catName => {
+            const predefinedNames = predefinedCats.map(c => c.name.toLowerCase())
+            return !predefinedNames.includes(catName.toLowerCase())
+          })
+          .map(catName => ({
+            id: catName.toLowerCase().replace(/\s+/g, '-'),
+            name: catName,
+            color: '#6B7280',
+            icon: 'folder',
+            isDefault: false
+          }))
+        
+        setCategoriesState([...predefinedCats, ...userCategories])
       } catch (error) {
         logger.error('Failed to fetch links', { component: 'Dashboard', action: 'fetchLinks' }, error as Error)
         // Silently fail - already handled in getLinks
@@ -420,15 +452,41 @@ export const Dashboard: React.FC = () => {
         }
         
         // ✅ Sequential fetch instead of parallel to reduce concurrent requests
-        // Fetch categories first (lighter request)
-        let cats: Category[] = []
+        // Fetch predefined categories first (lighter request)
+        let predefinedCats: Category[] = []
         try {
-          cats = await makeRequest<Category[]>('/api/types')
-          setCategoriesState(cats || [])
+          predefinedCats = await makeRequest<Category[]>('/api/types')
         } catch (error) {
-          console.warn('[Dashboard] Failed to fetch categories, using empty array')
-          setCategoriesState([])
+          console.warn('[Dashboard] Failed to fetch predefined categories, using empty array')
         }
+        
+        // ✅ ENHANCED: Combine predefined categories with user-created categories from links
+        // Extract unique categories from links (user-created categories)
+        const userCreatedCategories = new Set<string>()
+        links.forEach(link => {
+          if (link.category && link.category.trim()) {
+            userCreatedCategories.add(link.category.trim())
+          }
+        })
+        
+        // Create Category objects for user-created categories
+        const userCategories: Category[] = Array.from(userCreatedCategories)
+          .filter(catName => {
+            // Exclude predefined categories (case-insensitive)
+            const predefinedNames = predefinedCats.map(c => c.name.toLowerCase())
+            return !predefinedNames.includes(catName.toLowerCase())
+          })
+          .map(catName => ({
+            id: catName.toLowerCase().replace(/\s+/g, '-'),
+            name: catName,
+            color: '#6B7280', // Default gray color for user-created categories
+            icon: 'folder',
+            isDefault: false
+          }))
+        
+        // Combine predefined and user-created categories
+        const allCategories = [...predefinedCats, ...userCategories]
+        setCategoriesState(allCategories)
         
         // Then fetch collections (with fallback to cache)
         try {
@@ -465,6 +523,50 @@ export const Dashboard: React.FC = () => {
     }
     fetchMeta()
   }, [isAuthenticated, makeRequest, backendApi])
+
+  // ✅ ENHANCED: Update categories when links change (to include newly created categories)
+  useEffect(() => {
+    if (links.length === 0) return
+    
+    const updateCategoriesFromLinks = async () => {
+      // Extract user-created categories from links
+      const userCreatedCategories = new Set<string>()
+      links.forEach(link => {
+        if (link.category && link.category.trim()) {
+          userCreatedCategories.add(link.category.trim())
+        }
+      })
+      
+      // Fetch predefined categories
+      let predefinedCats: Category[] = []
+      try {
+        predefinedCats = await makeRequest<Category[]>('/api/types')
+      } catch (error) {
+        console.warn('[Dashboard] Failed to fetch predefined categories')
+      }
+      
+      // Create Category objects for user-created categories
+      const userCategories: Category[] = Array.from(userCreatedCategories)
+        .filter(catName => {
+          // Exclude predefined categories (case-insensitive)
+          const predefinedNames = predefinedCats.map(c => c.name.toLowerCase())
+          return !predefinedNames.includes(catName.toLowerCase())
+        })
+        .map(catName => ({
+          id: catName.toLowerCase().replace(/\s+/g, '-'),
+          name: catName,
+          color: '#6B7280', // Default gray color for user-created categories
+          icon: 'folder',
+          isDefault: false
+        }))
+      
+      // Combine predefined and user-created categories
+      const allCategories = [...predefinedCats, ...userCategories]
+      setCategoriesState(allCategories)
+    }
+    
+    updateCategoriesFromLinks()
+  }, [links, makeRequest])
 
   // Filter links based on search and filters
   useEffect(() => {
