@@ -167,7 +167,20 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
 
         // For other errors, assume not admin for security
-        console.error('Failed to check admin status:', error)
+        // Better error logging - avoid [object Object] in console
+        if (error && typeof error === 'object' && 'type' in error) {
+          const err = error as { type: string; message: string; originalError?: unknown }
+          console.error('Failed to check admin status:', err.type, '-', err.message)
+          if (err.originalError) {
+            console.error('Original error:', err.originalError instanceof Error ? err.originalError.message : String(err.originalError))
+          }
+        } else {
+          const errorMessage = error instanceof Error ? error.message : String(error)
+          console.error('Failed to check admin status:', errorMessage)
+          if (error instanceof Error && error.stack) {
+            console.error('Error stack:', error.stack)
+          }
+        }
         setIsAdmin(false)
         setIsChecking(false)
         // ✅ Only redirect if trying to access admin route

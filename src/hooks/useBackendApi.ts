@@ -456,8 +456,20 @@ export const useBackendApi = () => {
       }
       return result
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error('Error fetching user stats:', errorMessage, error)
+      // Better error logging - avoid [object Object] in console
+      if (error && typeof error === 'object' && 'type' in error) {
+        const err = error as { type: string; message: string; originalError?: unknown }
+        console.error('Error fetching user stats:', err.type, '-', err.message)
+        if (err.originalError) {
+          console.error('Original error:', err.originalError instanceof Error ? err.originalError.message : String(err.originalError))
+        }
+      } else {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.error('Error fetching user stats:', errorMessage)
+        if (error instanceof Error && error.stack) {
+          console.error('Error stack:', error.stack)
+        }
+      }
       // Return fallback on error
       return {
         linksUsed: 0,
@@ -490,8 +502,20 @@ export const useBackendApi = () => {
       
       return []
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error('Error fetching links:', errorMessage, error)
+      // Better error logging - avoid [object Object] in console
+      if (error && typeof error === 'object' && 'type' in error) {
+        const err = error as { type: string; message: string; originalError?: unknown }
+        console.error('Error fetching links:', err.type, '-', err.message)
+        if (err.originalError) {
+          console.error('Original error:', err.originalError instanceof Error ? err.originalError.message : String(err.originalError))
+        }
+      } else {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.error('Error fetching links:', errorMessage)
+        if (error instanceof Error) {
+          console.error('Error stack:', error.stack)
+        }
+      }
       // Return empty array on error instead of throwing
       return []
     }
