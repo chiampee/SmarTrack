@@ -1,4 +1,4 @@
-import React, { useState, memo } from 'react'
+import React, { useState, memo, useEffect, useRef } from 'react'
 import { logger } from '../utils/logger'
 import { 
   ExternalLink, 
@@ -35,6 +35,7 @@ interface LinkCardProps {
   onAction: (linkId: string, action: string, data?: any) => void
   collections?: Collection[]
   categories?: Category[]
+  allTags?: string[] // All existing tags from all links for suggestions
   onCardClick?: () => void
 }
 
@@ -46,6 +47,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   onAction,
   collections = [],
   categories = [],
+  allTags = [],
   onCardClick
 }) => {
   // #region agent log
@@ -66,6 +68,9 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   const [newTag, setNewTag] = useState('')
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false)
+  const tagInputRef = useRef<HTMLInputElement>(null)
+  const tagSuggestionsRef = useRef<HTMLDivElement>(null)
 
   const handleAction = (action: string, data?: any) => {
     onAction(link.id, action, data)
@@ -103,20 +108,50 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     setIsEditing(false)
   }
 
-  const addTag = () => {
-    if (newTag.trim()) {
-      const currentTags = editTags ? editTags.split(',').map(t => t.trim()).filter(t => t) : []
-      if (!currentTags.includes(newTag.trim())) {
-        setEditTags([...currentTags, newTag.trim()].join(', '))
-      }
+  // Get current tags array
+  const currentTags = editTags.split(',').map(t => t.trim()).filter(t => t)
+  
+  // Filter tag suggestions based on input and exclude already added tags
+  const tagSuggestions = newTag.trim()
+    ? allTags
+        .filter(tag => 
+          tag.toLowerCase().includes(newTag.toLowerCase()) && 
+          !currentTags.includes(tag)
+        )
+        .slice(0, 8)
+    : allTags
+        .filter(tag => !currentTags.includes(tag))
+        .slice(0, 8)
+
+  const addTag = (tagToAdd?: string) => {
+    const tag = tagToAdd || newTag.trim()
+    if (tag && !currentTags.includes(tag)) {
+      setEditTags([...currentTags, tag].join(', '))
       setNewTag('')
+      setShowTagSuggestions(false)
     }
   }
 
   const removeTag = (tagToRemove: string) => {
-    const currentTags = editTags.split(',').map(t => t.trim()).filter(t => t && t !== tagToRemove)
-    setEditTags(currentTags.join(', '))
+    const updatedTags = currentTags.filter(t => t !== tagToRemove)
+    setEditTags(updatedTags.join(', '))
   }
+  
+  // Close tag suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        tagInputRef.current &&
+        !tagInputRef.current.contains(event.target as Node) &&
+        tagSuggestionsRef.current &&
+        !tagSuggestionsRef.current.contains(event.target as Node)
+      ) {
+        setShowTagSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Toggle accordion when clicking on the card (except on interactive elements)
   const handleCardClick = (e: React.MouseEvent) => {
@@ -275,8 +310,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   }
 
   const contentTypeInfo = getContentTypeInfo(link.contentType)
-
-  const currentTags = editTags.split(',').map(t => t.trim()).filter(t => t)
 
   // ============ LIST VIEW ============
   if (viewMode === 'list') {
@@ -522,18 +555,84 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                         </span>
                       ))}
                     </div>
-                    <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        value={newTag} 
-                        onChange={(e) => setNewTag(e.target.value)} 
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }} 
-                        className="flex-1 px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                        placeholder="Add tag..." 
-                      />
-                      <button onClick={addTag} className="px-4 py-3 sm:py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 rounded-lg touch-manipulation">
-                        <Plus className="w-5 h-5 sm:w-4 sm:h-4" />
-                      </button>
+                    <div className="relative">
+                      <div className="flex gap-2">
+                        <div className="flex-1 relative">
+                          <input 
+                            ref={tagInputRef}
+                            type="text" 
+                            value={newTag} 
+                            onChange={(e) => {
+                              setNewTag(e.target.value)
+                              setShowTagSuggestions(true)
+                            }}
+                            onFocus={() => setShowTagSuggestions(true)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                if (tagSuggestions.length > 0) {
+                                  addTag(tagSuggestions[0])
+                                } else {
+                                  addTag()
+                                }
+                              } else if (e.key === 'Escape') {
+                                setShowTagSuggestions(false)
+                              }
+                            }}
+                            className="w-full px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Add tag..." 
+                          />
+                          {/* Tag Suggestions Dropdown */}
+                          {showTagSuggestions && tagSuggestions.length > 0 && (
+                            <div
+                              ref={tagSuggestionsRef}
+                              className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                            >
+                              {tagSuggestions.map((suggestion) => (
+                                <button
+                                  key={suggestion}
+                                  type="button"
+                                  onClick={() => addTag(suggestion)}
+                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors first:rounded-t-lg last:rounded-b-lg flex items-center gap-2"
+                                >
+                                  <Tag className="w-3.5 h-3.5" />
+                                  {suggestion}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {/* Show message when typing new tag */}
+                          {showTagSuggestions && newTag.trim() && tagSuggestions.length === 0 && (
+                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm text-gray-500">
+                              Press Enter to add "{newTag.trim()}"
+                            </div>
+                          )}
+                        </div>
+                        <button onClick={() => addTag()} className="px-4 py-3 sm:py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 rounded-lg touch-manipulation">
+                          <Plus className="w-5 h-5 sm:w-4 sm:h-4" />
+                        </button>
+                      </div>
+                      {/* Show existing tags as quick-add buttons when input is empty */}
+                      {!newTag.trim() && allTags.length > 0 && currentTags.length < allTags.length && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-500 mb-1.5">Quick add:</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {allTags
+                              .filter(tag => !currentTags.includes(tag))
+                              .slice(0, 10)
+                              .map((tag) => (
+                                <button
+                                  key={tag}
+                                  type="button"
+                                  onClick={() => addTag(tag)}
+                                  className="px-2.5 py-1 text-xs text-gray-600 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 border border-gray-200 rounded-md transition-colors"
+                                >
+                                  + {tag}
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -844,18 +943,84 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                       </span>
                     ))}
                   </div>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      value={newTag} 
-                      onChange={(e) => setNewTag(e.target.value)} 
-                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }} 
-                      className="flex-1 px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500" 
-                      placeholder="Add tag..." 
-                    />
-                    <button onClick={addTag} className="px-4 py-3 sm:py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 rounded-lg touch-manipulation">
-                      <Plus className="w-5 h-5 sm:w-4 sm:h-4" />
-                    </button>
+                  <div className="relative">
+                    <div className="flex gap-2">
+                      <div className="flex-1 relative">
+                        <input 
+                          ref={tagInputRef}
+                          type="text" 
+                          value={newTag} 
+                          onChange={(e) => {
+                            setNewTag(e.target.value)
+                            setShowTagSuggestions(true)
+                          }}
+                          onFocus={() => setShowTagSuggestions(true)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              if (tagSuggestions.length > 0) {
+                                addTag(tagSuggestions[0])
+                              } else {
+                                addTag()
+                              }
+                            } else if (e.key === 'Escape') {
+                              setShowTagSuggestions(false)
+                            }
+                          }}
+                          className="w-full px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                          placeholder="Add tag..." 
+                        />
+                        {/* Tag Suggestions Dropdown */}
+                        {showTagSuggestions && tagSuggestions.length > 0 && (
+                          <div
+                            ref={tagSuggestionsRef}
+                            className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                          >
+                            {tagSuggestions.map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => addTag(suggestion)}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors first:rounded-t-lg last:rounded-b-lg flex items-center gap-2"
+                              >
+                                <Tag className="w-3.5 h-3.5" />
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {/* Show message when typing new tag */}
+                        {showTagSuggestions && newTag.trim() && tagSuggestions.length === 0 && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm text-gray-500">
+                            Press Enter to add "{newTag.trim()}"
+                          </div>
+                        )}
+                      </div>
+                      <button onClick={() => addTag()} className="px-4 py-3 sm:py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 rounded-lg touch-manipulation">
+                        <Plus className="w-5 h-5 sm:w-4 sm:h-4" />
+                      </button>
+                    </div>
+                    {/* Show existing tags as quick-add buttons when input is empty */}
+                    {!newTag.trim() && allTags.length > 0 && currentTags.length < allTags.length && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-500 mb-1.5">Quick add:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {allTags
+                            .filter(tag => !currentTags.includes(tag))
+                            .slice(0, 10)
+                            .map((tag) => (
+                              <button
+                                key={tag}
+                                type="button"
+                                onClick={() => addTag(tag)}
+                                className="px-2.5 py-1 text-xs text-gray-600 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 border border-gray-200 rounded-md transition-colors"
+                              >
+                                + {tag}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -49,6 +49,11 @@ export const Dashboard: React.FC = () => {
   const { computeCategories, setCategories } = useCategories()
   const [collections, setCollections] = useState<Collection[]>([])
   const [categories, setCategoriesState] = useState<Category[]>([])
+  
+  // Extract all unique tags from all links for suggestions
+  const allTags = Array.from(new Set(
+    links.flatMap(link => link.tags || [])
+  )).sort()
   const location = useLocation()
   const navigate = useNavigate()
   const [currentCategoryName, setCurrentCategoryName] = useState<string | null>(null)
@@ -1770,6 +1775,7 @@ export const Dashboard: React.FC = () => {
                                   onAction={handleLinkAction}
                                   collections={collections}
                                   categories={categories}
+                                  allTags={allTags}
                                   onCardClick={() => setEditingLink(link)}
                                 />
                               </motion.div>
