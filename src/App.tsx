@@ -16,7 +16,6 @@ import { Layout } from './components/Layout'
 import { LoadingSpinner } from './components/LoadingSpinner'
 import { CategoriesProvider } from './context/CategoriesContext'
 import { AdminProvider } from './context/AdminContext'
-import { Navigate } from 'react-router-dom'
 
 // Public routes accessible without authentication
 const publicRoutes = ['/faq', '/privacy', '/terms', '/legal', '/docs']
