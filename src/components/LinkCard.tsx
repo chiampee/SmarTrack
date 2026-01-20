@@ -483,33 +483,25 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
           </div>
 
           {/* Title & Domain - Full width from start to end */}
-          <div className="flex-1 min-w-0 pr-1">
-            {/* Title - Full width from start to end, icons moved below on mobile */}
-            <div className="flex items-start gap-2 mb-1">
-              <h3 
-                data-link-title
-                onClick={(e) => {
-                  handleLinkClick(e);
-                }}
-                className="font-medium text-blue-600 hover:text-blue-800 active:text-blue-900 hover:underline text-base sm:text-sm cursor-pointer flex-1 min-w-0 break-words touch-manipulation"
-                title={link.title}
-                style={{ 
-                  display: '-webkit-box',
-                  WebkitLineClamp: 1,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  wordBreak: 'break-word'
-                }}
-              >
-                {link.title}
-              </h3>
-              <div className="flex items-center gap-1 flex-shrink-0 pt-0.5">
-                {link.description && <span title="Has notes"><StickyNote className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-amber-400" /></span>}
-                {link.isFavorite && <Star className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-amber-400 fill-current" />}
-                {link.isArchived && <Archive className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-gray-400" />}
-              </div>
-            </div>
-            {/* Domain and Category on same line for mobile */}
+          <div className="flex-1 min-w-0">
+            {/* Title - Full width from start to end, spanning entire available space */}
+            <h3 
+              data-link-title
+              onClick={(e) => {
+                handleLinkClick(e);
+              }}
+              className="font-medium text-blue-600 hover:text-blue-800 active:text-blue-900 hover:underline text-base sm:text-sm cursor-pointer w-full mb-1 touch-manipulation"
+              style={{ 
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: 'block'
+              }}
+              title={link.title}
+            >
+              {link.title}
+            </h3>
+            {/* Domain, Category, and Icons row */}
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
               <p className="text-xs text-gray-500 truncate font-semibold">{getCleanDomain(link.url) || link.url}</p>
               {link.category && (
@@ -517,8 +509,14 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   {link.category}
                 </span>
               )}
+              {/* Icons moved here */}
+              <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
+                {link.description && <span title="Has notes"><StickyNote className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-amber-400" /></span>}
+                {link.isFavorite && <Star className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-amber-400 fill-current" />}
+                {link.isArchived && <Archive className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-gray-400" />}
+              </div>
               {/* Date display on desktop */}
-              <span className="hidden md:flex items-center gap-1 text-xs text-gray-400 ml-auto">
+              <span className="hidden md:flex items-center gap-1 text-xs text-gray-400">
                 <Clock className="w-3 h-3" />
                 {formatDate(link.createdAt)}
               </span>
