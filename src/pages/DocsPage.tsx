@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { motion } from 'framer-motion'
@@ -937,10 +937,50 @@ const ArticleContent: React.FC<{ content: string }> = ({ content }) => {
 export const DocsPage: React.FC = () => {
   const navigate = useNavigate()
   const { loginWithRedirect } = useAuth0()
-  const [activeSection, setActiveSection] = useState(docSections[0].id)
-  const [activeArticle, setActiveArticle] = useState(0)
+  const [activeSection, setActiveSection] = useState<string | null>(null)
 
-  const currentSection = docSections.find(s => s.id === activeSection) || docSections[0]
+  // Scroll to section when clicked in sidebar
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(`section-${sectionId}`)
+    if (element) {
+      const offset = 100 // Account for sticky header
+      const elementPosition = element.getBoundingClientRect().top
+      const offsetPosition = elementPosition + window.pageYOffset - offset
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      })
+      setActiveSection(sectionId)
+    }
+  }
+
+  // Track which section is in view for sidebar highlighting
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = docSections.map(s => ({
+        id: s.id,
+        element: document.getElementById(`section-${s.id}`)
+      }))
+
+      const scrollPosition = window.scrollY + 150
+
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const section = sections[i]
+        if (section.element) {
+          const sectionTop = section.element.offsetTop
+          if (scrollPosition >= sectionTop) {
+            setActiveSection(section.id)
+            break
+          }
+        }
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    handleScroll() // Initial check
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const colorClasses: Record<string, { bg: string; text: string; border: string; hover: string }> = {
     blue: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200', hover: 'hover:bg-blue-100' },
@@ -1018,7 +1058,7 @@ export const DocsPage: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* Mobile Section Selector */}
+        {/* Mobile Section Selector - Scroll Navigation */}
         <div className="lg:hidden mb-6">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
             {docSections.map((section) => {
@@ -1029,10 +1069,7 @@ export const DocsPage: React.FC = () => {
               return (
                 <button
                   key={section.id}
-                  onClick={() => {
-                    setActiveSection(section.id)
-                    setActiveArticle(0)
-                  }}
+                  onClick={() => scrollToSection(section.id)}
                   className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                     isActive 
                       ? `${colors.bg} ${colors.text} border ${colors.border}` 
@@ -1071,10 +1108,7 @@ export const DocsPage: React.FC = () => {
                     <div key={section.id} className="space-y-1">
                       {/* Section Header */}
                       <button
-                        onClick={() => {
-                          setActiveSection(section.id)
-                          setActiveArticle(0)
-                        }}
+                        onClick={() => scrollToSection(section.id)}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all group ${
                           isActive 
                             ? 'bg-blue-50 text-blue-700' 
@@ -1091,20 +1125,27 @@ export const DocsPage: React.FC = () => {
                         </div>
                       </button>
                       
-                      {/* Articles within Section */}
-                      {isActive && section.articles.length > 0 && (
+                      {/* Articles within Section - Scroll Navigation */}
+                      {section.articles.length > 0 && (
                         <div className="ml-7 space-y-0.5 border-l-2 border-slate-200 pl-4">
                           {section.articles.map((article, articleIndex) => {
-                            const isArticleActive = activeArticle === articleIndex
                             return (
                               <button
                                 key={articleIndex}
-                                onClick={() => setActiveArticle(articleIndex)}
-                                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all ${
-                                  isArticleActive
-                                    ? 'bg-blue-100 text-blue-700 font-medium'
-                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                                }`}
+                                onClick={() => {
+                                  const articleId = `article-${section.id}-${articleIndex}`
+                                  const element = document.getElementById(articleId)
+                                  if (element) {
+                                    const offset = 100
+                                    const elementPosition = element.getBoundingClientRect().top
+                                    const offsetPosition = elementPosition + window.pageYOffset - offset
+                                    window.scrollTo({
+                                      top: offsetPosition,
+                                      behavior: 'smooth'
+                                    })
+                                  }
+                                }}
+                                className="w-full text-left px-3 py-2 rounded-md text-sm transition-all text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                               >
                                 {article.title}
                               </button>
@@ -1119,7 +1160,7 @@ export const DocsPage: React.FC = () => {
             </div>
           </motion.aside>
 
-          {/* Main Content */}
+          {/* Main Content - All Sections Scrollable */}
           <motion.main
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1136,59 +1177,57 @@ export const DocsPage: React.FC = () => {
               </button>
               <span>/</span>
               <span className="text-slate-900 font-medium">Documentation</span>
-              <span>/</span>
-              <span className="text-slate-700">{currentSection.title}</span>
             </nav>
 
-            {/* Article Header */}
-            <div className="mb-8">
-              <div className="flex items-start gap-4 mb-6">
-                <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 ${colorClasses[currentSection.color].bg} ${colorClasses[currentSection.color].text}`}>
-                  <currentSection.icon className="w-7 h-7" />
+            {/* All Sections and Articles - Continuous Scroll */}
+            <div className="space-y-16">
+              {docSections.map((section, sectionIndex) => (
+                <div
+                  key={section.id}
+                  id={`section-${section.id}`}
+                  className="scroll-mt-24"
+                >
+                  {/* Section Header */}
+                  <div className="mb-8">
+                    <div className="flex items-start gap-4 mb-6">
+                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 ${colorClasses[section.color].bg} ${colorClasses[section.color].text}`}>
+                        <section.icon className="w-7 h-7" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                          {section.title}
+                        </h2>
+                        <p className="text-slate-600 text-base">
+                          {section.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* All Articles in Section */}
+                  <div className="space-y-12">
+                    {section.articles.map((article, articleIndex) => (
+                      <motion.div
+                        key={articleIndex}
+                        id={`article-${section.id}-${articleIndex}`}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: (sectionIndex * 0.1) + (articleIndex * 0.05) }}
+                        className="bg-white rounded-xl border border-slate-200 p-8 lg:p-10 shadow-sm scroll-mt-24"
+                      >
+                        <h3 className="text-2xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-200">
+                          {article.title}
+                        </h3>
+                        <ArticleContent content={article.content} />
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-3xl font-bold text-slate-900 mb-2">
-                    {currentSection.articles[activeArticle].title}
-                  </h1>
-                  <p className="text-slate-600 text-base">
-                    {currentSection.description}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Article tabs - Mobile/Tablet */}
-              {currentSection.articles.length > 1 && (
-                <div className="lg:hidden flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                  {currentSection.articles.map((article, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setActiveArticle(index)}
-                      className={`px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
-                        activeArticle === index
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      {article.title}
-                    </button>
-                  ))}
-                </div>
-              )}
+              ))}
             </div>
 
-            {/* Article Content */}
-            <motion.div
-              key={`${activeSection}-${activeArticle}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white rounded-xl border border-slate-200 p-8 lg:p-10 shadow-sm"
-            >
-              <ArticleContent content={currentSection.articles[activeArticle].content} />
-            </motion.div>
-
             {/* Quick Links */}
-            <div className="mt-8 grid sm:grid-cols-2 gap-4">
+            <div className="mt-16 grid sm:grid-cols-2 gap-4">
               <Link
                 to="/faq"
                 className="flex items-center gap-4 p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors group border border-slate-200"
