@@ -284,6 +284,26 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     }
   }
 
+  // Generate favicon URL from domain if not provided
+  const getFaviconUrl = (url: string, favicon?: string | null): string | null => {
+    // If favicon is provided and valid, use it
+    if (favicon && favicon.startsWith('http')) {
+      return favicon
+    }
+    // Otherwise, generate from domain
+    try {
+      const domain = getDomain(url)
+      if (domain && domain !== url) {
+        return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+      }
+    } catch {
+      // If URL parsing fails, return null
+    }
+    return null
+  }
+
+  const faviconUrl = getFaviconUrl(link.url, link.favicon)
+
   const getCollectionName = (collectionId?: string | null) => {
     if (!collectionId) return null
     return collections.find(c => c.id === collectionId)?.name
@@ -351,23 +371,25 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
 
           {/* Favicon */}
           <div className="flex-shrink-0">
-            {link.favicon && link.favicon.startsWith('http') ? (
+            {faviconUrl ? (
               <img 
-                src={link.favicon} 
+                src={faviconUrl} 
                 alt="" 
                 className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg object-cover bg-gray-100"
                 referrerPolicy="no-referrer-when-downgrade"
                 crossOrigin="anonymous"
                 loading="lazy"
                 onError={(e) => {
+                  // Hide image on error and show fallback
                   e.currentTarget.style.display = 'none';
+                  const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
                 }}
               />
-            ) : (
-              <div className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                <Globe className="w-5 h-5 sm:w-4 sm:h-4 text-gray-400" />
-              </div>
-            )}
+            ) : null}
+            <div className={`w-10 h-10 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center ${faviconUrl ? 'hidden' : ''}`}>
+              <Globe className="w-5 h-5 sm:w-4 sm:h-4 text-gray-400" />
+            </div>
           </div>
 
           {/* Title & Domain */}
@@ -851,23 +873,25 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         <div className="p-4">
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex items-center gap-2 min-w-0">
-              {link.favicon && link.favicon.startsWith('http') ? (
+              {faviconUrl ? (
                 <img 
-                  src={link.favicon} 
+                  src={faviconUrl} 
                   alt="" 
                   className="w-6 h-6 sm:w-5 sm:h-5 rounded flex-shrink-0"
                   referrerPolicy="no-referrer-when-downgrade"
                   crossOrigin="anonymous"
                   loading="lazy"
                   onError={(e) => {
+                    // Hide image on error and show fallback
                     e.currentTarget.style.display = 'none';
+                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = 'flex';
                   }}
                 />
-              ) : (
-                <div className="w-6 h-6 sm:w-5 sm:h-5 rounded bg-gray-200 flex items-center justify-center flex-shrink-0">
-                  <Globe className="w-4 h-4 sm:w-3 sm:h-3 text-gray-400" />
-                </div>
-              )}
+              ) : null}
+              <div className={`w-6 h-6 sm:w-5 sm:h-5 rounded bg-gray-200 flex items-center justify-center flex-shrink-0 ${faviconUrl ? 'hidden' : ''}`}>
+                <Globe className="w-4 h-4 sm:w-3 sm:h-3 text-gray-400" />
+              </div>
               <span className="text-sm sm:text-xs text-gray-500 truncate">{getDomain(link.url)}</span>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
