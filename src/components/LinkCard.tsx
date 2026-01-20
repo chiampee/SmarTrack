@@ -431,8 +431,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
 
         {/* Expanded Content */}
         {isExpanded && (
-        <div className="px-4 sm:px-4 pb-5 sm:pb-4 pt-0 border-t border-gray-100 animate-in slide-in-from-top-2 duration-200" onClick={(e) => e.stopPropagation()}>
-          <div className="pt-5 sm:pt-4 space-y-5 sm:space-y-4">
+        <div className="px-3 sm:px-4 pb-4 pt-0 border-t border-gray-100 animate-in slide-in-from-top-2 duration-200" onClick={(e) => e.stopPropagation()}>
+          <div className="pt-4 space-y-4">
               {isEditing ? (
                 /* ===== EDIT MODE ===== */
                 <>
@@ -479,15 +479,15 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   </div>
 
                   {/* Organization Section */}
-                  <div className="pt-4 sm:pt-2 border-t border-gray-100">
-                    <h4 className="text-base sm:text-sm font-semibold text-gray-700 mb-4 sm:mb-3 flex items-center gap-2">
-                      <Folder className="w-5 h-5 sm:w-4 sm:h-4 text-gray-500" />
+                  <div className="pt-2 border-t border-gray-100">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
+                      <Folder className="w-4 h-4 text-gray-500" />
                       Organization
                     </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-base sm:text-sm font-medium text-gray-700 mb-2.5 sm:mb-2 block flex items-center gap-2">
-                          <Globe className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-gray-500" />
+                        <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-1.5">
+                          <Globe className="w-3.5 h-3.5 text-gray-500" />
                           Category
                         </label>
                       {!showNewCategoryInput ? (
@@ -502,7 +502,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                                 setEditCategory(e.target.value)
                               }
                             }} 
-                            className="w-full px-4 py-3.5 sm:py-3 text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all touch-manipulation"
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all touch-manipulation"
                           >
                             <option value="">None</option>
                             {categories.map(cat => (
@@ -514,7 +514,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                           </select>
                         </div>
                       ) : (
-                        <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <input 
                             type="text" 
                             value={newCategoryName} 
@@ -532,7 +532,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                               }
                             }}
                             placeholder="Enter new category name" 
-                            className="flex-1 px-4 py-3.5 sm:py-3 text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all touch-manipulation" 
+                            className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all touch-manipulation" 
                             autoFocus
                           />
                           <div className="flex gap-2">
@@ -545,7 +545,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                                   setNewCategoryName('')
                                 }
                               }}
-                              className="flex-1 sm:flex-none px-5 py-3 sm:px-4 sm:py-2 text-base sm:text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors touch-manipulation active:bg-blue-100"
+                              className="px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors touch-manipulation"
                             >
                               Add
                             </button>
@@ -555,7 +555,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                                 setShowNewCategoryInput(false)
                                 setNewCategoryName('')
                               }}
-                              className="flex-1 sm:flex-none px-5 py-3 sm:px-4 sm:py-2 text-base sm:text-sm font-medium text-gray-600 hover:text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors touch-manipulation active:bg-gray-100"
+                              className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors touch-manipulation"
                             >
                               Cancel
                             </button>
@@ -564,20 +564,20 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                       )}
                     </div>
                       <div>
-                        <label className="text-base sm:text-sm font-medium text-gray-700 mb-2.5 sm:mb-2 block flex items-center gap-2">
-                          <Folder className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-gray-500" />
+                        <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-1.5">
+                          <Folder className="w-3.5 h-3.5 text-gray-500" />
                           Project
                         </label>
                         <select 
                           value={editCollectionId} 
                           onChange={(e) => setEditCollectionId(e.target.value)} 
-                          className="w-full px-4 py-3.5 sm:py-3 text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all touch-manipulation"
+                          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all touch-manipulation"
                         >
                           <option value="">None</option>
                           {collections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                         {collections.length === 0 && (
-                          <p className="text-sm sm:text-xs text-gray-500 mt-2 sm:mt-1.5">No projects yet. Create one to organize your links.</p>
+                          <p className="text-xs text-gray-500 mt-1.5">No projects yet. Create one to organize your links.</p>
                         )}
                       </div>
                     </div>
@@ -703,25 +703,25 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   </div>
 
                   {/* Action buttons - full width on mobile */}
-                  <div className="pt-5 sm:pt-4 border-t border-gray-200">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-3">
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <button 
                         onClick={saveEdits} 
-                        className="flex items-center justify-center gap-2.5 sm:gap-2 px-6 py-4 sm:py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-base font-semibold rounded-lg touch-manipulation transition-all shadow-md hover:shadow-lg min-h-[52px] sm:min-h-0"
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-lg touch-manipulation transition-all shadow-md hover:shadow-lg"
                       >
-                        <Save className="w-6 h-6 sm:w-5 sm:h-5" /> 
+                        <Save className="w-4 h-4" /> 
                         Save Changes
                       </button>
                       <button 
                         onClick={cancelEditing} 
-                        className="flex items-center justify-center gap-2.5 sm:gap-2 px-6 py-4 sm:py-3 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 border-2 border-gray-300 text-base font-medium rounded-lg touch-manipulation transition-all min-h-[52px] sm:min-h-0"
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 border border-gray-300 text-sm font-medium rounded-lg touch-manipulation transition-all"
                       >
-                        <X className="w-6 h-6 sm:w-5 sm:h-5" /> 
+                        <X className="w-4 h-4" /> 
                         Cancel
                       </button>
                     </div>
-                    <p className="text-sm sm:text-xs text-gray-500 mt-3 sm:mt-2 text-center sm:text-left">
-                      Press <kbd className="px-2 py-1 sm:px-1.5 sm:py-0.5 bg-gray-100 rounded text-sm sm:text-xs">Esc</kbd> to cancel or <kbd className="px-2 py-1 sm:px-1.5 sm:py-0.5 bg-gray-100 rounded text-sm sm:text-xs">Enter</kbd> in tag field to add
+                    <p className="text-xs text-gray-500 mt-2 text-center sm:text-left">
+                      Press <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">Esc</kbd> to cancel or <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">Enter</kbd> in tag field to add
                     </p>
                   </div>
                 </>
@@ -968,19 +968,19 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               /* ===== EDIT MODE ===== */
               <>
                   {/* Form Header */}
-                  <div className="pb-4 sm:pb-3 border-b border-gray-200">
-                    <h3 className="text-lg sm:text-base font-semibold text-gray-900 flex items-center gap-2">
-                      <Edit className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600" />
+                  <div className="pb-3 border-b border-gray-200">
+                    <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                      <Edit className="w-4 h-4 text-blue-600" />
                       Edit Link
                     </h3>
-                    <p className="text-sm sm:text-xs text-gray-500 mt-1.5 sm:mt-1">Update the link details below</p>
+                    <p className="text-xs text-gray-500 mt-1">Update the link details below</p>
                   </div>
 
                   {/* Basic Information Section */}
-                  <div className="space-y-5 sm:space-y-4">
+                  <div className="space-y-4">
                     <div>
-                      <label className="text-base sm:text-sm font-semibold text-gray-700 mb-2.5 sm:mb-2 block flex items-center gap-2">
-                        <FileText className="w-5 h-5 sm:w-4 sm:h-4 text-gray-500" />
+                      <label className="text-sm font-semibold text-gray-700 mb-2 block flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-gray-500" />
                         Title
                         <span className="text-red-500">*</span>
                       </label>
@@ -988,24 +988,24 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                         type="text" 
                         value={editTitle} 
                         onChange={(e) => setEditTitle(e.target.value)} 
-                        className="w-full px-4 py-3.5 sm:py-3 text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all touch-manipulation" 
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all touch-manipulation" 
                         placeholder="Enter link title"
                       />
                     </div>
 
                     <div>
-                      <label className="text-base sm:text-sm font-semibold text-gray-700 mb-2.5 sm:mb-2 block flex items-center gap-2">
-                        <StickyNote className="w-5 h-5 sm:w-4 sm:h-4 text-gray-500" />
+                      <label className="text-sm font-semibold text-gray-700 mb-2 block flex items-center gap-1.5">
+                        <StickyNote className="w-4 h-4 text-gray-500" />
                         Notes
                       </label>
                       <textarea 
                         value={editDescription} 
                         onChange={(e) => setEditDescription(e.target.value)} 
-                        rows={4} 
-                        className="w-full px-4 py-3.5 sm:py-3 text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all touch-manipulation" 
+                        rows={3} 
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all touch-manipulation" 
                         placeholder="Add your thoughts, key takeaways, or summary..."
                       />
-                      <p className="text-sm sm:text-xs text-gray-500 mt-2 sm:mt-1.5">Optional: Add notes to help you remember why you saved this link</p>
+                      <p className="text-xs text-gray-500 mt-1.5">Optional: Add notes to help you remember why you saved this link</p>
                     </div>
                   </div>
 
@@ -1113,38 +1113,38 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   </div>
 
                   {/* Tags Section */}
-                  <div className="pt-4 sm:pt-2 border-t border-gray-100">
-                    <label className="text-base sm:text-sm font-semibold text-gray-700 mb-3 sm:mb-2 block flex items-center gap-2">
-                      <Tag className="w-5 h-5 sm:w-4 sm:h-4 text-gray-500" />
+                  <div className="pt-2 border-t border-gray-100">
+                    <label className="text-sm font-semibold text-gray-700 mb-2 block flex items-center gap-1.5">
+                      <Tag className="w-4 h-4 text-gray-500" />
                       Tags
                     </label>
                     {/* Current Tags Display */}
                     {currentTags.length > 0 ? (
-                      <div className="flex flex-wrap gap-2.5 sm:gap-2 mb-4 sm:mb-3">
+                      <div className="flex flex-wrap gap-2 mb-3">
                         {currentTags.map((tag, i) => (
-                          <span key={i} className="px-3.5 sm:px-3 py-2 sm:py-1.5 bg-blue-50 text-blue-700 text-sm rounded-full flex items-center gap-1.5 border border-blue-200">
-                            <Tag className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
+                          <span key={i} className="px-2.5 py-1 bg-blue-50 text-blue-700 text-sm rounded-full flex items-center gap-1.5 border border-blue-200">
+                            <Tag className="w-3 h-3" />
                             {tag}
                             <button 
                               onClick={() => removeTag(tag)} 
-                              className="ml-1.5 sm:ml-1 p-1.5 sm:p-0.5 hover:bg-blue-100 active:bg-blue-200 rounded-full transition-colors touch-manipulation min-w-[32px] min-h-[32px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
+                              className="ml-1 p-0.5 hover:bg-blue-100 rounded-full transition-colors touch-manipulation"
                               aria-label={`Remove ${tag} tag`}
                             >
-                              <X className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                              <X className="w-3.5 h-3.5" />
                             </button>
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <div className="mb-4 sm:mb-3 p-4 sm:p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                        <p className="text-sm sm:text-xs text-gray-500 flex items-center gap-2">
-                          <Tag className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                      <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                          <Tag className="w-3.5 h-3.5" />
                           No tags yet. Add tags to organize and find your links easily.
                         </p>
                       </div>
                     )}
                     <div className="relative">
-                      <div className="flex gap-2.5 sm:gap-2">
+                      <div className="flex gap-2">
                         <div className="flex-1 relative">
                           <input 
                             ref={tagInputRef}
@@ -1167,23 +1167,23 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                                 setShowTagSuggestions(false)
                               }
                             }}
-                            className="w-full px-4 py-3.5 sm:py-3 text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all touch-manipulation" 
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all touch-manipulation" 
                             placeholder="Type to search or add new tag..."
                           />
                           {/* Tag Suggestions Dropdown */}
                           {showTagSuggestions && tagSuggestions.length > 0 && (
                             <div
                               ref={tagSuggestionsRef}
-                              className="absolute z-50 w-full mt-1.5 sm:mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-56 sm:max-h-48 overflow-y-auto"
+                              className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
                             >
                               {tagSuggestions.map((suggestion) => (
                                 <button
                                   key={suggestion}
                                   type="button"
                                   onClick={() => addTag(suggestion)}
-                                  className="w-full text-left px-4 py-3 sm:py-2 text-base sm:text-sm text-gray-700 hover:bg-blue-50 active:bg-blue-100 hover:text-blue-700 transition-colors first:rounded-t-lg last:rounded-b-lg flex items-center gap-2 touch-manipulation min-h-[44px] sm:min-h-0"
+                                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors first:rounded-t-lg last:rounded-b-lg flex items-center gap-2 touch-manipulation"
                                 >
-                                  <Tag className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                                  <Tag className="w-3.5 h-3.5" />
                                   {suggestion}
                                 </button>
                               ))}
@@ -1191,27 +1191,27 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                           )}
                           {/* Show message when typing new tag */}
                           {showTagSuggestions && newTag.trim() && tagSuggestions.length === 0 && (
-                            <div className="absolute z-50 w-full mt-1.5 sm:mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-4 sm:p-3 text-sm text-gray-500">
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm text-gray-500">
                               Press Enter to add "{newTag.trim()}"
                             </div>
                           )}
                         </div>
                         <button 
                           onClick={() => addTag()} 
-                          className="px-5 sm:px-4 py-3.5 sm:py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg touch-manipulation transition-colors shadow-sm hover:shadow min-w-[56px] sm:min-w-0 flex items-center justify-center"
+                          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg touch-manipulation transition-colors shadow-sm hover:shadow"
                           aria-label="Add tag"
                         >
-                          <Plus className="w-6 h-6 sm:w-5 sm:h-5" />
+                          <Plus className="w-4 h-4" />
                         </button>
                       </div>
                       {/* Show existing tags as quick-add buttons when input is empty */}
                       {!newTag.trim() && allTags.length > 0 && currentTags.length < allTags.length && (
-                        <div className="mt-4 sm:mt-3 p-4 sm:p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                          <p className="text-sm sm:text-xs font-medium text-gray-700 mb-3 sm:mb-2 flex items-center gap-2">
-                            <Tag className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                        <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                          <p className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                            <Tag className="w-3.5 h-3.5" />
                             Quick add existing tags:
                           </p>
-                          <div className="flex flex-wrap gap-2 sm:gap-1.5">
+                          <div className="flex flex-wrap gap-1.5">
                             {allTags
                               .filter(tag => !currentTags.includes(tag))
                               .slice(0, 12)
@@ -1220,7 +1220,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                                   key={tag}
                                   type="button"
                                   onClick={() => addTag(tag)}
-                                  className="px-4 sm:px-3 py-2.5 sm:py-1.5 text-sm sm:text-xs font-medium text-gray-700 bg-white hover:bg-blue-50 active:bg-blue-100 hover:text-blue-700 hover:border-blue-300 border border-gray-300 rounded-md transition-all shadow-sm hover:shadow touch-manipulation min-h-[40px] sm:min-h-0"
+                                  className="px-2.5 py-1 text-xs font-medium text-gray-700 bg-white hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-gray-300 rounded-md transition-all shadow-sm hover:shadow touch-manipulation"
                                 >
                                   + {tag}
                                 </button>
@@ -1232,25 +1232,25 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   </div>
 
                   {/* Action buttons - full width on mobile */}
-                  <div className="pt-5 sm:pt-4 border-t border-gray-200">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-3">
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <button 
                         onClick={saveEdits} 
-                        className="flex items-center justify-center gap-2.5 sm:gap-2 px-6 py-4 sm:py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-base font-semibold rounded-lg touch-manipulation transition-all shadow-md hover:shadow-lg min-h-[52px] sm:min-h-0"
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-lg touch-manipulation transition-all shadow-md hover:shadow-lg"
                       >
-                        <Save className="w-6 h-6 sm:w-5 sm:h-5" /> 
+                        <Save className="w-4 h-4" /> 
                         Save Changes
                       </button>
                       <button 
                         onClick={cancelEditing} 
-                        className="flex items-center justify-center gap-2.5 sm:gap-2 px-6 py-4 sm:py-3 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 border-2 border-gray-300 text-base font-medium rounded-lg touch-manipulation transition-all min-h-[52px] sm:min-h-0"
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 border border-gray-300 text-sm font-medium rounded-lg touch-manipulation transition-all"
                       >
-                        <X className="w-6 h-6 sm:w-5 sm:h-5" /> 
+                        <X className="w-4 h-4" /> 
                         Cancel
                       </button>
                     </div>
-                    <p className="text-sm sm:text-xs text-gray-500 mt-3 sm:mt-2 text-center sm:text-left">
-                      Press <kbd className="px-2 py-1 sm:px-1.5 sm:py-0.5 bg-gray-100 rounded text-sm sm:text-xs">Esc</kbd> to cancel or <kbd className="px-2 py-1 sm:px-1.5 sm:py-0.5 bg-gray-100 rounded text-sm sm:text-xs">Enter</kbd> in tag field to add
+                    <p className="text-xs text-gray-500 mt-2 text-center sm:text-left">
+                      Press <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">Esc</kbd> to cancel or <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">Enter</kbd> in tag field to add
                     </p>
                   </div>
               </>
