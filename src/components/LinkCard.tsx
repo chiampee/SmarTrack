@@ -71,6 +71,9 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   const [showTagSuggestions, setShowTagSuggestions] = useState(false)
   const tagInputRef = useRef<HTMLInputElement>(null)
   const tagSuggestionsRef = useRef<HTMLDivElement>(null)
+  
+  // Track favicon load errors for fallback
+  const [faviconError, setFaviconError] = useState(false)
 
   const handleAction = (action: string, data?: any) => {
     onAction(link.id, action, data)
@@ -276,33 +279,66 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     return new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(date))
   }
 
-  const getDomain = (url: string) => {
+  /**
+   * Extract clean domain from URL (handles subdomains correctly)
+   * Examples:
+   * - https://blog.medium.com/article → medium.com
+   * - https://www.github.com/user → github.com
+   * - https://subdomain.example.com → example.com
+   */
+  const getCleanDomain = (url: string): string | null => {
     try {
-      return new URL(url).hostname.replace('www.', '')
+      const urlObj = new URL(url)
+      let hostname = urlObj.hostname
+      
+      // Remove 'www.' prefix if present
+      if (hostname.startsWith('www.')) {
+        hostname = hostname.substring(4)
+      }
+      
+      // For subdomains, we keep the full domain (e.g., blog.medium.com)
+      // Google's favicon service handles subdomains correctly
+      return hostname || null
     } catch {
-      return url
+      // If URL parsing fails, try to extract domain manually
+      try {
+        const match = url.match(/https?:\/\/(?:www\.)?([^/]+)/)
+        return match ? match[1] : null
+      } catch {
+        return null
+      }
     }
   }
 
-  // Generate favicon URL from domain if not provided
-  const getFaviconUrl = (url: string, favicon?: string | null): string | null => {
-    // If favicon is provided and valid, use it
-    if (favicon && favicon.startsWith('http')) {
-      return favicon
+  /**
+   * 3-Tier Favicon Fallback System:
+   * Tier 1: Use link.favicon or link.iconUrl from database
+   * Tier 2: Generate favicon URL from domain using Google's service
+   * Tier 3: Fallback to Globe icon (handled via faviconError state)
+   */
+  const getFaviconUrl = (url: string, favicon?: string | null, iconUrl?: string | null): string | null => {
+    // Tier 1: Check database favicon/iconUrl
+    const dbFavicon = favicon || iconUrl
+    if (dbFavicon && typeof dbFavicon === 'string' && dbFavicon.startsWith('http')) {
+      return dbFavicon
     }
-    // Otherwise, generate from domain
-    try {
-      const domain = getDomain(url)
-      if (domain && domain !== url) {
-        return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
-      }
-    } catch {
-      // If URL parsing fails, return null
+    
+    // Tier 2: Generate from domain
+    const domain = getCleanDomain(url)
+    if (domain) {
+      return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`
     }
+    
+    // No valid URL or domain, return null (Tier 3 fallback will show Globe icon)
     return null
   }
 
-  const faviconUrl = getFaviconUrl(link.url, link.favicon)
+  const faviconUrl = getFaviconUrl(link.url, link.favicon, (link as any).iconUrl)
+  
+  // Reset error state when favicon URL changes
+  useEffect(() => {
+    setFaviconError(false)
+  }, [faviconUrl])
 
   const getCollectionName = (collectionId?: string | null) => {
     if (!collectionId) return null
@@ -369,27 +405,26 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             </label>
           </div>
 
-          {/* Favicon */}
+          {/* Favicon - 3-Tier Fallback System */}
           <div className="flex-shrink-0">
-            {faviconUrl ? (
+            {faviconUrl && !faviconError ? (
               <img 
                 src={faviconUrl} 
                 alt="" 
-                className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg object-cover bg-gray-100"
+                className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg object-contain bg-slate-50 border border-slate-200 p-1"
                 referrerPolicy="no-referrer-when-downgrade"
                 crossOrigin="anonymous"
                 loading="lazy"
-                onError={(e) => {
-                  // Hide image on error and show fallback
-                  e.currentTarget.style.display = 'none';
-                  const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                  if (fallback) fallback.style.display = 'flex';
+                onError={() => {
+                  // Tier 3: Image failed to load, show Globe icon fallback
+                  setFaviconError(true)
                 }}
               />
-            ) : null}
-            <div className={`w-10 h-10 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center ${faviconUrl ? 'hidden' : ''}`}>
-              <Globe className="w-5 h-5 sm:w-4 sm:h-4 text-gray-400" />
-            </div>
+            ) : (
+              <div className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center">
+                <Globe className="w-5 h-5 sm:w-4 sm:h-4 text-slate-400" />
+              </div>
+            )}
           </div>
 
           {/* Title & Domain */}
@@ -411,7 +446,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 {link.isArchived && <Archive className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-gray-400" />}
               </div>
             </div>
-            <p className="text-xs text-gray-500 truncate mt-0.5">{getDomain(link.url)}</p>
+            <p className="text-xs text-gray-500 truncate mt-0.5">{getCleanDomain(link.url) || link.url}</p>
             
             {/* Mobile: Show badges below domain */}
             <div className="flex flex-wrap gap-1.5 mt-2 sm:hidden">
@@ -873,26 +908,25 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         <div className="p-4">
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex items-center gap-2 min-w-0">
-              {faviconUrl ? (
+              {faviconUrl && !faviconError ? (
                 <img 
                   src={faviconUrl} 
                   alt="" 
-                  className="w-6 h-6 sm:w-5 sm:h-5 rounded flex-shrink-0"
+                  className="w-6 h-6 sm:w-5 sm:h-5 rounded object-contain bg-slate-50 border border-slate-200 p-0.5 flex-shrink-0"
                   referrerPolicy="no-referrer-when-downgrade"
                   crossOrigin="anonymous"
                   loading="lazy"
-                  onError={(e) => {
-                    // Hide image on error and show fallback
-                    e.currentTarget.style.display = 'none';
-                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                    if (fallback) fallback.style.display = 'flex';
+                  onError={() => {
+                    // Tier 3: Image failed to load, show Globe icon fallback
+                    setFaviconError(true)
                   }}
                 />
-              ) : null}
-              <div className={`w-6 h-6 sm:w-5 sm:h-5 rounded bg-gray-200 flex items-center justify-center flex-shrink-0 ${faviconUrl ? 'hidden' : ''}`}>
-                <Globe className="w-4 h-4 sm:w-3 sm:h-3 text-gray-400" />
-              </div>
-              <span className="text-sm sm:text-xs text-gray-500 truncate">{getDomain(link.url)}</span>
+              ) : (
+                <div className="w-6 h-6 sm:w-5 sm:h-5 rounded bg-slate-200 border border-slate-300 flex items-center justify-center flex-shrink-0">
+                  <Globe className="w-4 h-4 sm:w-3 sm:h-3 text-slate-400" />
+                </div>
+              )}
+              <span className="text-sm sm:text-xs text-gray-500 truncate">{getCleanDomain(link.url) || link.url}</span>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
               <label 
