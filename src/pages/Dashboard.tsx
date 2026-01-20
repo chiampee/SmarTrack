@@ -1692,41 +1692,6 @@ export const Dashboard: React.FC = () => {
                       variants={staggerContainer}
                       className="relative z-0 space-y-6 sm:space-y-7 md:space-y-8"
                     >
-                      {/* Summary Stats Bar - Show when links exist */}
-                      {filteredLinks.length > 0 && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.4, ease: "easeOut" }}
-                          className="bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-purple-50/50 rounded-xl sm:rounded-2xl border border-blue-200/60 p-4 sm:p-5 mb-4 sm:mb-5"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <div className="p-2 sm:p-2.5 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/20">
-                                <Archive className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                              </div>
-                              <div>
-                                <div className="text-sm sm:text-base font-semibold text-gray-700">Total Links</div>
-                                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-                                  {filteredLinks.length} {filteredLinks.length === 1 ? 'link' : 'links'}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-                              <div className="text-center">
-                                <div className="text-xs sm:text-sm text-gray-600">Categories</div>
-                                <div className="text-lg sm:text-xl font-bold text-blue-600">{sortedCategories.length}</div>
-                              </div>
-                              {favoritesCount > 0 && (
-                                <div className="text-center">
-                                  <div className="text-xs sm:text-sm text-gray-600">Favorites</div>
-                                  <div className="text-lg sm:text-xl font-bold text-amber-600">{favoritesCount}</div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
 
                       {/* Category Groups */}
                       {sortedCategories.map(([category, categoryLinks]) => (
