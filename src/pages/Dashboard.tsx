@@ -292,22 +292,26 @@ export const Dashboard: React.FC = () => {
         setFilteredLinks(links.filter(l => l.isArchived))
         break
       }
-      default: {
-        if (categoryParam) {
-          setSelectedCollectionId(null)
-          setActiveFilterId(null)
-          const catLower = categoryParam.toLowerCase()
-          // Exclude archived links from category view (unless already archived)
-          setFilteredLinks(links.filter(l => 
-            (l.category || '').toLowerCase() === catLower && !l.isArchived
-          ))
-        } else {
-          setSelectedCollectionId(null)
-          setActiveFilterId(null)
-          // Exclude archived links from default view
-          setFilteredLinks(links.filter(l => !l.isArchived))
+        default: {
+          if (categoryParam) {
+            setSelectedCollectionId(null)
+            setActiveFilterId(null)
+            const catLower = categoryParam.toLowerCase()
+            // Find the actual category name (preserve capitalization)
+            const actualCategory = links.find(l => (l.category || '').toLowerCase() === catLower)?.category || categoryParam
+            setCurrentCategoryName(actualCategory)
+            // Exclude archived links from category view (unless already archived)
+            setFilteredLinks(links.filter(l => 
+              (l.category || '').toLowerCase() === catLower && !l.isArchived
+            ))
+          } else {
+            setSelectedCollectionId(null)
+            setActiveFilterId(null)
+            setCurrentCategoryName(null)
+            // Exclude archived links from default view
+            setFilteredLinks(links.filter(l => !l.isArchived))
+          }
         }
-      }
     }
   }, [location.search, links])
 
@@ -1193,177 +1197,173 @@ export const Dashboard: React.FC = () => {
           </motion.div>
         )}
 
-        {/* ✅ ENHANCED TOOLBAR: Mobile-first design with better spacing */}
+        {/* ✅ TITLE SECTION: Displayed first per user request */}
         <motion.div
           initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
           variants={fadeInUp}
           transition={{ duration: animationConfig.duration, ease: "easeOut" }}
-          className="relative z-20 bg-white/98 backdrop-blur-sm rounded-2xl sm:rounded-2xl shadow-lg shadow-gray-900/5 border border-gray-200/80 mb-3 sm:mb-4 md:mb-6 p-3 sm:p-4 md:p-5"
+          className="mb-4 sm:mb-5 md:mb-6"
         >
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 md:gap-4">
-            {/* Left: Search with integrated Filter */}
-            <div className="flex-1 min-w-0 order-1 relative">
-              <div className="relative flex items-center">
-                <SearchAutocomplete
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  links={links}
-                  placeholder={isMobile ? "Search links..." : "Search your library..."}
-                />
-                {/* Filter Button inside Search */}
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20">
-                  <FiltersDropdown
-                    filters={{
-                      category: filters.category,
-                      dateRange: filters.dateRange,
-                      tags: filters.tags,
-                      contentType: filters.contentType,
-                    }}
-                    onFiltersChange={(newFilters) => {
-                      setFilters(prev => ({
-                        ...prev,
-                        ...newFilters
-                      }))
-                    }}
-                    iconOnly={true}
-                  />
-                </div>
-              </div>
-              {/* Compact Stats - Inline with search on desktop */}
-              {filteredLinks.length > 0 && (() => {
-                const uniqueCategories = new Set(filteredLinks.map(l => l.category).filter(Boolean))
-                const favCount = filteredLinks.filter(l => l.isFavorite && !l.isArchived).length
-                return (
-                  <div className="hidden sm:flex items-center gap-4 mt-2 text-xs text-gray-600">
-                    <div className="flex items-center gap-1.5">
-                      <Archive className="w-3.5 h-3.5 text-gray-500" />
-                      <span className="font-medium text-gray-700">{filteredLinks.length}</span>
-                      <span className="text-gray-500">{filteredLinks.length === 1 ? 'link' : 'links'}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Tag className="w-3.5 h-3.5 text-blue-500" />
-                      <span className="font-medium text-blue-600">{uniqueCategories.size}</span>
-                      <span className="text-gray-500">categories</span>
-                    </div>
-                    {favCount > 0 && (
-                      <div className="flex items-center gap-1.5">
-                        <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                        <span className="font-medium text-amber-600">{favCount}</span>
-                        <span className="text-gray-500">favorites</span>
-                      </div>
-                    )}
-                  </div>
-                )
-              })()}
-            </div>
-
-            {/* Right: Action Buttons - mobile-first with perfect touch targets */}
-            <div className="flex items-stretch sm:items-center gap-2 sm:gap-2.5 md:gap-3 flex-shrink-0 order-2 w-full sm:w-auto">
-              {/* Action Buttons - optimized for mobile with larger touch areas */}
-              <button 
-                onClick={() => setShowAddModal(true)}
-                className="flex-1 sm:flex-initial px-4 sm:px-5 md:px-6 py-3.5 sm:py-2.5 md:py-2.5 text-base sm:text-sm font-bold sm:font-semibold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 active:from-blue-800 active:via-blue-800 active:to-indigo-800 transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:scale-[0.96] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2 min-h-[52px] sm:min-h-[44px] md:min-h-[42px] touch-manipulation"
-                aria-label="Add new link"
-              >
-                <Plus className="w-5 h-5 sm:w-4.5 sm:h-4.5 flex-shrink-0" />
-                <span className="sm:hidden font-semibold">Add Link</span>
-                <span className="hidden sm:inline md:hidden">New</span>
-                <span className="hidden md:inline">New Link</span>
-              </button>
-              
-              <button 
-                onClick={handleExport}
-                disabled={filteredLinksCount === 0}
-                className="hidden sm:flex sm:flex-initial px-4 sm:px-5 md:px-6 py-3.5 sm:py-2.5 md:py-2.5 text-base sm:text-sm font-bold sm:font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 hover:shadow-md active:bg-gray-100 active:shadow-sm active:scale-[0.96] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm items-center justify-center gap-2 min-h-[52px] sm:min-h-[44px] md:min-h-[42px] touch-manipulation"
-                aria-label="Export links"
-                title={filteredLinksCount === 0 ? 'No links to export' : 'Export filtered links'}
-              >
-                <Download className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Export</span>
-              </button>
-
-              {/* Install Extension button removed per user request */}
-              {false && !isExtensionInstalled && !isMobile && (
-                <button 
-                  onClick={handleExtensionInstallClick}
-                  className="flex-1 sm:flex-initial px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-lg hover:from-indigo-700 hover:to-indigo-800 active:from-indigo-800 transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-0 touch-manipulation"
-                  aria-label="Install Chrome extension"
-                  title="Install SmarTrack Chrome Extension - Get step-by-step instructions"
-                >
-                  <Chrome className="w-4 h-4 flex-shrink-0" />
-                  <span className="sm:hidden md:inline">Install Extension</span>
-                  <span className="hidden sm:inline md:hidden">Install</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* ✅ ENHANCED SECONDARY HEADER: Mobile-optimized with better spacing */}
-        <motion.div
-          initial={shouldAnimate ? "hidden" : "visible"}
-          animate="visible"
-          variants={fadeInUp}
-          transition={{ delay: shouldAnimate ? 0.05 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 md:gap-4 mb-4 sm:mb-5 md:mb-6"
-        >
-          {/* Left: Collection Title and Stats - mobile-first design */}
-          <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3 flex-wrap w-full sm:w-auto">
+          {/* Title based on current view */}
+          <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3 flex-wrap">
             <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-2.5 md:gap-3">
               <div className="p-1.5 sm:p-2 md:p-2.5 rounded-lg sm:rounded-xl md:rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/20">
                 <Archive className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white flex-shrink-0" />
               </div>
               <span className="truncate bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                {selectedCollectionId 
-                  ? collections.find(c => c.id === selectedCollectionId)?.name || 'Collection'
-                  : activeFilterId === 'favorites'
-                    ? 'Favorites'
-                    : activeFilterId === 'archived'
-                      ? 'Archived'
-                      : 'All Links'}
+                {currentCategoryName 
+                  ? currentCategoryName
+                  : selectedCollectionId 
+                    ? collections.find(c => c.id === selectedCollectionId)?.name || 'Collection'
+                    : activeFilterId === 'favorites'
+                      ? 'Favorites'
+                      : activeFilterId === 'archived'
+                        ? 'Archived'
+                        : 'All Links'}
               </span>
             </h2>
-            <div className="flex items-center gap-2 sm:gap-2.5">
-              <span className="px-3 sm:px-3.5 md:px-4 py-1.5 sm:py-1.5 md:py-2 text-xs sm:text-sm md:text-sm font-bold text-blue-700 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-full border border-blue-200/80 shadow-sm whitespace-nowrap backdrop-blur-sm">
-                {filteredLinksCount} {filteredLinksCount === 1 ? 'link' : 'links'}
-              </span>
-            </div>
           </div>
+        </motion.div>
 
-          {/* Right: View Controls - mobile-optimized with perfect touch targets */}
-          <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3 w-full sm:w-auto justify-end">
-            {/* View Toggle - optimized for mobile with larger touch areas */}
-            <div className="flex items-center gap-1 bg-gray-100/80 backdrop-blur-sm rounded-xl p-1 border border-gray-200/60 shadow-sm">
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-3.5 sm:px-4 md:px-4 py-2.5 sm:py-2 md:py-2 rounded-lg transition-all duration-200 text-sm sm:text-sm font-bold sm:font-semibold flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[40px] md:min-h-[38px] touch-manipulation active:scale-[0.96] ${
-                  viewMode === 'list' 
-                    ? 'bg-white text-blue-600 shadow-md shadow-blue-500/10' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-                }`}
-                aria-label="List view"
-                aria-pressed={viewMode === 'list'}
-              >
-                <List className="w-5 h-5 sm:w-4.5 sm:h-4.5" />
-                <span className="sm:hidden">List</span>
-                <span className="hidden sm:inline">List</span>
-              </button>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`px-3.5 sm:px-4 md:px-4 py-2.5 sm:py-2 md:py-2 rounded-lg transition-all duration-200 text-sm sm:text-sm font-bold sm:font-semibold flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[40px] md:min-h-[38px] touch-manipulation active:scale-[0.96] ${
-                  viewMode === 'grid' 
-                    ? 'bg-white text-blue-600 shadow-md shadow-blue-500/10' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-                }`}
-                aria-label="Grid view"
-                aria-pressed={viewMode === 'grid'}
-              >
-                <Grid className="w-5 h-5 sm:w-4.5 sm:h-4.5" />
-                <span className="sm:hidden">Grid</span>
-                <span className="hidden sm:inline">Grid</span>
-              </button>
+        {/* ✅ SEARCH BAR WITH STATS AND ACTIONS: Displayed second per user request */}
+        <motion.div
+          initial={shouldAnimate ? "hidden" : "visible"}
+          animate="visible"
+          variants={fadeInUp}
+          transition={{ delay: shouldAnimate ? 0.05 : 0, duration: animationConfig.duration, ease: "easeOut" }}
+          className="relative z-20 bg-white/98 backdrop-blur-sm rounded-2xl sm:rounded-2xl shadow-lg shadow-gray-900/5 border border-gray-200/80 mb-3 sm:mb-4 md:mb-6 p-3 sm:p-4 md:p-5"
+        >
+          <div className="flex flex-col gap-3 sm:gap-4">
+            {/* Search Bar Row */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 md:gap-4">
+              {/* Left: Search with integrated Filter */}
+              <div className="flex-1 min-w-0 relative">
+                <div className="relative flex items-center">
+                  <SearchAutocomplete
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    links={links}
+                    placeholder={isMobile ? "Search links..." : "Search your library..."}
+                  />
+                  {/* Filter Button inside Search */}
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20">
+                    <FiltersDropdown
+                      filters={{
+                        category: filters.category,
+                        dateRange: filters.dateRange,
+                        tags: filters.tags,
+                        contentType: filters.contentType,
+                      }}
+                      onFiltersChange={(newFilters) => {
+                        setFilters(prev => ({
+                          ...prev,
+                          ...newFilters
+                        }))
+                      }}
+                      iconOnly={true}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Action Buttons - New Link, Filter, Export */}
+              <div className="flex items-stretch sm:items-center gap-2 sm:gap-2.5 md:gap-3 flex-shrink-0 w-full sm:w-auto">
+                {/* New Link Button */}
+                <button 
+                  onClick={() => setShowAddModal(true)}
+                  className="flex-1 sm:flex-initial px-4 sm:px-5 md:px-6 py-3.5 sm:py-2.5 md:py-2.5 text-base sm:text-sm font-bold sm:font-semibold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 active:from-blue-800 active:via-blue-800 active:to-indigo-800 transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:scale-[0.96] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2 min-h-[52px] sm:min-h-[44px] md:min-h-[42px] touch-manipulation"
+                  aria-label="Add new link"
+                >
+                  <Plus className="w-5 h-5 sm:w-4.5 sm:h-4.5 flex-shrink-0" />
+                  <span className="sm:hidden font-semibold">Add Link</span>
+                  <span className="hidden sm:inline md:hidden">New</span>
+                  <span className="hidden md:inline">New Link</span>
+                </button>
+                
+                {/* Export Button */}
+                <button 
+                  onClick={handleExport}
+                  disabled={filteredLinksCount === 0}
+                  className="flex-1 sm:flex-initial px-4 sm:px-5 md:px-6 py-3.5 sm:py-2.5 md:py-2.5 text-base sm:text-sm font-bold sm:font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 hover:shadow-md active:bg-gray-100 active:shadow-sm active:scale-[0.96] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm items-center justify-center gap-2 min-h-[52px] sm:min-h-[44px] md:min-h-[42px] touch-manipulation"
+                  aria-label="Export links"
+                  title={filteredLinksCount === 0 ? 'No links to export' : 'Export filtered links'}
+                >
+                  <Download className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                  <span className="sm:hidden">Export</span>
+                  <span className="hidden sm:inline">Export</span>
+                </button>
+              </div>
             </div>
+
+            {/* Stats Row - Links count, Categories count, Favorites count */}
+            {filteredLinks.length > 0 && (() => {
+              const uniqueCategories = new Set(filteredLinks.map(l => l.category).filter(Boolean))
+              const favCount = filteredLinks.filter(l => l.isFavorite && !l.isArchived).length
+              return (
+                <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-600 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
+                    <span className="font-medium text-gray-700">{filteredLinks.length}</span>
+                    <span className="text-gray-500">{filteredLinks.length === 1 ? 'link' : 'links'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
+                    <span className="font-medium text-blue-600">{uniqueCategories.size}</span>
+                    <span className="text-gray-500">categories</span>
+                  </div>
+                  {favCount > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500" />
+                      <span className="font-medium text-amber-600">{favCount}</span>
+                      <span className="text-gray-500">favorites</span>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+          </div>
+        </motion.div>
+
+        {/* ✅ VIEW CONTROLS: List/Grid toggle */}
+        <motion.div
+          initial={shouldAnimate ? "hidden" : "visible"}
+          animate="visible"
+          variants={fadeInUp}
+          transition={{ delay: shouldAnimate ? 0.1 : 0, duration: animationConfig.duration, ease: "easeOut" }}
+          className="flex items-center justify-end gap-2 sm:gap-2.5 md:gap-3 mb-4 sm:mb-5 md:mb-6"
+        >
+
+          {/* View Toggle - optimized for mobile with larger touch areas */}
+          <div className="flex items-center gap-1 bg-gray-100/80 backdrop-blur-sm rounded-xl p-1 border border-gray-200/60 shadow-sm">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3.5 sm:px-4 md:px-4 py-2.5 sm:py-2 md:py-2 rounded-lg transition-all duration-200 text-sm sm:text-sm font-bold sm:font-semibold flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[40px] md:min-h-[38px] touch-manipulation active:scale-[0.96] ${
+                viewMode === 'list' 
+                  ? 'bg-white text-blue-600 shadow-md shadow-blue-500/10' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+              }`}
+              aria-label="List view"
+              aria-pressed={viewMode === 'list'}
+            >
+              <List className="w-5 h-5 sm:w-4.5 sm:h-4.5" />
+              <span className="sm:hidden">List</span>
+              <span className="hidden sm:inline">List</span>
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-3.5 sm:px-4 md:px-4 py-2.5 sm:py-2 md:py-2 rounded-lg transition-all duration-200 text-sm sm:text-sm font-bold sm:font-semibold flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[40px] md:min-h-[38px] touch-manipulation active:scale-[0.96] ${
+                viewMode === 'grid' 
+                  ? 'bg-white text-blue-600 shadow-md shadow-blue-500/10' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+              }`}
+              aria-label="Grid view"
+              aria-pressed={viewMode === 'grid'}
+            >
+              <Grid className="w-5 h-5 sm:w-4.5 sm:h-4.5" />
+              <span className="sm:hidden">Grid</span>
+              <span className="hidden sm:inline">Grid</span>
+            </button>
           </div>
         </motion.div>
 
@@ -1820,28 +1820,7 @@ export const Dashboard: React.FC = () => {
                       variants={staggerContainer}
                       className="relative z-0 space-y-6 sm:space-y-7 md:space-y-8"
                     >
-                      {/* Compact Stats - Minimal inline display */}
-                      {filteredLinks.length > 0 && (
-                        <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-200/60">
-                          <div className="flex items-center gap-1.5">
-                            <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
-                            <span className="font-medium text-gray-700">{filteredLinks.length}</span>
-                            <span className="text-gray-500">{filteredLinks.length === 1 ? 'link' : 'links'}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
-                            <span className="font-medium text-blue-600">{sortedCategories.length}</span>
-                            <span className="text-gray-500">categories</span>
-                          </div>
-                          {favoritesCount > 0 && (
-                            <div className="flex items-center gap-1.5">
-                              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500" />
-                              <span className="font-medium text-amber-600">{favoritesCount}</span>
-                              <span className="text-gray-500">favorites</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      {/* Stats removed - now shown in search bar section above */}
 
                       {/* Category Groups */}
                       {sortedCategories.map(([category, categoryLinks]) => (
