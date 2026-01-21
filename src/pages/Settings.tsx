@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { LATEST_EXTENSION_VERSION } from '../constants/extensionVersion'
 import { useNavigate } from 'react-router-dom'
 import { 
   User, 
@@ -48,8 +49,9 @@ export const Settings: React.FC = () => {
 
   const handleDownloadExtension = () => {
     const linkElement = document.createElement('a')
-    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.5.zip')
-    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.5.zip')
+    const filename = `SmarTrack-extension-v${LATEST_EXTENSION_VERSION}.zip`
+    linkElement.setAttribute('href', `/${filename}`)
+    linkElement.setAttribute('download', filename)
     linkElement.click()
     toast.success('Extension download started!')
   }
