@@ -85,12 +85,13 @@ class AnalyticsService:
     
     @staticmethod
     async def get_total_users_all_time(db: Database) -> int:
-        """Get total unique users (all-time) - includes users from links, user_limits, and system_logs"""
+        """Get total unique users (all-time) - includes users from links, user_limits, system_logs, and user_activity"""
         try:
             # Get unique users from multiple sources to capture all authenticated users
             users_from_links = set()
             users_from_limits = set()
             users_from_logs = set()
+            users_from_activity = set()
             
             # 1. Users who have created links
             links_pipeline = [
@@ -119,11 +120,20 @@ class AnalyticsService:
             except Exception as e:
                 logger.warning(f"[ANALYTICS] Could not fetch users from system_logs: {e}")
             
-            # Combine all unique users
-            all_users = users_from_links | users_from_limits | users_from_logs
+            # 4. Users from user_activity collection (MOST COMPREHENSIVE - tracks ALL authenticated users)
+            # This is updated on every successful authentication, so it captures all users who have ever logged in
+            try:
+                activity_result = await db.user_activity.find({}, {"userId": 1}).to_list(10000)
+                users_from_activity = {u["userId"] for u in activity_result if u.get("userId")}
+                logger.info(f"[ANALYTICS] Found {len(users_from_activity)} users from user_activity collection")
+            except Exception as e:
+                logger.warning(f"[ANALYTICS] Could not fetch users from user_activity: {e}")
+            
+            # Combine all unique users from all sources
+            all_users = users_from_links | users_from_limits | users_from_logs | users_from_activity
             total_count = len(all_users)
             
-            logger.info(f"[ANALYTICS] get_total_users_all_time - Query result: {total_count} total users (links: {len(users_from_links)}, limits: {len(users_from_limits)}, logs: {len(users_from_logs)})")
+            logger.info(f"[ANALYTICS] get_total_users_all_time - Query result: {total_count} total users (links: {len(users_from_links)}, limits: {len(users_from_limits)}, logs: {len(users_from_logs)}, activity: {len(users_from_activity)})")
             logger.info(f"[ANALYTICS] get_total_users_all_time - Returning: {total_count}")
             
             return total_count
@@ -1234,6 +1244,7 @@ class AnalyticsService:
             users_from_links = set()
             users_from_limits = set()
             users_from_logs = set()
+            users_from_activity = set()
             
             # 1. Users who have created links
             try:
@@ -1294,9 +1305,22 @@ class AnalyticsService:
             except Exception as e:
                 logger.warning(f"[ADMIN USERS] Could not fetch users from system_logs: {e}")
             
+            # 4. Users from user_activity collection (MOST COMPREHENSIVE - tracks ALL authenticated users)
+            # This is updated on every successful authentication, so it captures all users who have ever logged in
+            try:
+                activity_query = {}
+                if search:
+                    search_regex = {"$regex": search, "$options": "i"}
+                    activity_query = {"userId": search_regex}
+                activity_result = await db.user_activity.find(activity_query, {"userId": 1}).to_list(10000)
+                users_from_activity = {u["userId"] for u in activity_result if u.get("userId")}
+                logger.info(f"[ADMIN USERS] Found {len(users_from_activity)} users from user_activity collection")
+            except Exception as e:
+                logger.warning(f"[ADMIN USERS] Could not fetch users from user_activity: {e}")
+            
             # Combine all unique users from all sources
-            all_user_ids = list(users_from_links | users_from_limits | users_from_logs)
-            logger.info(f"[ADMIN USERS] Total unique users found: {len(all_user_ids)} (links: {len(users_from_links)}, limits: {len(users_from_limits)}, logs: {len(users_from_logs)})")
+            all_user_ids = list(users_from_links | users_from_limits | users_from_logs | users_from_activity)
+            logger.info(f"[ADMIN USERS] Total unique users found: {len(all_user_ids)} (links: {len(users_from_links)}, limits: {len(users_from_limits)}, logs: {len(users_from_logs)}, activity: {len(users_from_activity)})")
             
             if not all_user_ids:
                 # No users found
@@ -1370,9 +1394,27 @@ class AnalyticsService:
             all_user_ids_for_interaction = [u["_id"] for u in all_users_with_stats]
             last_interactions_all = {}
             
+            # Batch query for efficiency - get user_activity data for all users at once
+            activity_records = {}
+            try:
+                activity_docs = await db.user_activity.find(
+                    {"userId": {"$in": all_user_ids_for_interaction}},
+                    {"userId": 1, "lastActivity": 1}
+                ).to_list(len(all_user_ids_for_interaction))
+                activity_records = {doc["userId"]: doc.get("lastActivity") for doc in activity_docs if doc.get("userId")}
+            except Exception as e:
+                logger.warning(f"[ADMIN USERS] Could not fetch user_activity for last interaction: {e}")
+            
             # Batch query for efficiency
             for user_id in all_user_ids_for_interaction:
                 dates = []
+                
+                # From user_activity (MOST RELIABLE - tracks every authenticated request)
+                if user_id in activity_records and activity_records[user_id]:
+                    activity_date = activity_records[user_id]
+                    if isinstance(activity_date, datetime) and activity_date.tzinfo is None:
+                        activity_date = activity_date.replace(tzinfo=timezone.utc)
+                    dates.append(activity_date)
                 
                 # From system_logs (any API activity)
                 last_log = await db.system_logs.find_one(
