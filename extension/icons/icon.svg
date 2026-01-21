@@ -1,24 +1,20 @@
-<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Maximum visibility design - fills entire space, bold elements -->
   <defs>
-    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
     </linearGradient>
   </defs>
   
-  <!-- Background circle -->
-  <circle cx="64" cy="64" r="60" fill="url(#gradient)" stroke="#fff" stroke-width="4"/>
+  <!-- Fill entire space - no padding for maximum size -->
+  <rect x="2" y="2" width="124" height="124" rx="18" fill="url(#blueGradient)"/>
   
-  <!-- Book icon -->
-  <rect x="40" y="35" width="48" height="32" rx="4" fill="#fff" opacity="0.9"/>
-  <rect x="44" y="39" width="40" height="24" rx="2" fill="url(#gradient)" opacity="0.8"/>
-  
-  <!-- Link chain -->
-  <circle cx="50" cy="80" r="8" fill="none" stroke="#fff" stroke-width="3"/>
-  <circle cx="78" cy="80" r="8" fill="none" stroke="#fff" stroke-width="3"/>
-  <path d="M58 80 L70 80" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-  
-  <!-- Plus sign -->
-  <circle cx="90" cy="40" r="12" fill="#fff" opacity="0.9"/>
-  <path d="M85 40 L95 40 M90 35 L90 45" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round"/>
+  <!-- Extra large, extra bold magnifying glass - fills most of icon space -->
+  <g transform="translate(64, 64)">
+    <!-- Maximum size circle with very thick stroke -->
+    <circle cx="-12" cy="-12" r="30" stroke="white" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Extra thick, extra long handle -->
+    <line x1="14" y1="14" x2="32" y2="32" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 </svg>

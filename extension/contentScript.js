@@ -32,7 +32,7 @@ const CONTENT_SCRIPT_CONSTANTS = {
   // Meta Tags
   META_TAGS: {
     DESCRIPTION: ['description', 'og:description', 'twitter:description'],
-    IMAGE: ['og:image', 'twitter:image'],
+    IMAGE: ['og:image', 'og:image:url', 'og:image:secure_url', 'twitter:image', 'twitter:image:src', 'image', 'thumbnail'],
     SITE_NAME: ['og:site_name'],
     AUTHOR: ['author'],
     PUBLISHED_DATE: ['article:published_time']
@@ -131,10 +131,28 @@ const getAbsoluteImageUrl = (imageUrl) => {
  */
 const findFirstLargeImage = () => {
   try {
+    const url = window.location.href;
+    
+    // Check for lazy-loaded images first (common on Medium and modern sites)
+    const lazyImages = Array.from(document.querySelectorAll('img[data-src], img[data-lazy-src], img[data-original]'));
+    for (const img of lazyImages) {
+      const lazySrc = img.getAttribute('data-src') || 
+                     img.getAttribute('data-lazy-src') || 
+                     img.getAttribute('data-original');
+      if (lazySrc && !lazySrc.startsWith('data:image/gif') && !lazySrc.includes('1x1')) {
+        const width = img.naturalWidth || img.width || img.offsetWidth || 0;
+        const height = img.naturalHeight || img.height || img.offsetHeight || 0;
+        if (width >= 100 || height >= 100 || (width === 0 && height === 0)) {
+          return getAbsoluteImageUrl(lazySrc);
+        }
+      }
+    }
+    
+    // Check regular img tags
     const images = document.querySelectorAll('img[src]');
     for (const img of images) {
       const src = img.getAttribute('src');
-      if (!src) continue;
+      if (!src || src.startsWith('data:image/gif') || src.includes('1x1')) continue;
       
       const width = img.naturalWidth || img.width || 0;
       const height = img.naturalHeight || img.height || 0;
@@ -145,10 +163,31 @@ const findFirstLargeImage = () => {
       }
     }
     
-    // If no large image found, use first image
+    // For Medium specifically, check article images
+    if (url.includes('medium.com')) {
+      try {
+        const articleImg = document.querySelector('article figure img, article picture img, article img');
+        if (articleImg) {
+          const src = articleImg.getAttribute('src') || 
+                     articleImg.getAttribute('data-src') ||
+                     articleImg.getAttribute('data-lazy-src');
+          if (src && !src.startsWith('data:image/gif') && !src.includes('1x1')) {
+            return getAbsoluteImageUrl(src);
+          }
+        }
+      } catch (e) {
+        // Silently continue
+      }
+    }
+    
+    // If no large image found, use first non-placeholder image
     if (images.length > 0) {
-      const firstSrc = images[0].getAttribute('src');
-      return firstSrc ? getAbsoluteImageUrl(firstSrc) : null;
+      for (const img of images) {
+        const src = img.getAttribute('src');
+        if (src && !src.startsWith('data:image/gif') && !src.includes('1x1')) {
+          return getAbsoluteImageUrl(src);
+        }
+      }
     }
   } catch (error) {
     console.debug('[SRT] Failed to find image on page:', error);
@@ -236,6 +275,7 @@ class SmarTrackContentScript {
 
   /**
    * Syncs auth token from localStorage to extension storage if on dashboard
+   * Also triggers category sync notification
    * @returns {void}
    */
   syncTokenIfOnDashboard() {
@@ -252,6 +292,15 @@ class SmarTrackContentScript {
       if (token) {
         console.log('[SRT] Found auth token on dashboard, syncing to extension storage');
         chrome.storage.local.set({ 'authToken': token });
+        
+        // Notify background that categories should be synced (dashboard visit detected)
+        // This will trigger category sync when popup opens next
+        chrome.storage.local.set({ 
+          'categoriesSyncNeeded': true,
+          'categoriesLastSync': Date.now()
+        }).catch(() => {
+          // Non-critical
+        });
       }
     } catch (error) {
       console.debug('[SRT] Failed to sync token:', error);
@@ -274,18 +323,35 @@ class SmarTrackContentScript {
     }
 
     // Listen for token requests from popup via window.postMessage
-    // Only accept messages from same origin or extension origin
+    // Only accept messages from whitelisted dashboard origins or extension origin
     window.addEventListener('message', (event) => {
       // Check if extension context is still valid (prevents crash after extension reload)
       if (!chrome.runtime?.id) {
         return;
       }
 
-      // Security: Only accept messages from same origin or extension origin
-      const allowedOrigins = [
-        window.location.origin,
-        extensionOrigin
+      // Security: Whitelist specific dashboard domains
+      const ALLOWED_DASHBOARD_ORIGINS = [
+        'https://smar-track.vercel.app',
+        'https://smartracker.vercel.app',
+        'https://smartrack.vercel.app',
+        'http://localhost'
       ];
+      
+      const hostname = window.location.hostname;
+      const isDashboard = ALLOWED_DASHBOARD_ORIGINS.some(origin => {
+        try {
+          const originUrl = new URL(origin);
+          return window.location.origin === origin || hostname === originUrl.hostname;
+        } catch {
+          return false;
+        }
+      });
+      
+      // Security: Only accept messages from whitelisted dashboard origins or extension origin
+      const allowedOrigins = isDashboard 
+        ? [window.location.origin, extensionOrigin]
+        : [extensionOrigin];
       
       if (!allowedOrigins.includes(event.origin)) {
         console.debug('[SRT] Rejected message from unauthorized origin:', event.origin);
@@ -314,19 +380,31 @@ class SmarTrackContentScript {
         // Handle token requests from popup/extension
         if (request.type === CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.REQUEST_AUTH_TOKEN) {
           // Get token from localStorage if available
+          // Get extension version for dashboard detection
+          let extensionVersion = null;
+          try {
+            if (chrome.runtime?.getManifest) {
+              extensionVersion = chrome.runtime.getManifest().version || null;
+            }
+          } catch (error) {
+            console.debug('[SRT] Could not get extension version:', error);
+          }
+          
           try {
             const token = localStorage.getItem('authToken');
             sendResponse({ 
               type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
               messageId: request.messageId,
-              token: token 
+              token: token,
+              version: extensionVersion
             });
           } catch (error) {
             console.error('[SRT] Failed to get token from localStorage:', error);
             sendResponse({ 
               type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
               messageId: request.messageId,
-              token: null 
+              token: null,
+              version: extensionVersion
             });
           }
           return true; // Keep channel open for async response
@@ -378,20 +456,42 @@ class SmarTrackContentScript {
         console.debug('[SRT] Could not access localStorage:', error);
       }
       
+      // Get extension version for dashboard detection
+      let extensionVersion = null;
+      try {
+        if (chrome.runtime?.getManifest) {
+          extensionVersion = chrome.runtime.getManifest().version || null;
+        }
+      } catch (error) {
+        console.debug('[SRT] Could not get extension version:', error);
+      }
+      
       // Send response - use provided targetOrigin for security (only send to authorized origin)
       window.postMessage({
         type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
         messageId: messageId,
-        token: token
+        token: token,
+        version: extensionVersion
       }, targetOrigin);
     } catch (error) {
       console.error('[SRT] Failed to handle token request:', error);
+      
+      // Get extension version even on error
+      let extensionVersion = null;
+      try {
+        if (chrome.runtime?.getManifest) {
+          extensionVersion = chrome.runtime.getManifest().version || null;
+        }
+      } catch (e) {
+        // Ignore
+      }
       
       // Send error response - use provided targetOrigin for security
       window.postMessage({
         type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
         messageId: messageId,
-        token: null
+        token: null,
+        version: extensionVersion
       }, targetOrigin);
     }
   }

@@ -23,7 +23,8 @@ const CONSTANTS = {
     AUTH_TOKEN: 'authToken',
     TOKEN_EXPIRY: 'tokenExpiry',
     SETTINGS: 'settings',
-    LAST_CATEGORY: 'lastCategory'
+    LAST_CATEGORY: 'lastCategory',
+    CUSTOM_CATEGORIES: 'customCategories' // Track extension-created categories
   },
   
   // Default Categories
@@ -124,14 +125,53 @@ const sanitizeString = (str, maxLength = 1000) => {
 };
 
 /**
- * Validates URL format
+ * Validates and sanitizes category name
+ * @param {string} category - Raw category input
+ * @returns {string|null} - Validated category name or null if invalid
+ */
+const validateCategoryName = (category) => {
+  if (!category || typeof category !== 'string') return null;
+  
+  const trimmed = category.trim();
+  if (!trimmed || trimmed.length === 0) return null;
+  
+  // Length validation (max 30 characters)
+  if (trimmed.length > 30) return null;
+  
+  // Character validation: alphanumeric, spaces, hyphens, underscores only
+  if (!/^[a-zA-Z0-9\s\-_]+$/.test(trimmed)) return null;
+  
+  // Reject reserved names
+  const reserved = ['other', 'uncategorized', 'default'];
+  if (reserved.includes(trimmed.toLowerCase())) return null;
+  
+  return trimmed.toLowerCase();
+};
+
+/**
+ * Validates URL format and security
  * @param {string} url - URL to validate
  * @returns {boolean}
  */
 const isValidUrl = (url) => {
   if (!url || typeof url !== 'string') return false;
+  
   try {
-    new URL(url);
+    const urlObj = new URL(url);
+    
+    // Security: Only allow http and https protocols
+    const allowedProtocols = ['http:', 'https:'];
+    if (!allowedProtocols.includes(urlObj.protocol)) {
+      return false;
+    }
+    
+    // Security: Block dangerous protocols explicitly
+    const dangerousProtocols = ['javascript:', 'data:', 'file:', 'vbscript:', 'about:'];
+    const urlLower = url.toLowerCase();
+    if (dangerousProtocols.some(proto => urlLower.startsWith(proto))) {
+      return false;
+    }
+    
     return true;
   } catch {
     return false;
@@ -224,6 +264,13 @@ class SmarTrackPopup {
       const token = await this.getAuthToken();
       this.setupEventListeners();
       this.renderCategories();
+      
+      // Sync categories from backend if authenticated (non-blocking)
+      if (token) {
+        this.syncCategoriesFromBackend().catch(() => {
+          // Silently fail - categories will use local storage
+        });
+      }
       
       if (!token) {
         this.showLoginView();
@@ -325,6 +372,59 @@ class SmarTrackPopup {
   }
 
   /**
+   * Syncs categories from backend API
+   * Uses backend as source of truth, only preserves extension-created custom categories
+   * @async
+   * @returns {Promise<void>}
+   */
+  async syncCategoriesFromBackend() {
+    try {
+      const api = new BackendApiService();
+      const backendCategories = await api.getCategories();
+      
+      if (backendCategories.length === 0) {
+        // If backend fetch failed, keep existing categories
+        return;
+      }
+      
+      // Get extension-created custom categories (tracked separately)
+      const result = await chrome.storage.sync.get([
+        CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES
+      ]);
+      const customCategories = result?.[CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES] || [];
+      
+      // Normalize backend categories for comparison
+      const backendSet = new Set(backendCategories.map(c => c.toLowerCase()));
+      
+      // Only keep custom categories that aren't in backend (user-created in extension)
+      const validCustomCategories = customCategories.filter(cat => {
+        const normalized = cat.toLowerCase();
+        return !backendSet.has(normalized) && normalized !== 'other';
+      });
+      
+      // Clean up stored custom categories list (remove ones now in backend)
+      if (validCustomCategories.length !== customCategories.length) {
+        await chrome.storage.sync.set({
+          [CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES]: validCustomCategories
+        });
+      }
+      
+      // Combine: backend categories (source of truth) + valid custom categories
+      const mergedCategories = [...backendCategories, ...validCustomCategories];
+      
+      // Update if categories changed
+      if (JSON.stringify(mergedCategories.sort()) !== JSON.stringify(this.categories.sort())) {
+        this.categories = mergedCategories.length > 0 ? mergedCategories : [...CONSTANTS.DEFAULT_CATEGORIES];
+        await this.saveCategories(this.categories);
+        this.renderCategories();
+      }
+    } catch (error) {
+      // Non-critical - silently fail and keep existing categories
+      console.debug('[SRT] Failed to sync categories from backend:', error);
+    }
+  }
+
+  /**
    * Saves categories to storage
    * @async
    * @param {string[]} categories - Array of category names
@@ -358,6 +458,7 @@ class SmarTrackPopup {
     if (!select) return;
 
     // Clear existing options
+    // Security: Safe innerHTML usage - only clearing element, no user data inserted
     select.innerHTML = '';
 
     // Add stored categories
@@ -457,28 +558,19 @@ class SmarTrackPopup {
         func: this.extractMetadataFromPage
       });
       
-      console.log('[SRT] Script execution result:', result);
-      console.log('[SRT] Result data:', result?.result);
+      // Script execution complete
       
       this.pageData = result?.result || this.getFallbackPageData();
       
-      // Debug: Log extracted image
-      if (this.pageData.image) {
-        console.log('[SRT] ✅ Extracted image URL:', this.pageData.image);
-      } else {
-        console.log('[SRT] ❌ No image found in page data, trying content script fallback...');
-        console.log('[SRT] Full pageData:', JSON.stringify(this.pageData, null, 2));
-        
-        // Try to extract image from content script as fallback
+      // Try to extract image from content script as fallback if no image found
+      if (!this.pageData.image) {
         try {
           const fallbackData = await this.extractDataFromContentScript();
           if (fallbackData && fallbackData.image) {
-            console.log('[SRT] ✅ Content script fallback found image:', fallbackData.image);
             this.pageData = { ...this.pageData, ...fallbackData };
-          } else {
-            console.log('[SRT] ❌ Content script fallback also failed to find image');
           }
         } catch (err) {
+          // Silently continue - content script might not be available
           console.debug('[SRT] Content script image extraction failed:', err);
         }
       }
@@ -652,38 +744,96 @@ class SmarTrackPopup {
     // Extract image and convert to absolute URL
     const getImageUrl = () => {
       // Try meta tags first (og:image, twitter:image)
+      // Check multiple variations to catch all cases
       let imageMeta = getMetaContent('og:image') || 
+                      getMetaContent('og:image:url') ||
+                      getMetaContent('og:image:secure_url') ||
                       getMetaContent('twitter:image') ||
-                      getMetaContent('og:image:secure_url');
+                      getMetaContent('twitter:image:src') ||
+                      getMetaContent('image') ||
+                      getMetaContent('thumbnail');
       
       // If no meta tag, try to find first large image on page
       if (!imageMeta) {
         try {
-          const images = Array.from(document.querySelectorAll('img[src]'));
+          // Check for lazy-loaded images (data-src, data-lazy-src, etc.) - common on Medium
+          const lazyImages = Array.from(document.querySelectorAll('img[data-src], img[data-lazy-src], img[data-original]'));
+          for (const img of lazyImages) {
+            const lazySrc = img.getAttribute('data-src') || 
+                          img.getAttribute('data-lazy-src') || 
+                          img.getAttribute('data-original');
+            if (lazySrc && !lazySrc.startsWith('data:image/gif') && !lazySrc.includes('1x1')) {
+              const width = img.naturalWidth || img.width || img.offsetWidth || 0;
+              const height = img.naturalHeight || img.height || img.offsetHeight || 0;
+              // Accept smaller images from lazy loading (they might not have loaded dimensions yet)
+              if (width >= 100 || height >= 100 || (width === 0 && height === 0)) {
+                imageMeta = lazySrc;
+                break;
+              }
+            }
+          }
           
-          // Sort by size (prefer larger images)
-          const imageCandidates = images.map(img => {
-            const src = img.getAttribute('src');
-            if (!src) return null;
+          // If still no image, check regular img tags
+          if (!imageMeta) {
+            const images = Array.from(document.querySelectorAll('img[src]'));
             
-            // Try to get actual dimensions
-            const width = img.naturalWidth || img.width || img.offsetWidth || 0;
-            const height = img.naturalHeight || img.height || img.offsetHeight || 0;
-            const area = width * height;
+            // Sort by size (prefer larger images)
+            const imageCandidates = images.map(img => {
+              const src = img.getAttribute('src');
+              if (!src || src.startsWith('data:image/gif') || src.includes('1x1')) return null;
+              
+              // Try to get actual dimensions
+              const width = img.naturalWidth || img.width || img.offsetWidth || 0;
+              const height = img.naturalHeight || img.height || img.offsetHeight || 0;
+              const area = width * height;
+              
+              return { src, width, height, area };
+            }).filter(img => img && img.src);
             
-            return { src, width, height, area };
-          }).filter(img => img && img.src);
+            // Sort by area (largest first)
+            imageCandidates.sort((a, b) => b.area - a.area);
+            
+            // Prefer images that are at least 200x200 pixels
+            const largeImage = imageCandidates.find(img => img.width >= 200 && img.height >= 200);
+            if (largeImage) {
+              imageMeta = largeImage.src;
+            } else if (imageCandidates.length > 0) {
+              // Use largest available image
+              imageMeta = imageCandidates[0].src;
+            }
+          }
           
-          // Sort by area (largest first)
-          imageCandidates.sort((a, b) => b.area - a.area);
-          
-          // Prefer images that are at least 200x200 pixels
-          const largeImage = imageCandidates.find(img => img.width >= 200 && img.height >= 200);
-          if (largeImage) {
-            imageMeta = largeImage.src;
-          } else if (imageCandidates.length > 0) {
-            // Use largest available image
-            imageMeta = imageCandidates[0].src;
+          // For Medium specifically, check article header images and specific selectors
+          if (!imageMeta && url.includes('medium.com')) {
+            try {
+              // Medium often uses figure or picture elements in article
+              const articleFigure = document.querySelector('article figure img, article picture img, article img');
+              if (articleFigure) {
+                const src = articleFigure.getAttribute('src') || 
+                           articleFigure.getAttribute('data-src') ||
+                           articleFigure.getAttribute('data-lazy-src');
+                if (src && !src.startsWith('data:image/gif') && !src.includes('1x1')) {
+                  imageMeta = src;
+                }
+              }
+              
+              // Check for Medium's header image (often in the first section)
+              if (!imageMeta) {
+                const firstSection = document.querySelector('article section, article > div');
+                if (firstSection) {
+                  const sectionImg = firstSection.querySelector('img');
+                  if (sectionImg) {
+                    const src = sectionImg.getAttribute('src') || 
+                               sectionImg.getAttribute('data-src');
+                    if (src && !src.startsWith('data:image/gif') && !src.includes('1x1')) {
+                      imageMeta = src;
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              // Silently continue
+            }
           }
         } catch (e) {
           console.error('[SRT] Error finding images on page:', e);
@@ -721,12 +871,7 @@ class SmarTrackPopup {
     const image = getImageUrl();
     const favicon = getFaviconUrl();
 
-    // Debug logging (will be visible in page console, not popup console)
-    if (image) {
-      console.log('[SRT] Extracted image from page:', image);
-    } else {
-      console.log('[SRT] No image found on page');
-    }
+    // Image extraction complete (debug logging removed to reduce noise)
 
     // Detect content type
     const detectContentType = () => {
@@ -835,7 +980,8 @@ class SmarTrackPopup {
       this.renderDuplicates(duplicates || []);
     } catch (error) {
       // Silently fail - duplicates are non-critical
-      console.error('[SRT] Duplicate search failed:', error);
+      // Use debug level to avoid console noise for expected network failures
+      console.debug('[SRT] Duplicate search failed (non-critical):', error.message || error);
     }
   }
 
@@ -856,6 +1002,7 @@ class SmarTrackPopup {
     }
     
     panel.classList.remove('hidden');
+    // Security: Safe innerHTML usage - only clearing element, no user data inserted
     list.innerHTML = '';
     
     // Show max 3 duplicates
@@ -970,7 +1117,6 @@ class SmarTrackPopup {
         contentTypeBadge.style.display = 'inline-block';
       } else {
         const contentType = this.pageData.contentType || this.detectContentType(url);
-        console.log('[SRT] Content type detected:', contentType);
         if (contentType) {
           contentTypeBadge.textContent = contentType.toUpperCase();
           contentTypeBadge.setAttribute('data-type', contentType);
@@ -983,25 +1129,43 @@ class SmarTrackPopup {
     
     // Set thumbnail image (if available)
     if (thumbnailEl) {
-      console.log('[SRT] populateUI - pageData:', this.pageData);
-      console.log('[SRT] populateUI - pageData.image:', this.pageData.image);
+      // Debug logging removed to reduce console noise
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:985',message:'populateUI thumbnail section entry',data:{hasImage:!!this.pageData.image,imageUrl:this.pageData.image,thumbnailElExists:!!thumbnailEl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       
       if (this.pageData.image) {
         try {
           let imageUrl = this.pageData.image;
           
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:992',message:'Before URL conversion',data:{originalUrl:imageUrl,isAbsolute:imageUrl.startsWith('http://')||imageUrl.startsWith('https://')||imageUrl.startsWith('data:')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+          // #endregion
+          
           // Ensure absolute URL
           if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://') && !imageUrl.startsWith('data:')) {
             try {
               imageUrl = new URL(imageUrl, url).href;
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:996',message:'URL converted to absolute',data:{convertedUrl:imageUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+              // #endregion
             } catch (e) {
               console.error('[SRT] Failed to convert image URL to absolute:', e);
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:998',message:'URL conversion failed',data:{error:e?.message,errorType:typeof e},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+              // #endregion
             }
           }
           
-          console.log('[SRT] Setting thumbnail image:', imageUrl);
+          // Image URL ready for thumbnail
+          
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1002',message:'About to create img element',data:{finalImageUrl:imageUrl,urlLength:imageUrl?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+          // #endregion
           
           // Clear any existing content
+          // Security: Safe innerHTML usage - only clearing element, no user data inserted
           thumbnailEl.innerHTML = '';
           
           // Show thumbnail immediately (don't wait for image to load)
@@ -1009,10 +1173,10 @@ class SmarTrackPopup {
           
           // Set thumbnail container styles first
           thumbnailEl.style.cssText = `
-            width: 60px;
-            height: 60px;
+            width: 96px;
+            height: 96px;
             background: #e2e8f0;
-            border-radius: 10px;
+            border-radius: 12px;
             overflow: hidden;
             display: block;
             flex-shrink: 0;
@@ -1030,15 +1194,29 @@ class SmarTrackPopup {
             display: block;
           `;
           
-          img.onerror = (e) => {
-            console.error('[SRT] Failed to load thumbnail image:', imageUrl, e);
+          img.onerror = () => {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1051',message:'img.onerror triggered',data:{imageUrl:imageUrl,imgSrc:img.src,imgComplete:img.complete,imgNaturalWidth:img.naturalWidth,imgNaturalHeight:img.naturalHeight},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
+            // Image failed to load (CORS, 404, invalid format, etc.)
+            // Silently handle - this is expected behavior for many images
+            // Do NOT log to console to avoid noise - gracefully fall back to favicon
             thumbnailEl.classList.remove('has-image');
             thumbnailEl.style.display = 'none';
+            // Security: Safe innerHTML usage - only clearing element, no user data inserted
             thumbnailEl.innerHTML = '';
+            
+            // Show favicon as fallback when thumbnail fails
+            if (faviconEl) {
+              faviconEl.style.display = 'block';
+            }
           };
           
           img.onload = () => {
-            console.log('[SRT] Thumbnail image loaded successfully');
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1047',message:'img.onload triggered',data:{imageUrl:imageUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
+            // Thumbnail image loaded successfully
             // Image loaded, ensure it's visible
             thumbnailEl.classList.add('has-image');
             thumbnailEl.style.display = 'block';
@@ -1051,15 +1229,23 @@ class SmarTrackPopup {
           
           thumbnailEl.appendChild(img);
           
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1059',message:'img element appended to DOM',data:{imageUrl:imageUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+          // #endregion
+          
         } catch (error) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1061',message:'catch block triggered',data:{errorMessage:error?.message,errorType:typeof error,errorName:error?.name,hasStack:!!error?.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
           console.error('[SRT] Failed to set thumbnail:', error, error.stack);
           thumbnailEl.classList.remove('has-image');
           thumbnailEl.style.display = 'none';
         }
       } else {
-        console.log('[SRT] No image data available for thumbnail');
+        // No image available - gracefully hide thumbnail
         thumbnailEl.classList.remove('has-image');
         thumbnailEl.style.display = 'none';
+        // Security: Safe innerHTML usage - only clearing element, no user data inserted
         thumbnailEl.innerHTML = '';
       }
     } else {
@@ -1074,10 +1260,17 @@ class SmarTrackPopup {
           : new URL(this.pageData.favicon, url).href;
         
         faviconEl.style.cssText = `
+          width: 96px;
+          height: 96px;
+          border-radius: 12px;
           background-image: url(${faviconUrl});
           background-size: cover;
           background-position: center;
           background-color: #e2e8f0;
+          display: block;
+          flex-shrink: 0;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          border: 2px solid #ffffff;
         `;
       } catch (error) {
         console.error('[SRT] Failed to set favicon:', error);
@@ -1161,20 +1354,33 @@ class SmarTrackPopup {
   }
 
   /**
-   * Sets up storage change listener to detect token updates
+   * Sets up storage change listener to detect token updates and category sync needs
    * @returns {void}
    */
   setupStorageListener() {
     const handleStorageChange = (changes, namespace) => {
-      if (namespace === 'local' && changes[CONSTANTS.STORAGE_KEYS.AUTH_TOKEN]) {
-        const newToken = changes[CONSTANTS.STORAGE_KEYS.AUTH_TOKEN].newValue;
-        if (newToken) {
-          console.log('[SRT] Token detected in storage, reloading popup...');
-          // If we're showing login view and token appears, reload to show main view
-          const loginView = getElement(CONSTANTS.SELECTORS.LOGIN_VIEW);
-          if (loginView && !loginView.classList.contains('hidden')) {
-            location.reload();
+      if (namespace === 'local') {
+        // Handle token updates
+        if (changes[CONSTANTS.STORAGE_KEYS.AUTH_TOKEN]) {
+          const newToken = changes[CONSTANTS.STORAGE_KEYS.AUTH_TOKEN].newValue;
+          if (newToken) {
+            console.log('[SRT] Token detected in storage, reloading popup...');
+            // If we're showing login view and token appears, reload to show main view
+            const loginView = getElement(CONSTANTS.SELECTORS.LOGIN_VIEW);
+            if (loginView && !loginView.classList.contains('hidden')) {
+              location.reload();
+            }
           }
+        }
+        
+        // Handle category sync trigger
+        if (changes.categoriesSyncNeeded && changes.categoriesSyncNeeded.newValue === true) {
+          // Sync categories from backend when dashboard visit is detected
+          this.syncCategoriesFromBackend().catch(() => {
+            // Silently fail
+          });
+          // Clear the flag
+          chrome.storage.local.set({ categoriesSyncNeeded: false }).catch(() => {});
         }
       }
     };
@@ -1330,24 +1536,53 @@ class SmarTrackPopup {
     const input = getElement(CONSTANTS.SELECTORS.CUSTOM_CATEGORY_INPUT);
     if (!input) return;
     
-    const rawValue = input.value.trim();
-    if (!rawValue) return;
-    
-    const normalizedValue = rawValue.toLowerCase();
+    // Validate and sanitize category name
+    const validatedCategory = validateCategoryName(input.value);
+    if (!validatedCategory) {
+      // Invalid category name - show error and return
+      this.showStatus('Invalid category name. Use letters, numbers, spaces, hyphens, or underscores (max 30 chars).', 'error');
+      return;
+    }
     
     // Add to categories if not already present (but keep "other" out of the saved list)
-    if (!this.categories.includes(normalizedValue) && normalizedValue !== 'other') {
-      const updatedCategories = [...this.categories, normalizedValue];
+    if (!this.categories.includes(validatedCategory) && validatedCategory !== 'other') {
+      const updatedCategories = [...this.categories, validatedCategory];
       await this.saveCategories(updatedCategories);
+      
+      // Track this as an extension-created custom category
+      await this.addCustomCategory(validatedCategory);
     }
     
     // Select the new category and update UI
-    this.renderCategories(normalizedValue);
-    await this.saveLastCategory(normalizedValue);
+    this.renderCategories(validatedCategory);
+    await this.saveLastCategory(validatedCategory);
     
     // Clear and hide the custom input
     input.value = '';
     this.showCustomCategoryRow(false);
+  }
+
+  /**
+   * Adds a category to the tracked custom categories list
+   * @async
+   * @param {string} category - Category name to track
+   * @returns {Promise<void>}
+   */
+  async addCustomCategory(category) {
+    try {
+      const result = await chrome.storage.sync.get([CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES]);
+      const customCategories = result?.[CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES] || [];
+      
+      const normalized = category.toLowerCase();
+      if (!customCategories.includes(normalized)) {
+        customCategories.push(normalized);
+        await chrome.storage.sync.set({
+          [CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES]: customCategories
+        });
+      }
+    } catch (error) {
+      console.error('[SRT] Failed to track custom category:', error);
+    }
   }
 
   /**

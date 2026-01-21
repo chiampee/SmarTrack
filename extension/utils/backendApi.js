@@ -151,28 +151,51 @@ class BackendApiService {
       window.addEventListener('message', handleResponse);
       
       // Request token from frontend
-      // Try to get current tab and use its origin for security
+      // Security: Only send to whitelisted dashboard origins
+      const ALLOWED_DASHBOARD_ORIGINS = [
+        'https://smar-track.vercel.app',
+        'https://smartracker.vercel.app',
+        'https://smartrack.vercel.app',
+        'http://localhost'
+      ];
+      
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs && tabs[0] && tabs[0].url) {
           try {
-            const targetOrigin = new URL(tabs[0].url).origin;
-            window.postMessage({
-              type: 'SRT_REQUEST_AUTH_TOKEN',
-              messageId: messageId
-            }, targetOrigin);
+            const tabUrl = new URL(tabs[0].url);
+            const targetOrigin = tabUrl.origin;
+            
+            // Security: Only send to whitelisted dashboard origins
+            const isAllowedOrigin = ALLOWED_DASHBOARD_ORIGINS.some(origin => {
+              try {
+                const originUrl = new URL(origin);
+                return targetOrigin === origin || tabUrl.hostname === originUrl.hostname;
+              } catch {
+                return false;
+              }
+            });
+            
+            if (isAllowedOrigin) {
+              window.postMessage({
+                type: 'SRT_REQUEST_AUTH_TOKEN',
+                messageId: messageId
+              }, targetOrigin);
+            } else {
+              // Not a dashboard origin, don't send message
+              console.debug('[SRT] Token request skipped: not a dashboard origin');
+              cleanup();
+              reject(new AuthenticationError('Not on a SmarTrack dashboard page'));
+            }
           } catch (error) {
-            // If URL parsing fails, use window origin as fallback
-            window.postMessage({
-              type: 'SRT_REQUEST_AUTH_TOKEN',
-              messageId: messageId
-            }, window.location.origin);
+            // If URL parsing fails, reject the request
+            console.debug('[SRT] Token request failed: invalid URL', error);
+            cleanup();
+            reject(new AuthenticationError('Invalid page URL'));
           }
         } else {
-          // No tab available, use window origin
-          window.postMessage({
-            type: 'SRT_REQUEST_AUTH_TOKEN',
-            messageId: messageId
-          }, window.location.origin);
+          // No tab available, reject
+          cleanup();
+          reject(new AuthenticationError('No active tab available'));
         }
       });
     });
@@ -448,7 +471,37 @@ class BackendApiService {
       return Array.isArray(response.links) ? response.links : [];
     } catch (error) {
       // Non-critical operation, return empty array on failure
-      console.error('[SRT] Duplicate search failed:', error);
+      // Use debug level to avoid console noise for expected network failures
+      console.debug('[SRT] Duplicate search failed (non-critical):', error.message || error);
+      return [];
+    }
+  }
+
+  /**
+   * Fetches categories from the backend
+   * @async
+   * @returns {Promise<Array<string>>} Array of category names
+   */
+  async getCategories() {
+    try {
+      // Use /api/types endpoint (alias for /api/categories) to match dashboard
+      const categories = await this.makeRequest('/api/types');
+      
+      // Extract category names from CategoryResponse objects
+      if (Array.isArray(categories)) {
+        return categories.map(cat => {
+          // Handle both object format {id, name} and string format
+          if (typeof cat === 'string') {
+            return cat.toLowerCase();
+          }
+          return (cat.name || cat.id || '').toLowerCase();
+        }).filter(Boolean);
+      }
+      
+      return [];
+    } catch (error) {
+      // Non-critical operation, return empty array on failure
+      console.debug('[SRT] Failed to fetch categories from backend:', error.message || error);
       return [];
     }
   }

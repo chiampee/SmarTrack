@@ -5,6 +5,8 @@ import { Plus, Grid, List, Download, Archive, Chrome, Tag, MessageSquare, Globe,
 import { LinkedInLogo, XLogo, RedditLogo, WebIcon, PDFIcon, YouTubeLogo } from '../components/BrandLogos'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { useExtensionDetection } from '../hooks/useExtensionDetection'
+import { ExtensionUpdateNotice } from '../components/ExtensionUpdateNotice'
+import { LATEST_EXTENSION_VERSION, isVersionOutdated } from '../constants/extensionVersion'
 import { LinkCard } from '../components/LinkCard'
 import { SearchAutocomplete } from '../components/SearchAutocomplete'
 import { AddLinkModal } from '../components/AddLinkModal'
@@ -62,7 +64,7 @@ export const Dashboard: React.FC = () => {
   const [currentCategoryName, setCurrentCategoryName] = useState<string | null>(null)
   const [searchParams] = useSearchParams()
   const { isMobile, prefersReducedMotion, animationConfig } = useMobileOptimizations()
-  const isExtensionInstalled = useExtensionDetection()
+  const { isExtensionInstalled, extensionVersion } = useExtensionDetection()
 
   // Show extension install modal for first-time users (desktop only)
   useEffect(() => {
@@ -78,6 +80,10 @@ export const Dashboard: React.FC = () => {
       }
     }
   }, [isExtensionInstalled, isAuthenticated, isMobile])
+
+  // Check if extension update is needed
+  const needsUpdate = isExtensionInstalled && extensionVersion && 
+    isVersionOutdated(extensionVersion, LATEST_EXTENSION_VERSION)
 
   // Check if we should redirect to analytics after login
   useEffect(() => {
@@ -1126,8 +1132,8 @@ export const Dashboard: React.FC = () => {
   // Handle extension download
   const handleDownloadExtension = () => {
     const linkElement = document.createElement('a')
-    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.1.zip')
-    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.1.zip')
+    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.2.zip')
+    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.2.zip')
     linkElement.click()
     toast.success('Extension download started!')
   }
@@ -1197,6 +1203,15 @@ export const Dashboard: React.FC = () => {
               </button>
             </div>
           </motion.div>
+        )}
+
+        {/* Extension Update Notice */}
+        {needsUpdate && isAuthenticated && extensionVersion && (
+          <ExtensionUpdateNotice
+            currentVersion={extensionVersion}
+            latestVersion={LATEST_EXTENSION_VERSION}
+            onDownload={handleDownloadExtension}
+          />
         )}
 
         {/* ✅ TITLE SECTION: Displayed first per user request */}

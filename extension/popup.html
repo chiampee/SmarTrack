@@ -3,6 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" 
+        content="default-src 'self'; 
+                 script-src 'self'; 
+                 style-src 'self' 'unsafe-inline'; 
+                 img-src 'self' data: https:; 
+                 connect-src 'self' https://smartrack-back.onrender.com https://smar-track.vercel.app https://smartracker.vercel.app https://smartrack.vercel.app http://127.0.0.1:7242; 
+                 font-src 'self' data:;
+                 object-src 'none';
+                 base-uri 'self';">
   <title>SmarTrack - Save Link</title>
   <style>
     * {
@@ -146,8 +155,8 @@
     }
 
     .preview-thumbnail {
-      width: 64px;
-      height: 64px;
+      width: 96px;
+      height: 96px;
       border-radius: 12px;
       flex-shrink: 0;
       background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
@@ -176,6 +185,17 @@
 
     .preview-thumbnail img:hover {
       opacity: 0.9;
+    }
+
+    .preview-favicon {
+      width: 96px;
+      height: 96px;
+      border-radius: 12px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border: 2px solid #ffffff;
+      display: block;
     }
 
     .preview-content {

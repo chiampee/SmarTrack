@@ -37,7 +37,7 @@ export const Settings: React.FC = () => {
   const [showDeleteAccountConfirm, setShowDeleteAccountConfirm] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [accountConfirmText, setAccountConfirmText] = useState('')
-  const isExtensionInstalled = useExtensionDetection()
+  const { isExtensionInstalled } = useExtensionDetection()
   
   // Profile state
   const [firstName, setFirstName] = useState('')
@@ -49,8 +49,8 @@ export const Settings: React.FC = () => {
 
   const handleDownloadExtension = () => {
     const linkElement = document.createElement('a')
-    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.1.zip')
-    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.1.zip')
+    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.2.zip')
+    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.2.zip')
     linkElement.click()
     toast.success('Extension download started!')
   }

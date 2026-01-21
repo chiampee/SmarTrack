@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SmarTrack - Research Link Saver",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Save and organize your research links with AI-powered insights",
   "permissions": [
     "activeTab",
@@ -13,9 +13,11 @@
     "alarms"
   ],
   "host_permissions": [
-    "https://*/*",
-    "http://*/*",
-    "https://www.linkedin.com/*"
+    "https://smartrack-back.onrender.com/*",
+    "https://smar-track.vercel.app/*",
+    "https://smartracker.vercel.app/*",
+    "https://smartrack.vercel.app/*",
+    "https://www.linkedin.com/my-items/saved-posts/*"
   ],
   "action": {
     "default_popup": "popup.html",

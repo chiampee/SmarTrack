@@ -379,10 +379,14 @@ class SmarTrackBackground {
             if (chrome.action?.setBadgeText) {
               chrome.action.setBadgeText({ text: '' });
             }
-            try {
-              chrome.contextMenus.remove(BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.DISCOVERY_SAVE);
-            } catch (e) {
-              // Ignore errors
+            // Remove context menu item - handle errors gracefully
+            if (chrome.contextMenus?.remove) {
+              chrome.contextMenus.remove(BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.DISCOVERY_SAVE, () => {
+                // Ignore errors - item may not exist
+                if (chrome.runtime.lastError) {
+                  // Silently ignore - this is expected if item doesn't exist
+                }
+              });
             }
           }
         }
@@ -1285,23 +1289,29 @@ class SmarTrackBackground {
     }
 
     try {
-      // Remove existing discovery menu item if it exists
-      try {
-        chrome.contextMenus.remove(BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.DISCOVERY_SAVE, () => {
-          // Ignore errors if item doesn't exist
+      // Try to remove existing discovery menu item first (ignore errors if it doesn't exist)
+      chrome.contextMenus.remove(BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.DISCOVERY_SAVE, () => {
+        // Ignore errors - item may not exist
+        if (chrome.runtime.lastError) {
+          // Item doesn't exist, that's fine
+        }
+        
+        // Create discovery menu item
+        chrome.contextMenus.create({
+          id: BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.DISCOVERY_SAVE,
+          title: 'SmarTrack: You visit this often. Save it?',
+          contexts: ['page', 'action']
+        }, () => {
+          if (chrome.runtime.lastError) {
+            // Only log if it's not a "duplicate item" error
+            if (!chrome.runtime.lastError.message.includes('duplicate')) {
+              console.debug('[SRT] Failed to create discovery menu item:', chrome.runtime.lastError.message);
+            }
+          }
         });
-      } catch (e) {
-        // Ignore
-      }
-
-      // Create new discovery menu item
-      chrome.contextMenus.create({
-        id: BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.DISCOVERY_SAVE,
-        title: 'SmarTrack: You visit this often. Save it?',
-        contexts: ['page', 'action']
       });
     } catch (error) {
-      console.error('[SRT] Failed to add discovery context menu:', error);
+      console.debug('[SRT] Failed to add discovery context menu:', error);
     }
   }
 
@@ -1369,9 +1379,10 @@ class SmarTrackBackground {
         return null;
       }
       
-      // Fetch links from API
-      const url = `${BACKGROUND_CONSTANTS.API_BASE_URL}${BACKGROUND_CONSTANTS.LINKS_ENDPOINT}?limit=1000`;
+      // Fetch links from API - try without query params first, API may not support limit parameter
+      const url = `${BACKGROUND_CONSTANTS.API_BASE_URL}${BACKGROUND_CONSTANTS.LINKS_ENDPOINT}`;
       const response = await fetch(url, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -1379,14 +1390,45 @@ class SmarTrackBackground {
       });
       
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // Handle 422 and other errors gracefully - don't throw, just return null
+        // Don't try to parse JSON from error responses
+        if (response.status === 422) {
+          console.debug('[SRT] API returned 422 (Unprocessable Entity) - endpoint may not support GET requests or requires different parameters');
+        } else if (response.status === 401) {
+          console.debug('[SRT] Unauthorized - token may be expired');
+        } else {
+          console.debug(`[SRT] Failed to refresh cache: HTTP ${response.status} ${response.statusText}`);
+        }
+        return null;
       }
       
-      const data = await response.json();
-      const links = data.links || [];
+      // Only parse JSON if response is OK
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.debug('[SRT] Failed to parse response JSON:', parseError);
+        return null;
+      }
+      
+      // Handle different response formats
+      let links = [];
+      if (Array.isArray(data)) {
+        links = data;
+      } else if (data.links && Array.isArray(data.links)) {
+        links = data.links;
+      } else if (data.data && Array.isArray(data.data)) {
+        links = data.data;
+      }
       
       // Extract URLs
-      const urls = links.map(link => link.url).filter(Boolean);
+      const urls = links.map(link => {
+        // Handle both object format {url: ...} and string format
+        if (typeof link === 'string') {
+          return link;
+        }
+        return link.url;
+      }).filter(Boolean);
       
       // Update cache
       await chrome.storage.local.set({
@@ -1398,7 +1440,13 @@ class SmarTrackBackground {
       
       return urls;
     } catch (error) {
-      console.error('[SRT] Failed to refresh saved URLs cache:', error);
+      // Silently handle errors - this is a non-critical background operation
+      // Don't log full error stack for expected API errors
+      if (error.message && error.message.includes('HTTP 422')) {
+        console.debug('[SRT] Cache refresh skipped - API endpoint may not support GET requests');
+      } else {
+        console.debug('[SRT] Failed to refresh saved URLs cache:', error.message || error);
+      }
       return null;
     }
   }

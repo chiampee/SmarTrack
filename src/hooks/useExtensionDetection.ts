@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react'
 
 /**
- * Hook to detect if the SmarTrack Chrome extension is installed
+ * Hook to detect if the SmarTrack Chrome extension is installed and get its version
  * Uses multiple detection methods for reliability
- * @returns {boolean} true if extension is detected, false otherwise
+ * @returns {object} Object with isExtensionInstalled boolean and extensionVersion string
  */
-export const useExtensionDetection = (): boolean => {
+export interface ExtensionDetectionResult {
+  isExtensionInstalled: boolean
+  extensionVersion: string | null
+}
+
+export const useExtensionDetection = (): ExtensionDetectionResult => {
   const [isExtensionInstalled, setIsExtensionInstalled] = useState<boolean>(false)
+  const [extensionVersion, setExtensionVersion] = useState<string | null>(null)
 
   useEffect(() => {
     // Check if we're in a browser environment
@@ -18,7 +24,7 @@ export const useExtensionDetection = (): boolean => {
 
     // Method 1: Try to detect via content script message
     const detectViaMessage = () => {
-      return new Promise<boolean>((resolve) => {
+      return new Promise<{ detected: boolean; version: string | null }>((resolve) => {
         const messageId = `extension-check-${Date.now()}-${Math.random()}`
         let resolved = false
         let timeoutId: NodeJS.Timeout | null = null
@@ -29,7 +35,7 @@ export const useExtensionDetection = (): boolean => {
             return
           }
 
-          const { type, messageId: responseId } = event.data || {}
+          const { type, messageId: responseId, version } = event.data || {}
 
           // Check if this is a response to our detection message
           // The extension responds with SRT_AUTH_TOKEN_RESPONSE even if no token is available
@@ -37,7 +43,8 @@ export const useExtensionDetection = (): boolean => {
             if (!resolved) {
               resolved = true
               cleanup()
-              resolve(true)
+              // Return both detection status and version
+              resolve({ detected: true, version: version || null })
             }
           }
         }
@@ -70,7 +77,7 @@ export const useExtensionDetection = (): boolean => {
           if (!resolved) {
             resolved = true
             cleanup()
-            resolve(false)
+            resolve({ detected: false, version: null })
           }
         }, 2000)
       })
@@ -87,18 +94,23 @@ export const useExtensionDetection = (): boolean => {
     const runDetection = async () => {
       try {
         // Try message-based detection first
-        const detected = await detectViaMessage()
+        const result = await detectViaMessage()
         
-        if (detected) {
+        if (result.detected) {
           setIsExtensionInstalled(true)
+          setExtensionVersion(result.version)
         } else {
           // Fallback to marker detection
           const markerDetected = detectViaMarkers()
           setIsExtensionInstalled(markerDetected)
+          if (!markerDetected) {
+            setExtensionVersion(null)
+          }
         }
       } catch (error) {
         console.debug('[Extension Detection] Error:', error)
         setIsExtensionInstalled(false)
+        setExtensionVersion(null)
       }
     }
 
@@ -116,7 +128,9 @@ export const useExtensionDetection = (): boolean => {
     }
   }, [])
 
-  // Return false while checking (to avoid showing button during detection)
-  // Return true only if extension is confirmed installed
-  return isExtensionInstalled
+  // Return detection result with version information
+  return {
+    isExtensionInstalled,
+    extensionVersion
+  }
 }
