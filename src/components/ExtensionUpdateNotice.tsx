@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Chrome, Download, X, AlertCircle } from 'lucide-react'
+import { Download, X, AlertCircle } from 'lucide-react'
 
 interface ExtensionUpdateNoticeProps {
   currentVersion: string
