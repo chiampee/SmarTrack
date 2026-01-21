@@ -2040,62 +2040,134 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-6">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search by user ID or email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input-field pl-10 w-full h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-          />
+      {/* Improved Filter Section */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <Search className="w-4 h-4" />
+            Filters & Search
+          </h3>
+          {hasActiveFilters && (
+            <button
+              onClick={() => {
+                clearAllFilters()
+                setSearch('')
+                setActiveOnly(undefined)
+                setInactivityFilter('all')
+                setPage(1)
+              }}
+              className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium flex items-center gap-1.5"
+            >
+              <X className="w-3.5 h-3.5" />
+              Clear All
+            </button>
+          )}
         </div>
-        {hasActiveFilters && (
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Search */}
+          <div className="lg:col-span-2">
+            <label className="block text-xs font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+              Search Users
+              {search && (
+                <span className="w-2 h-2 bg-blue-500 rounded-full" title="Search active" />
+              )}
+            </label>
+            <div className="relative">
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 transition-colors ${
+                search ? 'text-blue-500' : 'text-gray-400'
+              }`} />
+              <input
+                type="text"
+                placeholder="Search by email or user ID..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className={`input-field pl-10 w-full h-10 focus:border-blue-500 focus:ring-blue-500 text-sm transition-colors ${
+                  search ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                }`}
+              />
+            </div>
+          </div>
+
+          {/* Status Filter - Consolidated */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+              User Status
+              {activeOnly !== undefined && (
+                <span className="w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
+              )}
+            </label>
+            <select
+              value={activeOnly === undefined ? 'all' : activeOnly ? 'active' : 'inactive'}
+              onChange={(e) => setActiveOnly(e.target.value === 'all' ? undefined : e.target.value === 'active')}
+              className={`input-field h-10 focus:border-blue-500 focus:ring-blue-500 w-full text-sm transition-colors ${
+                activeOnly !== undefined ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+              }`}
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+          </div>
+
+          {/* Inactivity Period Filter */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+              Inactivity Period
+              {inactivityFilter !== 'all' && (
+                <span className="w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
+              )}
+            </label>
+            <select
+              value={inactivityFilter}
+              onChange={(e) => setInactivityFilter(e.target.value)}
+              className={`input-field h-10 focus:border-blue-500 focus:ring-blue-500 w-full text-sm transition-colors ${
+                inactivityFilter !== 'all' ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+              }`}
+            >
+              <option value="all">All Periods</option>
+              <option value="active">Active (&lt; 1 month)</option>
+              <option value="inactive">Inactive (1-3 months)</option>
+              <option value="very_inactive">Very Inactive (&gt; 3 months)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Sort and Actions Row */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center gap-3">
+            <label className="text-xs font-medium text-gray-700 whitespace-nowrap">Sort by:</label>
+            <select
+              value={sortBy === 'none' ? 'none' : `${sortBy}-${sortOrder}`}
+              onChange={(e) => {
+                const value = e.target.value
+                if (value === 'none') {
+                  setSortBy('none')
+                } else {
+                  const [field, order] = value.split('-')
+                  setSortBy(field as 'lastInteraction')
+                  setSortOrder(order as 'asc' | 'desc')
+                }
+              }}
+              className="input-field h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-w-[200px] text-sm"
+            >
+              <option value="none">Default (No sorting)</option>
+              <option value="lastInteraction-desc">Last Interaction (Newest First)</option>
+              <option value="lastInteraction-asc">Last Interaction (Oldest First)</option>
+            </select>
+          </div>
+          
           <button
-            onClick={clearAllFilters}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
+            onClick={() => {
+              setSelectedUsers(new Set())
+              setShowDeleteModal(true)
+            }}
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
           >
-            <span>Clear Column Filters</span>
+            <Trash2 className="w-4 h-4" />
+            Delete Inactive &gt; 3 Months
           </button>
-        )}
-        <select
-          value={activeOnly === undefined ? 'all' : activeOnly ? 'active' : 'inactive'}
-          onChange={(e) => setActiveOnly(e.target.value === 'all' ? undefined : e.target.value === 'active')}
-          className="input-field h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-w-[160px]"
-        >
-          <option value="all">All Users</option>
-          <option value="active">Active Only</option>
-          <option value="inactive">Inactive Only</option>
-        </select>
-        <select
-          value={inactivityFilter}
-          onChange={(e) => setInactivityFilter(e.target.value)}
-          className="input-field h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-w-[200px]"
-        >
-          <option value="all">All Users</option>
-          <option value="active">Active (&lt; 1 month)</option>
-          <option value="inactive">Inactive (1-3 months)</option>
-          <option value="very_inactive">Very Inactive (&gt; 3 months)</option>
-        </select>
-        <select
-          value={sortBy === 'none' ? 'none' : `${sortBy}-${sortOrder}`}
-          onChange={(e) => {
-            const value = e.target.value
-            if (value === 'none') {
-              setSortBy('none')
-            } else {
-              const [field, order] = value.split('-')
-              setSortBy(field as 'lastInteraction')
-              setSortOrder(order as 'asc' | 'desc')
-            }
-          }}
-          className="input-field h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-w-[180px]"
-        >
-          <option value="none">Sort by...</option>
-          <option value="lastInteraction-desc">Last Interaction (Newest)</option>
-          <option value="lastInteraction-asc">Last Interaction (Oldest)</option>
-        </select>
+        </div>
       </div>
       
       {/* Bulk Action Toolbar */}
@@ -2122,19 +2194,6 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
         </div>
       )}
       
-      {/* Delete Inactive Button */}
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={() => {
-            setSelectedUsers(new Set())
-            setShowDeleteModal(true)
-          }}
-          className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center gap-2"
-        >
-          <Trash2 className="w-4 h-4" />
-          Delete Inactive &gt; 3 Months
-        </button>
-      </div>
 
       {loading ? (
         <LoadingSpinner />
@@ -2164,7 +2223,7 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       <div className="flex items-center gap-2">
@@ -2187,27 +2246,37 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4 text-gray-500" />
                           <span>User</span>
+                          {filters.user && (
+                            <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
+                          )}
                         </div>
                         <input
                           type="text"
-                          placeholder="Filter..."
+                          placeholder="Search user..."
                           value={filters.user}
                           onChange={(e) => setFilters({...filters, user: e.target.value})}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          className={`w-full px-2.5 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
+                            filters.user ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                          }`}
                         />
                       </div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-400">First Name</span>
+                          <span>First Name</span>
+                          {filters.firstName && (
+                            <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
+                          )}
                         </div>
                         <input
                           type="text"
-                          placeholder="Filter..."
+                          placeholder="Search name..."
                           value={filters.firstName}
                           onChange={(e) => setFilters({...filters, firstName: e.target.value})}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          className={`w-full px-2.5 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
+                            filters.firstName ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                          }`}
                         />
                       </div>
                     </th>
@@ -2216,22 +2285,37 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <LinkIcon className="w-4 h-4 text-blue-500" />
                           <span>Links</span>
+                          {(filters.linksMin || filters.linksMax) && (
+                            <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
+                          )}
                         </div>
-                        <div className="flex gap-1">
-                          <input
-                            type="number"
-                            placeholder="Min"
-                            value={filters.linksMin}
-                            onChange={(e) => setFilters({...filters, linksMin: e.target.value})}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                          <input
-                            type="number"
-                            placeholder="Max"
-                            value={filters.linksMax}
-                            onChange={(e) => setFilters({...filters, linksMax: e.target.value})}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          />
+                        <div className="flex gap-1.5">
+                          <div className="flex-1">
+                            <label className="sr-only">Minimum Links</label>
+                            <input
+                              type="number"
+                              placeholder="Min"
+                              value={filters.linksMin}
+                              onChange={(e) => setFilters({...filters, linksMin: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
+                                filters.linksMin ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                              }`}
+                              title="Minimum number of links"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="sr-only">Maximum Links</label>
+                            <input
+                              type="number"
+                              placeholder="Max"
+                              value={filters.linksMax}
+                              onChange={(e) => setFilters({...filters, linksMax: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
+                                filters.linksMax ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                              }`}
+                              title="Maximum number of links"
+                            />
+                          </div>
                         </div>
                       </div>
                     </th>
@@ -2240,22 +2324,37 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <Tag className="w-4 h-4 text-purple-500" />
                           <span>Categories</span>
+                          {(filters.categoriesMin || filters.categoriesMax) && (
+                            <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
+                          )}
                         </div>
-                        <div className="flex gap-1">
-                          <input
-                            type="number"
-                            placeholder="Min"
-                            value={filters.categoriesMin}
-                            onChange={(e) => setFilters({...filters, categoriesMin: e.target.value})}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                          <input
-                            type="number"
-                            placeholder="Max"
-                            value={filters.categoriesMax}
-                            onChange={(e) => setFilters({...filters, categoriesMax: e.target.value})}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          />
+                        <div className="flex gap-1.5">
+                          <div className="flex-1">
+                            <label className="sr-only">Minimum Categories</label>
+                            <input
+                              type="number"
+                              placeholder="Min"
+                              value={filters.categoriesMin}
+                              onChange={(e) => setFilters({...filters, categoriesMin: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
+                                filters.categoriesMin ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                              }`}
+                              title="Minimum number of categories"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="sr-only">Maximum Categories</label>
+                            <input
+                              type="number"
+                              placeholder="Max"
+                              value={filters.categoriesMax}
+                              onChange={(e) => setFilters({...filters, categoriesMax: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
+                                filters.categoriesMax ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                              }`}
+                              title="Maximum number of categories"
+                            />
+                          </div>
                         </div>
                       </div>
                     </th>
@@ -2264,22 +2363,37 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <FolderOpen className="w-4 h-4 text-indigo-500" />
                           <span>Projects</span>
+                          {(filters.projectsMin || filters.projectsMax) && (
+                            <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
+                          )}
                         </div>
-                        <div className="flex gap-1">
-                          <input
-                            type="number"
-                            placeholder="Min"
-                            value={filters.projectsMin}
-                            onChange={(e) => setFilters({...filters, projectsMin: e.target.value})}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                          <input
-                            type="number"
-                            placeholder="Max"
-                            value={filters.projectsMax}
-                            onChange={(e) => setFilters({...filters, projectsMax: e.target.value})}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          />
+                        <div className="flex gap-1.5">
+                          <div className="flex-1">
+                            <label className="sr-only">Minimum Projects</label>
+                            <input
+                              type="number"
+                              placeholder="Min"
+                              value={filters.projectsMin}
+                              onChange={(e) => setFilters({...filters, projectsMin: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
+                                filters.projectsMin ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                              }`}
+                              title="Minimum number of projects"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="sr-only">Maximum Projects</label>
+                            <input
+                              type="number"
+                              placeholder="Max"
+                              value={filters.projectsMax}
+                              onChange={(e) => setFilters({...filters, projectsMax: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
+                                filters.projectsMax ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                              }`}
+                              title="Maximum number of projects"
+                            />
+                          </div>
                         </div>
                       </div>
                     </th>
@@ -2288,13 +2402,18 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <Chrome className="w-4 h-4 text-orange-500" />
                           <span>Extension</span>
+                          {filters.extension !== 'all' && (
+                            <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
+                          )}
                         </div>
                         <select
                           value={filters.extension}
                           onChange={(e) => setFilters({...filters, extension: e.target.value})}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          className={`w-full px-2.5 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
+                            filters.extension !== 'all' ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                          }`}
                         >
-                          <option value="all">All</option>
+                          <option value="all">All Extensions</option>
                           <option value="enabled">Enabled</option>
                           <option value="not_used">Not Used</option>
                           <option value="old_version">Old Version</option>
@@ -2306,22 +2425,37 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <Database className="w-4 h-4 text-green-500" />
                           <span>Storage</span>
+                          {(filters.storageMin || filters.storageMax) && (
+                            <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
+                          )}
                         </div>
-                        <div className="flex gap-1">
-                          <input
-                            type="number"
-                            placeholder="Min KB"
-                            value={filters.storageMin}
-                            onChange={(e) => setFilters({...filters, storageMin: e.target.value})}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                          <input
-                            type="number"
-                            placeholder="Max KB"
-                            value={filters.storageMax}
-                            onChange={(e) => setFilters({...filters, storageMax: e.target.value})}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                          />
+                        <div className="flex gap-1.5">
+                          <div className="flex-1">
+                            <label className="sr-only">Minimum Storage (KB)</label>
+                            <input
+                              type="number"
+                              placeholder="Min KB"
+                              value={filters.storageMin}
+                              onChange={(e) => setFilters({...filters, storageMin: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
+                                filters.storageMin ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                              }`}
+                              title="Minimum storage in KB"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="sr-only">Maximum Storage (KB)</label>
+                            <input
+                              type="number"
+                              placeholder="Max KB"
+                              value={filters.storageMax}
+                              onChange={(e) => setFilters({...filters, storageMax: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
+                                filters.storageMax ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                              }`}
+                              title="Maximum storage in KB"
+                            />
+                          </div>
                         </div>
                       </div>
                     </th>
@@ -2330,13 +2464,18 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-gray-500" />
                           <span>Status</span>
+                          {filters.status !== 'all' && (
+                            <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
+                          )}
                         </div>
                         <select
                           value={filters.status}
                           onChange={(e) => setFilters({...filters, status: e.target.value})}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          className={`w-full px-2.5 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
+                            filters.status !== 'all' ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                          }`}
                         >
-                          <option value="all">All</option>
+                          <option value="all">All Status</option>
                           <option value="active">Active</option>
                           <option value="inactive">Inactive</option>
                         </select>
@@ -2347,22 +2486,35 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-gray-500" />
                           <span>Last Interaction</span>
+                          {(filters.lastInteractionFrom || filters.lastInteractionTo) && (
+                            <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
+                          )}
                         </div>
-                        <div className="flex flex-col gap-1">
-                          <input
-                            type="date"
-                            value={filters.lastInteractionFrom}
-                            onChange={(e) => setFilters({...filters, lastInteractionFrom: e.target.value})}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="From"
-                          />
-                          <input
-                            type="date"
-                            value={filters.lastInteractionTo}
-                            onChange={(e) => setFilters({...filters, lastInteractionTo: e.target.value})}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="To"
-                          />
+                        <div className="flex flex-col gap-1.5">
+                          <div>
+                            <label className="sr-only">From Date</label>
+                            <input
+                              type="date"
+                              value={filters.lastInteractionFrom}
+                              onChange={(e) => setFilters({...filters, lastInteractionFrom: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
+                                filters.lastInteractionFrom ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                              }`}
+                              title="Filter from this date"
+                            />
+                          </div>
+                          <div>
+                            <label className="sr-only">To Date</label>
+                            <input
+                              type="date"
+                              value={filters.lastInteractionTo}
+                              onChange={(e) => setFilters({...filters, lastInteractionTo: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
+                                filters.lastInteractionTo ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
+                              }`}
+                              title="Filter to this date"
+                            />
+                          </div>
                         </div>
                       </div>
                     </th>

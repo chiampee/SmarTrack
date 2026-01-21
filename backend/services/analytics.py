@@ -1225,33 +1225,78 @@ class AnalyticsService:
         active_only: Optional[bool] = None,
         inactive_days: Optional[int] = None
     ) -> Dict[str, Any]:
-        """Get paginated list of users with statistics - includes ALL authenticated users, not just those with links"""
+        """Get paginated list of users with statistics - includes ALL authenticated users from multiple sources"""
         from datetime import datetime, timedelta, timezone
         
         try:
-            # Step 1: Get ALL unique authenticated users from system_logs (not just those with links)
-            all_users_pipeline = [
-                {OP_MATCH: {"userId": {OP_EXISTS: True, "$ne": None}}},
-                {OP_GROUP: {"_id": F_USERID}},
-                {OP_PROJECT: {"userId": "$_id"}}
-            ]
+            # Step 1: Get ALL unique authenticated users from MULTIPLE sources (comprehensive collection)
+            # This ensures we capture all users, not just those in system_logs
+            users_from_links = set()
+            users_from_limits = set()
+            users_from_logs = set()
             
-            # Apply search filter to system_logs if provided
-            if search:
-                search_regex = {"$regex": search, "$options": "i"}
-                # Search in userId and email fields
-                all_users_pipeline.insert(0, {
-                    OP_MATCH: {
-                        "$or": [
-                            {"userId": search_regex},
-                            {"email": search_regex}
-                        ],
-                        "userId": {OP_EXISTS: True, "$ne": None}
-                    }
-                })
+            # 1. Users who have created links
+            try:
+                links_pipeline = [
+                    {OP_GROUP: {"_id": F_USERID}},
+                    {OP_PROJECT: {"userId": "$_id"}}
+                ]
+                if search:
+                    search_regex = {"$regex": search, "$options": "i"}
+                    links_pipeline.insert(0, {
+                        OP_MATCH: {
+                            "$or": [
+                                {"userId": search_regex},
+                                {"url": search_regex}
+                            ],
+                            "userId": {OP_EXISTS: True, "$ne": None}
+                        }
+                    })
+                links_result = await db.links.aggregate(links_pipeline).to_list(10000)
+                users_from_links = {u["userId"] for u in links_result if u.get("userId")}
+                logger.info(f"[ADMIN USERS] Found {len(users_from_links)} users from links collection")
+            except Exception as e:
+                logger.warning(f"[ADMIN USERS] Could not fetch users from links: {e}")
             
-            all_users_result = await db.system_logs.aggregate(all_users_pipeline).to_list(10000)
-            all_user_ids = [u["userId"] for u in all_users_result if u.get("userId")]
+            # 2. Users in user_limits collection (may include users without links)
+            try:
+                limits_query = {}
+                if search:
+                    search_regex = {"$regex": search, "$options": "i"}
+                    limits_query = {"userId": search_regex}
+                limits_result = await db.user_limits.find(limits_query, {"userId": 1}).to_list(10000)
+                users_from_limits = {u["userId"] for u in limits_result if u.get("userId")}
+                logger.info(f"[ADMIN USERS] Found {len(users_from_limits)} users from user_limits collection")
+            except Exception as e:
+                logger.warning(f"[ADMIN USERS] Could not fetch users from user_limits: {e}")
+            
+            # 3. Users from system_logs (tracks all authenticated user activity)
+            try:
+                logs_pipeline = [
+                    {OP_MATCH: {"userId": {OP_EXISTS: True, "$ne": None}}},
+                    {OP_GROUP: {"_id": F_USERID}},
+                    {OP_PROJECT: {"userId": "$_id"}}
+                ]
+                if search:
+                    search_regex = {"$regex": search, "$options": "i"}
+                    logs_pipeline.insert(0, {
+                        OP_MATCH: {
+                            "$or": [
+                                {"userId": search_regex},
+                                {"email": search_regex}
+                            ],
+                            "userId": {OP_EXISTS: True, "$ne": None}
+                        }
+                    })
+                logs_result = await db.system_logs.aggregate(logs_pipeline).to_list(10000)
+                users_from_logs = {u["userId"] for u in logs_result if u.get("userId")}
+                logger.info(f"[ADMIN USERS] Found {len(users_from_logs)} users from system_logs collection")
+            except Exception as e:
+                logger.warning(f"[ADMIN USERS] Could not fetch users from system_logs: {e}")
+            
+            # Combine all unique users from all sources
+            all_user_ids = list(users_from_links | users_from_limits | users_from_logs)
+            logger.info(f"[ADMIN USERS] Total unique users found: {len(all_user_ids)} (links: {len(users_from_links)}, limits: {len(users_from_limits)}, logs: {len(users_from_logs)})")
             
             if not all_user_ids:
                 # No users found
@@ -1622,5 +1667,7 @@ class AnalyticsService:
                 }
             }
         except Exception as e:
-            logger.error(f"[ANALYTICS ERROR] get_users_paginated failed: {e}")
+            import traceback
+            error_trace = traceback.format_exc()
+            logger.error(f"[ANALYTICS ERROR] get_users_paginated failed: {e}\nTraceback:\n{error_trace}")
             raise
