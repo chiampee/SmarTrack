@@ -1229,6 +1229,51 @@ class AnalyticsService:
                 except Exception as e:
                     logger.info(f"[ADMIN USERS WARNING] Failed to fetch collection counts: {e}")
             
+            # Get user profiles (firstName) from user_profiles collection
+            user_first_names = {}
+            if user_ids:
+                try:
+                    profile_docs = await db.user_profiles.find({"userId": {"$in": user_ids}}).to_list(len(user_ids))
+                    user_first_names = {doc["userId"]: doc.get("firstName") for doc in profile_docs if doc.get("firstName")}
+                except Exception as e:
+                    logger.info(f"[ADMIN USERS WARNING] Failed to fetch user first names: {e}")
+            
+            # Get extension usage data (last extension use date and version) from links
+            user_extension_data = {}
+            if user_ids:
+                try:
+                    # Get the most recent extension link per user to get latest version and date
+                    extension_pipeline = [
+                        {OP_MATCH: {
+                            "userId": {"$in": user_ids},
+                            "source": "extension"
+                        }},
+                        {OP_SORT: {F_CREATED: -1}},  # Sort by creation date descending
+                        {OP_GROUP: {
+                            "_id": F_USERID,
+                            "lastExtensionUse": {"$max": F_CREATED},
+                            "latestExtensionVersion": {"$first": F_EXT_VER},  # Get version from most recent extension link
+                            "allVersions": {OP_ADDTOSET: F_EXT_VER}  # Collect all versions used (fallback)
+                        }}
+                    ]
+                    extension_results = await db.links.aggregate(extension_pipeline).to_list(len(user_ids))
+                    user_extension_data = {}
+                    for r in extension_results:
+                        user_id = r["_id"]
+                        # Use latest version, or first from allVersions if latest is null
+                        latest_version = r.get("latestExtensionVersion")
+                        if not latest_version and r.get("allVersions"):
+                            # Fallback: use first non-null version from all versions
+                            all_versions = [v for v in r.get("allVersions", []) if v]
+                            latest_version = all_versions[0] if all_versions else None
+                        
+                        user_extension_data[user_id] = {
+                            "lastExtensionUse": r.get("lastExtensionUse"),
+                            "extensionVersion": latest_version
+                        }
+                except Exception as e:
+                    logger.info(f"[ADMIN USERS WARNING] Failed to fetch extension usage data: {e}")
+            
             # Transform results
             user_list = []
             for user in users:
@@ -1245,9 +1290,13 @@ class AnalyticsService:
                 else:
                     is_active = False
                 
+                extension_info = user_extension_data.get(user_id, {})
+                has_extension_usage = user["extensionLinks"] > 0
+                
                 user_list.append({
                     "userId": user_id,
                     "email": user_emails.get(user_id),
+                    "firstName": user_first_names.get(user_id),
                     "linkCount": user["linkCount"],
                     "categoryCount": user_category_counts.get(user_id, 0),
                     "collectionCount": user_collection_counts.get(user_id, 0),
@@ -1260,7 +1309,10 @@ class AnalyticsService:
                     "firstLinkDate": user["firstLinkDate"].isoformat() if user.get("firstLinkDate") else None,
                     "lastLinkDate": user["lastLinkDate"].isoformat() if user.get("lastLinkDate") else None,
                     "isActive": is_active,
-                    "approachingLimit": user["linkCount"] >= 35 or user["storage"] >= 35 * 1024
+                    "approachingLimit": user["linkCount"] >= 35 or user["storage"] >= 35 * 1024,
+                    "extensionVersion": extension_info.get("extensionVersion") if has_extension_usage else None,
+                    "lastExtensionUse": extension_info.get("lastExtensionUse").isoformat() if extension_info.get("lastExtensionUse") else None,
+                    "extensionEnabled": has_extension_usage  # Extension is "enabled" if user has used it
                 })
             
             return {

@@ -3,7 +3,7 @@ import {
   Users, Link as LinkIcon, HardDrive, TrendingUp, 
   RefreshCw, BarChart3, FileText, Settings,
   ChevronLeft, ChevronRight, Search, AlertCircle, Tag, LogIn, Download, Trash2, AlertTriangle, Shield, CheckCircle2,
-  FolderOpen, User, Database
+  FolderOpen, User, Database, Chrome, Clock
 } from 'lucide-react'
 import { useAdminAccess } from '../context/AdminContext'
 import { useAdminApi, AdminAnalytics as AdminAnalyticsType, AdminUser, SystemLog, AdminCategory, UserLimits, SystemLogsResponse } from '../services/adminApi'
@@ -1695,6 +1695,11 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       <div className="flex items-center gap-2">
+                        <span className="text-gray-400">First Name</span>
+                      </div>
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
                         <LinkIcon className="w-4 h-4 text-blue-500" />
                         <span>Links</span>
                       </div>
@@ -1709,6 +1714,12 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                       <div className="flex items-center gap-2">
                         <FolderOpen className="w-4 h-4 text-indigo-500" />
                         <span>Projects</span>
+                      </div>
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <Chrome className="w-4 h-4 text-orange-500" />
+                        <span>Extension</span>
                       </div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -1752,6 +1763,15 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         )}
                       </td>
                       <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          {user.firstName ? (
+                            <span className="text-sm font-medium text-gray-700">{user.firstName}</span>
+                          ) : (
+                            <span className="text-sm text-gray-400 italic">-</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <div className={`px-3 py-1.5 rounded-lg font-semibold text-sm ${
                             user.linkCount === 0 
@@ -1792,6 +1812,36 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                           }`}>
                             {user.collectionCount}
                           </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1.5">
+                          {user.extensionEnabled ? (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                                  user.extensionVersion 
+                                    ? 'bg-green-100 text-green-700 border border-green-200'
+                                    : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                                }`}>
+                                  {user.extensionVersion ? `v${user.extensionVersion}` : 'v? (old)'}
+                                </span>
+                                <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded border border-blue-200">
+                                  Enabled
+                                </span>
+                              </div>
+                              {user.lastExtensionUse && (
+                                <div className="flex items-center gap-1 text-xs text-gray-500">
+                                  <Clock className="w-3 h-3" />
+                                  <span>Last: {new Date(user.lastExtensionUse).toLocaleDateString()}</span>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded border border-gray-200">
+                              Not Used
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4">

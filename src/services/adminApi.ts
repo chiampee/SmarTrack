@@ -95,6 +95,7 @@ export interface AdminAnalytics {
 export interface AdminUser {
   userId: string
   email?: string // Added email field
+  firstName?: string | null
   linkCount: number
   categoryCount: number
   collectionCount: number
@@ -108,6 +109,9 @@ export interface AdminUser {
   lastLinkDate: string | null
   isActive: boolean
   approachingLimit: boolean
+  extensionVersion?: string | null
+  lastExtensionUse?: string | null
+  extensionEnabled: boolean
 }
 
 export interface AdminUsersResponse {
