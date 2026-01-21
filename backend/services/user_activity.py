@@ -1,9 +1,95 @@
 """
 User activity tracking for security
 """
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Optional, Tuple
 from fastapi import HTTPException
+from services.mongodb import get_database
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Inactivity threshold: 5 days
+INACTIVITY_THRESHOLD_DAYS = 5
+
+async def update_user_activity(user_id: str, db=None) -> None:
+    """
+    Update user's last activity timestamp in database.
+    This is called after successful authentication to track when user last used the dashboard.
+    
+    Args:
+        user_id: User ID from Auth0 token
+        db: Optional database instance (will get from get_database() if not provided)
+    """
+    try:
+        if db is None:
+            db = get_database()
+        
+        now = datetime.now(timezone.utc)
+        
+        # Upsert user activity record
+        await db.user_activity.update_one(
+            {"userId": user_id},
+            {
+                "$set": {
+                    "lastActivity": now,
+                    "updatedAt": now
+                },
+                "$setOnInsert": {
+                    "userId": user_id,
+                    "createdAt": now
+                }
+            },
+            upsert=True
+        )
+    except Exception as e:
+        # Don't fail the request if activity update fails - just log it
+        logger.warning(f"Failed to update user activity for user {user_id}: {e}")
+
+
+async def check_user_activity(user_id: str, db=None) -> Tuple[bool, Optional[datetime]]:
+    """
+    Check if user's last activity is within the inactivity threshold.
+    
+    Args:
+        user_id: User ID from Auth0 token
+        db: Optional database instance (will get from get_database() if not provided)
+    
+    Returns:
+        Tuple of (is_active: bool, last_activity: Optional[datetime])
+        - is_active: True if user has been active within threshold, False if inactive
+        - last_activity: Last activity timestamp, or None if no record exists
+    """
+    try:
+        if db is None:
+            db = get_database()
+        
+        # Get user's last activity
+        activity_record = await db.user_activity.find_one({"userId": user_id})
+        
+        if not activity_record or not activity_record.get("lastActivity"):
+            # First-time user or no activity record - allow access
+            return True, None
+        
+        last_activity = activity_record.get("lastActivity")
+        
+        # Ensure timezone-aware datetime
+        if isinstance(last_activity, datetime) and last_activity.tzinfo is None:
+            last_activity = last_activity.replace(tzinfo=timezone.utc)
+        
+        # Calculate days since last activity
+        now = datetime.now(timezone.utc)
+        days_inactive = (now - last_activity).days
+        
+        is_active = days_inactive < INACTIVITY_THRESHOLD_DAYS
+        
+        return is_active, last_activity
+        
+    except Exception as e:
+        logger.error(f"Failed to check user activity for user {user_id}: {e}")
+        # On error, allow access (fail open for availability)
+        return True, None
+
 
 class UserActivityTracker:
     """Track user activities to prevent abuse"""

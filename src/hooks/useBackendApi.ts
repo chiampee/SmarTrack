@@ -113,7 +113,7 @@ const isTokenExpired = (token: string, bufferSeconds: number = 300): boolean => 
 }
 
 export const useBackendApi = () => {
-  const { getAccessTokenSilently, isAuthenticated } = useAuth0()
+  const { getAccessTokenSilently, isAuthenticated, loginWithRedirect } = useAuth0()
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -338,7 +338,36 @@ export const useBackendApi = () => {
         if (response.status === 401) {
           console.error('[API ERROR] 🔐 Authentication failed - token might be invalid or expired')
           console.error('[API ERROR] Token present:', !!requestToken)
-          if (requestToken) {
+          
+          // Check if this is an inactivity reauthentication requirement
+          const errorMessage = errorData.detail || errorData.message || response.statusText
+          const requiresReauth = errorMessage.includes('Reauthentication required') || 
+                                  errorMessage.includes('inactivity') ||
+                                  errorMessage.includes('5 days')
+          
+          if (requiresReauth) {
+            console.warn('[AUTH] ⏰ Reauthentication required due to inactivity (>5 days)')
+            console.warn('[AUTH] Clearing token and redirecting to login...')
+            
+            // Clear stored token
+            setToken(null)
+            localStorage.removeItem('authToken')
+            
+            // Redirect to login with prompt to force reauthentication
+            try {
+              await loginWithRedirect({
+                authorizationParams: {
+                  redirect_uri: window.location.origin + '/dashboard',
+                  audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+                  scope: 'openid profile email',
+                  prompt: 'login', // Force login screen
+                }
+              })
+            } catch (loginError) {
+              console.error('[AUTH ERROR] Failed to redirect to login:', loginError)
+              // Fall through to throw the original error
+            }
+          } else if (requestToken) {
             try {
               const decoded = jwtDecode<JWTPayload>(requestToken)
               const now = Math.floor(Date.now() / 1000)

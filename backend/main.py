@@ -52,9 +52,16 @@ async def lifespan(app: FastAPI):
         await create_index_safely(db.system_logs, "type")
         await create_index_safely(db.system_logs, "userId")
         await create_index_safely(db.system_logs, [("type", 1), ("timestamp", -1)])
+        # Index for extension usage tracking
+        await create_index_safely(db.system_logs, [("type", 1), ("userId", 1), ("timestamp", -1)])
+        await create_index_safely(db.system_logs, "details.extensionVersion")
         
         # Create indexes for user_profiles collection
         await create_index_safely(db.user_profiles, "userId", unique=True)
+        
+        # Create indexes for user_activity collection (5-day inactivity tracking)
+        await create_index_safely(db.user_activity, "userId", unique=True)
+        await create_index_safely(db.user_activity, "lastActivity")
         
         # Create indexes for source tracking in links
         await create_index_safely(db.links, "source")
@@ -192,6 +199,66 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=allowed_headers,
 )
+
+# Add user activity tracking middleware
+@app.middleware("http")
+async def activity_tracking_middleware(request: Request, call_next):
+    """
+    Track user activity after successful authentication.
+    Updates activity timestamp for successful authenticated API requests.
+    This is a backup to ensure activity is tracked even if not updated in auth.py.
+    """
+    response = await call_next(request)
+    
+    # Only track activity for successful authenticated requests (2xx status codes)
+    # Skip health checks and public endpoints
+    skip_paths = [
+        "/api/health",
+        "/api/categories",  # Lightweight read-only endpoint (predefined categories)
+        "/api/types",  # Alias for categories (to bypass ad-blockers)
+    ]
+    
+    if request.url.path in skip_paths:
+        return response
+    
+    # Only track if response is successful (2xx) and request has auth header
+    # Also skip 401 responses (authentication failed, so no activity to track)
+    if (200 <= response.status_code < 300 and 
+        response.status_code != 401 and 
+        request.headers.get("Authorization")):
+        try:
+            # Extract token from Authorization header
+            auth_header = request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                token = auth_header.split(" ")[1]
+                
+                # Decode token to get user_id (non-verified, just for activity tracking)
+                # We already verified it in auth middleware, so this is safe
+                from jose import jwt
+                try:
+                    unverified_payload = jwt.decode(
+                        token,
+                        options={"verify_signature": False}
+                    )
+                    user_id = unverified_payload.get("sub")
+                    
+                    if user_id:
+                        # Update activity asynchronously (non-blocking)
+                        from services.user_activity import update_user_activity
+                        from services.mongodb import get_database
+                        import asyncio
+                        
+                        db = get_database()
+                        # Fire and forget - don't await to avoid blocking response
+                        asyncio.create_task(update_user_activity(user_id, db))
+                except Exception:
+                    # If token decode fails, silently skip activity tracking
+                    pass
+        except Exception as e:
+            # Don't fail the request if activity tracking fails
+            logger.debug(f"Activity tracking failed: {e}")
+    
+    return response
 
 # Add rate limiting middleware
 @app.middleware("http")
