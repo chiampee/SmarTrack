@@ -154,6 +154,8 @@ export const Settings: React.FC = () => {
         }),
       })
       toast.success('Profile updated successfully')
+      // Dispatch event to notify other components (like Sidebar) to refresh
+      window.dispatchEvent(new Event('profileUpdated'))
     } catch (error) {
       console.error('Failed to save profile:', error)
       toast.error('Failed to save profile. Please try again.')

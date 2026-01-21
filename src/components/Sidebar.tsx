@@ -25,6 +25,69 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
   const [isProjectsExpanded, setIsProjectsExpanded] = useState(true)
   const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(true)
   const [isMiniMode, setIsMiniMode] = useState(false)
+  const [displayName, setDisplayName] = useState<string | null>(null)
+
+  // Load user profile to get displayName
+  useEffect(() => {
+    let isMounted = true
+    const loadProfile = async () => {
+      if (!isAuthenticated || !user) return
+      
+      try {
+        const profile = await makeRequest<{ displayName?: string | null }>('/api/users/profile')
+        if (isMounted && profile.displayName) {
+          setDisplayName(profile.displayName)
+        }
+      } catch (e) {
+        // Silently ignore errors - will fall back to user.name
+        console.debug('Failed to load profile for sidebar:', e)
+      }
+    }
+    loadProfile()
+    
+    return () => {
+      isMounted = false
+    }
+  }, [isAuthenticated, user, makeRequest])
+
+  // Refresh displayName when sidebar opens (in case it was updated in settings)
+  useEffect(() => {
+    if (isOpen && isAuthenticated && user) {
+      const refreshProfile = async () => {
+        try {
+          const profile = await makeRequest<{ displayName?: string | null }>('/api/users/profile')
+          if (profile.displayName) {
+            setDisplayName(profile.displayName)
+          }
+        } catch (e) {
+          // Silently ignore errors
+          console.debug('Failed to refresh profile:', e)
+        }
+      }
+      refreshProfile()
+    }
+  }, [isOpen, isAuthenticated, user, makeRequest])
+
+  // Listen for profile updates from Settings page
+  useEffect(() => {
+    const handleProfileUpdate = async () => {
+      if (isAuthenticated && user) {
+        try {
+          const profile = await makeRequest<{ displayName?: string | null }>('/api/users/profile')
+          if (profile.displayName) {
+            setDisplayName(profile.displayName)
+          }
+        } catch (e) {
+          console.debug('Failed to refresh profile on update:', e)
+        }
+      }
+    }
+
+    window.addEventListener('profileUpdated', handleProfileUpdate)
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate)
+    }
+  }, [isAuthenticated, user, makeRequest])
 
   useEffect(() => {
     let isMounted = true
@@ -163,7 +226,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 <>
                   <div className="flex-1 min-w-0">
                     <p className="text-base sm:text-sm font-semibold text-slate-900 truncate">
-                      {user.name || user.email}
+                      {displayName || user.name || user.email}
                     </p>
                     <p className="text-xs text-slate-600 break-words leading-tight" style={{ wordBreak: 'break-word' }}>
                       {user.email}
