@@ -60,6 +60,7 @@ class LinkUpdate(BaseModel):
     isFavorite: Optional[bool] = None
     isArchived: Optional[bool] = None
     collectionId: Optional[str] = None
+    categoryPosition: Optional[int] = None
 
 class LinkResponse(BaseModel):
     id: str
@@ -75,6 +76,7 @@ class LinkResponse(BaseModel):
     isFavorite: bool = False
     isArchived: bool = False
     collectionId: Optional[str] = None
+    categoryPosition: Optional[int] = None
     content: Optional[str] = None  # Text content extracted from the page
     source: Optional[str] = "web"  # Source: "web" or "extension"
     extensionVersion: Optional[str] = None  # Extension version if created via extension
@@ -625,6 +627,15 @@ async def update_link(
                             status_code=400,
                             detail=f"Invalid collection ID format: {str(e)}"
                         )
+            elif field == "categoryPosition":
+                # Validate position is non-negative integer
+                if value is not None:
+                    if not isinstance(value, int) or value < 0:
+                        raise HTTPException(
+                            status_code=400,
+                            detail="categoryPosition must be a non-negative integer"
+                        )
+                    update_data[field] = value
             elif value is not None:
                 # Validate and sanitize fields if needed
                 if field == "title":
@@ -763,6 +774,14 @@ class BulkUpdateRequest(BaseModel):
 class BulkDeleteRequest(BaseModel):
     linkIds: List[str]
 
+class LinkReorderItem(BaseModel):
+    linkId: str
+    category: str
+    categoryPosition: int
+
+class BulkReorderRequest(BaseModel):
+    links: List[LinkReorderItem]
+
 
 @router.put("/links/bulk")
 async def bulk_update_links(
@@ -855,6 +874,88 @@ async def bulk_delete_links(
         return {
             "message": f"Deleted {result.deleted_count} links successfully",
             "deletedCount": result.deleted_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/links/reorder")
+async def reorder_links(
+    request: BulkReorderRequest,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Bulk reorder links by updating their category and categoryPosition"""
+    try:
+        user_id = current_user["sub"]
+        
+        if not request.links:
+            raise HTTPException(status_code=400, detail="No links provided for reordering")
+        
+        if len(request.links) > 100:
+            raise HTTPException(status_code=400, detail="Cannot reorder more than 100 links at once")
+        
+        # Validate all link IDs and positions
+        link_updates = []
+        for item in request.links:
+            # Validate ObjectId format
+            try:
+                object_id = validate_object_id(item.linkId, "Link")
+            except Exception:
+                raise HTTPException(status_code=400, detail=f"Invalid link ID: {item.linkId}")
+            
+            # Validate position is non-negative
+            if item.categoryPosition < 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"categoryPosition must be non-negative for link {item.linkId}"
+                )
+            
+            link_updates.append({
+                "object_id": object_id,
+                "category": item.category.lower() if item.category else None,
+                "categoryPosition": item.categoryPosition
+            })
+        
+        # Verify all links belong to user
+        link_ids = [update["object_id"] for update in link_updates]
+        existing_links = await db.links.find(
+            build_user_filter(user_id, {"_id": {"$in": link_ids}}),
+            {"_id": 1}
+        ).to_list(1000)
+        
+        existing_ids = {link["_id"] for link in existing_links}
+        if len(existing_ids) != len(link_ids):
+            raise HTTPException(
+                status_code=403,
+                detail="One or more links not found or do not belong to you"
+            )
+        
+        # Update all links sequentially (MongoDB doesn't support transactions in all setups)
+        updated_count = 0
+        for update in link_updates:
+            update_data = {
+                "categoryPosition": update["categoryPosition"],
+                "updatedAt": datetime.now(timezone.utc)
+            }
+            
+            # Update category if provided
+            if update["category"] is not None:
+                update_data["category"] = update["category"]
+            
+            result = await db.links.update_one(
+                build_user_filter(user_id, {"_id": update["object_id"]}),
+                {"$set": update_data}
+            )
+            
+            if result.modified_count > 0:
+                updated_count += 1
+        
+        return {
+            "message": f"Reordered {updated_count} links successfully",
+            "updatedCount": updated_count
         }
         
     except HTTPException:
