@@ -2114,7 +2114,7 @@ export const Dashboard: React.FC = () => {
                       )}
 
                       {/* Wrap all categories in DndContext for cross-category dragging (desktop only) */}
-                      {!isMobile ? (
+                      {!isMobile && !isReordering ? (
                         <DndContext
                           sensors={sensors}
                           collisionDetection={closestCenter}
@@ -2122,7 +2122,6 @@ export const Dashboard: React.FC = () => {
                           onDragOver={handleDragOver}
                           onDragEnd={handleDragEnd}
                           onDragCancel={handleDragCancel}
-                          disabled={isReordering}
                         >
                           {/* Category Groups */}
                           {sortedCategories.map(([category, categoryLinks]) => (
@@ -2216,6 +2215,62 @@ export const Dashboard: React.FC = () => {
                             ) : null}
                           </DragOverlay>
                         </DndContext>
+                      ) : !isMobile && isReordering ? (
+                        /* Desktop: Show links without drag during reorder */
+                        sortedCategories.map(([category, categoryLinks]) => (
+                          <motion.div
+                            key={category}
+                            variants={staggerItem}
+                            className="mb-6 sm:mb-7 md:mb-8"
+                          >
+                            {/* Enhanced Category Header */}
+                            <motion.div
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                              className="flex items-center gap-3 mb-4 sm:mb-5 pb-3 sm:pb-4 border-b border-gray-200/60"
+                            >
+                              <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                                <div className="w-1.5 h-8 sm:h-10 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-600 rounded-full shadow-sm shadow-blue-500/30"></div>
+                                <h3 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">{category}</h3>
+                                <span className="px-3 sm:px-4 py-1 sm:py-1.5 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-700 rounded-full text-xs sm:text-sm font-bold border border-blue-200/80 shadow-sm">
+                                  {categoryLinks.length} {categoryLinks.length === 1 ? 'link' : 'links'}
+                                </span>
+                              </div>
+                            </motion.div>
+
+                            {/* Links for this category */}
+                            <div className={viewMode === 'grid' 
+                              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-5 md:gap-6' 
+                              : 'flex flex-col gap-3 sm:gap-4'
+                            }>
+                              {categoryLinks.map((link, index) => (
+                                <motion.div
+                                  key={link.id}
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ 
+                                    delay: index * 0.05,
+                                    duration: 0.4,
+                                    ease: [0.16, 1, 0.3, 1]
+                                  }}
+                                >
+                                  <LinkCard
+                                    link={link}
+                                    viewMode={viewMode}
+                                    isSelected={selectedLinks.has(link.id)}
+                                    onSelect={(e) => toggleSelection(link.id, e)}
+                                    onAction={handleLinkAction}
+                                    collections={collections}
+                                    categories={categories}
+                                    allTags={allTags}
+                                    onCardClick={() => setEditingLink(link)}
+                                  />
+                                </motion.div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        ))
                       ) : (
                         /* Mobile: No drag and drop */
                         sortedCategories.map(([category, categoryLinks]) => (
