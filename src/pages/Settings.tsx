@@ -15,7 +15,8 @@ import {
   Database,
   Settings as SettingsIcon,
   Chrome,
-  CheckCircle2
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { motion } from 'framer-motion'
@@ -41,6 +42,7 @@ export const Settings: React.FC = () => {
   // Profile state
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [displayName, setDisplayName] = useState('')
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [profileLoaded, setProfileLoaded] = useState(false)
@@ -86,12 +88,14 @@ export const Settings: React.FC = () => {
       
       setIsLoadingProfile(true)
       try {
-        const profile = await makeRequest<{ firstName?: string | null; lastName?: string | null }>('/api/users/profile')
+        const profile = await makeRequest<{ firstName?: string | null; lastName?: string | null; displayName?: string | null }>('/api/users/profile')
         
-        if (profile.firstName || profile.lastName) {
+        if (profile.firstName || profile.lastName || profile.displayName) {
           // Profile exists - use saved values
           setFirstName(profile.firstName || '')
           setLastName(profile.lastName || '')
+          // Use saved displayName, or fallback to Auth0 name, or firstName
+          setDisplayName(profile.displayName || user?.name || user?.nickname || profile.firstName || '')
           setProfileLoaded(true)
         } else {
           // First time - auto-fill from Auth0
@@ -105,6 +109,8 @@ export const Settings: React.FC = () => {
           
           setFirstName(auth0FirstName)
           setLastName(auth0LastName)
+          // Set displayName from Auth0 name or firstName
+          setDisplayName(user?.name || user?.nickname || auth0FirstName || '')
           setProfileLoaded(true)
         }
       } catch (error) {
@@ -118,6 +124,8 @@ export const Settings: React.FC = () => {
             : '')
         setFirstName(auth0FirstName)
         setLastName(auth0LastName)
+        // Set displayName from Auth0 name or firstName
+        setDisplayName(user?.name || user?.nickname || auth0FirstName || '')
         setProfileLoaded(true)
       } finally {
         setIsLoadingProfile(false)
@@ -127,6 +135,15 @@ export const Settings: React.FC = () => {
     loadProfile()
   }, [user, makeRequest])
 
+  const handleSyncDisplayName = () => {
+    if (firstName.trim()) {
+      setDisplayName(firstName.trim())
+      toast.success('Display name synced from first name')
+    } else {
+      toast.error('Please enter a first name first')
+    }
+  }
+
   const handleSaveProfile = async () => {
     setIsSavingProfile(true)
     try {
@@ -135,6 +152,7 @@ export const Settings: React.FC = () => {
         body: JSON.stringify({
           firstName: firstName.trim() || null,
           lastName: lastName.trim() || null,
+          displayName: displayName.trim() || null,
         }),
       })
       toast.success('Profile updated successfully')
@@ -266,14 +284,29 @@ export const Settings: React.FC = () => {
                       <label className="block text-sm font-medium text-slate-700 mb-2">
                         Display Name
                       </label>
-                      <input
-                        type="text"
-                        value={user?.name || user?.nickname || ''}
-                        disabled
-                        className="input-field w-full bg-slate-50 cursor-not-allowed"
-                      />
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          disabled={isLoadingProfile || isSavingProfile}
+                          placeholder="Enter your display name"
+                          className="input-field w-full flex-1"
+                          maxLength={100}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSyncDisplayName}
+                          disabled={isLoadingProfile || isSavingProfile || !firstName.trim()}
+                          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-sm font-medium"
+                          title="Sync from First Name"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          <span className="hidden sm:inline">Sync</span>
+                        </button>
+                      </div>
                       <p className="text-xs text-slate-500 mt-1.5">
-                        Managed by your authentication provider
+                        You can edit your display name or sync it from your first name
                       </p>
                     </div>
                     <div>

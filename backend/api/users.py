@@ -24,10 +24,12 @@ router = APIRouter()
 class UserProfileUpdate(BaseModel):
     firstName: Optional[str] = None
     lastName: Optional[str] = None
+    displayName: Optional[str] = None
 
 class UserProfileResponse(BaseModel):
     firstName: Optional[str] = None
     lastName: Optional[str] = None
+    displayName: Optional[str] = None
 
 @router.get("/users/profile", response_model=UserProfileResponse)
 async def get_user_profile(
@@ -44,10 +46,11 @@ async def get_user_profile(
             normalized = normalize_document(profile)
             return {
                 "firstName": normalized.get("firstName"),
-                "lastName": normalized.get("lastName")
+                "lastName": normalized.get("lastName"),
+                "displayName": normalized.get("displayName")
             }
         
-        return {"firstName": None, "lastName": None}
+        return {"firstName": None, "lastName": None, "displayName": None}
         
     except HTTPException:
         raise
@@ -82,6 +85,13 @@ async def update_user_profile(
                 raise HTTPException(status_code=400, detail="lastName must be 100 characters or less")
             update_data["lastName"] = profile_data.lastName.strip() if profile_data.lastName.strip() else None
         
+        if profile_data.displayName is not None:
+            if not isinstance(profile_data.displayName, str):
+                raise HTTPException(status_code=400, detail="displayName must be a string")
+            if len(profile_data.displayName) > 100:
+                raise HTTPException(status_code=400, detail="displayName must be 100 characters or less")
+            update_data["displayName"] = profile_data.displayName.strip() if profile_data.displayName.strip() else None
+        
         # Upsert profile document
         existing_profile = await db.user_profiles.find_one({"userId": user_id})
         
@@ -97,6 +107,7 @@ async def update_user_profile(
                 "userId": user_id,
                 "firstName": update_data.get("firstName"),
                 "lastName": update_data.get("lastName"),
+                "displayName": update_data.get("displayName"),
                 "createdAt": datetime.now(timezone.utc),
                 "updatedAt": datetime.now(timezone.utc)
             }
@@ -108,10 +119,11 @@ async def update_user_profile(
             normalized = normalize_document(updated_profile)
             return {
                 "firstName": normalized.get("firstName"),
-                "lastName": normalized.get("lastName")
+                "lastName": normalized.get("lastName"),
+                "displayName": normalized.get("displayName")
             }
         
-        return {"firstName": None, "lastName": None}
+        return {"firstName": None, "lastName": None, "displayName": None}
         
     except HTTPException:
         raise
