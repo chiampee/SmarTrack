@@ -83,11 +83,14 @@ export const Dashboard: React.FC = () => {
 
   // Check if extension update is needed
   // IMPORTANT: Older extensions (v1.0.0, v1.0.1) don't send version info in their response
-  // If extension is installed but version is null, we assume it's an old version that needs updating
-  const needsUpdate = isExtensionInstalled && (
-    !extensionVersion || // Old extension (pre-1.0.2) that doesn't send version - show update notice
-    isVersionOutdated(extensionVersion, LATEST_EXTENSION_VERSION) // Newer extension that reports version - compare versions
-  )
+  // If extension is installed but version is null/undefined, we assume it's an old version that needs updating
+  const hasOldExtension = isExtensionInstalled && (extensionVersion === null || extensionVersion === undefined || extensionVersion === '')
+  const hasOutdatedExtension = isExtensionInstalled && extensionVersion && isVersionOutdated(extensionVersion, LATEST_EXTENSION_VERSION)
+  
+  // Show update notice if:
+  // 1. Extension is installed but version is null/undefined/empty (old extension without version reporting)
+  // 2. Extension version is outdated compared to latest
+  const needsUpdate = hasOldExtension || hasOutdatedExtension
 
   // Debug logging for extension version detection
   useEffect(() => {
@@ -96,10 +99,12 @@ export const Dashboard: React.FC = () => {
       extensionVersion: extensionVersion || 'null (old extension or not detected)',
       latestVersion: LATEST_EXTENSION_VERSION,
       needsUpdate,
+      hasOldExtension: hasOldExtension,
+      hasOutdatedExtension: hasOutdatedExtension,
       isAuthenticated,
       isOutdated: extensionVersion ? isVersionOutdated(extensionVersion, LATEST_EXTENSION_VERSION) : 'unknown - assuming outdated'
     })
-  }, [isExtensionInstalled, extensionVersion, needsUpdate, isAuthenticated])
+  }, [isExtensionInstalled, extensionVersion, needsUpdate, hasOldExtension, hasOutdatedExtension, isAuthenticated])
 
   // Check if we should redirect to analytics after login
   useEffect(() => {
@@ -1222,6 +1227,7 @@ export const Dashboard: React.FC = () => {
         )}
 
         {/* Extension Update Notice */}
+        {/* Show notice if extension is installed but version is unknown/null (old extension) or outdated */}
         {needsUpdate && isAuthenticated && (
           <ExtensionUpdateNotice
             currentVersion={extensionVersion || 'unknown'}

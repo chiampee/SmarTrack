@@ -90,8 +90,8 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
       return false
     }
 
-    // Run detection
-    const runDetection = async () => {
+    // Run detection with retries for edge cases (old extensions that might not respond immediately)
+    const runDetection = async (retryCount = 0) => {
       try {
         // Try message-based detection first
         const result = await detectViaMessage()
@@ -100,7 +100,14 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
           setIsExtensionInstalled(true)
           setExtensionVersion(result.version)
         } else {
-          // Fallback to marker detection
+          // If no response, try again after a delay (for edge cases where extension is slow to respond)
+          // This helps catch old extensions that might take longer to initialize
+          if (retryCount < 2) {
+            setTimeout(() => runDetection(retryCount + 1), 1000)
+            return
+          }
+          
+          // After retries, check for markers
           const markerDetected = detectViaMarkers()
           setIsExtensionInstalled(markerDetected)
           if (!markerDetected) {
@@ -109,13 +116,18 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
         }
       } catch (error) {
         console.debug('[Extension Detection] Error:', error)
-        setIsExtensionInstalled(false)
-        setExtensionVersion(null)
+        // On error, still try one more time after delay (edge case handling)
+        if (retryCount < 1) {
+          setTimeout(() => runDetection(retryCount + 1), 1000)
+        } else {
+          setIsExtensionInstalled(false)
+          setExtensionVersion(null)
+        }
       }
     }
 
     // Small delay to ensure page is fully loaded
-    const detectionTimeout = setTimeout(runDetection, 500)
+    const detectionTimeout = setTimeout(() => runDetection(0), 500)
 
     // Cleanup
     return () => {
