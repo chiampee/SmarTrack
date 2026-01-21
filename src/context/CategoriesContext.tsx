@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { capitalizeCategoryName } from '../utils/categoryUtils'
 
 interface Category {
   id: string
@@ -41,7 +42,7 @@ export const CategoriesProvider: React.FC<{ children: ReactNode }> = ({ children
         })
       } else {
         categoryMap.set(normalizedKey, {
-          name: categoryName, // Store the original name
+          name: capitalizeCategoryName(categoryName), // Capitalize first letter by default
           count: 1
         })
       }
@@ -50,7 +51,7 @@ export const CategoriesProvider: React.FC<{ children: ReactNode }> = ({ children
     // Convert to array of Category objects
     const categoriesArray: Category[] = Array.from(categoryMap.values()).map(({ name, count }) => ({
       id: name.toLowerCase().replace(/\s+/g, '-'),
-      name: name,
+      name: capitalizeCategoryName(name), // Ensure first letter is capitalized
       linkCount: count
     }))
 
