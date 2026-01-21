@@ -1053,15 +1053,53 @@ class AnalyticsService:
         search: Optional[str] = None,
         active_only: Optional[bool] = None
     ) -> Dict[str, Any]:
-        """Get paginated list of users with statistics"""
+        """Get paginated list of users with statistics - includes ALL authenticated users, not just those with links"""
         from datetime import datetime, timedelta, timezone
         
         try:
-            # Build match filters
-            match_filters = []
+            # Step 1: Get ALL unique authenticated users from system_logs (not just those with links)
+            all_users_pipeline = [
+                {OP_MATCH: {"userId": {OP_EXISTS: True, "$ne": None}}},
+                {OP_GROUP: {"_id": F_USERID}},
+                {OP_PROJECT: {"userId": "$_id"}}
+            ]
             
-            # Get all unique users with their stats
-            pipeline = [
+            # Apply search filter to system_logs if provided
+            if search:
+                search_regex = {"$regex": search, "$options": "i"}
+                # Search in userId and email fields
+                all_users_pipeline.insert(0, {
+                    OP_MATCH: {
+                        "$or": [
+                            {"userId": search_regex},
+                            {"email": search_regex}
+                        ],
+                        "userId": {OP_EXISTS: True, "$ne": None}
+                    }
+                })
+            
+            all_users_result = await db.system_logs.aggregate(all_users_pipeline).to_list(10000)
+            all_user_ids = [u["userId"] for u in all_users_result if u.get("userId")]
+            
+            if not all_user_ids:
+                # No users found
+                return {
+                    "users": [],
+                    "pagination": {
+                        "page": page,
+                        "limit": limit,
+                        "total": 0,
+                        "totalPages": 0
+                    }
+                }
+            
+            # Step 2: Get link statistics for these users (left join approach)
+            # Build match filters
+            match_filters = [{"userId": {"$in": all_user_ids}}]
+            
+            # Get all unique users with their stats from links
+            links_pipeline = [
+                {OP_MATCH: {"$and": match_filters}},
                 {OP_GROUP: {
                     "_id": F_USERID,
                     "linkCount": {OP_SUM: 1},
@@ -1090,82 +1128,55 @@ class AnalyticsService:
                 }}
             ]
             
-            # Filter by activity (30 days threshold) - APPLIED AFTER GROUPING
+            # Execute links aggregation to get stats for users who have links
+            users_with_links = await db.links.aggregate(links_pipeline).to_list(10000)
+            link_stats_by_user = {u["_id"]: u for u in users_with_links}
+            
+            # Step 3: Merge all users with their link stats (users without links get 0 stats)
+            all_users_with_stats = []
+            for user_id in all_user_ids:
+                link_stats = link_stats_by_user.get(user_id, {})
+                user_data = {
+                    "_id": user_id,
+                    "linkCount": link_stats.get("linkCount", 0),
+                    "firstLinkDate": link_stats.get("firstLinkDate"),
+                    "lastLinkDate": link_stats.get("lastLinkDate"),
+                    "storage": link_stats.get("storage", 0),
+                    "extensionLinks": link_stats.get("extensionLinks", 0),
+                    "favoriteLinks": link_stats.get("favoriteLinks", 0),
+                    "archivedLinks": link_stats.get("archivedLinks", 0)
+                }
+                all_users_with_stats.append(user_data)
+            
+            # Step 4: Apply active_only filter if provided
             if active_only is not None:
                 thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
                 if active_only:
                     # Active: Has activity in last 30 days
-                    pipeline.append({
-                        OP_MATCH: {
-                            "lastLinkDate": {"$gte": thirty_days_ago}
-                        }
-                    })
-                else:
-                    # Inactive: No activity in last 30 days
-                    pipeline.append({
-                        OP_MATCH: {
-                            "$or": [
-                                {"lastLinkDate": {"$lt": thirty_days_ago}},
-                                {"lastLinkDate": None}
-                            ]
-                        }
-                    })
-            
-            if match_filters:
-                pipeline.insert(0, {OP_MATCH: {"$and": match_filters}})
-            
-            # Apply search filter BEFORE grouping if provided
-            if search:
-                search_regex = {"$regex": search, "$options": "i"}
-                
-                # 1. Search for matching userIds directly
-                user_match_query = {"userId": search_regex}
-                
-                # 2. Search for matching emails in system_logs to find associated userIds
-                try:
-                    email_search_pipeline = [
-                        {OP_MATCH: {"email": search_regex, "userId": {"$ne": None}}},
-                        {OP_GROUP: {"_id": F_USERID}}
+                    all_users_with_stats = [
+                        u for u in all_users_with_stats
+                        if u.get("lastLinkDate") and u["lastLinkDate"] >= thirty_days_ago
                     ]
-                    email_matches = await db.system_logs.aggregate(email_search_pipeline).to_list(1000)
-                    found_user_ids = [doc["_id"] for doc in email_matches]
-                    
-                    if found_user_ids:
-                        # If we found users by email, match either ID regex OR exact ID from email lookup
-                        pipeline.insert(0, {
-                            OP_MATCH: {
-                                "$or": [
-                                    {"userId": search_regex},
-                                    {"userId": {"$in": found_user_ids}}
-                                ]
-                            }
-                        })
-                    else:
-                        # Only match ID regex
-                        pipeline.insert(0, {OP_MATCH: {"userId": search_regex}})
-                        
-                except Exception as e:
-                    logger.info(f"[ADMIN SEARCH ERROR] Failed to search emails: {e}")
-                    # Fallback to just ID search
-                    pipeline.insert(0, {OP_MATCH: {"userId": search_regex}})
+                else:
+                    # Inactive: No activity in last 30 days or no links
+                    all_users_with_stats = [
+                        u for u in all_users_with_stats
+                        if not u.get("lastLinkDate") or u["lastLinkDate"] < thirty_days_ago
+                    ]
             
-            # Add sorting
-            pipeline.append({OP_SORT: {"linkCount": -1}})
+            # Step 5: Sort by linkCount descending
+            all_users_with_stats.sort(key=lambda x: x.get("linkCount", 0), reverse=True)
             
-            # Get total count (before pagination)
-            count_pipeline = pipeline + [{OP_COUNT: "total"}]
-            count_result = await db.links.aggregate(count_pipeline).to_list(1)
-            total_count = count_result[0]["total"] if count_result else 0
+            # Step 6: Get total count (before pagination)
+            total_count = len(all_users_with_stats)
             
-            # Add pagination
-            pipeline.append({OP_SKIP: (page - 1) * limit})
-            pipeline.append({OP_LIMIT: limit})
+            # Step 7: Apply pagination
+            start_idx = (page - 1) * limit
+            end_idx = start_idx + limit
+            paginated_users = all_users_with_stats[start_idx:end_idx]
             
-            # Execute aggregation
-            users = await db.links.aggregate(pipeline).to_list(limit)
-            
-            # Collect user IDs for email lookup
-            user_ids = [u["_id"] for u in users]
+            # Collect user IDs for additional lookups
+            user_ids = [u["_id"] for u in paginated_users]
             
             # Lookup emails from system_logs (most recent log entry with email for each user)
             user_emails = {}
@@ -1276,40 +1287,46 @@ class AnalyticsService:
             
             # Transform results
             user_list = []
-            for user in users:
+            for user in paginated_users:
                 user_id = user["_id"]
                 # Fix: Ensure lastLinkDate is timezone-aware before subtracting
                 last_active = user.get("lastLinkDate")
                 if last_active:
                     # Fix: If DB date is naive, force it to UTC
-                    if last_active.tzinfo is None:
+                    if isinstance(last_active, datetime) and last_active.tzinfo is None:
                         last_active = last_active.replace(tzinfo=timezone.utc)
                     
                     # Now both are aware, subtraction is safe
-                    is_active = (datetime.now(timezone.utc) - last_active).days <= 30
+                    if isinstance(last_active, datetime):
+                        is_active = (datetime.now(timezone.utc) - last_active).days <= 30
+                    else:
+                        is_active = False
                 else:
                     is_active = False
                 
                 extension_info = user_extension_data.get(user_id, {})
-                has_extension_usage = user["extensionLinks"] > 0
+                has_extension_usage = user.get("extensionLinks", 0) > 0
+                
+                link_count = user.get("linkCount", 0)
+                storage_bytes = user.get("storage", 0)
                 
                 user_list.append({
                     "userId": user_id,
                     "email": user_emails.get(user_id),
                     "firstName": user_first_names.get(user_id),
-                    "linkCount": user["linkCount"],
+                    "linkCount": link_count,
                     "categoryCount": user_category_counts.get(user_id, 0),
                     "collectionCount": user_collection_counts.get(user_id, 0),
-                    "storageBytes": user["storage"],
-                    "storageKB": round(user["storage"] / 1024, 2),
-                    "extensionLinks": user["extensionLinks"],
-                    "webLinks": user["linkCount"] - user["extensionLinks"],
-                    "favoriteLinks": user["favoriteLinks"],
-                    "archivedLinks": user["archivedLinks"],
+                    "storageBytes": storage_bytes,
+                    "storageKB": round(storage_bytes / 1024, 2) if storage_bytes > 0 else 0,
+                    "extensionLinks": user.get("extensionLinks", 0),
+                    "webLinks": link_count - user.get("extensionLinks", 0),
+                    "favoriteLinks": user.get("favoriteLinks", 0),
+                    "archivedLinks": user.get("archivedLinks", 0),
                     "firstLinkDate": user["firstLinkDate"].isoformat() if user.get("firstLinkDate") else None,
                     "lastLinkDate": user["lastLinkDate"].isoformat() if user.get("lastLinkDate") else None,
                     "isActive": is_active,
-                    "approachingLimit": user["linkCount"] >= 35 or user["storage"] >= 35 * 1024,
+                    "approachingLimit": link_count >= 35 or storage_bytes >= 35 * 1024,
                     "extensionVersion": extension_info.get("extensionVersion") if has_extension_usage else None,
                     "lastExtensionUse": extension_info.get("lastExtensionUse").isoformat() if extension_info.get("lastExtensionUse") else None,
                     "extensionEnabled": has_extension_usage  # Extension is "enabled" if user has used it
