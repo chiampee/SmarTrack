@@ -1616,12 +1616,12 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Links</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categories</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Projects</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Storage</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Extension</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Active</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -1630,16 +1630,17 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                     <td className="px-4 py-3">
                       {user.email ? (
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900">{user.email}</span>
-                          <span className="text-xs text-gray-500 font-mono">{user.userId.slice(0, 15)}...</span>
+                          <span className="text-xs text-gray-500 font-mono break-all">{user.userId}</span>
+                          <span className="text-sm font-medium text-gray-900 mt-1">{user.email}</span>
                         </div>
                       ) : (
-                        <span className="text-sm font-mono text-gray-900">{user.userId.slice(0, 20)}...</span>
+                        <span className="text-sm font-mono text-gray-900 break-all">{user.userId}</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{user.linkCount}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 font-semibold">{user.linkCount}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 font-semibold">{user.categoryCount}</td>
+                    <td className="px-4 py-3 text-sm text-gray-700 font-semibold">{user.collectionCount}</td>
                     <td className="px-4 py-3 text-sm text-gray-700">{user.storageKB.toFixed(2)} KB</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{user.extensionLinks}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         user.isActive 
@@ -1651,9 +1652,6 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                       {user.approachingLimit && (
                         <AlertCircle className="w-4 h-4 text-orange-500 inline-block ml-2" />
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
-                      {user.lastLinkDate ? new Date(user.lastLinkDate).toLocaleDateString() : 'Never'}
                     </td>
                   </tr>
                 ))}

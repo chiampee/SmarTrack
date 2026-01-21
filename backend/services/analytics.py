@@ -1187,6 +1187,44 @@ class AnalyticsService:
                 except Exception as e:
                     logger.info(f"[ADMIN USERS WARNING] Failed to fetch user emails: {e}")
             
+            # Get category counts per user (unique categories from links)
+            user_category_counts = {}
+            if user_ids:
+                try:
+                    category_pipeline = [
+                        {OP_MATCH: {
+                            "userId": {"$in": user_ids},
+                            "category": {OP_EXISTS: True, "$ne": None}
+                        }},
+                        {OP_GROUP: {
+                            "_id": {"userId": F_USERID, "category": "$category"}
+                        }},
+                        {OP_GROUP: {
+                            "_id": "$_id.userId",
+                            "categoryCount": {OP_SUM: 1}
+                        }}
+                    ]
+                    category_results = await db.links.aggregate(category_pipeline).to_list(len(user_ids))
+                    user_category_counts = {r["_id"]: r["categoryCount"] for r in category_results}
+                except Exception as e:
+                    logger.info(f"[ADMIN USERS WARNING] Failed to fetch category counts: {e}")
+            
+            # Get collection counts per user (from collections collection)
+            user_collection_counts = {}
+            if user_ids:
+                try:
+                    collection_pipeline = [
+                        {OP_MATCH: {"userId": {"$in": user_ids}}},
+                        {OP_GROUP: {
+                            "_id": F_USERID,
+                            "collectionCount": {OP_SUM: 1}
+                        }}
+                    ]
+                    collection_results = await db.collections.aggregate(collection_pipeline).to_list(len(user_ids))
+                    user_collection_counts = {r["_id"]: r["collectionCount"] for r in collection_results}
+                except Exception as e:
+                    logger.info(f"[ADMIN USERS WARNING] Failed to fetch collection counts: {e}")
+            
             # Transform results
             user_list = []
             for user in users:
@@ -1207,6 +1245,8 @@ class AnalyticsService:
                     "userId": user_id,
                     "email": user_emails.get(user_id),
                     "linkCount": user["linkCount"],
+                    "categoryCount": user_category_counts.get(user_id, 0),
+                    "collectionCount": user_collection_counts.get(user_id, 0),
                     "storageBytes": user["storage"],
                     "storageKB": round(user["storage"] / 1024, 2),
                     "extensionLinks": user["extensionLinks"],

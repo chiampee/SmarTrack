@@ -96,6 +96,8 @@ export interface AdminUser {
   userId: string
   email?: string // Added email field
   linkCount: number
+  categoryCount: number
+  collectionCount: number
   storageBytes: number
   storageKB: number
   extensionLinks: number
