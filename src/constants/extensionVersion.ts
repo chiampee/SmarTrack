@@ -2,7 +2,7 @@
  * Latest extension version constant
  * Update this when a new extension version is released
  */
-export const LATEST_EXTENSION_VERSION = '1.0.3'
+export const LATEST_EXTENSION_VERSION = '1.0.4'
 
 /**
  * Compares two semantic version strings

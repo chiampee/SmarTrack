@@ -15,7 +15,19 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
   onDownload,
   isOldExtension = false
 }) => {
+  // Check if extension is actually up to date (not unknown and matches latest)
+  const isUpToDate = currentVersion !== 'unknown' && 
+                      !currentVersion.includes('unknown') && 
+                      !currentVersion.includes('old extension') &&
+                      currentVersion === latestVersion
+
   const [isDismissed, setIsDismissed] = useState(() => {
+    // If extension is up to date, clear any dismissed state and don't show notice
+    if (isUpToDate) {
+      localStorage.removeItem('smartrack-extension-update-dismissed')
+      return true
+    }
+    
     // Don't allow dismissal for old extensions - they need to update
     if (isOldExtension) {
       return false
@@ -24,6 +36,19 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
     const dismissedVersion = localStorage.getItem('smartrack-extension-update-dismissed')
     return dismissedVersion === latestVersion
   })
+
+  // Clear dismissed state if extension becomes up to date
+  React.useEffect(() => {
+    if (isUpToDate) {
+      // Clear any dismissed state when extension is up to date
+      localStorage.removeItem('smartrack-extension-update-dismissed')
+      setIsDismissed(true)
+    } else if (!isOldExtension) {
+      // Re-check dismissed state when version changes (in case extension was updated)
+      const dismissedVersion = localStorage.getItem('smartrack-extension-update-dismissed')
+      setIsDismissed(dismissedVersion === latestVersion)
+    }
+  }, [isUpToDate, isOldExtension, currentVersion, latestVersion])
 
   const handleDismiss = () => {
     setIsDismissed(true)

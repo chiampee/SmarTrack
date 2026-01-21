@@ -170,19 +170,21 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
     
     // Periodic re-check for edge cases (extensions that load slowly or don't respond immediately)
     // This helps catch old extensions that might take longer to initialize
+    // Also re-checks periodically to detect when extension is updated
     let periodicCheckInterval: NodeJS.Timeout | null = null
     let checkCount = 0
     const maxChecks = 3 // Check up to 3 times (15 seconds total)
     
     periodicCheckInterval = setInterval(() => {
       checkCount++
-      // Only re-check if we haven't detected the extension yet and haven't exceeded max checks
-      if (!isDetectedRef.current && checkCount <= maxChecks) {
+      // Re-check periodically to detect extension updates
+      // This ensures the notice disappears when extension is updated
+      if (checkCount <= maxChecks) {
         runDetection(0)
       } else if (checkCount > maxChecks) {
-        // Stop checking after max attempts
-        if (periodicCheckInterval) {
-          clearInterval(periodicCheckInterval)
+        // After initial checks, continue periodic checks less frequently to detect updates
+        if (checkCount % 6 === 0) { // Check every 30 seconds after initial period
+          runDetection(0)
         }
       }
     }, 5000) // Check every 5 seconds

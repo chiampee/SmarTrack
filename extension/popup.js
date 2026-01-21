@@ -58,9 +58,6 @@ const CONSTANTS = {
     PAGE_URL: 'pageUrl',
     FAVICON: 'favicon',
     THUMBNAIL: 'thumbnail',
-    EXTENSION_INFO: 'extensionInfo',
-    EXTENSION_INFO_TOGGLE: 'extensionInfoToggle',
-    EXTENSION_INFO_CONTENT: 'extensionInfoContent'
   },
   
   // Error Messages
@@ -387,9 +384,8 @@ class SmarTrackPopup {
         console.log('[SRT] Page data before populateUI:', JSON.stringify(this.pageData, null, 2));
         this.populateUI();
         this.showMainView();
-        // Track usage and update extension info
+        // Track usage
         await this.trackUsage();
-        await this.updateExtensionInfo();
       }
       
       this.focusTitleInput();
@@ -1459,7 +1455,6 @@ class SmarTrackPopup {
     this.setupCategoryListeners();
     this.setupKeyboardShortcuts();
     this.setupStorageListener();
-    this.setupExtensionInfoToggle();
   }
 
   /**
@@ -2405,99 +2400,6 @@ class SmarTrackPopup {
     }
   }
 
-  /**
-   * Sets up extension info toggle
-   * @returns {void}
-   */
-  setupExtensionInfoToggle() {
-    const toggle = getElement(CONSTANTS.SELECTORS.EXTENSION_INFO_TOGGLE);
-    const content = getElement(CONSTANTS.SELECTORS.EXTENSION_INFO_CONTENT);
-    
-    if (toggle && content) {
-      const handleToggle = () => {
-        const isExpanded = content.classList.contains('expanded');
-        if (isExpanded) {
-          content.classList.remove('expanded');
-          toggle.textContent = 'ℹ️ Show Info';
-        } else {
-          content.classList.add('expanded');
-          toggle.textContent = 'ℹ️ Hide Info';
-        }
-      };
-      
-      toggle.addEventListener('click', handleToggle);
-      this.cleanupFunctions.push(() => {
-        toggle.removeEventListener('click', handleToggle);
-      });
-    }
-  }
-
-  /**
-   * Updates and displays extension information
-   * @async
-   * @returns {Promise<void>}
-   */
-  async updateExtensionInfo() {
-    try {
-      const infoContent = getElement(CONSTANTS.SELECTORS.EXTENSION_INFO_CONTENT);
-      if (!infoContent) return;
-
-      // Get stored data
-      const result = await chrome.storage.local.get([
-        CONSTANTS.STORAGE_KEYS.LAST_USAGE,
-        CONSTANTS.STORAGE_KEYS.LAST_INTERACTION,
-        CONSTANTS.STORAGE_KEYS.EXTENSION_STATUS,
-        CONSTANTS.STORAGE_KEYS.AUTH_TOKEN
-      ]);
-
-      const lastUsage = result[CONSTANTS.STORAGE_KEYS.LAST_USAGE] || null;
-      const lastInteraction = result[CONSTANTS.STORAGE_KEYS.LAST_INTERACTION] || null;
-      const status = result[CONSTANTS.STORAGE_KEYS.EXTENSION_STATUS] || 'unknown';
-      const token = result[CONSTANTS.STORAGE_KEYS.AUTH_TOKEN] || null;
-
-      // Get user ID from token
-      const userId = token ? extractUserIdFromToken(token) : null;
-
-      // Get extension version
-      const version = getExtensionVersion();
-
-      // Current timestamp
-      const currentTimestamp = Date.now();
-
-      // Build info HTML
-      const infoHTML = `
-        <div class="info-row">
-          <span class="info-label">Status:</span>
-          <span class="info-value status-${status}">${status === 'active' ? '🟢 Active' : '⚪ Inactive'}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Version:</span>
-          <span class="info-value">${version}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">User ID:</span>
-          <span class="info-value">${userId ? userId.substring(0, 8) + '...' : 'Not logged in'}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Last Usage:</span>
-          <span class="info-value">${formatTimestamp(lastUsage)}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Last Interaction:</span>
-          <span class="info-value">${formatTimestamp(lastInteraction)}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Timestamp:</span>
-          <span class="info-value">${new Date(currentTimestamp).toLocaleString()}</span>
-        </div>
-      `;
-
-      // Security: Safe innerHTML usage - only setting structured data, no user input
-      infoContent.innerHTML = infoHTML;
-    } catch (error) {
-      console.error('[SRT] Failed to update extension info:', error);
-    }
-  }
 
   /**
    * Cleanup function to remove event listeners

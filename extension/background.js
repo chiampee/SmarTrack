@@ -63,7 +63,8 @@ const BACKGROUND_CONSTANTS = {
     OPEN_DASHBOARD: 'smartrack-open-dashboard',
     SAVE_LINK: 'smartrack-save-link',
     SAVE_LINK_PAGE: 'smartrack-save-link-page',
-    DISCOVERY_SAVE: 'smartrack-discovery-save'
+    DISCOVERY_SAVE: 'smartrack-discovery-save',
+    EXTENSION_SETTINGS: 'smartrack-extension-settings'
   },
   
   // Default Settings
@@ -355,10 +356,20 @@ class SmarTrackBackground {
         contexts: ['action', 'page']
       });
       
+      // Create "Extension Settings" menu item
+      chrome.contextMenus.create({
+        id: BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.EXTENSION_SETTINGS,
+        title: 'Extension Settings',
+        contexts: ['action', 'page']
+      });
+      
       // Handle context menu clicks
       chrome.contextMenus.onClicked.addListener((info, tab) => {
         if (info.menuItemId === BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.OPEN_DASHBOARD) {
           chrome.tabs.create({ url: `${BACKGROUND_CONSTANTS.DASHBOARD_URL}/dashboard` });
+        } else if (info.menuItemId === BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.EXTENSION_SETTINGS) {
+          // Open extension settings page
+          chrome.tabs.create({ url: chrome.runtime.getURL('settings.html') });
         } else if (info.menuItemId === BACKGROUND_CONSTANTS.CONTEXT_MENU_IDS.SAVE_LINK) {
           // Save the clicked link
           this.handleSaveLinkFromContextMenu(info.linkUrl, info.linkText, tab).catch((error) => {

@@ -94,12 +94,26 @@ export const Dashboard: React.FC = () => {
   const hasOldExtension = isExtensionInstalled && (extensionVersion === null || extensionVersion === undefined || extensionVersion === '')
   const hasOutdatedExtension = isExtensionInstalled && extensionVersion && isVersionOutdated(extensionVersion, LATEST_EXTENSION_VERSION)
   
+  // Check if extension is up to date
+  const isExtensionUpToDate = isExtensionInstalled && 
+                               extensionVersion && 
+                               extensionVersion === LATEST_EXTENSION_VERSION
+  
   // Show update notice if:
   // 1. Extension is installed but version is null/undefined/empty (old extension without version reporting)
   // 2. Extension version is outdated compared to latest
   // 3. User has extension links but extension isn't detected (likely old extension that doesn't respond)
-  const needsUpdate = hasOldExtension || hasOutdatedExtension || likelyHasOldExtension
+  // BUT NOT if extension is up to date
+  const needsUpdate = !isExtensionUpToDate && (hasOldExtension || hasOutdatedExtension || likelyHasOldExtension)
   
+  // Clear dismissed state when extension is updated to latest version
+  useEffect(() => {
+    if (isExtensionUpToDate && isAuthenticated) {
+      // Extension is up to date - clear any dismissed state
+      localStorage.removeItem('smartrack-extension-update-dismissed')
+    }
+  }, [isExtensionUpToDate, isAuthenticated])
+
   // Debug: Log extension detection state to help diagnose why notice might not show
   useEffect(() => {
     if (isAuthenticated) {
@@ -110,12 +124,13 @@ export const Dashboard: React.FC = () => {
         likelyHasOldExtension,
         hasOldExtension,
         hasOutdatedExtension,
+        isExtensionUpToDate,
         needsUpdate,
         latestVersion: LATEST_EXTENSION_VERSION,
         willShowNotice: needsUpdate && isAuthenticated
       })
     }
-  }, [isExtensionInstalled, extensionVersion, hasExtensionLinks, likelyHasOldExtension, hasOldExtension, hasOutdatedExtension, needsUpdate, isAuthenticated, links])
+  }, [isExtensionInstalled, extensionVersion, hasExtensionLinks, likelyHasOldExtension, hasOldExtension, hasOutdatedExtension, isExtensionUpToDate, needsUpdate, isAuthenticated, links])
 
 
   // Check if we should redirect to analytics after login
@@ -1165,8 +1180,8 @@ export const Dashboard: React.FC = () => {
   // Handle extension download
   const handleDownloadExtension = () => {
     const linkElement = document.createElement('a')
-    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.3.zip')
-    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.3.zip')
+    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.4.zip')
+    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.4.zip')
     linkElement.click()
     toast.success('Extension download started!')
   }
