@@ -1591,8 +1591,8 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
   const [isDeleting, setIsDeleting] = useState(false)
   const toast = useToast()
   
-  // Column filters
-  const [filters, setFilters] = useState({
+  // Column filters - separate pending (what user is editing) from applied (what's filtering)
+  const [pendingFilters, setPendingFilters] = useState({
     user: '',
     firstName: '',
     linksMin: '',
@@ -1609,8 +1609,83 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
     lastInteractionTo: ''
   })
   
+  const [appliedFilters, setAppliedFilters] = useState({
+    user: '',
+    firstName: '',
+    linksMin: '',
+    linksMax: '',
+    categoriesMin: '',
+    categoriesMax: '',
+    projectsMin: '',
+    projectsMax: '',
+    extension: 'all',
+    storageMin: '',
+    storageMax: '',
+    status: 'all',
+    lastInteractionFrom: '',
+    lastInteractionTo: ''
+  })
+  
+  // Alias for backward compatibility in filter rendering
+  const filters = pendingFilters
+  
   // Use ref to prevent concurrent requests
   const loadingRef = React.useRef(false)
+  
+  // Helper to count active filters
+  const getActiveFilterCount = (filterObj: typeof appliedFilters) => {
+    return Object.values(filterObj).filter(v => v !== '' && v !== 'all').length
+  }
+  
+  // Apply pending filters
+  const applyFilters = () => {
+    setAppliedFilters({...pendingFilters})
+    // Reload users with new filters
+    loadUsers()
+  }
+  
+  // Clear all filters
+  const clearAllFilters = () => {
+    const emptyFilters = {
+      user: '',
+      firstName: '',
+      linksMin: '',
+      linksMax: '',
+      categoriesMin: '',
+      categoriesMax: '',
+      projectsMin: '',
+      projectsMax: '',
+      extension: 'all',
+      storageMin: '',
+      storageMax: '',
+      status: 'all',
+      lastInteractionFrom: '',
+      lastInteractionTo: ''
+    }
+    setPendingFilters(emptyFilters)
+    setAppliedFilters(emptyFilters)
+    loadUsers()
+  }
+  
+  // Check if there are pending changes
+  const hasPendingChanges = JSON.stringify(pendingFilters) !== JSON.stringify(appliedFilters)
+  
+  // Helper to get border styling for filter inputs
+  const getFilterInputStyle = (pendingValue: string | number, appliedValue: string | number, isSelect = false) => {
+    if (isSelect) {
+      const hasPendingChange = pendingValue !== appliedValue
+      const hasValue = pendingValue !== 'all' && pendingValue !== ''
+      if (hasPendingChange) return 'border-orange-400 bg-orange-50/30'
+      if (hasValue) return 'border-blue-400 bg-blue-50/30'
+      return 'border-gray-300'
+    } else {
+      const hasPendingChange = pendingValue !== appliedValue
+      const hasValue = pendingValue !== '' && pendingValue !== undefined
+      if (hasPendingChange) return 'border-orange-400 bg-orange-50/30'
+      if (hasValue) return 'border-blue-400 bg-blue-50/30'
+      return 'border-gray-300'
+    }
+  }
 
   const loadUsers = async (retryCount = 0) => {
     if (loadingRef.current) return
@@ -1638,83 +1713,83 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
         })
       }
       
-      // Apply client-side column filters
+      // Apply client-side column filters using appliedFilters
       sortedUsers = sortedUsers.filter(user => {
         // User filter (email or userId)
-        if (filters.user) {
-          const searchTerm = filters.user.toLowerCase()
+        if (appliedFilters.user) {
+          const searchTerm = appliedFilters.user.toLowerCase()
           const matchesEmail = user.email?.toLowerCase().includes(searchTerm)
           const matchesUserId = user.userId.toLowerCase().includes(searchTerm)
           if (!matchesEmail && !matchesUserId) return false
         }
         
         // First name filter
-        if (filters.firstName) {
+        if (appliedFilters.firstName) {
           const firstName = (user.firstName || '').toLowerCase()
-          if (!firstName.includes(filters.firstName.toLowerCase())) return false
+          if (!firstName.includes(appliedFilters.firstName.toLowerCase())) return false
         }
         
         // Links filter
-        if (filters.linksMin) {
-          const min = parseInt(filters.linksMin)
+        if (appliedFilters.linksMin) {
+          const min = parseInt(appliedFilters.linksMin)
           if (isNaN(min) || user.linkCount < min) return false
         }
-        if (filters.linksMax) {
-          const max = parseInt(filters.linksMax)
+        if (appliedFilters.linksMax) {
+          const max = parseInt(appliedFilters.linksMax)
           if (isNaN(max) || user.linkCount > max) return false
         }
         
         // Categories filter
-        if (filters.categoriesMin) {
-          const min = parseInt(filters.categoriesMin)
+        if (appliedFilters.categoriesMin) {
+          const min = parseInt(appliedFilters.categoriesMin)
           if (isNaN(min) || user.categoryCount < min) return false
         }
-        if (filters.categoriesMax) {
-          const max = parseInt(filters.categoriesMax)
+        if (appliedFilters.categoriesMax) {
+          const max = parseInt(appliedFilters.categoriesMax)
           if (isNaN(max) || user.categoryCount > max) return false
         }
         
         // Projects filter
-        if (filters.projectsMin) {
-          const min = parseInt(filters.projectsMin)
+        if (appliedFilters.projectsMin) {
+          const min = parseInt(appliedFilters.projectsMin)
           if (isNaN(min) || user.collectionCount < min) return false
         }
-        if (filters.projectsMax) {
-          const max = parseInt(filters.projectsMax)
+        if (appliedFilters.projectsMax) {
+          const max = parseInt(appliedFilters.projectsMax)
           if (isNaN(max) || user.collectionCount > max) return false
         }
         
         // Extension filter
-        if (filters.extension !== 'all') {
-          if (filters.extension === 'enabled' && !user.extensionEnabled) return false
-          if (filters.extension === 'not_used' && user.extensionEnabled) return false
-          if (filters.extension === 'old_version' && (user.extensionEnabled && !user.extensionVersion)) return false
+        if (appliedFilters.extension !== 'all') {
+          if (appliedFilters.extension === 'enabled' && !user.extensionEnabled) return false
+          if (appliedFilters.extension === 'not_used' && user.extensionEnabled) return false
+          if (appliedFilters.extension === 'old_version' && (user.extensionEnabled && !user.extensionVersion)) return false
         }
         
         // Storage filter
-        if (filters.storageMin) {
-          const min = parseFloat(filters.storageMin)
+        if (appliedFilters.storageMin) {
+          const min = parseFloat(appliedFilters.storageMin)
           if (isNaN(min) || user.storageKB < min) return false
         }
-        if (filters.storageMax) {
-          const max = parseFloat(filters.storageMax)
+        if (appliedFilters.storageMax) {
+          const max = parseFloat(appliedFilters.storageMax)
           if (isNaN(max) || user.storageKB > max) return false
         }
         
         // Status filter
-        if (filters.status !== 'all') {
-          if (filters.status === 'active' && !user.isActive) return false
-          if (filters.status === 'inactive' && user.isActive) return false
+        if (appliedFilters.status !== 'all') {
+          if (appliedFilters.status === 'active' && !user.isActive) return false
+          if (appliedFilters.status === 'inactive' && user.isActive) return false
         }
         
         // Last interaction filter
-        if (filters.lastInteractionFrom) {
-          const fromDate = new Date(filters.lastInteractionFrom).getTime()
+        if (appliedFilters.lastInteractionFrom) {
+          const fromDate = new Date(appliedFilters.lastInteractionFrom).getTime()
           const userDate = user.lastInteraction ? new Date(user.lastInteraction).getTime() : 0
           if (userDate < fromDate) return false
         }
-        if (filters.lastInteractionTo) {
-          const toDate = new Date(filters.lastInteractionTo).getTime() + 86400000 // Add 1 day to include the full day
+        if (appliedFilters.lastInteractionTo) {
+          const toDate = new Date(appliedFilters.lastInteractionTo).getTime() + 86400000 // Add 1 day to include the full day
           const userDate = user.lastInteraction ? new Date(user.lastInteraction).getTime() : 0
           if (userDate > toDate) return false
         }
@@ -1728,14 +1803,14 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
       setError(null)
       
       // Log for debugging - helps identify if filters are reducing the count
-      const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== 'all') || 
+      const hasActiveFilters = Object.values(appliedFilters).some(v => v !== '' && v !== 'all') || 
                                search || 
                                activeOnly !== undefined || 
                                inactivityFilter !== 'all'
       
       if (hasActiveFilters) {
         console.log('[Users Tab] Filters active:', {
-          filters,
+          appliedFilters,
           search,
           activeOnly,
           inactivityFilter,
@@ -1870,25 +1945,6 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, search, activeOnly, inactivityFilter, sortBy, sortOrder]) // Only reload when filters change
   
-  // Clear all column filters
-  const clearAllFilters = () => {
-    setFilters({
-      user: '',
-      firstName: '',
-      linksMin: '',
-      linksMax: '',
-      categoriesMin: '',
-      categoriesMax: '',
-      projectsMin: '',
-      projectsMax: '',
-      extension: 'all',
-      storageMin: '',
-      storageMax: '',
-      status: 'all',
-      lastInteractionFrom: '',
-      lastInteractionTo: ''
-    })
-  }
   
   // Check if any filters are active (including search and dropdown filters)
   const hasActiveFilters = Object.values(filters).some(value => value !== '' && value !== 'all') ||
@@ -2220,6 +2276,48 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
         </div>
       ) : (
         <>
+          {/* Filter Action Bar */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-4">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200">
+                  <span className="text-sm font-medium text-blue-700">
+                    Active Filters: {getActiveFilterCount(appliedFilters)}
+                  </span>
+                  {hasPendingChanges && (
+                    <span className="text-xs text-orange-600 font-medium px-2 py-0.5 bg-orange-50 rounded border border-orange-200">
+                      {getActiveFilterCount(pendingFilters) - getActiveFilterCount(appliedFilters) > 0 ? '+' : ''}
+                      {getActiveFilterCount(pendingFilters) - getActiveFilterCount(appliedFilters)} pending
+                    </span>
+                  )}
+                </div>
+                {getActiveFilterCount(appliedFilters) > 0 && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear All
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={applyFilters}
+                  disabled={!hasPendingChanges}
+                  className={`flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                    hasPendingChanges
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transform hover:scale-105'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Apply Filters
+                </button>
+              </div>
+            </div>
+          </div>
+          
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -2246,18 +2344,16 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4 text-gray-500" />
                           <span>User</span>
-                          {filters.user && (
+                          {appliedFilters.user && (
                             <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
                           )}
                         </div>
                         <input
                           type="text"
                           placeholder="Search user..."
-                          value={filters.user}
-                          onChange={(e) => setFilters({...filters, user: e.target.value})}
-                          className={`w-full px-2.5 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
-                            filters.user ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
-                          }`}
+                          value={pendingFilters.user}
+                          onChange={(e) => setPendingFilters({...pendingFilters, user: e.target.value})}
+                          className={`w-full px-2.5 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${getFilterInputStyle(pendingFilters.user, appliedFilters.user)}`}
                         />
                       </div>
                     </th>
@@ -2265,18 +2361,16 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
                           <span>First Name</span>
-                          {filters.firstName && (
+                          {appliedFilters.firstName && (
                             <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
                           )}
                         </div>
                         <input
                           type="text"
                           placeholder="Search name..."
-                          value={filters.firstName}
-                          onChange={(e) => setFilters({...filters, firstName: e.target.value})}
-                          className={`w-full px-2.5 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
-                            filters.firstName ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
-                          }`}
+                          value={pendingFilters.firstName}
+                          onChange={(e) => setPendingFilters({...pendingFilters, firstName: e.target.value})}
+                          className={`w-full px-2.5 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${getFilterInputStyle(pendingFilters.firstName, appliedFilters.firstName)}`}
                         />
                       </div>
                     </th>
@@ -2285,7 +2379,7 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <LinkIcon className="w-4 h-4 text-blue-500" />
                           <span>Links</span>
-                          {(filters.linksMin || filters.linksMax) && (
+                          {(appliedFilters.linksMin || appliedFilters.linksMax) && (
                             <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
                           )}
                         </div>
@@ -2295,11 +2389,9 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                             <input
                               type="number"
                               placeholder="Min"
-                              value={filters.linksMin}
-                              onChange={(e) => setFilters({...filters, linksMin: e.target.value})}
-                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
-                                filters.linksMin ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
-                              }`}
+                              value={pendingFilters.linksMin}
+                              onChange={(e) => setPendingFilters({...pendingFilters, linksMin: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${getFilterInputStyle(pendingFilters.linksMin, appliedFilters.linksMin)}`}
                               title="Minimum number of links"
                             />
                           </div>
@@ -2308,11 +2400,9 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                             <input
                               type="number"
                               placeholder="Max"
-                              value={filters.linksMax}
-                              onChange={(e) => setFilters({...filters, linksMax: e.target.value})}
-                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
-                                filters.linksMax ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
-                              }`}
+                              value={pendingFilters.linksMax}
+                              onChange={(e) => setPendingFilters({...pendingFilters, linksMax: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${getFilterInputStyle(pendingFilters.linksMax, appliedFilters.linksMax)}`}
                               title="Maximum number of links"
                             />
                           </div>
@@ -2324,7 +2414,7 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <Tag className="w-4 h-4 text-purple-500" />
                           <span>Categories</span>
-                          {(filters.categoriesMin || filters.categoriesMax) && (
+                          {(appliedFilters.categoriesMin || appliedFilters.categoriesMax) && (
                             <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
                           )}
                         </div>
@@ -2334,11 +2424,9 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                             <input
                               type="number"
                               placeholder="Min"
-                              value={filters.categoriesMin}
-                              onChange={(e) => setFilters({...filters, categoriesMin: e.target.value})}
-                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
-                                filters.categoriesMin ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
-                              }`}
+                              value={pendingFilters.categoriesMin}
+                              onChange={(e) => setPendingFilters({...pendingFilters, categoriesMin: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${getFilterInputStyle(pendingFilters.categoriesMin, appliedFilters.categoriesMin)}`}
                               title="Minimum number of categories"
                             />
                           </div>
@@ -2347,11 +2435,9 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                             <input
                               type="number"
                               placeholder="Max"
-                              value={filters.categoriesMax}
-                              onChange={(e) => setFilters({...filters, categoriesMax: e.target.value})}
-                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
-                                filters.categoriesMax ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
-                              }`}
+                              value={pendingFilters.categoriesMax}
+                              onChange={(e) => setPendingFilters({...pendingFilters, categoriesMax: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${getFilterInputStyle(pendingFilters.categoriesMax, appliedFilters.categoriesMax)}`}
                               title="Maximum number of categories"
                             />
                           </div>
@@ -2363,7 +2449,7 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <FolderOpen className="w-4 h-4 text-indigo-500" />
                           <span>Projects</span>
-                          {(filters.projectsMin || filters.projectsMax) && (
+                          {(appliedFilters.projectsMin || appliedFilters.projectsMax) && (
                             <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
                           )}
                         </div>
@@ -2373,11 +2459,9 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                             <input
                               type="number"
                               placeholder="Min"
-                              value={filters.projectsMin}
-                              onChange={(e) => setFilters({...filters, projectsMin: e.target.value})}
-                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
-                                filters.projectsMin ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
-                              }`}
+                              value={pendingFilters.projectsMin}
+                              onChange={(e) => setPendingFilters({...pendingFilters, projectsMin: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${getFilterInputStyle(pendingFilters.projectsMin, appliedFilters.projectsMin)}`}
                               title="Minimum number of projects"
                             />
                           </div>
@@ -2386,11 +2470,9 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                             <input
                               type="number"
                               placeholder="Max"
-                              value={filters.projectsMax}
-                              onChange={(e) => setFilters({...filters, projectsMax: e.target.value})}
-                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
-                                filters.projectsMax ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
-                              }`}
+                              value={pendingFilters.projectsMax}
+                              onChange={(e) => setPendingFilters({...pendingFilters, projectsMax: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${getFilterInputStyle(pendingFilters.projectsMax, appliedFilters.projectsMax)}`}
                               title="Maximum number of projects"
                             />
                           </div>
@@ -2402,16 +2484,14 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <Chrome className="w-4 h-4 text-orange-500" />
                           <span>Extension</span>
-                          {filters.extension !== 'all' && (
+                          {appliedFilters.extension !== 'all' && (
                             <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
                           )}
                         </div>
                         <select
-                          value={filters.extension}
-                          onChange={(e) => setFilters({...filters, extension: e.target.value})}
-                          className={`w-full px-2.5 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
-                            filters.extension !== 'all' ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
-                          }`}
+                          value={pendingFilters.extension}
+                          onChange={(e) => setPendingFilters({...pendingFilters, extension: e.target.value})}
+                          className={`w-full px-2.5 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${getFilterInputStyle(pendingFilters.extension, appliedFilters.extension, true)}`}
                         >
                           <option value="all">All Extensions</option>
                           <option value="enabled">Enabled</option>
@@ -2425,7 +2505,7 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <Database className="w-4 h-4 text-green-500" />
                           <span>Storage</span>
-                          {(filters.storageMin || filters.storageMax) && (
+                          {(appliedFilters.storageMin || appliedFilters.storageMax) && (
                             <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
                           )}
                         </div>
@@ -2435,11 +2515,9 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                             <input
                               type="number"
                               placeholder="Min KB"
-                              value={filters.storageMin}
-                              onChange={(e) => setFilters({...filters, storageMin: e.target.value})}
-                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
-                                filters.storageMin ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
-                              }`}
+                              value={pendingFilters.storageMin}
+                              onChange={(e) => setPendingFilters({...pendingFilters, storageMin: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${getFilterInputStyle(pendingFilters.storageMin, appliedFilters.storageMin)}`}
                               title="Minimum storage in KB"
                             />
                           </div>
@@ -2448,11 +2526,9 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                             <input
                               type="number"
                               placeholder="Max KB"
-                              value={filters.storageMax}
-                              onChange={(e) => setFilters({...filters, storageMax: e.target.value})}
-                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
-                                filters.storageMax ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
-                              }`}
+                              value={pendingFilters.storageMax}
+                              onChange={(e) => setPendingFilters({...pendingFilters, storageMax: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${getFilterInputStyle(pendingFilters.storageMax, appliedFilters.storageMax)}`}
                               title="Maximum storage in KB"
                             />
                           </div>
@@ -2464,16 +2540,14 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-gray-500" />
                           <span>Status</span>
-                          {filters.status !== 'all' && (
+                          {appliedFilters.status !== 'all' && (
                             <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
                           )}
                         </div>
                         <select
-                          value={filters.status}
-                          onChange={(e) => setFilters({...filters, status: e.target.value})}
-                          className={`w-full px-2.5 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
-                            filters.status !== 'all' ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
-                          }`}
+                          value={pendingFilters.status}
+                          onChange={(e) => setPendingFilters({...pendingFilters, status: e.target.value})}
+                          className={`w-full px-2.5 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${getFilterInputStyle(pendingFilters.status, appliedFilters.status, true)}`}
                         >
                           <option value="all">All Status</option>
                           <option value="active">Active</option>
@@ -2486,7 +2560,7 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-gray-500" />
                           <span>Last Interaction</span>
-                          {(filters.lastInteractionFrom || filters.lastInteractionTo) && (
+                          {(appliedFilters.lastInteractionFrom || appliedFilters.lastInteractionTo) && (
                             <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full" title="Filter active" />
                           )}
                         </div>
@@ -2495,11 +2569,9 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                             <label className="sr-only">From Date</label>
                             <input
                               type="date"
-                              value={filters.lastInteractionFrom}
-                              onChange={(e) => setFilters({...filters, lastInteractionFrom: e.target.value})}
-                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
-                                filters.lastInteractionFrom ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
-                              }`}
+                              value={pendingFilters.lastInteractionFrom}
+                              onChange={(e) => setPendingFilters({...pendingFilters, lastInteractionFrom: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${getFilterInputStyle(pendingFilters.lastInteractionFrom, appliedFilters.lastInteractionFrom)}`}
                               title="Filter from this date"
                             />
                           </div>
@@ -2507,11 +2579,9 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                             <label className="sr-only">To Date</label>
                             <input
                               type="date"
-                              value={filters.lastInteractionTo}
-                              onChange={(e) => setFilters({...filters, lastInteractionTo: e.target.value})}
-                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${
-                                filters.lastInteractionTo ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'
-                              }`}
+                              value={pendingFilters.lastInteractionTo}
+                              onChange={(e) => setPendingFilters({...pendingFilters, lastInteractionTo: e.target.value})}
+                              className={`w-full px-2 py-1.5 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors ${getFilterInputStyle(pendingFilters.lastInteractionTo, appliedFilters.lastInteractionTo)}`}
                               title="Filter to this date"
                             />
                           </div>
