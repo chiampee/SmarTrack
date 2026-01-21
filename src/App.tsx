@@ -16,6 +16,7 @@ import { Layout } from './components/Layout'
 import { LoadingSpinner } from './components/LoadingSpinner'
 import { CategoriesProvider } from './context/CategoriesContext'
 import { AdminProvider } from './context/AdminContext'
+import { SidebarProvider } from './context/SidebarContext'
 
 // Public routes accessible without authentication
 const publicRoutes = ['/faq', '/privacy', '/terms', '/legal', '/docs']
@@ -56,17 +57,19 @@ function App() {
   return (
     <AdminProvider>
       <CategoriesProvider>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<MainPage />} />
-            <Route path="/main" element={<MainPage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/analytics" element={<AdminAnalytics />} />
-            <Route path="/404" element={<NotFoundPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Layout>
+        <SidebarProvider>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<MainPage />} />
+              <Route path="/main" element={<MainPage />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/analytics" element={<AdminAnalytics />} />
+              <Route path="/404" element={<NotFoundPage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Layout>
+        </SidebarProvider>
       </CategoriesProvider>
     </AdminProvider>
   )

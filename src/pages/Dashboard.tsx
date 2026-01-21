@@ -16,6 +16,7 @@ import { useBackendApi } from '../hooks/useBackendApi'
 import { useBulkOperations } from '../hooks/useBulkOperations'
 import { useToast } from '../components/Toast'
 import { useCategories } from '../context/CategoriesContext'
+import { useSidebar } from '../context/SidebarContext'
 import { Link, Collection, Category } from '../types/Link'
 import { logger } from '../utils/logger'
 import { cacheManager } from '../utils/cacheManager'
@@ -48,6 +49,7 @@ export const Dashboard: React.FC = () => {
   const { getLinks, isAuthenticated, makeRequest } = backendApi
   const toast = useToast()
   const { computeCategories, setCategories } = useCategories()
+  const { openSidebar } = useSidebar()
   const [collections, setCollections] = useState<Collection[]>([])
   const [categories, setCategoriesState] = useState<Category[]>([])
   
@@ -1973,7 +1975,7 @@ export const Dashboard: React.FC = () => {
             {/* Folders Button */}
             <button
               onClick={() => {
-                setShowCreateCollectionModal(true)
+                openSidebar()
               }}
               className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50 transition-colors"
               aria-label="Folders"

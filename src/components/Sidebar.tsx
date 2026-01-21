@@ -134,7 +134,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
       {/* Overlay for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-[45] bg-black/50 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -142,10 +142,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
 
       {/* ✅ MOBILE RESPONSIVE: Sidebar with better mobile sizing - wider on desktop to maximize space - matches dashboard design */}
       <aside
-        className={`fixed top-0 left-0 z-[50] h-full bg-white/98 backdrop-blur-sm border-r border-slate-200/80 shadow-xl shadow-gray-900/5 transform transition-all duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 z-[100] h-full border-r border-slate-200/80 shadow-xl shadow-gray-900/5 transform transition-all duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } ${
-          isMiniMode ? 'w-20 lg:w-20' : 'w-[280px] sm:w-64 lg:w-80'
+          isMiniMode ? 'w-20 lg:w-20' : 'w-[85vw] max-w-[280px] sm:w-64 lg:w-80'
+        } ${
+          // Solid background on mobile, semi-transparent on desktop
+          'bg-white lg:bg-white/98 lg:backdrop-blur-sm'
         }`}
         aria-hidden={!isOpen}
       >
@@ -164,7 +167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                     <p className="text-base sm:text-sm font-semibold text-slate-900 truncate">
                       {user.name || user.email}
                     </p>
-                    <p className="text-sm sm:text-xs text-slate-600 truncate">
+                    <p className="text-xs text-slate-600 break-words leading-tight" style={{ wordBreak: 'break-word' }}>
                       {user.email}
                     </p>
                   </div>
@@ -181,7 +184,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
           )}
 
           {/* ✅ MOBILE RESPONSIVE: Header with better mobile sizing - matches dashboard design */}
-          <div className="p-4 sm:p-4 border-b border-slate-200/80 bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/10 flex items-center justify-between">
+          <div className="mt-2 sm:mt-0 p-4 sm:p-4 border-b border-slate-200/80 bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/10 flex items-center justify-between">
             {!isMiniMode && (
               <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">Navigation</h1>
             )}
@@ -197,7 +200,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
           </div>
 
           {/* ✅ MOBILE RESPONSIVE: Navigation with better touch targets - optimized padding for more space */}
-          <nav className="flex-1 p-3 sm:p-4 lg:p-5 space-y-1 sm:space-y-2 overflow-y-auto">
+          <nav className="flex-1 p-3 sm:p-4 lg:p-5 space-y-2 overflow-y-auto">
             {/* Main */}
             <Link
               to="/main"
@@ -219,8 +222,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
             </Link>
 
             {/* ✅ MOBILE RESPONSIVE: Projects Quick Filters with better touch targets - matches dashboard design */}
-            <div className="mt-4 sm:mt-6 pt-4 border-t border-slate-200/80">
-              {!isMiniMode && <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2">Projects</h3>}
+            <div className="mt-6 sm:mt-8 pt-4 border-t border-slate-300">
+              {!isMiniMode && <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-3 px-2">Projects</h3>}
               <div className="space-y-1">
                 <Link
                   to="/?filter=favorites"
@@ -385,7 +388,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
 
             {/* ✅ MOBILE RESPONSIVE: Categories Section with better touch targets - matches dashboard design */}
             {categories.length > 0 && (
-              <div className="mt-4 sm:mt-6 pt-4 border-t border-slate-200/80">
+              <div className="mt-4 sm:mt-6 pt-4 border-t border-slate-300">
                 {!isMiniMode && (
                   <button
                     onClick={() => setIsCategoriesExpanded(!isCategoriesExpanded)}
@@ -490,7 +493,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
             )}
 
             {/* ✅ MOBILE RESPONSIVE: Settings and Admin with better touch targets - matches dashboard design */}
-            <div className="mt-4 sm:mt-6 pt-4 border-t border-slate-200/80 space-y-1 sm:space-y-2">
+            <div className="mt-4 sm:mt-6 pt-4 border-t border-slate-300 space-y-1 sm:space-y-2">
               <Link
                 to="/settings"
                 onClick={() => {
