@@ -24,7 +24,10 @@ const CONSTANTS = {
     TOKEN_EXPIRY: 'tokenExpiry',
     SETTINGS: 'settings',
     LAST_CATEGORY: 'lastCategory',
-    CUSTOM_CATEGORIES: 'customCategories' // Track extension-created categories
+    CUSTOM_CATEGORIES: 'customCategories', // Track extension-created categories
+    LAST_USAGE: 'lastUsage',
+    LAST_INTERACTION: 'lastInteraction',
+    EXTENSION_STATUS: 'extensionStatus'
   },
   
   // Default Categories
@@ -54,7 +57,10 @@ const CONSTANTS = {
     PAGE_TITLE: 'pageTitle',
     PAGE_URL: 'pageUrl',
     FAVICON: 'favicon',
-    THUMBNAIL: 'thumbnail'
+    THUMBNAIL: 'thumbnail',
+    EXTENSION_INFO: 'extensionInfo',
+    EXTENSION_INFO_TOGGLE: 'extensionInfoToggle',
+    EXTENSION_INFO_CONTENT: 'extensionInfoContent'
   },
   
   // Error Messages
@@ -176,6 +182,75 @@ const validateCategoryName = (category) => {
   // Capitalize first letter by default, but store lowercase for consistency
   const capitalized = capitalizeCategoryName(trimmed);
   return capitalized.toLowerCase(); // Still store lowercase, but user sees capitalized
+};
+
+/**
+ * Extracts user ID from JWT token
+ * @param {string} token - JWT token
+ * @returns {string|null} User ID or null if not found
+ */
+const extractUserIdFromToken = (token) => {
+  if (!token || typeof token !== 'string') return null;
+  
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    
+    const payload = JSON.parse(atob(parts[1]));
+    // Auth0 typically uses 'sub' for user ID, but may also use 'user_id' or 'id'
+    return payload.sub || payload.user_id || payload.id || null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Formats timestamp to readable string
+ * @param {number|null} timestamp - Timestamp in milliseconds
+ * @returns {string} Formatted date string
+ */
+const formatTimestamp = (timestamp) => {
+  if (!timestamp || typeof timestamp !== 'number') return 'Never';
+  
+  try {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    
+    // For older dates, show full date
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  } catch {
+    return 'Invalid date';
+  }
+};
+
+/**
+ * Gets extension version from manifest
+ * @returns {string} Extension version
+ */
+const getExtensionVersion = () => {
+  try {
+    if (chrome.runtime?.getManifest) {
+      return chrome.runtime.getManifest().version || 'Unknown';
+    }
+  } catch {
+    // Fallback
+  }
+  return 'Unknown';
 };
 
 /**
@@ -312,6 +387,9 @@ class SmarTrackPopup {
         console.log('[SRT] Page data before populateUI:', JSON.stringify(this.pageData, null, 2));
         this.populateUI();
         this.showMainView();
+        // Track usage and update extension info
+        await this.trackUsage();
+        await this.updateExtensionInfo();
       }
       
       this.focusTitleInput();
@@ -1381,6 +1459,7 @@ class SmarTrackPopup {
     this.setupCategoryListeners();
     this.setupKeyboardShortcuts();
     this.setupStorageListener();
+    this.setupExtensionInfoToggle();
   }
 
   /**
@@ -1760,6 +1839,9 @@ class SmarTrackPopup {
       
       await this.saveLastCategory(linkData.category);
       await this.saveLink(linkData, token);
+      
+      // Track interaction
+      await this.trackInteraction();
       
       // Success - show toast only (no duplicate Chrome notification)
       document.body.classList.add('toast-only');
@@ -2286,6 +2368,135 @@ class SmarTrackPopup {
     
     status.classList.add('hidden');
     status.classList.remove('pulse');
+  }
+
+  /**
+   * Tracks extension usage (when popup is opened)
+   * @async
+   * @returns {Promise<void>}
+   */
+  async trackUsage() {
+    try {
+      const now = Date.now();
+      await chrome.storage.local.set({
+        [CONSTANTS.STORAGE_KEYS.LAST_USAGE]: now,
+        [CONSTANTS.STORAGE_KEYS.EXTENSION_STATUS]: 'active'
+      });
+    } catch (error) {
+      console.debug('[SRT] Failed to track usage:', error);
+    }
+  }
+
+  /**
+   * Tracks user interaction (when link is saved or form is interacted with)
+   * @async
+   * @returns {Promise<void>}
+   */
+  async trackInteraction() {
+    try {
+      const now = Date.now();
+      await chrome.storage.local.set({
+        [CONSTANTS.STORAGE_KEYS.LAST_INTERACTION]: now,
+        [CONSTANTS.STORAGE_KEYS.LAST_USAGE]: now,
+        [CONSTANTS.STORAGE_KEYS.EXTENSION_STATUS]: 'active'
+      });
+    } catch (error) {
+      console.debug('[SRT] Failed to track interaction:', error);
+    }
+  }
+
+  /**
+   * Sets up extension info toggle
+   * @returns {void}
+   */
+  setupExtensionInfoToggle() {
+    const toggle = getElement(CONSTANTS.SELECTORS.EXTENSION_INFO_TOGGLE);
+    const content = getElement(CONSTANTS.SELECTORS.EXTENSION_INFO_CONTENT);
+    
+    if (toggle && content) {
+      const handleToggle = () => {
+        const isExpanded = content.classList.contains('expanded');
+        if (isExpanded) {
+          content.classList.remove('expanded');
+          toggle.textContent = 'ℹ️ Show Info';
+        } else {
+          content.classList.add('expanded');
+          toggle.textContent = 'ℹ️ Hide Info';
+        }
+      };
+      
+      toggle.addEventListener('click', handleToggle);
+      this.cleanupFunctions.push(() => {
+        toggle.removeEventListener('click', handleToggle);
+      });
+    }
+  }
+
+  /**
+   * Updates and displays extension information
+   * @async
+   * @returns {Promise<void>}
+   */
+  async updateExtensionInfo() {
+    try {
+      const infoContent = getElement(CONSTANTS.SELECTORS.EXTENSION_INFO_CONTENT);
+      if (!infoContent) return;
+
+      // Get stored data
+      const result = await chrome.storage.local.get([
+        CONSTANTS.STORAGE_KEYS.LAST_USAGE,
+        CONSTANTS.STORAGE_KEYS.LAST_INTERACTION,
+        CONSTANTS.STORAGE_KEYS.EXTENSION_STATUS,
+        CONSTANTS.STORAGE_KEYS.AUTH_TOKEN
+      ]);
+
+      const lastUsage = result[CONSTANTS.STORAGE_KEYS.LAST_USAGE] || null;
+      const lastInteraction = result[CONSTANTS.STORAGE_KEYS.LAST_INTERACTION] || null;
+      const status = result[CONSTANTS.STORAGE_KEYS.EXTENSION_STATUS] || 'unknown';
+      const token = result[CONSTANTS.STORAGE_KEYS.AUTH_TOKEN] || null;
+
+      // Get user ID from token
+      const userId = token ? extractUserIdFromToken(token) : null;
+
+      // Get extension version
+      const version = getExtensionVersion();
+
+      // Current timestamp
+      const currentTimestamp = Date.now();
+
+      // Build info HTML
+      const infoHTML = `
+        <div class="info-row">
+          <span class="info-label">Status:</span>
+          <span class="info-value status-${status}">${status === 'active' ? '🟢 Active' : '⚪ Inactive'}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Version:</span>
+          <span class="info-value">${version}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">User ID:</span>
+          <span class="info-value">${userId ? userId.substring(0, 8) + '...' : 'Not logged in'}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Last Usage:</span>
+          <span class="info-value">${formatTimestamp(lastUsage)}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Last Interaction:</span>
+          <span class="info-value">${formatTimestamp(lastInteraction)}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Timestamp:</span>
+          <span class="info-value">${new Date(currentTimestamp).toLocaleString()}</span>
+        </div>
+      `;
+
+      // Security: Safe innerHTML usage - only setting structured data, no user input
+      infoContent.innerHTML = infoHTML;
+    } catch (error) {
+      console.error('[SRT] Failed to update extension info:', error);
+    }
   }
 
   /**

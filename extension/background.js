@@ -28,7 +28,10 @@ const BACKGROUND_CONSTANTS = {
     PENDING_SAVES: 'pendingSaves',
     AUTH_TOKEN: 'authToken',
     SETTINGS: 'settings',
-    LINKS: 'links'
+    LINKS: 'links',
+    LAST_USAGE: 'lastUsage',
+    LAST_INTERACTION: 'lastInteraction',
+    EXTENSION_STATUS: 'extensionStatus'
   },
   
   // Alarms
@@ -234,8 +237,9 @@ class SmarTrackBackground {
     
     this.messageHandlers.set(
       BACKGROUND_CONSTANTS.MESSAGE_TYPES.ENQUEUE_SAVE,
-      (request) => {
-        this.enqueueSave(request.linkData);
+      async (request) => {
+        await this.enqueueSave(request.linkData);
+        await this.trackInteraction();
         this.retryPendingSaves();
       }
     );
@@ -576,6 +580,9 @@ class SmarTrackBackground {
     console.log('[SRT] Link saved:', link.id);
     
     try {
+      // Track interaction
+      await this.trackInteraction();
+      
       const settings = await this.getSettings();
       
       if (settings.showNotifications !== false) {
@@ -589,6 +596,24 @@ class SmarTrackBackground {
       }
     } catch (error) {
       console.error('[SRT] Failed to handle link saved:', error);
+    }
+  }
+
+  /**
+   * Tracks extension interaction
+   * @async
+   * @returns {Promise<void>}
+   */
+  async trackInteraction() {
+    try {
+      const now = Date.now();
+      await chrome.storage.local.set({
+        [BACKGROUND_CONSTANTS.STORAGE_KEYS.LAST_INTERACTION]: now,
+        [BACKGROUND_CONSTANTS.STORAGE_KEYS.LAST_USAGE]: now,
+        [BACKGROUND_CONSTANTS.STORAGE_KEYS.EXTENSION_STATUS]: 'active'
+      });
+    } catch (error) {
+      console.debug('[SRT] Failed to track interaction:', error);
     }
   }
 
