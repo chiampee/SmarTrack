@@ -53,6 +53,9 @@ async def lifespan(app: FastAPI):
         await create_index_safely(db.system_logs, "userId")
         await create_index_safely(db.system_logs, [("type", 1), ("timestamp", -1)])
         
+        # Create indexes for user_profiles collection
+        await create_index_safely(db.user_profiles, "userId", unique=True)
+        
         # Create indexes for source tracking in links
         await create_index_safely(db.links, "source")
         await create_index_safely(db.links, [("source", 1), ("createdAt", -1)])

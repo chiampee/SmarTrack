@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   User, 
@@ -37,6 +37,13 @@ export const Settings: React.FC = () => {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [accountConfirmText, setAccountConfirmText] = useState('')
   const isExtensionInstalled = useExtensionDetection()
+  
+  // Profile state
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [profileLoaded, setProfileLoaded] = useState(false)
 
   const handleDownloadExtension = () => {
     const linkElement = document.createElement('a')
@@ -69,6 +76,73 @@ export const Settings: React.FC = () => {
       toast.error('Failed to delete all links. Please try again.')
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  // Load profile on mount and auto-fill from Auth0 on first time
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!user) return
+      
+      setIsLoadingProfile(true)
+      try {
+        const profile = await makeRequest<{ firstName?: string | null; lastName?: string | null }>('/api/users/profile')
+        
+        if (profile.firstName || profile.lastName) {
+          // Profile exists - use saved values
+          setFirstName(profile.firstName || '')
+          setLastName(profile.lastName || '')
+          setProfileLoaded(true)
+        } else {
+          // First time - auto-fill from Auth0
+          // Priority: given_name/family_name > parse from name
+          const auth0FirstName = (user as any)?.given_name || 
+            (user?.name ? user.name.split(' ')[0] : '')
+          const auth0LastName = (user as any)?.family_name || 
+            (user?.name && user.name.split(' ').length > 1 
+              ? user.name.split(' ').slice(1).join(' ') 
+              : '')
+          
+          setFirstName(auth0FirstName)
+          setLastName(auth0LastName)
+          setProfileLoaded(true)
+        }
+      } catch (error) {
+        console.error('Failed to load profile:', error)
+        // On error, still try to auto-fill from Auth0
+        const auth0FirstName = (user as any)?.given_name || 
+          (user?.name ? user.name.split(' ')[0] : '')
+        const auth0LastName = (user as any)?.family_name || 
+          (user?.name && user.name.split(' ').length > 1 
+            ? user.name.split(' ').slice(1).join(' ') 
+            : '')
+        setFirstName(auth0FirstName)
+        setLastName(auth0LastName)
+        setProfileLoaded(true)
+      } finally {
+        setIsLoadingProfile(false)
+      }
+    }
+    
+    loadProfile()
+  }, [user, makeRequest])
+
+  const handleSaveProfile = async () => {
+    setIsSavingProfile(true)
+    try {
+      await makeRequest('/api/users/profile', {
+        method: 'PUT',
+        body: JSON.stringify({
+          firstName: firstName.trim() || null,
+          lastName: lastName.trim() || null,
+        }),
+      })
+      toast.success('Profile updated successfully')
+    } catch (error) {
+      console.error('Failed to save profile:', error)
+      toast.error('Failed to save profile. Please try again.')
+    } finally {
+      setIsSavingProfile(false)
     }
   }
 
@@ -215,6 +289,55 @@ export const Settings: React.FC = () => {
                       <p className="text-xs text-slate-500 mt-1.5">
                         Managed by your authentication provider
                       </p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-200">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          First Name
+                        </label>
+                        <input
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          disabled={isLoadingProfile || isSavingProfile}
+                          placeholder="Enter your first name"
+                          className="input-field w-full"
+                          maxLength={100}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          Last Name
+                        </label>
+                        <input
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          disabled={isLoadingProfile || isSavingProfile}
+                          placeholder="Enter your last name"
+                          className="input-field w-full"
+                          maxLength={100}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end pt-2">
+                      <button
+                        onClick={handleSaveProfile}
+                        disabled={isLoadingProfile || isSavingProfile}
+                        className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+                      >
+                        {isSavingProfile ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4" />
+                            Save Profile
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>

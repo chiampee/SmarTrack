@@ -12,7 +12,6 @@ export interface Link {
   isFavorite: boolean;
   isArchived: boolean;
   collectionId?: string | null; // Optional collection this link belongs to (null = removed from collection)
-  categoryPosition?: number; // Position within category (0-indexed)
   createdAt: Date;
   updatedAt: Date;
   lastAccessedAt?: Date;

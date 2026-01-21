@@ -3,13 +3,14 @@ Users API endpoints
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Request
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from pydantic import BaseModel
 from services.mongodb import get_database
 from services.auth import get_current_user
 from services.admin import log_system_event
-from utils.mongodb_utils import build_user_filter
+from utils.mongodb_utils import build_user_filter, normalize_document
 from core.config import settings
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,104 @@ MAX_LINKS_PER_USER = 40
 MAX_STORAGE_PER_USER_BYTES = 40 * 1024  # 40 KB
 
 router = APIRouter()
+
+class UserProfileUpdate(BaseModel):
+    firstName: Optional[str] = None
+    lastName: Optional[str] = None
+
+class UserProfileResponse(BaseModel):
+    firstName: Optional[str] = None
+    lastName: Optional[str] = None
+
+@router.get("/users/profile", response_model=UserProfileResponse)
+async def get_user_profile(
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Get user profile (firstName, lastName)"""
+    try:
+        user_id = current_user["sub"]
+        
+        profile = await db.user_profiles.find_one({"userId": user_id})
+        
+        if profile:
+            normalized = normalize_document(profile)
+            return {
+                "firstName": normalized.get("firstName"),
+                "lastName": normalized.get("lastName")
+            }
+        
+        return {"firstName": None, "lastName": None}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get user profile: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get user profile: {str(e)}")
+
+@router.put("/users/profile", response_model=UserProfileResponse)
+async def update_user_profile(
+    profile_data: UserProfileUpdate,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """Update user profile (firstName, lastName)"""
+    try:
+        user_id = current_user["sub"]
+        
+        # Validate firstName and lastName
+        update_data = {"updatedAt": datetime.now(timezone.utc)}
+        
+        if profile_data.firstName is not None:
+            if not isinstance(profile_data.firstName, str):
+                raise HTTPException(status_code=400, detail="firstName must be a string")
+            if len(profile_data.firstName) > 100:
+                raise HTTPException(status_code=400, detail="firstName must be 100 characters or less")
+            update_data["firstName"] = profile_data.firstName.strip() if profile_data.firstName.strip() else None
+        
+        if profile_data.lastName is not None:
+            if not isinstance(profile_data.lastName, str):
+                raise HTTPException(status_code=400, detail="lastName must be a string")
+            if len(profile_data.lastName) > 100:
+                raise HTTPException(status_code=400, detail="lastName must be 100 characters or less")
+            update_data["lastName"] = profile_data.lastName.strip() if profile_data.lastName.strip() else None
+        
+        # Upsert profile document
+        existing_profile = await db.user_profiles.find_one({"userId": user_id})
+        
+        if existing_profile:
+            # Update existing profile
+            await db.user_profiles.update_one(
+                {"userId": user_id},
+                {"$set": update_data}
+            )
+        else:
+            # Create new profile
+            profile_doc = {
+                "userId": user_id,
+                "firstName": update_data.get("firstName"),
+                "lastName": update_data.get("lastName"),
+                "createdAt": datetime.now(timezone.utc),
+                "updatedAt": datetime.now(timezone.utc)
+            }
+            await db.user_profiles.insert_one(profile_doc)
+        
+        # Return updated profile
+        updated_profile = await db.user_profiles.find_one({"userId": user_id})
+        if updated_profile:
+            normalized = normalize_document(updated_profile)
+            return {
+                "firstName": normalized.get("firstName"),
+                "lastName": normalized.get("lastName")
+            }
+        
+        return {"firstName": None, "lastName": None}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update user profile: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update user profile: {str(e)}")
 
 @router.get("/users/stats")
 async def get_user_stats(

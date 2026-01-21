@@ -23,8 +23,7 @@ import {
   Image,
   File,
   Newspaper,
-  Link2,
-  GripVertical
+  Link2
 } from 'lucide-react'
 import { Link, Collection, Category } from '../types/Link'
 
@@ -38,8 +37,6 @@ interface LinkCardProps {
   categories?: Category[]
   allTags?: string[] // All existing tags from all links for suggestions
   onCardClick?: () => void
-  dragHandleProps?: React.HTMLAttributes<HTMLElement>
-  isDragging?: boolean
 }
 
 const LinkCardComponent: React.FC<LinkCardProps> = ({ 
@@ -51,9 +48,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   collections = [],
   categories = [],
   allTags = [],
-  onCardClick,
-  dragHandleProps,
-  isDragging = false
+  onCardClick
 }) => {
   // #region agent log
   React.useEffect(() => {
@@ -420,32 +415,12 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         data-link-id={link.id}
         className={`group bg-white rounded-xl border transition-all duration-200 cursor-pointer relative touch-manipulation ${
           isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200 hover:shadow-lg hover:border-blue-300 hover:scale-[1.02] active:bg-gray-50'
-        } ${dragHandleProps ? 'hover:border-blue-400 hover:shadow-md' : ''} ${isDragging ? 'opacity-40 scale-90 blur-sm ring-2 ring-blue-400 ring-opacity-50' : ''}`}
+        }`}
         role="article"
-        aria-grabbed={isDragging}
         onClick={handleCardClick}
       >
         {/* Main Row - Enhanced for mobile */}
         <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-4">
-          {/* Drag Handle - Desktop only */}
-          {dragHandleProps && (
-            <div
-              {...dragHandleProps}
-              className="flex-shrink-0 cursor-grab active:cursor-grabbing 
-                         text-gray-500 hover:text-gray-700 
-                         bg-gray-100 hover:bg-gray-200 
-                         p-1.5 rounded-md 
-                         transition-all duration-200 
-                         hover:shadow-sm hover:scale-110
-                         sm:flex items-center"
-              title="Drag to reorder"
-              aria-label="Drag to reorder link"
-              role="button"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <GripVertical className="w-6 h-6" />
-            </div>
-          )}
           {/* Checkbox with larger touch target */}
           <div className="flex items-center flex-shrink-0">
             <label 
@@ -971,9 +946,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     <div 
       className={`group bg-white rounded-xl border transition-all duration-200 cursor-pointer relative overflow-hidden touch-manipulation ${
         isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200 hover:shadow-xl hover:border-blue-300 hover:scale-[1.02] active:bg-gray-50'
-      } ${!isExpanded ? 'hover:-translate-y-1' : ''} ${dragHandleProps ? 'hover:border-blue-400 hover:shadow-md' : ''} ${isDragging ? 'opacity-40 scale-90 blur-sm ring-2 ring-blue-400 ring-opacity-50' : ''}`}
+      } ${!isExpanded ? 'hover:-translate-y-1' : ''}`}
       role="article"
-      aria-grabbed={isDragging}
       onClick={handleCardClick}
     >
       <div>
@@ -998,25 +972,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
 
         <div className="p-4">
           <div className="flex items-start justify-between gap-2 mb-2">
-            {/* Drag Handle - Desktop only */}
-            {dragHandleProps && (
-              <div
-                {...dragHandleProps}
-                className="flex-shrink-0 cursor-grab active:cursor-grabbing 
-                           text-gray-500 hover:text-gray-700 
-                           bg-gray-100 hover:bg-gray-200 
-                           p-1.5 rounded-md 
-                           transition-all duration-200 
-                           hover:shadow-sm hover:scale-110
-                           sm:flex items-center"
-                title="Drag to reorder"
-                aria-label="Drag to reorder link"
-                role="button"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <GripVertical className="w-5 h-5" />
-              </div>
-            )}
             <div className="flex items-center gap-2 min-w-0">
               {faviconUrl && !faviconError ? (
                 <img 
