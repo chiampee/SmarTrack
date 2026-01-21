@@ -82,10 +82,11 @@ export const Dashboard: React.FC = () => {
   }, [isExtensionInstalled, isAuthenticated, isMobile])
 
   // Check if extension update is needed
-  // If extension is installed but version is null, assume it's an old version that doesn't report version
+  // IMPORTANT: Older extensions (v1.0.0, v1.0.1) don't send version info in their response
+  // If extension is installed but version is null, we assume it's an old version that needs updating
   const needsUpdate = isExtensionInstalled && (
-    !extensionVersion || // Old extension that doesn't send version - assume needs update
-    isVersionOutdated(extensionVersion, LATEST_EXTENSION_VERSION) // Newer extension that reports version
+    !extensionVersion || // Old extension (pre-1.0.2) that doesn't send version - show update notice
+    isVersionOutdated(extensionVersion, LATEST_EXTENSION_VERSION) // Newer extension that reports version - compare versions
   )
 
   // Debug logging for extension version detection

@@ -40,14 +40,24 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
         <div className="flex items-start gap-3 flex-1">
           <AlertCircle className="w-6 h-6 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-lg mb-1">Extension Update Available</h3>
+            <h3 className="font-semibold text-lg mb-1">
+              {currentVersion === 'unknown' 
+                ? 'Extension Update Required' 
+                : 'Extension Update Available'}
+            </h3>
             <p className="text-sm text-amber-100">
-              A new version of the SmarTrack extension is available.{' '}
-              {currentVersion !== 'unknown' && (
-                <>Update from <span className="font-semibold">v{currentVersion}</span> to </>
+              {currentVersion === 'unknown' ? (
+                <>
+                  You're using an older version of the SmarTrack extension. Please update to{' '}
+                  <span className="font-semibold">v{latestVersion}</span> to get the latest features, security improvements, and bug fixes.
+                </>
+              ) : (
+                <>
+                  A new version of the SmarTrack extension is available. Update from{' '}
+                  <span className="font-semibold">v{currentVersion}</span> to{' '}
+                  <span className="font-semibold">v{latestVersion}</span> to get the latest features and improvements.
+                </>
               )}
-              {currentVersion === 'unknown' && 'Update to '}
-              <span className="font-semibold">v{latestVersion}</span> to get the latest features and improvements.
             </p>
           </div>
         </div>
