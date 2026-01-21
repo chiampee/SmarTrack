@@ -3,7 +3,7 @@ import {
   Users, Link as LinkIcon, HardDrive, TrendingUp, 
   RefreshCw, BarChart3, FileText, Settings,
   ChevronLeft, ChevronRight, Search, AlertCircle, Tag, LogIn, Download, Trash2, AlertTriangle, Shield, CheckCircle2,
-  FolderOpen, User, Database, Chrome, Clock
+  FolderOpen, User, Database, Chrome, Clock, X
 } from 'lucide-react'
 import { useAdminAccess } from '../context/AdminContext'
 import { useAdminApi, AdminAnalytics as AdminAnalyticsType, AdminUser, SystemLog, AdminCategory, UserLimits, SystemLogsResponse } from '../services/adminApi'
@@ -1723,8 +1723,33 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
       })
       
       setUsers(sortedUsers)
+      // Set total to API total (unfiltered), but we'll show filtered count separately
       setTotal(data.pagination.total)
       setError(null)
+      
+      // Log for debugging - helps identify if filters are reducing the count
+      const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== 'all') || 
+                               search || 
+                               activeOnly !== undefined || 
+                               inactivityFilter !== 'all'
+      
+      if (hasActiveFilters) {
+        console.log('[Users Tab] Filters active:', {
+          filters,
+          search,
+          activeOnly,
+          inactivityFilter,
+          apiTotal: data.pagination.total,
+          apiUsersReturned: data.users.length,
+          filteredUsers: sortedUsers.length
+        })
+      } else {
+        console.log('[Users Tab] No filters - showing all users:', {
+          apiTotal: data.pagination.total,
+          apiUsersReturned: data.users.length,
+          displayedUsers: sortedUsers.length
+        })
+      }
     } catch (error: any) {
       const errorMessage = error?.message || error?.type === 'NOT_FOUND' 
         ? 'Admin access denied. Please re-authenticate.'
@@ -1865,8 +1890,11 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
     })
   }
   
-  // Check if any filters are active
-  const hasActiveFilters = Object.values(filters).some(value => value !== '' && value !== 'all')
+  // Check if any filters are active (including search and dropdown filters)
+  const hasActiveFilters = Object.values(filters).some(value => value !== '' && value !== 'all') ||
+                           search !== '' ||
+                           activeOnly !== undefined ||
+                           inactivityFilter !== 'all'
 
   if (error && users.length === 0 && !loading) {
     return (
@@ -1903,13 +1931,45 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
         </div>
       )}
       {/* Summary Stats */}
-      {!loading && users.length > 0 && (
+      {!loading && (users.length > 0 || total > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">Total Users</p>
-                <p className="text-2xl font-bold text-blue-900">{total.toLocaleString()}</p>
+                <p className="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">
+                  Total Users
+                  {(() => {
+                    const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== 'all') || 
+                                             search || 
+                                             activeOnly !== undefined || 
+                                             inactivityFilter !== 'all'
+                    return hasActiveFilters ? ' (filtered)' : ''
+                  })()}
+                </p>
+                <p className="text-2xl font-bold text-blue-900">
+                  {(() => {
+                    const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== 'all') || 
+                                             search || 
+                                             activeOnly !== undefined || 
+                                             inactivityFilter !== 'all'
+                    // If filters are active, show filtered count, otherwise show total
+                    return hasActiveFilters ? users.length.toLocaleString() : total.toLocaleString()
+                  })()}
+                </p>
+                {(() => {
+                  const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== 'all') || 
+                                           search || 
+                                           activeOnly !== undefined || 
+                                           inactivityFilter !== 'all'
+                  if (hasActiveFilters && total !== users.length) {
+                    return (
+                      <p className="text-xs text-blue-600 mt-1">
+                        {total.toLocaleString()} total in database
+                      </p>
+                    )
+                  }
+                  return null
+                })()}
               </div>
               <Users className="w-8 h-8 text-blue-500 opacity-50" />
             </div>
@@ -1947,6 +2007,36 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
               <FolderOpen className="w-8 h-8 text-indigo-500 opacity-50" />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Active Filters Warning */}
+      {hasActiveFilters && (
+        <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-orange-900">
+                Filters are active - showing {users.length} of {total} users
+              </p>
+              <p className="text-xs text-orange-700 mt-1">
+                Clear filters to see all {total} users
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              clearAllFilters()
+              setSearch('')
+              setActiveOnly(undefined)
+              setInactivityFilter('all')
+              setPage(1)
+            }}
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors font-medium text-sm whitespace-nowrap flex items-center gap-2"
+          >
+            <X className="w-4 h-4" />
+            Clear All Filters
+          </button>
         </div>
       )}
 
@@ -2486,10 +2576,25 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
             <div className="flex items-center gap-2">
               <div className="px-4 py-2 bg-blue-50 rounded-lg border border-blue-200">
                 <span className="text-sm font-semibold text-blue-900">
-                  Showing <span className="text-blue-600">{users.length}</span> of <span className="text-blue-600">{total.toLocaleString()}</span> users
-                  {hasActiveFilters && (
-                    <span className="text-blue-600 ml-1">(filtered)</span>
-                  )}
+                  {(() => {
+                    const hasActiveFilters = Object.values(filters).some(v => v !== '' && v !== 'all') || 
+                                             search || 
+                                             activeOnly !== undefined || 
+                                             inactivityFilter !== 'all'
+                    if (hasActiveFilters) {
+                      return (
+                        <>
+                          Showing <span className="text-blue-600 font-semibold">{users.length}</span> of <span className="text-blue-600 font-semibold">{total.toLocaleString()}</span> users
+                          <span className="text-orange-600 ml-2 font-medium">(filters applied)</span>
+                        </>
+                      )
+                    }
+                    return (
+                      <>
+                        Showing <span className="text-blue-600 font-semibold">{users.length}</span> of <span className="text-blue-600 font-semibold">{total.toLocaleString()}</span> users
+                      </>
+                    )
+                  })()}
                 </span>
               </div>
             </div>
