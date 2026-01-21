@@ -107,6 +107,7 @@ export interface AdminUser {
   archivedLinks: number
   firstLinkDate: string | null
   lastLinkDate: string | null
+  lastInteraction?: string | null
   isActive: boolean
   approachingLimit: boolean
   extensionVersion?: string | null
@@ -207,7 +208,8 @@ export const useAdminApi = () => {
     page: number = 1,
     limit: number = 25,
     search?: string,
-    activeOnly?: boolean
+    activeOnly?: boolean,
+    inactiveDays?: number
   ): Promise<AdminUsersResponse> => {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -215,8 +217,21 @@ export const useAdminApi = () => {
     })
     if (search) params.append('search', search)
     if (activeOnly !== undefined) params.append('active_only', activeOnly.toString())
+    if (inactiveDays !== undefined) params.append('inactive_days', inactiveDays.toString())
     
     return makeRequest<AdminUsersResponse>(`/api/admin/users?${params.toString()}`)
+  }
+
+  const bulkDeleteUsers = async (
+    userIds: string[]
+  ): Promise<{ deleted: number; summary: any }> => {
+    return makeRequest<{ deleted: number; summary: any }>(
+      '/api/admin/users/bulk',
+      {
+        method: 'DELETE',
+        body: JSON.stringify({ user_ids: userIds }),
+      }
+    )
   }
 
   const getActivity = async (
@@ -358,6 +373,7 @@ export const useAdminApi = () => {
     deleteAllLogs,
     getLogsSize,
     checkAdminStatus,
+    bulkDeleteUsers,
   }
 }
 

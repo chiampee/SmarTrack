@@ -212,6 +212,7 @@ async def get_admin_users(
     limit: int = Query(25, ge=1, le=100),
     search: Optional[str] = Query(None),
     active_only: Optional[bool] = Query(None),
+    inactive_days: Optional[int] = Query(None, description="Filter users inactive for N days"),
     current_user: dict = Depends(check_admin_access),
     db = Depends(get_database)
 ):
@@ -221,7 +222,7 @@ async def get_admin_users(
     """
     try:
         return await AnalyticsService.get_users_paginated(
-            db, page, limit, search, active_only
+            db, page, limit, search, active_only, inactive_days
         )
     except HTTPException:
         raise
@@ -1616,6 +1617,101 @@ async def reset_user_limits(
         }, current_user.get("sub") if current_user else None, "error")
         raise HTTPException(status_code=500, detail=f"Failed to reset user limits: {str(e)}")
 
+
+class BulkDeleteUsersRequest(BaseModel):
+    user_ids: List[str]
+
+
+@router.delete("/admin/users/bulk")
+async def bulk_delete_users(
+    request: BulkDeleteUsersRequest,
+    current_user: dict = Depends(check_admin_access),
+    db = Depends(get_database)
+):
+    """
+    Bulk delete users and all their data
+    ⚠️ WARNING: This action is irreversible
+    Deletes:
+    - All links
+    - All collections
+    - User limits
+    - User profiles
+    - System logs (anonymized: userId set to null, kept for audit)
+    """
+    try:
+        if not request.user_ids or len(request.user_ids) == 0:
+            raise HTTPException(status_code=400, detail="user_ids list cannot be empty")
+        
+        deletion_summary = {
+            "usersDeleted": 0,
+            "linksDeleted": 0,
+            "collectionsDeleted": 0,
+            "userLimitsDeleted": 0,
+            "userProfilesDeleted": 0,
+            "systemLogsAnonymized": 0,
+            "errors": []
+        }
+        
+        for user_id in request.user_ids:
+            try:
+                # Delete all links
+                links_result = await db.links.delete_many({"userId": user_id})
+                deletion_summary["linksDeleted"] += links_result.deleted_count
+                
+                # Delete all collections
+                collections_result = await db.collections.delete_many({"userId": user_id})
+                deletion_summary["collectionsDeleted"] += collections_result.deleted_count
+                
+                # Delete user limits
+                limits_result = await db.user_limits.delete_one({"userId": user_id})
+                if limits_result.deleted_count > 0:
+                    deletion_summary["userLimitsDeleted"] += 1
+                
+                # Delete user profiles
+                profile_result = await db.user_profiles.delete_one({"userId": user_id})
+                if profile_result.deleted_count > 0:
+                    deletion_summary["userProfilesDeleted"] += 1
+                
+                # Anonymize system logs (set userId to null, keep for audit)
+                logs_result = await db.system_logs.update_many(
+                    {"userId": user_id},
+                    {"$set": {"userId": None}}
+                )
+                deletion_summary["systemLogsAnonymized"] += logs_result.modified_count
+                
+                deletion_summary["usersDeleted"] += 1
+                
+            except Exception as e:
+                error_msg = f"Error deleting user {user_id}: {str(e)}"
+                deletion_summary["errors"].append(error_msg)
+                logger.error(f"[BULK DELETE ERROR] {error_msg}")
+        
+        # Log the bulk deletion event
+        await log_system_event("admin_bulk_user_delete", {
+            "usersDeleted": deletion_summary["usersDeleted"],
+            "linksDeleted": deletion_summary["linksDeleted"],
+            "collectionsDeleted": deletion_summary["collectionsDeleted"],
+            "userLimitsDeleted": deletion_summary["userLimitsDeleted"],
+            "userProfilesDeleted": deletion_summary["userProfilesDeleted"],
+            "systemLogsAnonymized": deletion_summary["systemLogsAnonymized"],
+            "errors": deletion_summary["errors"],
+            "adminEmail": current_user.get("email")
+        }, current_user.get("sub"), "warning")
+        
+        return {
+            "message": f"Bulk deletion completed. {deletion_summary['usersDeleted']} users deleted.",
+            "deleted": deletion_summary["usersDeleted"],
+            "summary": deletion_summary
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await log_system_event("admin_bulk_user_delete_error", {
+            "error": str(e),
+            "adminEmail": current_user.get("email")
+        }, current_user.get("sub") if current_user else None, "error")
+        raise HTTPException(status_code=500, detail=f"Failed to delete users: {str(e)}")
 
 
 @router.post("/admin/analytics/cache/clear")

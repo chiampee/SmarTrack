@@ -1051,7 +1051,8 @@ class AnalyticsService:
         page: int,
         limit: int,
         search: Optional[str] = None,
-        active_only: Optional[bool] = None
+        active_only: Optional[bool] = None,
+        inactive_days: Optional[int] = None
     ) -> Dict[str, Any]:
         """Get paginated list of users with statistics - includes ALL authenticated users, not just those with links"""
         from datetime import datetime, timedelta, timezone
@@ -1148,35 +1149,125 @@ class AnalyticsService:
                 }
                 all_users_with_stats.append(user_data)
             
-            # Step 4: Apply active_only filter if provided
+            # Step 4: Calculate last interaction for all users (before filtering)
+            # Get last interaction from multiple sources for all users
+            all_user_ids_for_interaction = [u["_id"] for u in all_users_with_stats]
+            last_interactions_all = {}
+            
+            # Batch query for efficiency
+            for user_id in all_user_ids_for_interaction:
+                dates = []
+                
+                # From system_logs (any API activity)
+                last_log = await db.system_logs.find_one(
+                    {"userId": user_id},
+                    sort=[("timestamp", -1)]
+                )
+                if last_log and last_log.get("timestamp"):
+                    dates.append(last_log["timestamp"])
+                
+                # From links (data changes)
+                last_link = await db.links.find_one(
+                    {"userId": user_id},
+                    sort=[("updatedAt", -1)]
+                )
+                if last_link:
+                    if last_link.get("createdAt"):
+                        dates.append(last_link["createdAt"])
+                    if last_link.get("updatedAt"):
+                        dates.append(last_link["updatedAt"])
+                
+                # From collections (data changes)
+                last_collection = await db.collections.find_one(
+                    {"userId": user_id},
+                    sort=[("updatedAt", -1)]
+                )
+                if last_collection:
+                    if last_collection.get("createdAt"):
+                        dates.append(last_collection["createdAt"])
+                    if last_collection.get("updatedAt"):
+                        dates.append(last_collection["updatedAt"])
+                
+                last_interactions_all[user_id] = max(dates) if dates else None
+            
+            # Add lastInteraction to user data
+            for user in all_users_with_stats:
+                user["lastInteraction"] = last_interactions_all.get(user["_id"])
+            
+            # Step 5: Apply active_only filter if provided
             if active_only is not None:
                 thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
                 if active_only:
                     # Active: Has activity in last 30 days
                     all_users_with_stats = [
                         u for u in all_users_with_stats
-                        if u.get("lastLinkDate") and u["lastLinkDate"] >= thirty_days_ago
+                        if u.get("lastInteraction") and u["lastInteraction"] >= thirty_days_ago
                     ]
                 else:
-                    # Inactive: No activity in last 30 days or no links
+                    # Inactive: No activity in last 30 days
                     all_users_with_stats = [
                         u for u in all_users_with_stats
-                        if not u.get("lastLinkDate") or u["lastLinkDate"] < thirty_days_ago
+                        if not u.get("lastInteraction") or u["lastInteraction"] < thirty_days_ago
                     ]
             
-            # Step 5: Sort by linkCount descending
+            # Step 6: Apply inactive_days filter if provided
+            if inactive_days is not None:
+                threshold_date = datetime.now(timezone.utc) - timedelta(days=inactive_days)
+                all_users_with_stats = [
+                    u for u in all_users_with_stats
+                    if not u.get("lastInteraction") or u["lastInteraction"] < threshold_date
+                ]
+            
+            # Step 7: Sort by linkCount descending
             all_users_with_stats.sort(key=lambda x: x.get("linkCount", 0), reverse=True)
             
-            # Step 6: Get total count (before pagination)
+            # Step 8: Get total count (before pagination)
             total_count = len(all_users_with_stats)
             
-            # Step 7: Apply pagination
+            # Step 9: Apply pagination
             start_idx = (page - 1) * limit
             end_idx = start_idx + limit
             paginated_users = all_users_with_stats[start_idx:end_idx]
             
             # Collect user IDs for additional lookups
             user_ids = [u["_id"] for u in paginated_users]
+            
+            # Get last interaction from multiple sources (links, collections, system_logs)
+            last_interactions = {}
+            for user_id in user_ids:
+                dates = []
+                
+                # From system_logs (any API activity)
+                last_log = await db.system_logs.find_one(
+                    {"userId": user_id},
+                    sort=[("timestamp", -1)]
+                )
+                if last_log and last_log.get("timestamp"):
+                    dates.append(last_log["timestamp"])
+                
+                # From links (data changes)
+                last_link = await db.links.find_one(
+                    {"userId": user_id},
+                    sort=[("updatedAt", -1)]
+                )
+                if last_link:
+                    if last_link.get("createdAt"):
+                        dates.append(last_link["createdAt"])
+                    if last_link.get("updatedAt"):
+                        dates.append(last_link["updatedAt"])
+                
+                # From collections (data changes)
+                last_collection = await db.collections.find_one(
+                    {"userId": user_id},
+                    sort=[("updatedAt", -1)]
+                )
+                if last_collection:
+                    if last_collection.get("createdAt"):
+                        dates.append(last_collection["createdAt"])
+                    if last_collection.get("updatedAt"):
+                        dates.append(last_collection["updatedAt"])
+                
+                last_interactions[user_id] = max(dates) if dates else None
             
             # Lookup emails from system_logs (most recent log entry with email for each user)
             user_emails = {}
@@ -1325,6 +1416,7 @@ class AnalyticsService:
                     "archivedLinks": user.get("archivedLinks", 0),
                     "firstLinkDate": user["firstLinkDate"].isoformat() if user.get("firstLinkDate") else None,
                     "lastLinkDate": user["lastLinkDate"].isoformat() if user.get("lastLinkDate") else None,
+                    "lastInteraction": user.get("lastInteraction").isoformat() if user.get("lastInteraction") else None,
                     "isActive": is_active,
                     "approachingLimit": link_count >= 35 or storage_bytes >= 35 * 1024,
                     "extensionVersion": extension_info.get("extensionVersion") if has_extension_usage else None,
