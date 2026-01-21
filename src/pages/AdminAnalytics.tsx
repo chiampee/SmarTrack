@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { 
   Users, Link as LinkIcon, HardDrive, TrendingUp, 
   RefreshCw, BarChart3, FileText, Settings,
-  ChevronLeft, ChevronRight, Search, AlertCircle, Tag, LogIn, Download, Trash2, AlertTriangle, Shield, CheckCircle2
+  ChevronLeft, ChevronRight, Search, AlertCircle, Tag, LogIn, Download, Trash2, AlertTriangle, Shield, CheckCircle2,
+  FolderOpen, User, Database
 } from 'lucide-react'
 import { useAdminAccess } from '../context/AdminContext'
 import { useAdminApi, AdminAnalytics as AdminAnalyticsType, AdminUser, SystemLog, AdminCategory, UserLimits, SystemLogsResponse } from '../services/adminApi'
@@ -1586,21 +1587,69 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
           </div>
         </div>
       )}
-      <div className="flex items-center gap-4 mb-4">
+      {/* Summary Stats */}
+      {!loading && users.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">Total Users</p>
+                <p className="text-2xl font-bold text-blue-900">{total.toLocaleString()}</p>
+              </div>
+              <Users className="w-8 h-8 text-blue-500 opacity-50" />
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-green-600 uppercase tracking-wide mb-1">Active Users</p>
+                <p className="text-2xl font-bold text-green-900">
+                  {users.filter(u => u.isActive).length}
+                </p>
+              </div>
+              <CheckCircle2 className="w-8 h-8 text-green-500 opacity-50" />
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-purple-600 uppercase tracking-wide mb-1">Total Links</p>
+                <p className="text-2xl font-bold text-purple-900">
+                  {users.reduce((sum, u) => sum + u.linkCount, 0).toLocaleString()}
+                </p>
+              </div>
+              <LinkIcon className="w-8 h-8 text-purple-500 opacity-50" />
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-4 border border-indigo-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-indigo-600 uppercase tracking-wide mb-1">Total Projects</p>
+                <p className="text-2xl font-bold text-indigo-900">
+                  {users.reduce((sum, u) => sum + u.collectionCount, 0).toLocaleString()}
+                </p>
+              </div>
+              <FolderOpen className="w-8 h-8 text-indigo-500 opacity-50" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-6">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search users..."
+            placeholder="Search by user ID or email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-field pl-10 w-full"
+            className="input-field pl-10 w-full h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
         <select
           value={activeOnly === undefined ? 'all' : activeOnly ? 'active' : 'inactive'}
           onChange={(e) => setActiveOnly(e.target.value === 'all' ? undefined : e.target.value === 'active')}
-          className="input-field"
+          className="input-field h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-w-[160px]"
         >
           <option value="all">All Users</option>
           <option value="active">Active Only</option>
@@ -1610,73 +1659,219 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
 
       {loading ? (
         <LoadingSpinner />
+      ) : users.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Users Found</h3>
+          <p className="text-gray-500 mb-4">
+            {search || activeOnly !== undefined
+              ? 'Try adjusting your search or filter criteria.'
+              : 'No users have been found in the system.'}
+          </p>
+          {(search || activeOnly !== undefined) && (
+            <button
+              onClick={() => {
+                setSearch('')
+                setActiveOnly(undefined)
+              }}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
       ) : (
         <>
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Links</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categories</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Projects</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Storage</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {users.map((user) => (
-                  <tr key={user.userId} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      {user.email ? (
-                        <div className="flex flex-col">
-                          <span className="text-xs text-gray-500 font-mono break-all">{user.userId}</span>
-                          <span className="text-sm font-medium text-gray-900 mt-1">{user.email}</span>
-                        </div>
-                      ) : (
-                        <span className="text-sm font-mono text-gray-900 break-all">{user.userId}</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 font-semibold">{user.linkCount}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 font-semibold">{user.categoryCount}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700 font-semibold">{user.collectionCount}</td>
-                    <td className="px-4 py-3 text-sm text-gray-700">{user.storageKB.toFixed(2)} KB</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        user.isActive 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {user.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                      {user.approachingLimit && (
-                        <AlertCircle className="w-4 h-4 text-orange-500 inline-block ml-2" />
-                      )}
-                    </td>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4 text-gray-500" />
+                        <span>User</span>
+                      </div>
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <LinkIcon className="w-4 h-4 text-blue-500" />
+                        <span>Links</span>
+                      </div>
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-purple-500" />
+                        <span>Categories</span>
+                      </div>
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <FolderOpen className="w-4 h-4 text-indigo-500" />
+                        <span>Projects</span>
+                      </div>
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <Database className="w-4 h-4 text-green-500" />
+                        <span>Storage</span>
+                      </div>
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-gray-500" />
+                        <span>Status</span>
+                      </div>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {users.map((user, index) => (
+                    <tr 
+                      key={user.userId} 
+                      className="hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 transition-all duration-150 group"
+                    >
+                      <td className="px-6 py-4">
+                        {user.email ? (
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-semibold">
+                                {user.email.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-sm font-semibold text-gray-900">{user.email}</span>
+                            </div>
+                            <span className="text-xs text-gray-400 font-mono mt-1 ml-10 break-all">{user.userId}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-xs font-semibold">
+                              <User className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm font-mono text-gray-900 break-all">{user.userId.slice(0, 20)}...</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className={`px-3 py-1.5 rounded-lg font-semibold text-sm ${
+                            user.linkCount === 0 
+                              ? 'bg-gray-100 text-gray-500' 
+                              : user.linkCount < 5
+                              ? 'bg-blue-50 text-blue-700'
+                              : user.linkCount < 20
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-blue-200 text-blue-900'
+                          }`}>
+                            {user.linkCount.toLocaleString()}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className={`px-3 py-1.5 rounded-lg font-semibold text-sm ${
+                            user.categoryCount === 0 
+                              ? 'bg-gray-100 text-gray-500' 
+                              : user.categoryCount === 1
+                              ? 'bg-purple-50 text-purple-700'
+                              : user.categoryCount < 5
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-purple-200 text-purple-900'
+                          }`}>
+                            {user.categoryCount}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className={`px-3 py-1.5 rounded-lg font-semibold text-sm ${
+                            user.collectionCount === 0 
+                              ? 'bg-gray-100 text-gray-500' 
+                              : user.collectionCount < 3
+                              ? 'bg-indigo-50 text-indigo-700'
+                              : 'bg-indigo-100 text-indigo-800'
+                          }`}>
+                            {user.collectionCount}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-semibold ${
+                            user.storageKB < 10 
+                              ? 'text-green-600' 
+                              : user.storageKB < 50
+                              ? 'text-yellow-600'
+                              : 'text-orange-600'
+                          }`}>
+                            {user.storageKB < 1024 
+                              ? `${user.storageKB.toFixed(1)} KB` 
+                              : `${(user.storageKB / 1024).toFixed(2)} MB`}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-3 py-1.5 text-xs font-semibold rounded-full flex items-center gap-1.5 ${
+                            user.isActive 
+                              ? 'bg-green-100 text-green-700 border border-green-200' 
+                              : 'bg-gray-100 text-gray-600 border border-gray-200'
+                          }`}>
+                            <div className={`w-2 h-2 rounded-full ${
+                              user.isActive ? 'bg-green-500' : 'bg-gray-400'
+                            }`} />
+                            {user.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                          {user.approachingLimit && (
+                            <div className="relative group/limit">
+                              <AlertCircle className="w-5 h-5 text-orange-500 cursor-help" />
+                              <div className="absolute left-0 top-full mt-2 w-48 p-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover/limit:opacity-100 group-hover/limit:visible transition-all z-10">
+                                User approaching storage or link limits
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              Showing {users.length} of {total} users
-            </div>
+          <div className="flex items-center justify-between mt-6 px-2">
             <div className="flex items-center gap-2">
+              <div className="px-4 py-2 bg-blue-50 rounded-lg border border-blue-200">
+                <span className="text-sm font-semibold text-blue-900">
+                  Showing <span className="text-blue-600">{users.length}</span> of <span className="text-blue-600">{total.toLocaleString()}</span> users
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="btn btn-secondary"
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
+                  page === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 shadow-sm'
+                }`}
               >
                 <ChevronLeft className="w-4 h-4" />
+                <span>Previous</span>
               </button>
-              <span className="text-sm text-gray-600">Page {page}</span>
+              <div className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg font-semibold text-sm">
+                Page {page} of {Math.ceil(total / 25)}
+              </div>
               <button
                 onClick={() => setPage(p => p + 1)}
                 disabled={users.length < 25}
-                className="btn btn-secondary"
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 ${
+                  users.length < 25
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 shadow-sm'
+                }`}
               >
+                <span>Next</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
