@@ -1876,7 +1876,9 @@ export const Dashboard: React.FC = () => {
                           >
                             <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                               <div className="w-1.5 h-8 sm:h-10 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-600 rounded-full shadow-sm shadow-blue-500/30"></div>
-                              <h3 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">{category}</h3>
+                              <h3 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">
+                                {category.charAt(0).toUpperCase() + category.slice(1)}
+                              </h3>
                               <span className="px-3 sm:px-4 py-1 sm:py-1.5 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-700 rounded-full text-xs sm:text-sm font-bold border border-blue-200/80 shadow-sm">
                                 {categoryLinks.length} {categoryLinks.length === 1 ? 'link' : 'links'}
                               </span>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { X, Link as LinkIcon, Tag, FileText, Globe, Folder, ChevronDown } from 'lucide-react'
 import { Link, Collection } from '../types/Link'
+import { autoCapitalizeCategoryInput, capitalizeCategoryName } from '../utils/categoryUtils'
 
 interface EditLinkModalProps {
   isOpen: boolean
@@ -130,14 +131,16 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
 
   // ✅ NEW: Handle category selection from suggestions
   const handleCategorySelect = (selectedCategory: string) => {
-    setCategory(selectedCategory)
+    const capitalized = capitalizeCategoryName(selectedCategory)
+    setCategory(capitalized)
     setShowCategorySuggestions(false)
     categoryInputRef.current?.focus()
   }
 
   // ✅ NEW: Handle category input change
   const handleCategoryChange = (value: string) => {
-    setCategory(value)
+    const capitalized = autoCapitalizeCategoryInput(value)
+    setCategory(capitalized)
     setShowCategorySuggestions(true)
   }
 
@@ -258,7 +261,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
                           onClick={() => handleCategorySelect(suggestion)}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors first:rounded-t-lg last:rounded-b-lg"
                         >
-                          {suggestion}
+                          {capitalizeCategoryName(suggestion)}
                         </button>
                       ))}
                     </div>

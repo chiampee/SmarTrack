@@ -1,5 +1,6 @@
 import React, { useState, memo, useEffect, useRef } from 'react'
 import { logger } from '../utils/logger'
+import { capitalizeCategoryName, autoCapitalizeCategoryInput } from '../utils/categoryUtils'
 import { 
   ExternalLink, 
   Tag, 
@@ -506,7 +507,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               <p className="text-xs text-gray-500 truncate font-semibold">{getCleanDomain(link.url) || link.url}</p>
               {link.category && (
                 <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full flex-shrink-0 border border-purple-200">
-                  {link.category}
+                  {capitalizeCategoryName(link.category)}
                 </span>
               )}
               {/* Icons moved here */}
@@ -639,7 +640,10 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                           <input 
                             type="text" 
                             value={newCategoryName} 
-                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            onChange={(e) => {
+                              const capitalized = autoCapitalizeCategoryInput(e.target.value)
+                              setNewCategoryName(capitalized)
+                            }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
                                 if (newCategoryName.trim()) {
@@ -1164,7 +1168,10 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                             <input 
                               type="text" 
                               value={newCategoryName} 
-                              onChange={(e) => setNewCategoryName(e.target.value)}
+                              onChange={(e) => {
+                                const capitalized = autoCapitalizeCategoryInput(e.target.value)
+                                setNewCategoryName(capitalized)
+                              }}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   if (newCategoryName.trim()) {

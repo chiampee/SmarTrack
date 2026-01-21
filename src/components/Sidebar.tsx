@@ -4,6 +4,7 @@ import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, S
 import { useAuth0 } from '@auth0/auth0-react'
 import { useBackendApi } from '../hooks/useBackendApi'
 import { isAppError, getUserFriendlyMessage } from '../utils/errorHandler'
+import { capitalizeCategoryName } from '../utils/categoryUtils'
 
 interface Category {
   id: string
@@ -494,7 +495,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                         className={`group flex items-center ${isMiniMode ? 'justify-center' : 'gap-2'} px-2 sm:px-2.5 lg:px-3 py-3 sm:py-2 rounded-xl text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 ${
                           active ? 'bg-gradient-to-r from-blue-50 via-blue-100/80 to-indigo-50 text-blue-700 border border-blue-200/80 shadow-md shadow-blue-500/10' : 'text-slate-700 hover:bg-gradient-to-br hover:from-slate-50 hover:via-blue-50/20 hover:to-indigo-50/10'
                         }`}
-                        title={isMiniMode ? `${category.name} (${category.linkCount} links)` : `Filter by ${category.name} (${category.linkCount} links)`}
+                        title={isMiniMode ? `${capitalizeCategoryName(category.name)} (${category.linkCount} links)` : `Filter by ${capitalizeCategoryName(category.name)} (${category.linkCount} links)`}
                       >
                         <Link 
                           to={to} 
@@ -511,7 +512,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                           {!isMiniMode && (
                             <>
                               <span className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium break-words hyphens-auto min-w-0" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-                                {category.name}
+                                {capitalizeCategoryName(category.name)}
                               </span>
                               {typeof category.linkCount === 'number' && (
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${

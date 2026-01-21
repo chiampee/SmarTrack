@@ -129,6 +129,34 @@ const sanitizeString = (str, maxLength = 1000) => {
  * @param {string} category - Raw category input
  * @returns {string|null} - Validated category name or null if invalid
  */
+/**
+ * Capitalizes the first letter of a category name
+ * @param {string} category - Category name
+ * @returns {string} Category with first letter capitalized
+ */
+const capitalizeCategoryName = (category) => {
+  if (!category || typeof category !== 'string') return category;
+  const trimmed = category.trim();
+  if (trimmed.length === 0) return category;
+  // Capitalize first letter, keep rest as-is (allows user overrides)
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+};
+
+/**
+ * Auto-capitalizes first letter when user types in category input
+ * @param {string} value - Input value
+ * @returns {string} Value with first letter capitalized (if applicable)
+ */
+const autoCapitalizeCategoryInput = (value) => {
+  if (!value || value.length === 0) return value;
+  // If first character is a lowercase letter, capitalize it
+  // This allows users to override by typing uppercase manually
+  if (value.length > 0 && /^[a-z]/.test(value)) {
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  }
+  return value;
+};
+
 const validateCategoryName = (category) => {
   if (!category || typeof category !== 'string') return null;
   
@@ -145,7 +173,9 @@ const validateCategoryName = (category) => {
   const reserved = ['other', 'uncategorized', 'default'];
   if (reserved.includes(trimmed.toLowerCase())) return null;
   
-  return trimmed.toLowerCase();
+  // Capitalize first letter by default, but store lowercase for consistency
+  const capitalized = capitalizeCategoryName(trimmed);
+  return capitalized.toLowerCase(); // Still store lowercase, but user sees capitalized
 };
 
 /**
@@ -1508,9 +1538,22 @@ class SmarTrackPopup {
       };
       customCategoryInput.addEventListener('keydown', handleCustomCategoryKeyPress);
       
+      // Auto-capitalize first letter as user types
+      const handleInput = (e) => {
+        const value = e.target.value;
+        if (value.length > 0 && /^[a-z]/.test(value)) {
+          const capitalized = autoCapitalizeCategoryInput(value);
+          if (capitalized !== value) {
+            e.target.value = capitalized;
+          }
+        }
+      };
+      customCategoryInput.addEventListener('input', handleInput);
+      
       this.cleanupFunctions.push(() => {
         saveCustomCategoryBtn.removeEventListener('click', handleSaveCustomCategory);
         customCategoryInput.removeEventListener('keydown', handleCustomCategoryKeyPress);
+        customCategoryInput.removeEventListener('input', handleInput);
       });
     }
 
