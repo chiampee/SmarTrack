@@ -86,6 +86,16 @@ export interface AdminAnalytics {
     archiveUsers: number
     tagsUsers: number
   }
+  inactivity?: {
+    activeUsers: number
+    approachingThreshold: number
+    inactiveUsers: number
+    noActivityRecord: number
+    totalReauthEvents: number
+    uniqueUsersReauth: number
+    recentReauthEvents: number
+    inactivityThresholdDays: number
+  }
   dateRange: {
     startDate: string
     endDate: string

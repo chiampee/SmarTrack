@@ -133,18 +133,35 @@ class AnalyticsService:
     
     @staticmethod
     async def get_extension_users_all_time(db: Database) -> int:
-        """Get total unique users who have ever used the extension (all-time)"""
+        """Get total unique users who have ever used the extension (all-time)
+        Includes users from both extension links AND extension usage events
+        """
         try:
             logger.info(f"[ANALYTICS] get_extension_users_all_time - Input: no date range (all-time)")
-            pipeline = [
+            
+            # Get unique users from extension links
+            links_pipeline = [
                 {OP_MATCH: {"source": "extension"}},
                 {OP_GROUP: {"_id": F_USERID}},
-                {OP_COUNT: "total"}
+                {OP_PROJECT: {"_id": 1}}
             ]
-            logger.info(f"[ANALYTICS] get_extension_users_all_time - Pipeline: {pipeline}")
-            result = await db.links.aggregate(pipeline).to_list(1)
-            extension_users = result[0]["total"] if result and result[0].get("total") is not None else 0
-            logger.info(f"[ANALYTICS] get_extension_users_all_time - Query result: {extension_users} extension users found")
+            links_result = await db.links.aggregate(links_pipeline).to_list(10000)
+            users_from_links = {r["_id"] for r in links_result}
+            
+            # Get unique users from extension usage events in system_logs
+            logs_pipeline = [
+                {OP_MATCH: {"type": "extension_usage"}},
+                {OP_GROUP: {"_id": "$userId"}},
+                {OP_PROJECT: {"_id": 1}}
+            ]
+            logs_result = await db.system_logs.aggregate(logs_pipeline).to_list(10000)
+            users_from_logs = {r["_id"] for r in logs_result if r.get("_id")}
+            
+            # Combine both sets to get total unique extension users
+            all_extension_users = users_from_links.union(users_from_logs)
+            extension_users = len(all_extension_users)
+            
+            logger.info(f"[ANALYTICS] get_extension_users_all_time - Found {len(users_from_links)} from links, {len(users_from_logs)} from logs, {extension_users} total unique")
             logger.info(f"[ANALYTICS] get_extension_users_all_time - Returning: {extension_users}")
             return extension_users
         except Exception as e:
@@ -561,7 +578,8 @@ class AnalyticsService:
             normalized_start, normalized_end = AnalyticsService.normalize_date_range(start_date_obj, end_date_obj)
             logger.info(f"[ANALYTICS] get_extension_versions - Input: start={start_date_obj} (normalized={normalized_start}), end={end_date_obj} (normalized={normalized_end})")
             
-            pipeline = [
+            # Get versions from extension links
+            links_pipeline = [
                 {OP_MATCH: {
                     F_SOURCE: "extension", 
                     F_EXT_VER: {OP_EXISTS: True, "$ne": None},
@@ -569,19 +587,66 @@ class AnalyticsService:
                 }},
                 {OP_GROUP: {
                     "_id": F_EXT_VER,
-                    "count": {OP_SUM: 1},
-                    "users": {OP_ADDTOSET: F_USERID}
-                }},
-                {OP_PROJECT: {
-                    "version": "$_id",
-                    "linkCount": "$count",
-                    "userCount": {"$size": "$users"}
-                }},
-                {OP_SORT: {"linkCount": -1}}
+                    "linkCount": {OP_SUM: 1},
+                    "usersFromLinks": {OP_ADDTOSET: F_USERID}
+                }}
             ]
-            logger.info(f"[ANALYTICS] get_extension_versions - Pipeline: {pipeline}")
-            result = await db.links.aggregate(pipeline).to_list(50)
-            logger.info(f"[ANALYTICS] get_extension_versions - Query result: {len(result)} extension versions found")
+            links_result = await db.links.aggregate(links_pipeline).to_list(50)
+            
+            # Get versions from extension usage events in system_logs
+            logs_pipeline = [
+                {OP_MATCH: {
+                    "type": "extension_usage",
+                    "timestamp": {"$gte": normalized_start, "$lte": normalized_end},
+                    "details.extensionVersion": {OP_EXISTS: True, "$ne": None}
+                }},
+                {OP_GROUP: {
+                    "_id": "$details.extensionVersion",
+                    "usersFromLogs": {OP_ADDTOSET: "$userId"}
+                }}
+            ]
+            logs_result = await db.system_logs.aggregate(logs_pipeline).to_list(50)
+            
+            # Combine data from both sources
+            version_data = {}
+            
+            # Process links data
+            for r in links_result:
+                version = r["_id"]
+                if version:
+                    if version not in version_data:
+                        version_data[version] = {
+                            "linkCount": 0,
+                            "users": set()
+                        }
+                    version_data[version]["linkCount"] += r.get("linkCount", 0)
+                    version_data[version]["users"].update(r.get("usersFromLinks", []))
+            
+            # Process logs data
+            for r in logs_result:
+                version = r["_id"]
+                if version:
+                    if version not in version_data:
+                        version_data[version] = {
+                            "linkCount": 0,
+                            "users": set()
+                        }
+                    version_data[version]["users"].update([uid for uid in r.get("usersFromLogs", []) if uid])
+            
+            # Convert to list format
+            result = [
+                {
+                    "version": version,
+                    "linkCount": data["linkCount"],
+                    "userCount": len(data["users"])
+                }
+                for version, data in version_data.items()
+            ]
+            
+            # Sort by user count descending
+            result.sort(key=lambda x: x["userCount"], reverse=True)
+            
+            logger.info(f"[ANALYTICS] get_extension_versions - Found {len(result)} unique versions")
             logger.info(f"[ANALYTICS] get_extension_versions - Returning: {len(result)} versions")
             return result
         except Exception as e:
@@ -955,6 +1020,110 @@ class AnalyticsService:
             return 0
     
     @staticmethod
+    async def get_inactivity_metrics(db: Database) -> Dict[str, Any]:
+        """
+        Get inactivity and reauthentication metrics for 5-day inactivity policy
+        Returns counts of users by inactivity status and reauthentication events
+        """
+        try:
+            from services.user_activity import INACTIVITY_THRESHOLD_DAYS
+            from datetime import timedelta
+            
+            logger.info(f"[ANALYTICS] get_inactivity_metrics - Calculating inactivity metrics")
+            
+            now = datetime.now(timezone.utc)
+            threshold_date = now - timedelta(days=INACTIVITY_THRESHOLD_DAYS)
+            warning_date = now - timedelta(days=INACTIVITY_THRESHOLD_DAYS - 2)  # 3 days inactive (2 days before threshold)
+            
+            # Get all user activity records
+            all_activities = await db.user_activity.find({}).to_list(10000)
+            
+            active_users = 0
+            approaching_threshold = 0  # 3-5 days inactive
+            inactive_users = 0  # >5 days inactive
+            no_activity_record = 0
+            
+            for activity in all_activities:
+                last_activity = activity.get("lastActivity")
+                if not last_activity:
+                    no_activity_record += 1
+                    continue
+                
+                # Ensure timezone-aware
+                if isinstance(last_activity, datetime) and last_activity.tzinfo is None:
+                    last_activity = last_activity.replace(tzinfo=timezone.utc)
+                
+                days_inactive = (now - last_activity).days
+                
+                if days_inactive < INACTIVITY_THRESHOLD_DAYS - 2:
+                    active_users += 1
+                elif days_inactive < INACTIVITY_THRESHOLD_DAYS:
+                    approaching_threshold += 1
+                else:
+                    inactive_users += 1
+            
+            # Get reauthentication events from system_logs
+            reauth_pipeline = [
+                {OP_MATCH: {"type": "inactivity_reauth_required"}},
+                {OP_GROUP: {
+                    "_id": "$userId",
+                    "count": {OP_SUM: 1},
+                    "lastReauth": {"$max": "$timestamp"}
+                }},
+                {OP_COUNT: "total"}
+            ]
+            reauth_result = await db.system_logs.aggregate(reauth_pipeline).to_list(1)
+            total_reauth_events = reauth_result[0]["total"] if reauth_result and reauth_result[0].get("total") is not None else 0
+            
+            # Get unique users who required reauth
+            unique_reauth_pipeline = [
+                {OP_MATCH: {"type": "inactivity_reauth_required"}},
+                {OP_GROUP: {"_id": "$userId"}},
+                {OP_COUNT: "total"}
+            ]
+            unique_reauth_result = await db.system_logs.aggregate(unique_reauth_pipeline).to_list(1)
+            unique_users_reauth = unique_reauth_result[0]["total"] if unique_reauth_result and unique_reauth_result[0].get("total") is not None else 0
+            
+            # Get reauth events in last 30 days
+            thirty_days_ago = now - timedelta(days=30)
+            recent_reauth_pipeline = [
+                {OP_MATCH: {
+                    "type": "inactivity_reauth_required",
+                    "timestamp": {"$gte": thirty_days_ago}
+                }},
+                {OP_COUNT: "total"}
+            ]
+            recent_reauth_result = await db.system_logs.aggregate(recent_reauth_pipeline).to_list(1)
+            recent_reauth_events = recent_reauth_result[0]["total"] if recent_reauth_result and recent_reauth_result[0].get("total") is not None else 0
+            
+            result = {
+                "activeUsers": active_users,
+                "approachingThreshold": approaching_threshold,  # 3-5 days inactive
+                "inactiveUsers": inactive_users,  # >5 days inactive
+                "noActivityRecord": no_activity_record,
+                "totalReauthEvents": total_reauth_events,
+                "uniqueUsersReauth": unique_users_reauth,
+                "recentReauthEvents": recent_reauth_events,  # Last 30 days
+                "inactivityThresholdDays": INACTIVITY_THRESHOLD_DAYS
+            }
+            
+            logger.info(f"[ANALYTICS] get_inactivity_metrics - Result: {result}")
+            logger.info(f"[ANALYTICS] get_inactivity_metrics - Returning: {result}")
+            return result
+        except Exception as e:
+            logger.error(f"[ANALYTICS ERROR] get_inactivity_metrics failed: {e}")
+            return {
+                "activeUsers": 0,
+                "approachingThreshold": 0,
+                "inactiveUsers": 0,
+                "noActivityRecord": 0,
+                "totalReauthEvents": 0,
+                "uniqueUsersReauth": 0,
+                "recentReauthEvents": 0,
+                "inactivityThresholdDays": 5
+            }
+    
+    @staticmethod
     async def generate_report(db: Database, start_date_obj: datetime, end_date_obj: datetime) -> Dict[str, Any]:
         """Generate comprehensive analytics report"""
         logger.info(f"[ANALYTICS] generate_report - Input: start={start_date_obj}, end={end_date_obj}")
@@ -976,7 +1145,7 @@ class AnalyticsService:
         web_links_in_period = links_in_period - extension_links_in_period
         
         # Run remaining queries in parallel for better performance
-        user_growth, links_growth, top_categories, content_types, avg_links_per_user, active_users, users_approaching, extension_versions, user_segmentation, engagement_metrics, feature_adoption = await asyncio.gather(
+        user_growth, links_growth, top_categories, content_types, avg_links_per_user, active_users, users_approaching, extension_versions, user_segmentation, engagement_metrics, feature_adoption, inactivity_metrics = await asyncio.gather(
             AnalyticsService.get_user_growth(db, start_date_obj, end_date_obj),
             AnalyticsService.get_links_growth(db, start_date_obj, end_date_obj),
             AnalyticsService.get_top_categories(db, start_date_obj, end_date_obj),
@@ -987,7 +1156,8 @@ class AnalyticsService:
             AnalyticsService.get_extension_versions(db, start_date_obj, end_date_obj),
             AnalyticsService.get_user_segmentation(db, start_date_obj, end_date_obj),
             AnalyticsService.get_engagement_metrics(db, start_date_obj, end_date_obj),
-            AnalyticsService.get_feature_adoption(db)
+            AnalyticsService.get_feature_adoption(db),
+            AnalyticsService.get_inactivity_metrics(db)
         )
         
         # Get retention metrics (depends on active_users)
@@ -1039,6 +1209,7 @@ class AnalyticsService:
             "engagement": engagement_metrics,
             "retention": retention_metrics,
             "featureAdoption": feature_adoption,
+            "inactivity": inactivity_metrics,
             "dateRange": {
                 "startDate": start_date_obj.isoformat(),
                 "endDate": end_date_obj.isoformat()
@@ -1305,12 +1476,12 @@ class AnalyticsService:
                 except Exception as e:
                     logger.info(f"[ADMIN USERS WARNING] Failed to fetch user first names: {e}")
             
-            # Get extension usage data (last extension use date and version) from links
+            # Get extension usage data from BOTH links AND system_logs for accurate tracking
             user_extension_data = {}
             if user_ids:
                 try:
-                    # Get the most recent extension link per user to get latest version and date
-                    extension_pipeline = [
+                    # 1. Get extension usage from links (when links are saved via extension)
+                    extension_links_pipeline = [
                         {OP_MATCH: {
                             "userId": {"$in": user_ids},
                             "source": "extension"
@@ -1318,26 +1489,75 @@ class AnalyticsService:
                         {OP_SORT: {F_CREATED: -1}},  # Sort by creation date descending
                         {OP_GROUP: {
                             "_id": F_USERID,
-                            "lastExtensionUse": {"$max": F_CREATED},
-                            "latestExtensionVersion": {"$first": F_EXT_VER},  # Get version from most recent extension link
-                            "allVersions": {OP_ADDTOSET: F_EXT_VER}  # Collect all versions used (fallback)
+                            "lastExtensionUseFromLinks": {"$max": F_CREATED},
+                            "latestExtensionVersionFromLinks": {"$first": F_EXT_VER},
+                            "allVersionsFromLinks": {OP_ADDTOSET: F_EXT_VER}
                         }}
                     ]
-                    extension_results = await db.links.aggregate(extension_pipeline).to_list(len(user_ids))
-                    user_extension_data = {}
-                    for r in extension_results:
-                        user_id = r["_id"]
-                        # Use latest version, or first from allVersions if latest is null
-                        latest_version = r.get("latestExtensionVersion")
-                        if not latest_version and r.get("allVersions"):
-                            # Fallback: use first non-null version from all versions
-                            all_versions = [v for v in r.get("allVersions", []) if v]
+                    extension_links_results = await db.links.aggregate(extension_links_pipeline).to_list(len(user_ids))
+                    
+                    # 2. Get extension usage from system_logs (when extension is opened/used)
+                    extension_logs_pipeline = [
+                        {OP_MATCH: {
+                            "userId": {"$in": user_ids},
+                            "type": "extension_usage"
+                        }},
+                        {OP_SORT: {"timestamp": -1}},  # Sort by timestamp descending
+                        {OP_GROUP: {
+                            "_id": "$userId",
+                            "lastExtensionUseFromLogs": {"$max": "$timestamp"},
+                            "latestExtensionVersionFromLogs": {
+                                "$first": "$details.extensionVersion"
+                            },
+                            "allVersionsFromLogs": {
+                                OP_ADDTOSET: "$details.extensionVersion"
+                            }
+                        }}
+                    ]
+                    extension_logs_results = await db.system_logs.aggregate(extension_logs_pipeline).to_list(len(user_ids))
+                    
+                    # 3. Combine data from both sources - use most recent from either source
+                    links_data = {r["_id"]: r for r in extension_links_results}
+                    logs_data = {r["_id"]: r for r in extension_logs_results}
+                    
+                    for user_id in user_ids:
+                        links_info = links_data.get(user_id, {})
+                        logs_info = logs_data.get(user_id, {})
+                        
+                        # Get last extension use from both sources
+                        last_use_from_links = links_info.get("lastExtensionUseFromLinks")
+                        last_use_from_logs = logs_info.get("lastExtensionUseFromLogs")
+                        
+                        # Use the most recent date from either source
+                        last_extension_use = None
+                        if last_use_from_links and last_use_from_logs:
+                            last_extension_use = max(last_use_from_links, last_use_from_logs)
+                        elif last_use_from_links:
+                            last_extension_use = last_use_from_links
+                        elif last_use_from_logs:
+                            last_extension_use = last_use_from_logs
+                        
+                        # Get extension version - prefer from logs (more recent/accurate), fallback to links
+                        latest_version = None
+                        if logs_info.get("latestExtensionVersionFromLogs"):
+                            latest_version = logs_info.get("latestExtensionVersionFromLogs")
+                        elif links_info.get("latestExtensionVersionFromLinks"):
+                            latest_version = links_info.get("latestExtensionVersionFromLinks")
+                        
+                        # Fallback: try to get any version from all versions collected
+                        if not latest_version:
+                            all_versions_logs = [v for v in logs_info.get("allVersionsFromLogs", []) if v]
+                            all_versions_links = [v for v in links_info.get("allVersionsFromLinks", []) if v]
+                            all_versions = all_versions_logs + all_versions_links
                             latest_version = all_versions[0] if all_versions else None
                         
-                        user_extension_data[user_id] = {
-                            "lastExtensionUse": r.get("lastExtensionUse"),
-                            "extensionVersion": latest_version
-                        }
+                        # Only add if we have at least some extension usage data
+                        if last_extension_use or latest_version:
+                            user_extension_data[user_id] = {
+                                "lastExtensionUse": last_extension_use,
+                                "extensionVersion": latest_version
+                            }
+                            
                 except Exception as e:
                     logger.info(f"[ADMIN USERS WARNING] Failed to fetch extension usage data: {e}")
             
@@ -1361,7 +1581,10 @@ class AnalyticsService:
                     is_active = False
                 
                 extension_info = user_extension_data.get(user_id, {})
-                has_extension_usage = user.get("extensionLinks", 0) > 0
+                # Extension is considered "enabled" if user has extension links OR extension usage events
+                has_extension_links = user.get("extensionLinks", 0) > 0
+                has_extension_usage_events = extension_info.get("lastExtensionUse") is not None
+                has_extension_usage = has_extension_links or has_extension_usage_events
                 
                 link_count = user.get("linkCount", 0)
                 storage_bytes = user.get("storage", 0)

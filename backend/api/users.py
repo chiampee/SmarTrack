@@ -26,6 +26,10 @@ class UserProfileUpdate(BaseModel):
     lastName: Optional[str] = None
     displayName: Optional[str] = None
 
+class ExtensionUsageEvent(BaseModel):
+    extensionVersion: Optional[str] = None
+    eventType: str = "popup_open"  # popup_open, link_saved, etc.
+
 class UserProfileResponse(BaseModel):
     firstName: Optional[str] = None
     lastName: Optional[str] = None
@@ -372,3 +376,47 @@ async def delete_user_account(
         import traceback
         logger.error(f"[ACCOUNT DELETION] Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to delete account: {str(e)}")
+
+@router.post("/extension/usage")
+async def track_extension_usage(
+    usage_event: ExtensionUsageEvent,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_database)
+):
+    """
+    Track extension usage events (popup opens, interactions, etc.)
+    This provides more accurate analytics than just tracking link saves
+    """
+    try:
+        user_id = current_user["sub"]
+        user_email = current_user.get("email")
+        
+        # Validate extension version if provided
+        extension_version = usage_event.extensionVersion
+        if extension_version:
+            # Basic validation: should be semantic version format (e.g., "1.0.4")
+            if not isinstance(extension_version, str) or len(extension_version) > 20:
+                extension_version = None  # Invalid version, ignore it
+        
+        # Log extension usage event to system_logs
+        await log_system_event(
+            "extension_usage",
+            {
+                "eventType": usage_event.eventType,
+                "extensionVersion": extension_version,
+                "userId": user_id,
+                "email": user_email
+            },
+            user_id=user_id,
+            email=user_email,
+            severity="info"
+        )
+        
+        return {"status": "tracked", "eventType": usage_event.eventType}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to track extension usage: {str(e)}")
+        # Don't fail the request if tracking fails - extension should still work
+        return {"status": "error", "message": "Tracking failed but extension continues to work"}

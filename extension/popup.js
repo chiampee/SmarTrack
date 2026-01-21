@@ -2105,6 +2105,11 @@ class SmarTrackPopup {
     try {
       const backendApi = new BackendApiService();
       await backendApi.saveLink(linkData, token);
+      
+      // Track extension usage when link is saved
+      this.trackUsageOnBackend('link_saved').catch((error) => {
+        console.debug('[SRT] Failed to track link save usage:', error);
+      });
     } catch (error) {
       throw error;
     }
@@ -2373,12 +2378,49 @@ class SmarTrackPopup {
   async trackUsage() {
     try {
       const now = Date.now();
+      // Store locally for extension settings page
       await chrome.storage.local.set({
         [CONSTANTS.STORAGE_KEYS.LAST_USAGE]: now,
         [CONSTANTS.STORAGE_KEYS.EXTENSION_STATUS]: 'active'
       });
+      
+      // Also track usage on backend for accurate analytics (non-blocking)
+      this.trackUsageOnBackend().catch((error) => {
+        // Silently fail - analytics tracking shouldn't break extension functionality
+        console.debug('[SRT] Failed to track usage on backend:', error);
+      });
     } catch (error) {
       console.debug('[SRT] Failed to track usage:', error);
+    }
+  }
+
+  /**
+   * Tracks extension usage on backend API
+   * @async
+   * @param {string} eventType - Type of event ('popup_open', 'link_saved', etc.)
+   * @returns {Promise<void>}
+   */
+  async trackUsageOnBackend(eventType = 'popup_open') {
+    try {
+      const token = await this.getAuthToken();
+      if (!token) {
+        return; // Not authenticated, skip tracking
+      }
+      
+      const extensionVersion = getExtensionVersion();
+      const backendApi = new BackendApiService();
+      
+      // Track extension usage event (non-blocking - don't wait for response)
+      await backendApi.makeRequest('/api/extension/usage', {
+        method: 'POST',
+        body: JSON.stringify({
+          extensionVersion: extensionVersion !== 'Unknown' ? extensionVersion : null,
+          eventType: eventType
+        })
+      });
+    } catch (error) {
+      // Silently fail - analytics tracking shouldn't break extension functionality
+      console.debug('[SRT] Failed to track usage on backend:', error);
     }
   }
 
