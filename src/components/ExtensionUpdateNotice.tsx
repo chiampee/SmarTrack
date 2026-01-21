@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Download, X, AlertCircle, RefreshCw } from 'lucide-react'
-import { normalizeVersion, isValidVersionFormat } from '../constants/extensionVersion'
+import { normalizeVersion } from '../constants/extensionVersion'
 
 interface ExtensionUpdateNoticeProps {
   currentVersion: string
