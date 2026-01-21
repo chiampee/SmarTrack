@@ -15,8 +15,7 @@ import {
   Database,
   Settings as SettingsIcon,
   Chrome,
-  CheckCircle2,
-  RefreshCw
+  CheckCircle2
 } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { motion } from 'framer-motion'
@@ -135,14 +134,13 @@ export const Settings: React.FC = () => {
     loadProfile()
   }, [user, makeRequest])
 
-  const handleSyncDisplayName = () => {
-    if (firstName.trim()) {
+  // Auto-update display name when first name changes (only after profile is loaded)
+  useEffect(() => {
+    // Only auto-update after initial profile load to avoid overwriting saved displayName
+    if (profileLoaded && firstName.trim()) {
       setDisplayName(firstName.trim())
-      toast.success('Display name synced from first name')
-    } else {
-      toast.error('Please enter a first name first')
     }
-  }
+  }, [firstName, profileLoaded])
 
   const handleSaveProfile = async () => {
     setIsSavingProfile(true)
@@ -284,29 +282,17 @@ export const Settings: React.FC = () => {
                       <label className="block text-sm font-medium text-slate-700 mb-2">
                         Display Name
                       </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={displayName}
-                          onChange={(e) => setDisplayName(e.target.value)}
-                          disabled={isLoadingProfile || isSavingProfile}
-                          placeholder="Enter your display name"
-                          className="input-field w-full flex-1"
-                          maxLength={100}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleSyncDisplayName}
-                          disabled={isLoadingProfile || isSavingProfile || !firstName.trim()}
-                          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-sm font-medium"
-                          title="Sync from First Name"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                          <span className="hidden sm:inline">Sync</span>
-                        </button>
-                      </div>
+                      <input
+                        type="text"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        disabled={isLoadingProfile || isSavingProfile}
+                        placeholder="Enter your display name"
+                        className="input-field w-full"
+                        maxLength={100}
+                      />
                       <p className="text-xs text-slate-500 mt-1.5">
-                        You can edit your display name or sync it from your first name
+                        Automatically syncs from your first name. You can also edit it manually.
                       </p>
                     </div>
                     <div>
