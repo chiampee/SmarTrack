@@ -42,8 +42,11 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
           <div>
             <h3 className="font-semibold text-lg mb-1">Extension Update Available</h3>
             <p className="text-sm text-amber-100">
-              A new version of the SmarTrack extension is available. Update from{' '}
-              <span className="font-semibold">v{currentVersion}</span> to{' '}
+              A new version of the SmarTrack extension is available.{' '}
+              {currentVersion !== 'unknown' && (
+                <>Update from <span className="font-semibold">v{currentVersion}</span> to </>
+              )}
+              {currentVersion === 'unknown' && 'Update to '}
               <span className="font-semibold">v{latestVersion}</span> to get the latest features and improvements.
             </p>
           </div>

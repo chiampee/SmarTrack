@@ -82,8 +82,23 @@ export const Dashboard: React.FC = () => {
   }, [isExtensionInstalled, isAuthenticated, isMobile])
 
   // Check if extension update is needed
-  const needsUpdate = isExtensionInstalled && extensionVersion && 
-    isVersionOutdated(extensionVersion, LATEST_EXTENSION_VERSION)
+  // If extension is installed but version is null, assume it's an old version that doesn't report version
+  const needsUpdate = isExtensionInstalled && (
+    !extensionVersion || // Old extension that doesn't send version - assume needs update
+    isVersionOutdated(extensionVersion, LATEST_EXTENSION_VERSION) // Newer extension that reports version
+  )
+
+  // Debug logging for extension version detection
+  useEffect(() => {
+    console.log('[Dashboard] Extension detection status:', {
+      isExtensionInstalled,
+      extensionVersion: extensionVersion || 'null (old extension or not detected)',
+      latestVersion: LATEST_EXTENSION_VERSION,
+      needsUpdate,
+      isAuthenticated,
+      isOutdated: extensionVersion ? isVersionOutdated(extensionVersion, LATEST_EXTENSION_VERSION) : 'unknown - assuming outdated'
+    })
+  }, [isExtensionInstalled, extensionVersion, needsUpdate, isAuthenticated])
 
   // Check if we should redirect to analytics after login
   useEffect(() => {
@@ -1206,9 +1221,9 @@ export const Dashboard: React.FC = () => {
         )}
 
         {/* Extension Update Notice */}
-        {needsUpdate && isAuthenticated && extensionVersion && (
+        {needsUpdate && isAuthenticated && (
           <ExtensionUpdateNotice
-            currentVersion={extensionVersion}
+            currentVersion={extensionVersion || 'unknown'}
             latestVersion={LATEST_EXTENSION_VERSION}
             onDownload={handleDownloadExtension}
           />
