@@ -15,11 +15,16 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
   onDownload,
   isOldExtension = false
 }) => {
+  // Normalize versions for comparison
+  const normalizedCurrent = currentVersion ? currentVersion.trim() : currentVersion
+  const normalizedLatest = latestVersion ? latestVersion.trim() : latestVersion
+  
   // Check if extension is actually up to date (not unknown and matches latest)
-  const isUpToDate = currentVersion !== 'unknown' && 
-                      !currentVersion.includes('unknown') && 
-                      !currentVersion.includes('old extension') &&
-                      currentVersion === latestVersion
+  const isUpToDate = normalizedCurrent && 
+                      normalizedCurrent !== 'unknown' && 
+                      !normalizedCurrent.includes('unknown') && 
+                      !normalizedCurrent.includes('old extension') &&
+                      normalizedCurrent === normalizedLatest
 
   // Helper function to compare semantic versions
   // Returns: -1 if v1 < v2, 0 if v1 === v2, 1 if v1 > v2
@@ -50,8 +55,9 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
       return true
     }
     
-    // Don't allow dismissal for old extensions - they need to update
-    if (isOldExtension) {
+    // Don't allow dismissal for truly old extensions without version reporting - they need to update for security
+    // But allow dismissal if extension reports a version (even if outdated)
+    if (isOldExtension && (normalizedCurrent === 'unknown' || normalizedCurrent?.includes('unknown'))) {
       return false
     }
     
@@ -61,15 +67,18 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
       return false // No dismissal recorded, show notice
     }
     
+    // Normalize dismissed version
+    const normalizedDismissed = dismissedVersion.trim()
+    
     // If dismissed version exactly matches latest version, don't show notice
-    if (dismissedVersion === latestVersion) {
+    if (normalizedDismissed === normalizedLatest) {
       return true // User dismissed this exact version
     }
     
     // If a newer version is available than what was dismissed, show notice again
     // Example: User dismissed v1.0.4, but now v1.0.5 is available -> show notice
     try {
-      const comparison = compareVersions(latestVersion, dismissedVersion)
+      const comparison = compareVersions(normalizedLatest, normalizedDismissed)
       // If latestVersion > dismissedVersion, show notice (comparison > 0)
       // If latestVersion === dismissedVersion, don't show (comparison === 0) - already handled above
       // If latestVersion < dismissedVersion, don't show (shouldn't happen, but handle gracefully)
@@ -84,12 +93,26 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
   // Clear dismissed state if extension becomes up to date
   // Re-check dismissed state when version changes (in case extension was updated or new version released)
   React.useEffect(() => {
+    // If current version matches latest, extension is up to date
+    if (normalizedCurrent && normalizedCurrent === normalizedLatest && normalizedCurrent !== 'unknown') {
+      // Clear any dismissed state when extension is up to date
+      localStorage.removeItem('smartrack-extension-update-dismissed')
+      localStorage.removeItem('smartrack-extension-update-dismissed-time')
+      setIsDismissed(true)
+      console.log(`[Extension Update] Extension is up to date (${normalizedCurrent} === ${normalizedLatest}), hiding notice`)
+      return
+    }
+    
     if (isUpToDate) {
       // Clear any dismissed state when extension is up to date
       localStorage.removeItem('smartrack-extension-update-dismissed')
       localStorage.removeItem('smartrack-extension-update-dismissed-time')
       setIsDismissed(true)
-    } else if (!isOldExtension) {
+      console.log(`[Extension Update] Extension is up to date, hiding notice`)
+      return
+    }
+    
+    if (!isOldExtension) {
       // Re-check dismissed state when version changes
       const dismissedVersion = localStorage.getItem('smartrack-extension-update-dismissed')
       if (!dismissedVersion) {
@@ -97,25 +120,35 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
         return
       }
       
+      // Normalize dismissed version
+      const normalizedDismissed = dismissedVersion.trim()
+      
       // If dismissed version exactly matches latest, don't show
-      if (dismissedVersion === latestVersion) {
+      if (normalizedDismissed === normalizedLatest) {
         setIsDismissed(true)
+        console.log(`[Extension Update] Dismissed version ${normalizedDismissed} matches latest ${normalizedLatest}, hiding notice`)
         return
       }
       
       // If a newer version is available than what was dismissed, show notice again
       try {
-        const comparison = compareVersions(latestVersion, dismissedVersion)
+        const comparison = compareVersions(normalizedLatest, normalizedDismissed)
         // comparison > 0 means latestVersion > dismissedVersion -> show notice
         // comparison <= 0 means latestVersion <= dismissedVersion -> don't show
-        setIsDismissed(comparison <= 0)
+        const shouldDismiss = comparison <= 0
+        setIsDismissed(shouldDismiss)
+        if (shouldDismiss) {
+          console.log(`[Extension Update] Dismissed version ${normalizedDismissed} >= latest ${normalizedLatest}, hiding notice`)
+        } else {
+          console.log(`[Extension Update] Dismissed version ${normalizedDismissed} < latest ${normalizedLatest}, showing notice`)
+        }
       } catch (error) {
         // On error, show notice to be safe (user should see updates)
         console.debug('[Extension Update] Error checking dismissed state:', error)
         setIsDismissed(false)
       }
     }
-  }, [isUpToDate, isOldExtension, currentVersion, latestVersion])
+  }, [isUpToDate, isOldExtension, normalizedCurrent, normalizedLatest])
 
   const handleDismiss = () => {
     // Confirm dismissal with user
@@ -207,7 +240,7 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
             <Download className="w-4 h-4" />
             Update Now
           </button>
-          {!isOldExtension && (
+          {!(isOldExtension && (currentVersion === 'unknown' || currentVersion.includes('unknown'))) && (
             <button
               onClick={handleDismiss}
               className="px-3 py-2 text-white/90 hover:text-white hover:bg-white/20 rounded-lg transition-colors font-medium text-sm whitespace-nowrap flex items-center gap-2 border border-white/30 hover:border-white/50"

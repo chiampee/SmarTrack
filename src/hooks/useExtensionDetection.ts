@@ -52,8 +52,10 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
             if (!resolved) {
               resolved = true
               cleanup()
+              // Normalize version (trim whitespace, handle null/undefined)
+              const normalizedVersion = version && typeof version === 'string' ? version.trim() : (version || null)
               // Return both detection status and version
-              resolve({ detected: true, version: version || null })
+              resolve({ detected: true, version: normalizedVersion })
             }
           }
         }
