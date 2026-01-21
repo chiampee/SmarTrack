@@ -1194,7 +1194,11 @@ class AnalyticsService:
                     category_pipeline = [
                         {OP_MATCH: {
                             "userId": {"$in": user_ids},
-                            "category": {OP_EXISTS: True, "$ne": None}
+                            "category": {
+                                OP_EXISTS: True,
+                                "$ne": None,
+                                "$nin": [""]  # Exclude empty strings
+                            }
                         }},
                         {OP_GROUP: {
                             "_id": {"userId": F_USERID, "category": "$category"}
