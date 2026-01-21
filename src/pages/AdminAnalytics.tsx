@@ -2814,30 +2814,111 @@ const CategoriesTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({
 
       {loading ? (
         <LoadingSpinner />
+      ) : categories.length === 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <Tag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Categories Found</h3>
+          <p className="text-gray-600 mb-4">
+            There are no categories with links in the system yet.
+          </p>
+          <button
+            onClick={() => loadCategories()}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            Refresh
+          </button>
+        </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700">Total Categories</h4>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{categories.length}</p>
+              </div>
+              <div className="text-right">
+                <h4 className="text-sm font-semibold text-gray-700">Total Links</h4>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {categories.reduce((sum, cat) => sum + cat.linkCount, 0).toLocaleString()}
+                </p>
+              </div>
+              <div className="text-right">
+                <h4 className="text-sm font-semibold text-gray-700">Total Users</h4>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {new Set(categories.flatMap(cat => Array(cat.userCount).fill(0))).size || 
+                   categories.reduce((sum, cat) => sum + cat.userCount, 0)}
+                </p>
+              </div>
+            </div>
+          </div>
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Links</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Users</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-purple-500" />
+                    <span>Category</span>
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-2">
+                    <LinkIcon className="w-4 h-4 text-blue-500" />
+                    <span>Links</span>
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-green-500" />
+                    <span>Users</span>
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <span>Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {categories.map((cat) => (
-                <tr key={cat.name} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 capitalize">{cat.name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{cat.linkCount}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{cat.userCount}</td>
-                  <td className="px-4 py-3">
+                <tr key={cat.name} className="hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 transition-all duration-150">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                      <span className="text-sm font-semibold text-gray-900 capitalize">{cat.name || '(Uncategorized)'}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className={`px-3 py-1.5 rounded-lg font-semibold text-sm inline-block ${
+                      cat.linkCount === 0 
+                        ? 'bg-gray-100 text-gray-500' 
+                        : cat.linkCount < 10
+                        ? 'bg-blue-50 text-blue-700'
+                        : cat.linkCount < 50
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-blue-200 text-blue-900'
+                    }`}>
+                      {cat.linkCount.toLocaleString()}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className={`px-3 py-1.5 rounded-lg font-semibold text-sm inline-block ${
+                      cat.userCount === 0 
+                        ? 'bg-gray-100 text-gray-500' 
+                        : cat.userCount === 1
+                        ? 'bg-green-50 text-green-700'
+                        : cat.userCount < 5
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-green-200 text-green-900'
+                    }`}>
+                      {cat.userCount.toLocaleString()}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
                     <button
                       onClick={() => {
                         setSelectedCategory(cat.name)
                         setShowDeleteModal(true)
                       }}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium"
+                      className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       Delete
                     </button>

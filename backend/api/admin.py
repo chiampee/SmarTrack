@@ -662,13 +662,21 @@ async def get_admin_categories(
     """
     try:
         # Get all categories with usage stats
+        # Filter out null, undefined, and empty categories
         pipeline = [
-                {OP_GROUP: {
+            {OP_MATCH: {
+                F_CATEGORY: {
+                    OP_EXISTS: True,
+                    "$ne": None,
+                    "$nin": ["", None]  # Exclude empty strings and null
+                }
+            }},
+            {OP_GROUP: {
                 "_id": F_CATEGORY,
                 "linkCount": {OP_SUM: 1},
                 "users": {OP_ADDTOSET: F_USERID}
             }},
-                {OP_PROJECT: {
+            {OP_PROJECT: {
                 "category": "$_id",
                 "linkCount": 1,
                 "userCount": {"$size": "$users"}
@@ -1342,13 +1350,21 @@ async def get_admin_categories(
     """
     try:
         # Get all categories with usage stats
+        # Filter out null, undefined, and empty categories
         pipeline = [
-                {OP_GROUP: {
+            {OP_MATCH: {
+                F_CATEGORY: {
+                    OP_EXISTS: True,
+                    "$ne": None,
+                    "$nin": ["", None]  # Exclude empty strings and null
+                }
+            }},
+            {OP_GROUP: {
                 "_id": F_CATEGORY,
                 "linkCount": {OP_SUM: 1},
                 "users": {OP_ADDTOSET: F_USERID}
             }},
-                {OP_PROJECT: {
+            {OP_PROJECT: {
                 "category": "$_id",
                 "linkCount": 1,
                 "userCount": {"$size": "$users"}
