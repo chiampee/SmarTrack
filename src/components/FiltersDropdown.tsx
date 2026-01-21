@@ -161,7 +161,7 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
                 <select
                   value={filters.dateRange}
                   onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white hover:border-gray-400"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white hover:border-gray-400"
                 >
                   {dateRanges.map((range) => (
                     <option key={range.value} value={range.value}>
@@ -182,7 +182,7 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
                   value={filters.category}
                   onChange={(e) => handleFilterChange('category', e.target.value)}
                   placeholder="Filter by category"
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white hover:border-gray-400 placeholder:text-gray-400"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white hover:border-gray-400 placeholder:text-gray-400"
                 />
               </div>
 
@@ -195,7 +195,7 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
                 <select
                   value={filters.contentType}
                   onChange={(e) => handleFilterChange('contentType', e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white hover:border-gray-400"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white hover:border-gray-400"
                 >
                   <option value="">All Types</option>
                   {contentTypes.map((type) => (
@@ -215,7 +215,7 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
                 <input
                   type="text"
                   placeholder="Enter tags (comma separated)"
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white hover:border-gray-400 placeholder:text-gray-400"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white hover:border-gray-400 placeholder:text-gray-400"
                   onBlur={(e) => {
                     const tags = e.target.value.split(',').map(t => t.trim()).filter(t => t)
                     handleFilterChange('tags', tags)
