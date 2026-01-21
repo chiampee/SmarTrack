@@ -892,7 +892,7 @@ async def get_link_stats(
 
 @router.get("/links/export")
 async def export_links(
-    format: str = Query(..., regex="^(csv|json|markdown)$", description="Export format"),
+    format: str = Query(..., pattern="^(csv|json|markdown)$", description="Export format"),
     q: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
     tags: Optional[str] = Query(None),
