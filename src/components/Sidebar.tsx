@@ -134,18 +134,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
       {/* Overlay for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-[45] bg-black/50 backdrop-blur-sm lg:hidden"
           onClick={onClose}
+          aria-hidden="true"
         />
       )}
 
       {/* ✅ MOBILE RESPONSIVE: Sidebar with better mobile sizing - wider on desktop to maximize space - matches dashboard design */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full bg-white/98 backdrop-blur-sm border-r border-slate-200/80 shadow-xl shadow-gray-900/5 transform transition-all duration-300 ${
+        className={`fixed top-0 left-0 z-[50] h-full bg-white/98 backdrop-blur-sm border-r border-slate-200/80 shadow-xl shadow-gray-900/5 transform transition-all duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } ${
-          isMiniMode ? 'w-20 lg:w-20' : 'w-72 sm:w-64 lg:w-80'
+          isMiniMode ? 'w-20 lg:w-20' : 'w-[280px] sm:w-64 lg:w-80'
         }`}
+        aria-hidden={!isOpen}
       >
         <div className="flex flex-col h-full">
           {/* ✅ MOBILE RESPONSIVE: User Profile Section with better mobile layout - matches dashboard design */}
@@ -199,7 +201,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
             {/* Main */}
             <Link
               to="/main"
-              onClick={onClose}
+              onClick={() => {
+                // Close sidebar on mobile when navigating
+                if (window.innerWidth < 1024) {
+                  onClose()
+                }
+              }}
               className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation ${
                 location.pathname === '/main' || location.pathname === '/'
                   ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 shadow-sm'
@@ -217,7 +224,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               <div className="space-y-1">
                 <Link
                   to="/?filter=favorites"
-                  onClick={onClose}
+                  onClick={() => {
+                    if (window.innerWidth < 1024) {
+                      onClose()
+                    }
+                  }}
                   className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-3 py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-sm transition-all min-h-[44px] sm:min-h-0 touch-manipulation ${
                     isActivePath('/?filter=favorites')
                       ? 'bg-gradient-to-r from-blue-50 via-blue-100/80 to-indigo-50 text-blue-700 border border-blue-200/80 shadow-md shadow-blue-500/10'
@@ -230,7 +241,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 </Link>
                 <Link
                   to="/?filter=recent"
-                  onClick={onClose}
+                  onClick={() => {
+                    if (window.innerWidth < 1024) {
+                      onClose()
+                    }
+                  }}
                   className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-3 py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-sm transition-all min-h-[44px] sm:min-h-0 touch-manipulation ${
                     isActivePath('/?filter=recent')
                       ? 'bg-gradient-to-r from-blue-50 via-blue-100/80 to-indigo-50 text-blue-700 border border-blue-200/80 shadow-md shadow-blue-500/10'
@@ -243,7 +258,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 </Link>
                 <Link
                   to="/?filter=archived"
-                  onClick={onClose}
+                  onClick={() => {
+                    if (window.innerWidth < 1024) {
+                      onClose()
+                    }
+                  }}
                   className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-3 py-2 rounded-xl text-sm min-h-[44px] sm:min-h-0 touch-manipulation ${
                     isActivePath('/?filter=archived')
                       ? 'bg-gradient-to-r from-blue-50 via-blue-100/80 to-indigo-50 text-blue-700 border border-blue-200/80 shadow-md shadow-blue-500/10'
@@ -271,7 +290,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                         )}
                         <span>My Projects</span>
                       </button>
-                      <Link to="/?createCollection=1" onClick={onClose} className="text-xs text-blue-600 hover:underline">+ New</Link>
+                      <Link 
+                        to="/?createCollection=1" 
+                        onClick={() => {
+                          if (window.innerWidth < 1024) {
+                            onClose()
+                          }
+                        }} 
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        + New
+                      </Link>
                     </div>
                   )}
                   {(isProjectsExpanded || isMiniMode) && (
@@ -289,7 +318,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                           }`}
                           title={isMiniMode ? `${c.name} (${c.linkCount || 0} links)` : `View collection: ${c.name} (${c.linkCount || 0} links)`}
                         >
-                          <Link to={to} onClick={onClose} className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-2 sm:gap-2.5 lg:gap-3'} flex-1 min-w-0 touch-manipulation`}>
+                          <Link 
+                            to={to} 
+                            onClick={() => {
+                              if (window.innerWidth < 1024) {
+                                onClose()
+                              }
+                            }} 
+                            className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-2 sm:gap-2.5 lg:gap-3'} flex-1 min-w-0 touch-manipulation`}
+                          >
                             <Library className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
                             {!isMiniMode && (
                               <>
@@ -332,7 +369,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 </div>
               )}
               {collections.length === 0 && (
-                <Link to="/?createCollection=1" onClick={onClose} className="mt-3 inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-gradient-to-br hover:from-slate-50 hover:via-blue-50/20 hover:to-indigo-50/10 rounded-xl transition-all duration-300">
+                <Link 
+                  to="/?createCollection=1" 
+                  onClick={() => {
+                    if (window.innerWidth < 1024) {
+                      onClose()
+                    }
+                  }} 
+                  className="mt-3 inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-gradient-to-br hover:from-slate-50 hover:via-blue-50/20 hover:to-indigo-50/10 rounded-xl transition-all duration-300"
+                >
                   <span>+ Create New Project</span>
                 </Link>
               )}
@@ -385,7 +430,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                         }`}
                         title={isMiniMode ? `${category.name} (${category.linkCount} links)` : `Filter by ${category.name} (${category.linkCount} links)`}
                       >
-                        <Link to={to} onClick={onClose} className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-2 sm:gap-2.5 lg:gap-3'} flex-1 min-w-0 touch-manipulation`}>
+                        <Link 
+                          to={to} 
+                          onClick={() => {
+                            if (window.innerWidth < 1024) {
+                              onClose()
+                            }
+                          }} 
+                          className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-2 sm:gap-2.5 lg:gap-3'} flex-1 min-w-0 touch-manipulation`}
+                        >
                           <div className={`p-1.5 sm:p-1 rounded flex-shrink-0 ${getColor()}`}>
                             {getIcon()}
                           </div>
@@ -440,7 +493,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
             <div className="mt-4 sm:mt-6 pt-4 border-t border-slate-200/80 space-y-1 sm:space-y-2">
               <Link
                 to="/settings"
-                onClick={onClose}
+                onClick={() => {
+                  if (window.innerWidth < 1024) {
+                    onClose()
+                  }
+                }}
                 className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-4 py-3.5 sm:py-3 rounded-xl transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation ${
                   isSettingsActive
                     ? 'bg-gradient-to-r from-blue-50 via-blue-100/80 to-indigo-50 text-blue-700 border border-blue-200/80 shadow-md shadow-blue-500/10'
@@ -456,7 +513,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               {user?.email?.toLowerCase() === 'chaimpeer11@gmail.com' && (
                 <Link
                   to="/analytics"
-                  onClick={onClose}
+                  onClick={() => {
+                    if (window.innerWidth < 1024) {
+                      onClose()
+                    }
+                  }}
                   className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-4 py-3.5 sm:py-3 rounded-xl transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation ${
                     location.pathname === '/analytics'
                       ? 'bg-gradient-to-r from-purple-50 via-purple-100/80 to-pink-50 text-purple-700 border border-purple-200/80 shadow-md shadow-purple-500/10'
