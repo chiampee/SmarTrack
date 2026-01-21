@@ -81,9 +81,9 @@ const SortableLinkCard: React.FC<SortableLinkCardProps> = ({
     isDragging,
   } = useSortable({ id: link.id, disabled: isMobile })
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+  const style: React.CSSProperties = {
+    ...(transform && { transform: CSS.Transform.toString(transform) }),
+    ...(transition && { transition }),
     opacity: isDragging ? 0.4 : 1,
   }
 
@@ -158,6 +158,7 @@ export const Dashboard: React.FC = () => {
       activationConstraint: {
         distance: 10, // Require 10px movement before drag starts
         delay: 100, // 100ms delay to prevent accidental drags on clicks
+        tolerance: 5, // Tolerance for activation constraint
       },
     }),
     useSensor(KeyboardSensor, {
@@ -2124,10 +2125,14 @@ export const Dashboard: React.FC = () => {
                           onDragCancel={handleDragCancel}
                         >
                           {/* Category Groups */}
-                          {sortedCategories.map(([category, categoryLinks]) => (
+                          {sortedCategories.map(([category, categoryLinks]) => {
+                            const linkIds = categoryLinks.map(l => l.id).filter(Boolean)
+                            if (linkIds.length === 0) return null
+                            
+                            return (
                             <SortableContext
                               key={category}
-                              items={categoryLinks.map(l => l.id)}
+                              items={linkIds}
                               strategy={viewMode === 'grid' ? horizontalListSortingStrategy : verticalListSortingStrategy}
                             >
                               <motion.div
@@ -2188,7 +2193,8 @@ export const Dashboard: React.FC = () => {
                                 </div>
                               </motion.div>
                             </SortableContext>
-                          ))}
+                            )
+                          })}
                           <DragOverlay className="z-50">
                             {activeId ? (
                               (() => {
