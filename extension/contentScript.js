@@ -380,14 +380,10 @@ class SmarTrackContentScript {
         // Handle token requests from popup/extension
         if (request.type === CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.REQUEST_AUTH_TOKEN) {
           // Get token from localStorage if available
-          // Get extension version for dashboard detection
-          let extensionVersion = null;
-          try {
-            if (chrome.runtime?.getManifest) {
-              extensionVersion = chrome.runtime.getManifest().version || null;
-            }
-          } catch (error) {
-            console.debug('[SRT] Could not get extension version:', error);
+          // Get extension version for dashboard detection (use helper method)
+          const extensionVersion = this.getExtensionVersion();
+          if (extensionVersion) {
+            console.debug('[SRT] Extension version detected (chrome.runtime):', extensionVersion);
           }
           
           try {
@@ -396,7 +392,7 @@ class SmarTrackContentScript {
               type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
               messageId: request.messageId,
               token: token,
-              version: extensionVersion
+              version: extensionVersion // Always include version
             });
           } catch (error) {
             console.error('[SRT] Failed to get token from localStorage:', error);
@@ -404,7 +400,7 @@ class SmarTrackContentScript {
               type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
               messageId: request.messageId,
               token: null,
-              version: extensionVersion
+              version: extensionVersion // Always include version, even on error
             });
           }
           return true; // Keep channel open for async response
@@ -417,6 +413,71 @@ class SmarTrackContentScript {
         });
         return true; // Keep channel open for async response
       });
+    }
+  }
+
+  /**
+   * Get extension version from manifest with edge case validation
+   * @returns {string|null} Extension version or null if unavailable
+   */
+  getExtensionVersion() {
+    try {
+      // Edge case: Check if chrome.runtime is available
+      if (!chrome || !chrome.runtime) {
+        console.warn('[SRT] chrome.runtime is not available');
+        return null;
+      }
+
+      // Edge case: Check if getManifest method exists
+      if (!chrome.runtime.getManifest) {
+        console.warn('[SRT] chrome.runtime.getManifest is not available');
+        return null;
+      }
+
+      const manifest = chrome.runtime.getManifest();
+      
+      // Edge case: Manifest might be null/undefined
+      if (!manifest) {
+        console.warn('[SRT] Manifest is null or undefined');
+        return null;
+      }
+
+      const version = manifest.version;
+      
+      // Edge case: Version might be missing from manifest
+      if (!version) {
+        console.warn('[SRT] Version not found in manifest');
+        return null;
+      }
+
+      // Edge case: Version might not be a string
+      if (typeof version !== 'string') {
+        console.warn('[SRT] Version is not a string:', typeof version, version);
+        return null;
+      }
+
+      // Edge case: Trim whitespace and validate format
+      const trimmed = version.trim();
+      if (trimmed === '') {
+        console.warn('[SRT] Version is empty string after trim');
+        return null;
+      }
+
+      // Edge case: Validate semantic version format (major.minor.patch)
+      // Must start with digits and dots (e.g., "1.0.5", "1.0.5-beta")
+      const semanticVersionPattern = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
+      if (!semanticVersionPattern.test(trimmed)) {
+        // Also allow basic format (just digits and dots) for backward compatibility
+        if (!/^\d+\.\d+/.test(trimmed)) {
+          console.warn('[SRT] Version format appears invalid:', trimmed);
+          // Return it anyway - let dashboard handle validation, but log warning
+        }
+      }
+
+      return trimmed;
+    } catch (error) {
+      console.error('[SRT] Error getting extension version:', error);
+      return null;
     }
   }
 
@@ -456,43 +517,51 @@ class SmarTrackContentScript {
         console.debug('[SRT] Could not access localStorage:', error);
       }
       
-      // Get extension version for dashboard detection
-      let extensionVersion = null;
-      try {
-        if (chrome.runtime?.getManifest) {
-          extensionVersion = chrome.runtime.getManifest().version || null;
-        }
-      } catch (error) {
-        console.debug('[SRT] Could not get extension version:', error);
+      // Get extension version for dashboard detection (use helper method)
+      const extensionVersion = this.getExtensionVersion();
+      if (extensionVersion) {
+        console.debug('[SRT] Extension version detected:', extensionVersion);
+      } else {
+        console.warn('[SRT] Extension version not available - extension may be outdated or manifest unavailable');
       }
       
       // Send response - use provided targetOrigin for security (only send to authorized origin)
+      // Always include version in response, even if null (helps dashboard detect old extensions)
       window.postMessage({
         type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
         messageId: messageId,
         token: token,
-        version: extensionVersion
+        version: extensionVersion // Always include version (null for old extensions)
       }, targetOrigin);
+      
+      // Log response for debugging
+      console.debug('[SRT] Sent version response to dashboard:', {
+        messageId,
+        version: extensionVersion,
+        hasToken: !!token
+      });
     } catch (error) {
       console.error('[SRT] Failed to handle token request:', error);
       
-      // Get extension version even on error
-      let extensionVersion = null;
-      try {
-        if (chrome.runtime?.getManifest) {
-          extensionVersion = chrome.runtime.getManifest().version || null;
-        }
-      } catch (e) {
-        // Ignore
+      // Get extension version even on error (important for dashboard detection)
+      const extensionVersion = this.getExtensionVersion();
+      if (extensionVersion) {
+        console.debug('[SRT] Extension version detected (error handler):', extensionVersion);
       }
       
       // Send error response - use provided targetOrigin for security
+      // Always include version in response, even on error (helps dashboard detect extension)
       window.postMessage({
         type: CONTENT_SCRIPT_CONSTANTS.MESSAGE_TYPES.AUTH_TOKEN_RESPONSE,
         messageId: messageId,
         token: null,
-        version: extensionVersion
+        version: extensionVersion // Always include version, even on error
       }, targetOrigin);
+      
+      console.debug('[SRT] Sent error response with version to dashboard:', {
+        messageId,
+        version: extensionVersion
+      });
     }
   }
 

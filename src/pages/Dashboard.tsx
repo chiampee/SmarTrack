@@ -6,7 +6,7 @@ import { LinkedInLogo, XLogo, RedditLogo, WebIcon, PDFIcon, YouTubeLogo } from '
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { useExtensionDetection } from '../hooks/useExtensionDetection'
 import { ExtensionUpdateNotice } from '../components/ExtensionUpdateNotice'
-import { LATEST_EXTENSION_VERSION, isVersionOutdated } from '../constants/extensionVersion'
+import { LATEST_EXTENSION_VERSION, isVersionOutdated, normalizeVersion, isValidVersionFormat } from '../constants/extensionVersion'
 import { LinkCard } from '../components/LinkCard'
 import { SearchAutocomplete } from '../components/SearchAutocomplete'
 import { AddLinkModal } from '../components/AddLinkModal'
@@ -85,8 +85,17 @@ export const Dashboard: React.FC = () => {
   // IMPORTANT: Older extensions (v1.0.0, v1.0.1) don't send version info in their response
   // If extension is installed but version is null/undefined, we assume it's an old version that needs updating
   
-  // Normalize version string (trim whitespace, handle null/undefined)
-  const normalizedExtensionVersion = extensionVersion ? extensionVersion.trim() : null
+  // Normalize version string using centralized validation utility
+  // This ensures consistent validation across the entire application
+  const normalizedExtensionVersion = normalizeVersion(extensionVersion)
+  
+  // Log warning if version is invalid (for debugging)
+  if (extensionVersion && !normalizedExtensionVersion) {
+    console.warn('[Dashboard] Invalid extension version format:', {
+      original: extensionVersion,
+      type: typeof extensionVersion
+    })
+  }
   
   // Fallback detection: Check if user has extension links (indicates they've used extension before)
   // If they have extension links but extension isn't detected, likely an old extension
@@ -104,8 +113,11 @@ export const Dashboard: React.FC = () => {
   const hasOutdatedExtension = isExtensionInstalled && normalizedExtensionVersion && isVersionOutdated(normalizedExtensionVersion, LATEST_EXTENSION_VERSION)
   
   // Check if extension is up to date (exact version match after normalization)
+  // CRITICAL: This must use normalized versions for accurate comparison
   const isExtensionUpToDate = isExtensionInstalled && 
-                               normalizedExtensionVersion && 
+                               normalizedExtensionVersion !== null && 
+                               normalizedExtensionVersion !== undefined &&
+                               normalizedExtensionVersion !== '' &&
                                normalizedExtensionVersion === LATEST_EXTENSION_VERSION
   
   // Show update notice ONLY if:
@@ -121,47 +133,75 @@ export const Dashboard: React.FC = () => {
   )
   
   // Clear dismissed state when extension is updated to latest version
+  // This ensures the notice disappears immediately when extension is updated
   useEffect(() => {
-    if (isExtensionUpToDate && isAuthenticated) {
-      // Extension is up to date - clear any dismissed state
-      localStorage.removeItem('smartrack-extension-update-dismissed')
-      localStorage.removeItem('smartrack-extension-update-dismissed-time')
-      console.log('[Extension Update] Extension is up to date, cleared dismissed state')
-    }
-  }, [isExtensionUpToDate, isAuthenticated, normalizedExtensionVersion])
-  
-  // Also clear dismissed state if extension version matches latest (even if detection is still in progress)
-  useEffect(() => {
-    if (isAuthenticated && normalizedExtensionVersion && normalizedExtensionVersion === LATEST_EXTENSION_VERSION) {
-      // Version matches - clear dismissed state immediately
+    // Check if extension is up to date (using normalized version for accuracy)
+    const isUpToDate = isExtensionInstalled && 
+                       normalizedExtensionVersion !== null && 
+                       normalizedExtensionVersion !== undefined &&
+                       normalizedExtensionVersion !== '' &&
+                       normalizedExtensionVersion === LATEST_EXTENSION_VERSION
+    
+    if (isUpToDate && isAuthenticated) {
+      // Extension is up to date - clear any dismissed state immediately
       const dismissedVersion = localStorage.getItem('smartrack-extension-update-dismissed')
       if (dismissedVersion) {
         localStorage.removeItem('smartrack-extension-update-dismissed')
         localStorage.removeItem('smartrack-extension-update-dismissed-time')
-        console.log('[Extension Update] Version matches latest, cleared dismissed state')
+        console.log('[Extension Update] Extension updated to latest version, cleared dismissed state', {
+          extensionVersion: normalizedExtensionVersion,
+          latestVersion: LATEST_EXTENSION_VERSION,
+          wasDismissed: dismissedVersion
+        })
+      } else {
+        // Log even if nothing was dismissed (for debugging)
+        console.debug('[Extension Update] Extension is up to date (no dismissed state to clear)', {
+          extensionVersion: normalizedExtensionVersion,
+          latestVersion: LATEST_EXTENSION_VERSION
+        })
       }
     }
-  }, [isAuthenticated, normalizedExtensionVersion])
+  }, [isExtensionInstalled, normalizedExtensionVersion, isAuthenticated, LATEST_EXTENSION_VERSION])
 
-  // Debug: Log extension detection state to help diagnose why notice might not show
+  // Debug: Log extension detection state to help diagnose update detection
+  // This helps validate that the dashboard correctly recognizes when extension is updated
   useEffect(() => {
     if (isAuthenticated) {
+      const versionMatch = normalizedExtensionVersion === LATEST_EXTENSION_VERSION
+      const willShowNotice = needsUpdate && isAuthenticated && !isMobile
+      
       console.log('[Extension Update Notice] Detection state:', {
         isExtensionInstalled,
         extensionVersion: extensionVersion || 'null/undefined',
         normalizedExtensionVersion: normalizedExtensionVersion || 'null/undefined',
+        latestVersion: LATEST_EXTENSION_VERSION,
+        versionMatch,
+        isExtensionUpToDate,
         hasExtensionLinks,
         likelyHasOldExtension,
         hasOldExtension,
         hasOutdatedExtension,
-        isExtensionUpToDate,
         needsUpdate,
-        latestVersion: LATEST_EXTENSION_VERSION,
-        versionMatch: normalizedExtensionVersion === LATEST_EXTENSION_VERSION,
-        willShowNotice: needsUpdate && isAuthenticated
+        willShowNotice,
+        isMobile,
+        // Validation flags
+        validation: {
+          versionNormalized: normalizedExtensionVersion !== null,
+          versionMatchesLatest: versionMatch,
+          extensionDetected: isExtensionInstalled,
+          updateNeeded: needsUpdate
+        }
       })
+      
+      // Special log when extension is updated to latest version
+      if (isExtensionUpToDate && normalizedExtensionVersion) {
+        console.log('[Extension Update] ✅ Extension is up to date - update notice should be hidden', {
+          extensionVersion: normalizedExtensionVersion,
+          latestVersion: LATEST_EXTENSION_VERSION
+        })
+      }
     }
-  }, [isExtensionInstalled, extensionVersion, normalizedExtensionVersion, hasExtensionLinks, likelyHasOldExtension, hasOldExtension, hasOutdatedExtension, isExtensionUpToDate, needsUpdate, isAuthenticated, links])
+  }, [isExtensionInstalled, extensionVersion, normalizedExtensionVersion, hasExtensionLinks, likelyHasOldExtension, hasOldExtension, hasOutdatedExtension, isExtensionUpToDate, needsUpdate, isAuthenticated, links, isMobile, LATEST_EXTENSION_VERSION])
 
 
   // Check if we should redirect to analytics after login
@@ -1211,8 +1251,8 @@ export const Dashboard: React.FC = () => {
   // Handle extension download
   const handleDownloadExtension = () => {
     const linkElement = document.createElement('a')
-    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.4.zip')
-    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.4.zip')
+    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.5.zip')
+    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.5.zip')
     linkElement.click()
     toast.success('Extension download started!')
   }
@@ -1288,8 +1328,20 @@ export const Dashboard: React.FC = () => {
         {/* Show notice if extension is installed but version is unknown/null (old extension) or outdated */}
         {/* Also show if user has extension links but extension isn't detected (likely old extension) */}
         {/* Logic: Check if version has been dismissed - if dismissed version matches latest, don't show */}
+        {/* CRITICAL: Also check if extension is actually up to date - if so, don't show notice */}
         {(() => {
-          // Check if this version has been dismissed
+          // First check: Is extension up to date? If yes, never show notice
+          const isUpToDate = isExtensionInstalled && 
+                             normalizedExtensionVersion !== null && 
+                             normalizedExtensionVersion !== undefined &&
+                             normalizedExtensionVersion !== '' &&
+                             normalizedExtensionVersion === LATEST_EXTENSION_VERSION
+          
+          if (isUpToDate) {
+            return false // Extension is up to date, don't show notice
+          }
+          
+          // Second check: Has this version been dismissed?
           const dismissedVersion = localStorage.getItem('smartrack-extension-update-dismissed')
           const isVersionDismissed = dismissedVersion === LATEST_EXTENSION_VERSION
           

@@ -48,8 +48,8 @@ export const Settings: React.FC = () => {
 
   const handleDownloadExtension = () => {
     const linkElement = document.createElement('a')
-    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.4.zip')
-    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.4.zip')
+    linkElement.setAttribute('href', '/SmarTrack-extension-v1.0.5.zip')
+    linkElement.setAttribute('download', 'SmarTrack-extension-v1.0.5.zip')
     linkElement.click()
     toast.success('Extension download started!')
   }

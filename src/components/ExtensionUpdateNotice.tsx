@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Download, X, AlertCircle, RefreshCw } from 'lucide-react'
+import { normalizeVersion, isValidVersionFormat } from '../constants/extensionVersion'
 
 interface ExtensionUpdateNoticeProps {
   currentVersion: string
@@ -15,9 +16,26 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
   onDownload,
   isOldExtension = false
 }) => {
-  // Normalize versions for comparison
-  const normalizedCurrent = currentVersion ? currentVersion.trim() : currentVersion
-  const normalizedLatest = latestVersion ? latestVersion.trim() : latestVersion
+  // Normalize versions using centralized validation utility
+  // This ensures consistent validation across the entire application
+  const normalizedCurrent = normalizeVersion(currentVersion)
+  const normalizedLatest = normalizeVersion(latestVersion)
+
+  // Validate latest version (should always be valid, but log error if not)
+  if (!normalizedLatest) {
+    console.error('[Extension Update] Latest version is invalid!', {
+      original: latestVersion,
+      type: typeof latestVersion
+    })
+  }
+
+  // Log warning if current version is invalid (for debugging)
+  if (currentVersion && !normalizedCurrent) {
+    console.warn('[Extension Update] Current version is invalid:', {
+      original: currentVersion,
+      type: typeof currentVersion
+    })
+  }
   
   // Check if extension is actually up to date (not unknown and matches latest)
   const isUpToDate = normalizedCurrent && 
@@ -28,21 +46,68 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
 
   // Helper function to compare semantic versions
   // Returns: -1 if v1 < v2, 0 if v1 === v2, 1 if v1 > v2
+  // Edge case: Handles invalid versions, missing parts, leading zeros, etc.
   const compareVersions = (v1: string, v2: string): number => {
+    // Edge case: Handle null/undefined/empty strings
+    if (!v1 || !v2) {
+      console.warn('[Extension Update] Cannot compare versions - one is empty:', { v1, v2 })
+      return 1 // Treat as different (show notice)
+    }
+
+    // Edge case: Handle non-string types
+    if (typeof v1 !== 'string' || typeof v2 !== 'string') {
+      console.warn('[Extension Update] Cannot compare versions - invalid types:', { 
+        v1: typeof v1, 
+        v2: typeof v2 
+      })
+      return 1
+    }
+
     try {
-      const parts1 = v1.split('.').map(part => parseInt(part, 10) || 0)
-      const parts2 = v2.split('.').map(part => parseInt(part, 10) || 0)
+      // Edge case: Trim whitespace
+      const trimmed1 = v1.trim()
+      const trimmed2 = v2.trim()
       
-      for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+      // Edge case: Empty after trim
+      if (trimmed1 === '' || trimmed2 === '') {
+        return 1
+      }
+
+      // Edge case: Handle versions with non-numeric parts (e.g., "1.0.4-beta")
+      // Extract only numeric parts for comparison
+      const extractNumericParts = (version: string): number[] => {
+        return version
+          .split('.')
+          .map(part => {
+            // Extract only numeric part (handle "1.0.4-beta" -> "1", "0", "4")
+            const numericPart = part.match(/^\d+/)?.[0]
+            return numericPart ? parseInt(numericPart, 10) : 0
+          })
+      }
+
+      const parts1 = extractNumericParts(trimmed1)
+      const parts2 = extractNumericParts(trimmed2)
+      
+      // Edge case: Handle versions with different number of parts (1.0 vs 1.0.0)
+      const maxLength = Math.max(parts1.length, parts2.length)
+      
+      for (let i = 0; i < maxLength; i++) {
         const part1 = parts1[i] || 0
         const part2 = parts2[i] || 0
+        
+        // Edge case: Handle NaN (shouldn't happen but be safe)
+        if (isNaN(part1) || isNaN(part2)) {
+          console.warn('[Extension Update] NaN in version comparison:', { part1, part2, v1, v2 })
+          return 1
+        }
+        
         if (part1 < part2) return -1
         if (part1 > part2) return 1
       }
       return 0
     } catch (error) {
-      console.debug('[Extension Update] Version comparison error:', error)
-      // On error, treat as different versions (show notice)
+      console.error('[Extension Update] Version comparison error:', error, { v1, v2 })
+      // On error, treat as different versions (show notice to be safe)
       return 1
     }
   }
@@ -92,23 +157,43 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
 
   // Clear dismissed state if extension becomes up to date
   // Re-check dismissed state when version changes (in case extension was updated or new version released)
+  // CRITICAL: This ensures the notice disappears immediately when extension is updated
   React.useEffect(() => {
+    // Validate that we have valid versions for comparison
+    if (!normalizedLatest) {
+      console.error('[Extension Update] Cannot check update status - latest version is invalid')
+      return
+    }
+
     // If current version matches latest, extension is up to date
-    if (normalizedCurrent && normalizedCurrent === normalizedLatest && normalizedCurrent !== 'unknown') {
+    // This handles the case where extension was just updated
+    if (normalizedCurrent && 
+        normalizedCurrent !== 'unknown' && 
+        !normalizedCurrent.includes('unknown') &&
+        normalizedCurrent === normalizedLatest) {
       // Clear any dismissed state when extension is up to date
+      const hadDismissedState = !!localStorage.getItem('smartrack-extension-update-dismissed')
       localStorage.removeItem('smartrack-extension-update-dismissed')
       localStorage.removeItem('smartrack-extension-update-dismissed-time')
       setIsDismissed(true)
-      console.log(`[Extension Update] Extension is up to date (${normalizedCurrent} === ${normalizedLatest}), hiding notice`)
+      console.log(`[Extension Update] Extension is up to date (${normalizedCurrent} === ${normalizedLatest}), hiding notice`, {
+        hadDismissedState,
+        cleared: true
+      })
       return
     }
     
+    // Also check isUpToDate flag (redundant check for safety)
     if (isUpToDate) {
       // Clear any dismissed state when extension is up to date
+      const hadDismissedState = !!localStorage.getItem('smartrack-extension-update-dismissed')
       localStorage.removeItem('smartrack-extension-update-dismissed')
       localStorage.removeItem('smartrack-extension-update-dismissed-time')
       setIsDismissed(true)
-      console.log(`[Extension Update] Extension is up to date, hiding notice`)
+      console.log(`[Extension Update] Extension is up to date (isUpToDate flag), hiding notice`, {
+        hadDismissedState,
+        cleared: true
+      })
       return
     }
     

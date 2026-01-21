@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { normalizeVersion } from '../constants/extensionVersion'
 
 /**
  * Hook to detect if the SmarTrack Chrome extension is installed and get its version
@@ -44,7 +45,12 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
             return
           }
 
-          const { type, messageId: responseId, version } = event.data || {}
+          // Edge case: Handle malformed or missing event data
+          if (!event.data || typeof event.data !== 'object') {
+            return
+          }
+
+          const { type, messageId: responseId, version } = event.data
 
           // Check if this is a response to our detection message
           // The extension responds with SRT_AUTH_TOKEN_RESPONSE even if no token is available
@@ -52,8 +58,27 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
             if (!resolved) {
               resolved = true
               cleanup()
-              // Normalize version (trim whitespace, handle null/undefined)
-              const normalizedVersion = version && typeof version === 'string' ? version.trim() : (version || null)
+              
+              // Normalize version using centralized validation utility
+              const normalizedVersion = normalizeVersion(version)
+              
+              // Log warning if version is invalid (for debugging)
+              if (version !== null && version !== undefined && !normalizedVersion) {
+                console.warn('[Extension Detection] Invalid version format received:', {
+                  original: version,
+                  type: typeof version
+                })
+              }
+              
+              // Log detection result for debugging
+              console.debug('[Extension Detection] Received response:', {
+                messageId: responseId,
+                originalVersion: version,
+                normalizedVersion: normalizedVersion,
+                hasToken: !!event.data?.token,
+                versionType: typeof version
+              })
+              
               // Return both detection status and version
               resolve({ detected: true, version: normalizedVersion })
             }
@@ -82,6 +107,12 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
           },
           window.location.origin
         )
+        
+        // Log request for debugging
+        console.debug('[Extension Detection] Sent detection request:', {
+          messageId,
+          origin: window.location.origin
+        })
 
         // Timeout after 2 seconds (give extension time to respond)
         timeoutId = setTimeout(() => {
@@ -116,14 +147,27 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
 
     // Run detection with retries for edge cases (old extensions that might not respond immediately)
     const runDetection = async (retryCount = 0) => {
+      // Edge case: Prevent infinite retries
+      const MAX_RETRIES = 3
+      if (retryCount > MAX_RETRIES) {
+        console.warn('[Extension Detection] Max retries reached, giving up')
+        setIsExtensionInstalled(false)
+        setExtensionVersion(null)
+        return
+      }
+
       try {
         // Try message-based detection first (for new extensions that respond)
         const result = await detectViaMessage()
         
+        // Edge case: Handle timeout or no response
         if (result.detected) {
           isDetectedRef.current = true
           setIsExtensionInstalled(true)
-          setExtensionVersion(result.version)
+          // Edge case: Validate version before setting (handle null, undefined, empty string)
+          const validVersion = result.version && result.version.trim() !== '' ? result.version : null
+          setExtensionVersion(validVersion)
+          console.debug('[Extension Detection] Detection successful:', { version: validVersion })
           return
         }
         
@@ -134,13 +178,18 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
         if (chromeResult.detected) {
           isDetectedRef.current = true
           setIsExtensionInstalled(true)
-          setExtensionVersion(chromeResult.version) // Will be null for old extensions
+          // Edge case: Validate version before setting
+          const validVersion = chromeResult.version && chromeResult.version.trim() !== '' ? chromeResult.version : null
+          setExtensionVersion(validVersion) // Will be null for old extensions
+          console.debug('[Extension Detection] Chrome runtime detection successful:', { version: validVersion })
           return
         }
         
-        // If both methods failed, try again after a delay (for edge cases where extension is slow to respond)
+        // Edge case: Extension might be slow to respond - retry with exponential backoff
         if (retryCount < 2) {
-          setTimeout(() => runDetection(retryCount + 1), 1000)
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 3000) // 1s, 2s, max 3s
+          console.debug(`[Extension Detection] Retrying in ${delay}ms (attempt ${retryCount + 1})`)
+          setTimeout(() => runDetection(retryCount + 1), delay)
           return
         }
         
@@ -149,28 +198,40 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
         setIsExtensionInstalled(markerDetected)
         if (!markerDetected) {
           setExtensionVersion(null)
+          console.debug('[Extension Detection] No extension detected after all methods')
         }
       } catch (error) {
-        console.debug('[Extension Detection] Error:', error)
+        console.error('[Extension Detection] Error during detection:', error)
+        // Edge case: Handle specific error types
+        if (error instanceof Error) {
+          console.error('[Extension Detection] Error details:', {
+            message: error.message,
+            stack: error.stack
+          })
+        }
+        
         // On error, try chrome.runtime detection as fallback
         try {
           const chromeResult = await detectViaChromeRuntime()
           if (chromeResult.detected) {
             isDetectedRef.current = true
             setIsExtensionInstalled(true)
-            setExtensionVersion(chromeResult.version)
+            const validVersion = chromeResult.version && chromeResult.version.trim() !== '' ? chromeResult.version : null
+            setExtensionVersion(validVersion)
             return
           }
         } catch (chromeError) {
           console.debug('[Extension Detection] Chrome runtime fallback failed:', chromeError)
         }
         
-        // Final fallback: try one more time after delay
+        // Final fallback: try one more time after delay (with limit)
         if (retryCount < 1) {
           setTimeout(() => runDetection(retryCount + 1), 1000)
         } else {
+          // Edge case: After all retries failed, mark as not installed
           setIsExtensionInstalled(false)
           setExtensionVersion(null)
+          console.debug('[Extension Detection] Detection failed after all retries')
         }
       }
     }
