@@ -1950,6 +1950,8 @@ export const Dashboard: React.FC = () => {
                   tags: [],
                   contentType: ''
                 })
+                // Scroll to top of page
+                window.scrollTo({ top: 0, behavior: 'smooth' })
               }}
               className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50 transition-colors"
               aria-label="Home"

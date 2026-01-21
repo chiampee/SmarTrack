@@ -206,6 +206,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 // Close sidebar on mobile when navigating
                 if (window.innerWidth < 1024) {
                   onClose()
+                  // Scroll to top of page on mobile
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
                 }
               }}
               className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation ${
