@@ -13,7 +13,6 @@ export interface ExtensionDetectionResult {
 export const useExtensionDetection = (): ExtensionDetectionResult => {
   const [isExtensionInstalled, setIsExtensionInstalled] = useState<boolean>(false)
   const [extensionVersion, setExtensionVersion] = useState<string | null>(null)
-  const detectionAttemptsRef = useRef(0)
   const isDetectedRef = useRef(false)
 
   useEffect(() => {
