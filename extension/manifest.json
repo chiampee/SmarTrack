@@ -56,7 +56,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["popup.html", "popup.js", "settings.html", "utils/*", "utils/config.js"],
+      "resources": ["popup.html", "popup.js", "settings.html", "settings.js", "utils/*", "utils/config.js"],
       "matches": ["<all_urls>"]
     }
   ]
