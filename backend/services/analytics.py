@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pymongo.database import Database
 import asyncio
 import logging
+import json
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -63,15 +64,49 @@ class AnalyticsService:
         """
         Normalize a datetime to timezone-aware UTC for backward compatibility.
         If datetime is naive (no timezone), assume it's UTC and add timezone info.
-        If datetime is already timezone-aware, return as-is.
+        If datetime is already timezone-aware, convert to UTC.
+        This ensures all datetimes are in UTC and can be safely compared.
         """
+        # #region agent log
+        try:
+            with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"analytics.py:62","message":"normalize_datetime entry","data":{"dt_is_none":dt is None,"dt_type":str(type(dt)) if dt else None,"has_tz":dt.tzinfo is not None if dt and hasattr(dt,'tzinfo') else None,"tz_name":str(dt.tzinfo) if dt and hasattr(dt,'tzinfo') and dt.tzinfo else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+        except: pass
+        # #endregion
         if dt is None:
             return None
+        if not isinstance(dt, datetime):
+            # Not a datetime object - return as-is (shouldn't happen, but be defensive)
+            return dt
         if dt.tzinfo is None:
             # Naive datetime - assume UTC and add timezone
-            return dt.replace(tzinfo=timezone.utc)
-        # Already timezone-aware, return as-is
-        return dt
+            result = dt.replace(tzinfo=timezone.utc)
+            # #region agent log
+            try:
+                with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"analytics.py:72","message":"normalize_datetime added tz","data":{"result_has_tz":result.tzinfo is not None,"tz_name":str(result.tzinfo)},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+            except: pass
+            # #endregion
+            return result
+        # Already timezone-aware - convert to UTC to ensure consistency
+        try:
+            result = dt.astimezone(timezone.utc)
+        except (ValueError, OSError) as e:
+            # If astimezone fails (e.g., for datetime.min/max), try replace
+            # #region agent log
+            try:
+                with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"analytics.py:82","message":"astimezone failed, using replace","data":{"error":str(e),"dt":str(dt)},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+            except: pass
+            # #endregion
+            result = dt.replace(tzinfo=timezone.utc)
+        # #region agent log
+        try:
+            with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"D","location":"analytics.py:77","message":"normalize_datetime converted to UTC","data":{"original_tz":str(dt.tzinfo),"result_tz":str(result.tzinfo)},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+        except: pass
+        # #endregion
+        return result
     
     @staticmethod
     def normalize_date_range(start_date: datetime, end_date: datetime) -> tuple[datetime, datetime]:
@@ -1409,12 +1444,47 @@ class AnalyticsService:
             for user_id in all_user_ids_for_interaction:
                 dates = []
                 
+                # #region agent log
+                import json
+                try:
+                    with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                        f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"analytics.py:1409","message":"Processing user_id","data":{"userId":user_id},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                except: pass
+                # #endregion
+                
                 # From user_activity (MOST RELIABLE - tracks every authenticated request)
                 if user_id in activity_records and activity_records[user_id]:
                     activity_date = activity_records[user_id]
+                    # #region agent log
+                    try:
+                        with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"analytics.py:1414","message":"activity_date type check","data":{"userId":user_id,"type":str(type(activity_date)),"is_datetime":isinstance(activity_date,datetime),"has_tz":hasattr(activity_date,'tzinfo') and activity_date.tzinfo is not None if isinstance(activity_date,datetime) else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                    except: pass
+                    # #endregion
                     if isinstance(activity_date, datetime):
                         activity_date = AnalyticsService.normalize_datetime(activity_date)
+                        # #region agent log
+                        try:
+                            with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"analytics.py:1416","message":"activity_date normalized","data":{"userId":user_id,"has_tz":activity_date.tzinfo is not None,"tz_name":str(activity_date.tzinfo) if activity_date.tzinfo else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                        except: pass
+                        # #endregion
                         dates.append(activity_date)
+                    elif hasattr(activity_date, 'tzinfo') or hasattr(activity_date, 'year'):
+                        # Try to convert datetime-like object
+                        try:
+                            if hasattr(activity_date, 'year') and hasattr(activity_date, 'month'):
+                                # Likely a datetime-like object, try to normalize
+                                normalized = AnalyticsService.normalize_datetime(activity_date)
+                                dates.append(normalized)
+                        except Exception as e:
+                            # #region agent log
+                            try:
+                                with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"analytics.py:1460","message":"Failed to normalize datetime-like object","data":{"userId":user_id,"type":str(type(activity_date)),"error":str(e)},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                            except: pass
+                            # #endregion
+                            pass
                 
                 # From system_logs (any API activity)
                 last_log = await db.system_logs.find_one(
@@ -1423,8 +1493,20 @@ class AnalyticsService:
                 )
                 if last_log and last_log.get("timestamp"):
                     log_timestamp = last_log["timestamp"]
+                    # #region agent log
+                    try:
+                        with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"analytics.py:1425","message":"log_timestamp type check","data":{"userId":user_id,"type":str(type(log_timestamp)),"is_datetime":isinstance(log_timestamp,datetime),"has_tz":hasattr(log_timestamp,'tzinfo') and log_timestamp.tzinfo is not None if isinstance(log_timestamp,datetime) else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                    except: pass
+                    # #endregion
                     if isinstance(log_timestamp, datetime):
                         log_timestamp = AnalyticsService.normalize_datetime(log_timestamp)
+                        # #region agent log
+                        try:
+                            with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"analytics.py:1427","message":"log_timestamp normalized","data":{"userId":user_id,"has_tz":log_timestamp.tzinfo is not None,"tz_name":str(log_timestamp.tzinfo) if log_timestamp.tzinfo else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                        except: pass
+                        # #endregion
                         dates.append(log_timestamp)
                 
                 # From links (data changes)
@@ -1435,13 +1517,37 @@ class AnalyticsService:
                 if last_link:
                     if last_link.get("createdAt"):
                         link_created = last_link["createdAt"]
+                        # #region agent log
+                        try:
+                            with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"analytics.py:1437","message":"link_created type check","data":{"userId":user_id,"type":str(type(link_created)),"is_datetime":isinstance(link_created,datetime),"has_tz":hasattr(link_created,'tzinfo') and link_created.tzinfo is not None if isinstance(link_created,datetime) else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                        except: pass
+                        # #endregion
                         if isinstance(link_created, datetime):
                             link_created = AnalyticsService.normalize_datetime(link_created)
+                            # #region agent log
+                            try:
+                                with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"analytics.py:1439","message":"link_created normalized","data":{"userId":user_id,"has_tz":link_created.tzinfo is not None,"tz_name":str(link_created.tzinfo) if link_created.tzinfo else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                            except: pass
+                            # #endregion
                             dates.append(link_created)
                     if last_link.get("updatedAt"):
                         link_updated = last_link["updatedAt"]
+                        # #region agent log
+                        try:
+                            with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"analytics.py:1442","message":"link_updated type check","data":{"userId":user_id,"type":str(type(link_updated)),"is_datetime":isinstance(link_updated,datetime),"has_tz":hasattr(link_updated,'tzinfo') and link_updated.tzinfo is not None if isinstance(link_updated,datetime) else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                        except: pass
+                        # #endregion
                         if isinstance(link_updated, datetime):
                             link_updated = AnalyticsService.normalize_datetime(link_updated)
+                            # #region agent log
+                            try:
+                                with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"analytics.py:1444","message":"link_updated normalized","data":{"userId":user_id,"has_tz":link_updated.tzinfo is not None,"tz_name":str(link_updated.tzinfo) if link_updated.tzinfo else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                            except: pass
+                            # #endregion
                             dates.append(link_updated)
                 
                 # From collections (data changes)
@@ -1452,16 +1558,67 @@ class AnalyticsService:
                 if last_collection:
                     if last_collection.get("createdAt"):
                         coll_created = last_collection["createdAt"]
+                        # #region agent log
+                        try:
+                            with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"analytics.py:1454","message":"coll_created type check","data":{"userId":user_id,"type":str(type(coll_created)),"is_datetime":isinstance(coll_created,datetime),"has_tz":hasattr(coll_created,'tzinfo') and coll_created.tzinfo is not None if isinstance(coll_created,datetime) else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                        except: pass
+                        # #endregion
                         if isinstance(coll_created, datetime):
                             coll_created = AnalyticsService.normalize_datetime(coll_created)
+                            # #region agent log
+                            try:
+                                with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"analytics.py:1456","message":"coll_created normalized","data":{"userId":user_id,"has_tz":coll_created.tzinfo is not None,"tz_name":str(coll_created.tzinfo) if coll_created.tzinfo else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                            except: pass
+                            # #endregion
                             dates.append(coll_created)
                     if last_collection.get("updatedAt"):
                         coll_updated = last_collection["updatedAt"]
+                        # #region agent log
+                        try:
+                            with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"B","location":"analytics.py:1459","message":"coll_updated type check","data":{"userId":user_id,"type":str(type(coll_updated)),"is_datetime":isinstance(coll_updated,datetime),"has_tz":hasattr(coll_updated,'tzinfo') and coll_updated.tzinfo is not None if isinstance(coll_updated,datetime) else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                        except: pass
+                        # #endregion
                         if isinstance(coll_updated, datetime):
                             coll_updated = AnalyticsService.normalize_datetime(coll_updated)
+                            # #region agent log
+                            try:
+                                with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"C","location":"analytics.py:1461","message":"coll_updated normalized","data":{"userId":user_id,"has_tz":coll_updated.tzinfo is not None,"tz_name":str(coll_updated.tzinfo) if coll_updated.tzinfo else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                            except: pass
+                            # #endregion
                             dates.append(coll_updated)
                 
-                last_interactions_all[user_id] = max(dates) if dates else None
+                # #region agent log
+                try:
+                    dates_info = [{"type":str(type(d)),"is_datetime":isinstance(d,datetime),"has_tz":d.tzinfo is not None if isinstance(d,datetime) else None,"tz_name":str(d.tzinfo) if isinstance(d,datetime) and d.tzinfo else None} for d in dates]
+                    with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                        f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"analytics.py:1464","message":"Before max() call","data":{"userId":user_id,"dates_count":len(dates),"dates_info":dates_info},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                except Exception as e:
+                    try:
+                        with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"analytics.py:1464","message":"Error logging dates_info","data":{"userId":user_id,"error":str(e)},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                    except: pass
+                # #endregion
+                
+                try:
+                    last_interactions_all[user_id] = max(dates) if dates else None
+                    # #region agent log
+                    try:
+                        with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"analytics.py:1464","message":"max() succeeded","data":{"userId":user_id,"result_has_tz":last_interactions_all[user_id].tzinfo is not None if last_interactions_all[user_id] else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                    except: pass
+                    # #endregion
+                except Exception as max_error:
+                    # #region agent log
+                    try:
+                        with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                            f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"A","location":"analytics.py:1464","message":"max() FAILED","data":{"userId":user_id,"error":str(max_error),"error_type":str(type(max_error).__name__),"dates_count":len(dates)},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                    except: pass
+                    # #endregion
+                    raise
             
             # Add lastInteraction to user data
             for user in all_users_with_stats:
@@ -1471,27 +1628,97 @@ class AnalyticsService:
             if active_only is not None:
                 # ✅ TIMEZONE SAFE: Use UTC consistently
                 thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+                # #region agent log
+                try:
+                    with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                        f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"E","location":"analytics.py:1471","message":"active_only filter start","data":{"active_only":active_only,"thirty_days_ago_has_tz":thirty_days_ago.tzinfo is not None,"users_count":len(all_users_with_stats)},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                except: pass
+                # #endregion
                 if active_only:
                     # Active: Has activity in last 30 days
-                    all_users_with_stats = [
-                        u for u in all_users_with_stats
-                        if u.get("lastInteraction") and AnalyticsService.normalize_datetime(u["lastInteraction"]) >= thirty_days_ago
-                    ]
+                    filtered_users = []
+                    for u in all_users_with_stats:
+                        if u.get("lastInteraction"):
+                            try:
+                                normalized = AnalyticsService.normalize_datetime(u["lastInteraction"])
+                                # #region agent log
+                                try:
+                                    with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                        f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"E","location":"analytics.py:1478","message":"active filter comparison","data":{"userId":u.get("_id"),"normalized_has_tz":normalized.tzinfo is not None if normalized else None,"threshold_has_tz":thirty_days_ago.tzinfo is not None,"comparison_result":normalized >= thirty_days_ago if normalized else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                                except: pass
+                                # #endregion
+                                if normalized >= thirty_days_ago:
+                                    filtered_users.append(u)
+                            except Exception as comp_error:
+                                # #region agent log
+                                try:
+                                    with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                        f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"E","location":"analytics.py:1478","message":"active filter comparison FAILED","data":{"userId":u.get("_id"),"error":str(comp_error),"error_type":str(type(comp_error).__name__),"lastInteraction_type":str(type(u.get("lastInteraction")))},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                                except: pass
+                                # #endregion
+                                raise
+                    all_users_with_stats = filtered_users
                 else:
                     # Inactive: No activity in last 30 days
-                    all_users_with_stats = [
-                        u for u in all_users_with_stats
-                        if not u.get("lastInteraction") or AnalyticsService.normalize_datetime(u["lastInteraction"]) < thirty_days_ago
-                    ]
+                    filtered_users = []
+                    for u in all_users_with_stats:
+                        if not u.get("lastInteraction"):
+                            filtered_users.append(u)
+                        else:
+                            try:
+                                normalized = AnalyticsService.normalize_datetime(u["lastInteraction"])
+                                # #region agent log
+                                try:
+                                    with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                        f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"E","location":"analytics.py:1484","message":"inactive filter comparison","data":{"userId":u.get("_id"),"normalized_has_tz":normalized.tzinfo is not None if normalized else None,"threshold_has_tz":thirty_days_ago.tzinfo is not None,"comparison_result":normalized < thirty_days_ago if normalized else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                                except: pass
+                                # #endregion
+                                if normalized < thirty_days_ago:
+                                    filtered_users.append(u)
+                            except Exception as comp_error:
+                                # #region agent log
+                                try:
+                                    with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                        f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"E","location":"analytics.py:1484","message":"inactive filter comparison FAILED","data":{"userId":u.get("_id"),"error":str(comp_error),"error_type":str(type(comp_error).__name__),"lastInteraction_type":str(type(u.get("lastInteraction")))},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                                except: pass
+                                # #endregion
+                                raise
+                    all_users_with_stats = filtered_users
             
             # Step 6: Apply inactive_days filter if provided
             if inactive_days is not None:
                 # ✅ TIMEZONE SAFE: Use UTC consistently for threshold calculation
                 threshold_date = datetime.now(timezone.utc) - timedelta(days=inactive_days)
-                all_users_with_stats = [
-                    u for u in all_users_with_stats
-                    if not u.get("lastInteraction") or AnalyticsService.normalize_datetime(u["lastInteraction"]) < threshold_date
-                ]
+                # #region agent log
+                try:
+                    with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                        f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"E","location":"analytics.py:1488","message":"inactive_days filter start","data":{"inactive_days":inactive_days,"threshold_has_tz":threshold_date.tzinfo is not None,"users_count":len(all_users_with_stats)},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                except: pass
+                # #endregion
+                filtered_users = []
+                for u in all_users_with_stats:
+                    if not u.get("lastInteraction"):
+                        filtered_users.append(u)
+                    else:
+                        try:
+                            normalized = AnalyticsService.normalize_datetime(u["lastInteraction"])
+                            # #region agent log
+                            try:
+                                with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"E","location":"analytics.py:1490","message":"inactive_days filter comparison","data":{"userId":u.get("_id"),"normalized_has_tz":normalized.tzinfo is not None if normalized else None,"threshold_has_tz":threshold_date.tzinfo is not None,"comparison_result":normalized < threshold_date if normalized else None},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                            except: pass
+                            # #endregion
+                            if normalized < threshold_date:
+                                filtered_users.append(u)
+                        except Exception as comp_error:
+                            # #region agent log
+                            try:
+                                with open('/Users/chaim/SmarTrack/.cursor/debug.log', 'a') as f:
+                                    f.write(json.dumps({"sessionId":"debug-session","runId":"run1","hypothesisId":"E","location":"analytics.py:1490","message":"inactive_days filter comparison FAILED","data":{"userId":u.get("_id"),"error":str(comp_error),"error_type":str(type(comp_error).__name__),"lastInteraction_type":str(type(u.get("lastInteraction")))},"timestamp":int(datetime.now(timezone.utc).timestamp()*1000)})+'\n')
+                            except: pass
+                            # #endregion
+                            raise
+                all_users_with_stats = filtered_users
             
             # Step 7: Sort by linkCount descending
             all_users_with_stats.sort(key=lambda x: x.get("linkCount", 0), reverse=True)
