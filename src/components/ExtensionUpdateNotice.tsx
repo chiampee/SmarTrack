@@ -143,6 +143,10 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
     // If a newer version is available than what was dismissed, show notice again
     // Example: User dismissed v1.0.4, but now v1.0.5 is available -> show notice
     try {
+      // Validate versions before comparison
+      if (!normalizedLatest || !normalizedDismissed) {
+        return false // Can't compare, show notice to be safe
+      }
       const comparison = compareVersions(normalizedLatest, normalizedDismissed)
       // If latestVersion > dismissedVersion, show notice (comparison > 0)
       // If latestVersion === dismissedVersion, don't show (comparison === 0) - already handled above
