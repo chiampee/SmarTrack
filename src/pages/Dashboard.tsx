@@ -111,6 +111,7 @@ export const Dashboard: React.FC = () => {
     if (isExtensionUpToDate && isAuthenticated) {
       // Extension is up to date - clear any dismissed state
       localStorage.removeItem('smartrack-extension-update-dismissed')
+      localStorage.removeItem('smartrack-extension-update-dismissed-time')
     }
   }, [isExtensionUpToDate, isAuthenticated])
 
@@ -1256,7 +1257,15 @@ export const Dashboard: React.FC = () => {
         {/* Extension Update Notice - Always show at top of dashboard when update is needed */}
         {/* Show notice if extension is installed but version is unknown/null (old extension) or outdated */}
         {/* Also show if user has extension links but extension isn't detected (likely old extension) */}
-        {needsUpdate && isAuthenticated && (
+        {/* Logic: Check if version has been dismissed - if dismissed version matches latest, don't show */}
+        {(() => {
+          // Check if this version has been dismissed
+          const dismissedVersion = localStorage.getItem('smartrack-extension-update-dismissed')
+          const isVersionDismissed = dismissedVersion === LATEST_EXTENSION_VERSION
+          
+          // Only show if update is needed AND version hasn't been dismissed
+          return needsUpdate && isAuthenticated && !isVersionDismissed
+        })() && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}

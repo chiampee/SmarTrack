@@ -14,6 +14,14 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
   const [isExtensionInstalled, setIsExtensionInstalled] = useState<boolean>(false)
   const [extensionVersion, setExtensionVersion] = useState<string | null>(null)
   const isDetectedRef = useRef(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  
+  // Expose refresh function via window for manual refresh
+  useEffect(() => {
+    (window as any).refreshExtensionDetection = () => {
+      setRefreshTrigger(prev => prev + 1)
+    }
+  }, [])
 
   useEffect(() => {
     // Check if we're in a browser environment
@@ -173,7 +181,7 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
     // Also re-checks periodically to detect when extension is updated
     let periodicCheckInterval: NodeJS.Timeout | null = null
     let checkCount = 0
-    const maxChecks = 3 // Check up to 3 times (15 seconds total)
+    const maxChecks = 5 // Check up to 5 times (25 seconds total) - increased for better update detection
     
     periodicCheckInterval = setInterval(() => {
       checkCount++
@@ -182,8 +190,8 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
       if (checkCount <= maxChecks) {
         runDetection(0)
       } else if (checkCount > maxChecks) {
-        // After initial checks, continue periodic checks less frequently to detect updates
-        if (checkCount % 6 === 0) { // Check every 30 seconds after initial period
+        // After initial checks, continue periodic checks more frequently to detect updates
+        if (checkCount % 4 === 0) { // Check every 20 seconds after initial period (more frequent)
           runDetection(0)
         }
       }
@@ -201,7 +209,7 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
         window.removeEventListener('message', messageListener)
       }
     }
-  }, [])
+  }, [refreshTrigger]) // Re-run when refresh is triggered
 
   // Return detection result with version information
   return {

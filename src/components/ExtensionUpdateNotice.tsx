@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Download, X, AlertCircle } from 'lucide-react'
+import { Download, X, AlertCircle, RefreshCw } from 'lucide-react'
 
 interface ExtensionUpdateNoticeProps {
   currentVersion: string
@@ -21,10 +21,32 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
                       !currentVersion.includes('old extension') &&
                       currentVersion === latestVersion
 
+  // Helper function to compare semantic versions
+  // Returns: -1 if v1 < v2, 0 if v1 === v2, 1 if v1 > v2
+  const compareVersions = (v1: string, v2: string): number => {
+    try {
+      const parts1 = v1.split('.').map(part => parseInt(part, 10) || 0)
+      const parts2 = v2.split('.').map(part => parseInt(part, 10) || 0)
+      
+      for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+        const part1 = parts1[i] || 0
+        const part2 = parts2[i] || 0
+        if (part1 < part2) return -1
+        if (part1 > part2) return 1
+      }
+      return 0
+    } catch (error) {
+      console.debug('[Extension Update] Version comparison error:', error)
+      // On error, treat as different versions (show notice)
+      return 1
+    }
+  }
+
   const [isDismissed, setIsDismissed] = useState(() => {
     // If extension is up to date, clear any dismissed state and don't show notice
     if (isUpToDate) {
       localStorage.removeItem('smartrack-extension-update-dismissed')
+      localStorage.removeItem('smartrack-extension-update-dismissed-time')
       return true
     }
     
@@ -32,28 +54,86 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
     if (isOldExtension) {
       return false
     }
-    // Check if user has dismissed this specific version notice
+    
+    // Check if user has dismissed this specific version
     const dismissedVersion = localStorage.getItem('smartrack-extension-update-dismissed')
-    return dismissedVersion === latestVersion
+    if (!dismissedVersion) {
+      return false // No dismissal recorded, show notice
+    }
+    
+    // If dismissed version exactly matches latest version, don't show notice
+    if (dismissedVersion === latestVersion) {
+      return true // User dismissed this exact version
+    }
+    
+    // If a newer version is available than what was dismissed, show notice again
+    // Example: User dismissed v1.0.4, but now v1.0.5 is available -> show notice
+    try {
+      const comparison = compareVersions(latestVersion, dismissedVersion)
+      // If latestVersion > dismissedVersion, show notice (comparison > 0)
+      // If latestVersion === dismissedVersion, don't show (comparison === 0) - already handled above
+      // If latestVersion < dismissedVersion, don't show (shouldn't happen, but handle gracefully)
+      return comparison <= 0 // Only dismiss if latest <= dismissed
+    } catch (error) {
+      // If version comparison fails, default to showing notice (safer)
+      console.debug('[Extension Update] Version comparison failed, showing notice:', error)
+      return false
+    }
   })
 
   // Clear dismissed state if extension becomes up to date
+  // Re-check dismissed state when version changes (in case extension was updated or new version released)
   React.useEffect(() => {
     if (isUpToDate) {
       // Clear any dismissed state when extension is up to date
       localStorage.removeItem('smartrack-extension-update-dismissed')
+      localStorage.removeItem('smartrack-extension-update-dismissed-time')
       setIsDismissed(true)
     } else if (!isOldExtension) {
-      // Re-check dismissed state when version changes (in case extension was updated)
+      // Re-check dismissed state when version changes
       const dismissedVersion = localStorage.getItem('smartrack-extension-update-dismissed')
-      setIsDismissed(dismissedVersion === latestVersion)
+      if (!dismissedVersion) {
+        setIsDismissed(false)
+        return
+      }
+      
+      // If dismissed version exactly matches latest, don't show
+      if (dismissedVersion === latestVersion) {
+        setIsDismissed(true)
+        return
+      }
+      
+      // If a newer version is available than what was dismissed, show notice again
+      try {
+        const comparison = compareVersions(latestVersion, dismissedVersion)
+        // comparison > 0 means latestVersion > dismissedVersion -> show notice
+        // comparison <= 0 means latestVersion <= dismissedVersion -> don't show
+        setIsDismissed(comparison <= 0)
+      } catch (error) {
+        // On error, show notice to be safe (user should see updates)
+        console.debug('[Extension Update] Error checking dismissed state:', error)
+        setIsDismissed(false)
+      }
     }
   }, [isUpToDate, isOldExtension, currentVersion, latestVersion])
 
   const handleDismiss = () => {
-    setIsDismissed(true)
-    // Store dismissed version so notice doesn't reappear until new version
-    localStorage.setItem('smartrack-extension-update-dismissed', latestVersion)
+    // Confirm dismissal with user
+    const confirmMessage = `Ignore update to v${latestVersion}?\n\nYou'll be notified again when a newer version (after v${latestVersion}) is released.\n\nThe notice will reappear automatically when v1.0.5 or later becomes available.`
+    
+    if (window.confirm(confirmMessage)) {
+      setIsDismissed(true)
+      // Store dismissed version so notice doesn't reappear until a newer version is released
+      localStorage.setItem('smartrack-extension-update-dismissed', latestVersion)
+      // Also store timestamp for reference
+      localStorage.setItem('smartrack-extension-update-dismissed-time', Date.now().toString())
+      
+      // Show feedback via console (non-intrusive)
+      console.log(`[Extension Update] Ignored version ${latestVersion}. Notice will reappear when a newer version is released.`)
+      
+      // Optional: Show a brief toast notification
+      // Note: This would require toast context, which might not be available here
+    }
   }
 
   if (isDismissed) {
@@ -83,18 +163,43 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
                 <>
                   You're using an older version of the SmarTrack extension. Please update to{' '}
                   <span className="font-semibold">v{latestVersion}</span> to get the latest features, security improvements, and bug fixes.
+                  <br />
+                  <span className="text-xs text-amber-200 mt-1 block">
+                    After updating: 1) Reload the extension in chrome://extensions (click the reload icon), 2) Then click "Refresh" here or reload this page.
+                  </span>
                 </>
               ) : (
                 <>
                   A new version of the SmarTrack extension is available. Update from{' '}
                   <span className="font-semibold">v{currentVersion}</span> to{' '}
                   <span className="font-semibold">v{latestVersion}</span> to get the latest features and improvements.
+                  <br />
+                  <span className="text-xs text-amber-200 mt-1 block">
+                    After updating: 1) Reload the extension in chrome://extensions (click the reload icon), 2) Then click "Refresh" here or reload this page.
+                  </span>
                 </>
               )}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => {
+              // Refresh extension detection
+              if ((window as any).refreshExtensionDetection) {
+                (window as any).refreshExtensionDetection()
+              }
+              // Also reload the page after a short delay to ensure detection updates
+              setTimeout(() => {
+                window.location.reload()
+              }, 500)
+            }}
+            className="px-3 py-2 bg-white/90 text-orange-600 rounded-lg hover:bg-white transition-colors font-medium text-sm whitespace-nowrap flex items-center gap-2"
+            title="Refresh detection after updating extension"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
           <button
             onClick={onDownload}
             className="px-4 py-2 bg-white text-orange-600 rounded-lg hover:bg-amber-50 transition-colors font-semibold text-sm whitespace-nowrap flex items-center gap-2"
@@ -105,10 +210,12 @@ export const ExtensionUpdateNotice: React.FC<ExtensionUpdateNoticeProps> = ({
           {!isOldExtension && (
             <button
               onClick={handleDismiss}
-              className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
-              aria-label="Dismiss update notice"
+              className="px-3 py-2 text-white/90 hover:text-white hover:bg-white/20 rounded-lg transition-colors font-medium text-sm whitespace-nowrap flex items-center gap-2 border border-white/30 hover:border-white/50"
+              aria-label="Ignore this version"
+              title={`Ignore v${latestVersion} update. You'll be notified again when a newer version (after v${latestVersion}) is released.`}
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
+              <span>Ignore This Version</span>
             </button>
           )}
         </div>

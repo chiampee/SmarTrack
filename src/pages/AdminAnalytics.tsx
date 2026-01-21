@@ -10,6 +10,7 @@ import { useAdminApi, AdminAnalytics as AdminAnalyticsType, AdminUser, SystemLog
 import { useToast } from '../components/Toast'
 import { LoadingSpinner } from '../components/LoadingSpinner'
 import { useAuth0 } from '@auth0/auth0-react'
+import { useBackendApi } from '../hooks/useBackendApi'
 
 type TabType = 'analytics' | 'users' | 'logs' | 'categories' | 'settings' | 'gdpr'
 
@@ -1590,6 +1591,24 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
   const [isDeleting, setIsDeleting] = useState(false)
   const toast = useToast()
   
+  // Column filters
+  const [filters, setFilters] = useState({
+    user: '',
+    firstName: '',
+    linksMin: '',
+    linksMax: '',
+    categoriesMin: '',
+    categoriesMax: '',
+    projectsMin: '',
+    projectsMax: '',
+    extension: 'all', // all, enabled, not_used, old_version
+    storageMin: '',
+    storageMax: '',
+    status: 'all', // all, active, inactive
+    lastInteractionFrom: '',
+    lastInteractionTo: ''
+  })
+  
   // Use ref to prevent concurrent requests
   const loadingRef = React.useRef(false)
 
@@ -1610,7 +1629,7 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
       const data = await adminApi.getUsers(page, 25, search || undefined, activeOnly, inactiveDays)
       
       // Apply client-side sorting if needed
-      const sortedUsers = [...data.users]
+      let sortedUsers = [...data.users]
       if (sortBy === 'lastInteraction') {
         sortedUsers.sort((a, b) => {
           const aDate = a.lastInteraction ? new Date(a.lastInteraction).getTime() : 0
@@ -1618,6 +1637,90 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
           return sortOrder === 'asc' ? aDate - bDate : bDate - aDate
         })
       }
+      
+      // Apply client-side column filters
+      sortedUsers = sortedUsers.filter(user => {
+        // User filter (email or userId)
+        if (filters.user) {
+          const searchTerm = filters.user.toLowerCase()
+          const matchesEmail = user.email?.toLowerCase().includes(searchTerm)
+          const matchesUserId = user.userId.toLowerCase().includes(searchTerm)
+          if (!matchesEmail && !matchesUserId) return false
+        }
+        
+        // First name filter
+        if (filters.firstName) {
+          const firstName = (user.firstName || '').toLowerCase()
+          if (!firstName.includes(filters.firstName.toLowerCase())) return false
+        }
+        
+        // Links filter
+        if (filters.linksMin) {
+          const min = parseInt(filters.linksMin)
+          if (isNaN(min) || user.linkCount < min) return false
+        }
+        if (filters.linksMax) {
+          const max = parseInt(filters.linksMax)
+          if (isNaN(max) || user.linkCount > max) return false
+        }
+        
+        // Categories filter
+        if (filters.categoriesMin) {
+          const min = parseInt(filters.categoriesMin)
+          if (isNaN(min) || user.categoryCount < min) return false
+        }
+        if (filters.categoriesMax) {
+          const max = parseInt(filters.categoriesMax)
+          if (isNaN(max) || user.categoryCount > max) return false
+        }
+        
+        // Projects filter
+        if (filters.projectsMin) {
+          const min = parseInt(filters.projectsMin)
+          if (isNaN(min) || user.collectionCount < min) return false
+        }
+        if (filters.projectsMax) {
+          const max = parseInt(filters.projectsMax)
+          if (isNaN(max) || user.collectionCount > max) return false
+        }
+        
+        // Extension filter
+        if (filters.extension !== 'all') {
+          if (filters.extension === 'enabled' && !user.extensionEnabled) return false
+          if (filters.extension === 'not_used' && user.extensionEnabled) return false
+          if (filters.extension === 'old_version' && (user.extensionEnabled && !user.extensionVersion)) return false
+        }
+        
+        // Storage filter
+        if (filters.storageMin) {
+          const min = parseFloat(filters.storageMin)
+          if (isNaN(min) || user.storageKB < min) return false
+        }
+        if (filters.storageMax) {
+          const max = parseFloat(filters.storageMax)
+          if (isNaN(max) || user.storageKB > max) return false
+        }
+        
+        // Status filter
+        if (filters.status !== 'all') {
+          if (filters.status === 'active' && !user.isActive) return false
+          if (filters.status === 'inactive' && user.isActive) return false
+        }
+        
+        // Last interaction filter
+        if (filters.lastInteractionFrom) {
+          const fromDate = new Date(filters.lastInteractionFrom).getTime()
+          const userDate = user.lastInteraction ? new Date(user.lastInteraction).getTime() : 0
+          if (userDate < fromDate) return false
+        }
+        if (filters.lastInteractionTo) {
+          const toDate = new Date(filters.lastInteractionTo).getTime() + 86400000 // Add 1 day to include the full day
+          const userDate = user.lastInteraction ? new Date(user.lastInteraction).getTime() : 0
+          if (userDate > toDate) return false
+        }
+        
+        return true
+      })
       
       setUsers(sortedUsers)
       setTotal(data.pagination.total)
@@ -1741,6 +1844,29 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
     loadUsers()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, search, activeOnly, inactivityFilter, sortBy, sortOrder]) // Only reload when filters change
+  
+  // Clear all column filters
+  const clearAllFilters = () => {
+    setFilters({
+      user: '',
+      firstName: '',
+      linksMin: '',
+      linksMax: '',
+      categoriesMin: '',
+      categoriesMax: '',
+      projectsMin: '',
+      projectsMax: '',
+      extension: 'all',
+      storageMin: '',
+      storageMax: '',
+      status: 'all',
+      lastInteractionFrom: '',
+      lastInteractionTo: ''
+    })
+  }
+  
+  // Check if any filters are active
+  const hasActiveFilters = Object.values(filters).some(value => value !== '' && value !== 'all')
 
   if (error && users.length === 0 && !loading) {
     return (
@@ -1835,6 +1961,14 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
             className="input-field pl-10 w-full h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
+        {hasActiveFilters && (
+          <button
+            onClick={clearAllFilters}
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
+          >
+            <span>Clear Column Filters</span>
+          </button>
+        )}
         <select
           value={activeOnly === undefined ? 'all' : activeOnly ? 'active' : 'inactive'}
           onChange={(e) => setActiveOnly(e.target.value === 'all' ? undefined : e.target.value === 'active')}
@@ -1959,56 +2093,187 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                       </div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-gray-500" />
-                        <span>User</span>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-gray-500" />
+                          <span>User</span>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Filter..."
+                          value={filters.user}
+                          onChange={(e) => setFilters({...filters, user: e.target.value})}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        />
                       </div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-400">First Name</span>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400">First Name</span>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Filter..."
+                          value={filters.firstName}
+                          onChange={(e) => setFilters({...filters, firstName: e.target.value})}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        />
                       </div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <LinkIcon className="w-4 h-4 text-blue-500" />
-                        <span>Links</span>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <LinkIcon className="w-4 h-4 text-blue-500" />
+                          <span>Links</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={filters.linksMin}
+                            onChange={(e) => setFilters({...filters, linksMin: e.target.value})}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={filters.linksMax}
+                            onChange={(e) => setFilters({...filters, linksMax: e.target.value})}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
                       </div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <Tag className="w-4 h-4 text-purple-500" />
-                        <span>Categories</span>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-4 h-4 text-purple-500" />
+                          <span>Categories</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={filters.categoriesMin}
+                            onChange={(e) => setFilters({...filters, categoriesMin: e.target.value})}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={filters.categoriesMax}
+                            onChange={(e) => setFilters({...filters, categoriesMax: e.target.value})}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
                       </div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <FolderOpen className="w-4 h-4 text-indigo-500" />
-                        <span>Projects</span>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <FolderOpen className="w-4 h-4 text-indigo-500" />
+                          <span>Projects</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={filters.projectsMin}
+                            onChange={(e) => setFilters({...filters, projectsMin: e.target.value})}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={filters.projectsMax}
+                            onChange={(e) => setFilters({...filters, projectsMax: e.target.value})}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
                       </div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <Chrome className="w-4 h-4 text-orange-500" />
-                        <span>Extension</span>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <Chrome className="w-4 h-4 text-orange-500" />
+                          <span>Extension</span>
+                        </div>
+                        <select
+                          value={filters.extension}
+                          onChange={(e) => setFilters({...filters, extension: e.target.value})}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="all">All</option>
+                          <option value="enabled">Enabled</option>
+                          <option value="not_used">Not Used</option>
+                          <option value="old_version">Old Version</option>
+                        </select>
                       </div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <Database className="w-4 h-4 text-green-500" />
-                        <span>Storage</span>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <Database className="w-4 h-4 text-green-500" />
+                          <span>Storage</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <input
+                            type="number"
+                            placeholder="Min KB"
+                            value={filters.storageMin}
+                            onChange={(e) => setFilters({...filters, storageMin: e.target.value})}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Max KB"
+                            value={filters.storageMax}
+                            onChange={(e) => setFilters({...filters, storageMax: e.target.value})}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
                       </div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-gray-500" />
-                        <span>Status</span>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-gray-500" />
+                          <span>Status</span>
+                        </div>
+                        <select
+                          value={filters.status}
+                          onChange={(e) => setFilters({...filters, status: e.target.value})}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="all">All</option>
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
                       </div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-gray-500" />
-                        <span>Last Interaction</span>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-gray-500" />
+                          <span>Last Interaction</span>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <input
+                            type="date"
+                            value={filters.lastInteractionFrom}
+                            onChange={(e) => setFilters({...filters, lastInteractionFrom: e.target.value})}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="From"
+                          />
+                          <input
+                            type="date"
+                            value={filters.lastInteractionTo}
+                            onChange={(e) => setFilters({...filters, lastInteractionTo: e.target.value})}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="To"
+                          />
+                        </div>
                       </div>
                     </th>
                   </tr>
@@ -2222,6 +2487,9 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
               <div className="px-4 py-2 bg-blue-50 rounded-lg border border-blue-200">
                 <span className="text-sm font-semibold text-blue-900">
                   Showing <span className="text-blue-600">{users.length}</span> of <span className="text-blue-600">{total.toLocaleString()}</span> users
+                  {hasActiveFilters && (
+                    <span className="text-blue-600 ml-1">(filtered)</span>
+                  )}
                 </span>
               </div>
             </div>
@@ -3853,6 +4121,10 @@ const SettingsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ a
   const [linksLimit, setLinksLimit] = useState<number>(40)
   const [storageLimitKB, setStorageLimitKB] = useState<number>(40)
   const [userSearch, setUserSearch] = useState<string>('')
+  const [userSearchResults, setUserSearchResults] = useState<AdminUser[]>([])
+  const [showUserDropdown, setShowUserDropdown] = useState(false)
+  const [searchingUsers, setSearchingUsers] = useState(false)
+  const [clearingCache, setClearingCache] = useState(false)
   const toast = useToast()
 
   const loadUserLimits = useCallback(async () => {
@@ -3885,6 +4157,75 @@ const SettingsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ a
   useEffect(() => {
     loadUserLimits()
   }, [loadUserLimits])
+
+  // Search users for autocomplete
+  const searchUsers = useCallback(async (searchTerm: string) => {
+    if (!searchTerm || searchTerm.length < 2) {
+      setUserSearchResults([])
+      setShowUserDropdown(false)
+      return
+    }
+
+    try {
+      setSearchingUsers(true)
+      const data = await adminApi.getUsers(1, 10, searchTerm)
+      setUserSearchResults(data.users)
+      setShowUserDropdown(true)
+    } catch (error) {
+      console.error('Failed to search users:', error)
+      setUserSearchResults([])
+    } finally {
+      setSearchingUsers(false)
+    }
+  }, [adminApi])
+
+  // Debounced user search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (userSearch) {
+        searchUsers(userSearch)
+      } else {
+        setUserSearchResults([])
+        setShowUserDropdown(false)
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [userSearch, searchUsers])
+
+  // Get makeRequest from useBackendApi hook
+  const { makeRequest } = useBackendApi()
+
+  // Handle cache clearing
+  const handleClearAnalyticsCache = async () => {
+    try {
+      setClearingCache(true)
+      // Use the backend API endpoint to clear cache
+      try {
+        await makeRequest<{ message: string }>('/api/admin/analytics/cache/clear', { method: 'POST' })
+        toast.success('Analytics cache cleared successfully')
+      } catch (e: any) {
+        // If endpoint doesn't exist (404), that's okay - cache will refresh on next load
+        if (e?.status === 404 || e?.message?.includes('404') || e?.message?.includes('Not Found')) {
+          toast.info('Cache will refresh automatically on next analytics load')
+        } else {
+          throw e
+        }
+      }
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to clear cache')
+    } finally {
+      setClearingCache(false)
+    }
+  }
+
+  // Select user from search results
+  const handleSelectUser = (user: AdminUser) => {
+    setSelectedUserId(user.userId)
+    setUserSearch(user.email || user.userId)
+    setShowUserDropdown(false)
+    setUserSearchResults([])
+  }
 
   const handleUpdateLimits = async () => {
     if (!selectedUserId) return
@@ -3938,27 +4279,73 @@ const SettingsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ a
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="mb-4">
+        <div className="mb-4 relative">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            User ID
+            Search User (Email or User ID)
           </label>
-          <input
-            type="text"
-            value={userSearch}
-            onChange={(e) => setUserSearch(e.target.value)}
-            placeholder="Enter user ID..."
-            className="input-field w-full font-mono text-sm"
-          />
-          <button
-            onClick={() => {
-              if (userSearch.trim()) {
-                setSelectedUserId(userSearch.trim())
-              }
-            }}
-            className="btn btn-primary mt-2"
-          >
-            Load User Limits
-          </button>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={userSearch}
+              onChange={(e) => {
+                setUserSearch(e.target.value)
+                if (!e.target.value) {
+                  setSelectedUserId('')
+                  setUserLimits(null)
+                }
+              }}
+              onFocus={() => {
+                if (userSearchResults.length > 0) {
+                  setShowUserDropdown(true)
+                }
+              }}
+              onBlur={() => {
+                // Delay to allow click on dropdown item
+                setTimeout(() => setShowUserDropdown(false), 200)
+              }}
+              placeholder="Search by email or user ID..."
+              className="input-field w-full pl-10"
+            />
+            {searchingUsers && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <RefreshCw className="w-4 h-4 text-gray-400 animate-spin" />
+              </div>
+            )}
+            
+            {/* User search dropdown */}
+            {showUserDropdown && userSearchResults.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {userSearchResults.map((user) => (
+                  <button
+                    key={user.userId}
+                    onClick={() => handleSelectUser(user)}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-semibold">
+                        {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {user.email || 'No email'}
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono truncate">
+                          {user.userId}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          {user.linkCount} links • {user.storageKB.toFixed(1)} KB
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {userSearch && userSearchResults.length === 0 && !searchingUsers && userSearch.length >= 2 && (
+            <p className="text-xs text-gray-500 mt-1">No users found</p>
+          )}
         </div>
 
         {selectedUserId && (
@@ -4049,7 +4436,41 @@ const SettingsTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ a
         )}
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      {/* System Settings Section */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6 mt-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">System Settings</h3>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900 mb-1">Analytics Cache</h4>
+              <p className="text-xs text-gray-600">
+                Clear cached analytics data to force fresh calculations
+              </p>
+            </div>
+            <button
+              onClick={handleClearAnalyticsCache}
+              disabled={clearingCache}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {clearingCache ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Clearing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4" />
+                  Clear Cache
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Default Limits Info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
         <h4 className="text-sm font-semibold text-blue-900 mb-2">Default Limits</h4>
         <ul className="text-xs text-blue-800 space-y-1">
           <li>• Links: 40 per user</li>
