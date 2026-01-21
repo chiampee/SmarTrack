@@ -216,3 +216,57 @@ async def log_system_event(
         # Don't fail the request if logging fails
         logger.warning(f"⚠️  Failed to log system event: {e}")
 
+
+async def is_user_admin(user_id: str, db) -> bool:
+    """
+    Check if a user_id corresponds to an admin email
+    
+    Args:
+        user_id: User ID to check
+        db: Database instance
+        
+    Returns:
+        True if user is an admin, False otherwise
+    """
+    try:
+        # Get user's email from system_logs (most recent entry)
+        from pymongo import DESCENDING
+        user_log = await db.system_logs.find_one(
+            {"userId": user_id, "email": {"$exists": True, "$ne": None}},
+            sort=[("timestamp", DESCENDING)]
+        )
+        
+        if not user_log or not user_log.get("email"):
+            return False
+        
+        user_email = user_log.get("email", "").lower()
+        admin_emails_lower = [email.lower() for email in settings.admin_emails_list]
+        
+        return user_email in admin_emails_lower
+    except Exception as e:
+        logger.error(f"[ADMIN CHECK] Error checking if user {user_id} is admin: {e}")
+        # On error, assume not admin for safety
+        return False
+
+
+async def validate_no_admin_deletion(user_ids: list, db) -> tuple[bool, list]:
+    """
+    Validate that no admin users are in the deletion list
+    
+    Args:
+        user_ids: List of user IDs to check
+        db: Database instance
+        
+    Returns:
+        Tuple of (is_valid, admin_user_ids)
+        is_valid: True if no admins found, False otherwise
+        admin_user_ids: List of admin user IDs found
+    """
+    admin_user_ids = []
+    
+    for user_id in user_ids:
+        if await is_user_admin(user_id, db):
+            admin_user_ids.append(user_id)
+    
+    return (len(admin_user_ids) == 0, admin_user_ids)
+

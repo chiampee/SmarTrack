@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Database, HardDrive, BarChart3, AlertTriangle } from 'lucide-react'
+import { Database, AlertTriangle } from 'lucide-react'
 import { useBackendApi, UserStats } from '../hooks/useBackendApi'
 import { useToast } from './Toast'
 import { getUserFriendlyMessage } from '../utils/errorHandler'
@@ -63,14 +63,6 @@ export const UsageStats: React.FC = () => {
     fetchStats()
   }, [fetchStats])
 
-  const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
-
   const getProgressBarColor = (percentage: number) => {
     if (percentage > 90) return 'bg-red-500'
     if (percentage > 70) return 'bg-orange-500'
@@ -110,11 +102,8 @@ export const UsageStats: React.FC = () => {
   }
 
   const linkUsagePercentage = (stats.linksUsed / stats.linksLimit) * 100
-  const storageUsagePercentage = (stats.storageUsed / stats.storageLimit) * 100
-  const isApproachingLimits = linkUsagePercentage > 80 || storageUsagePercentage > 80
+  const isApproachingLimits = linkUsagePercentage > 80
   const linksRemaining = stats.linksRemaining ?? (stats.linksLimit - stats.linksUsed)
-  const storageRemaining = stats.storageRemaining ?? (stats.storageLimit - stats.storageUsed)
-  const averagePerLink = stats.averagePerLink ?? (stats.linksUsed > 0 ? Math.floor(stats.storageUsed / stats.linksUsed) : 0)
 
   return (
     <div className="space-y-6">
@@ -146,49 +135,6 @@ export const UsageStats: React.FC = () => {
           </div>
         </div>
 
-        {/* Storage Usage */}
-        <div className="mb-4">
-          <div className="flex justify-between items-center text-sm mb-2">
-            <div className="flex items-center gap-2">
-              <HardDrive className="w-4 h-4 text-purple-600" />
-              <span className="font-medium text-gray-900">Storage</span>
-            </div>
-              <div className="text-right">
-                <span className="font-bold text-gray-900">{formatBytes(stats.storageUsed)}</span>
-                <span className="text-gray-500"> / {formatBytes(stats.storageLimit)}</span>
-                <span className="ml-2 text-sm text-gray-600">({formatBytes(Math.max(0, stats.storageLimit - stats.storageUsed))} remaining)</span>
-              </div>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-4 shadow-inner">
-            <div
-              className={`h-4 rounded-full transition-all duration-700 shadow-md ${getProgressBarColor(storageUsagePercentage)}`}
-              style={{ width: `${Math.min(100, storageUsagePercentage)}%` }}
-            ></div>
-          </div>
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>{storageUsagePercentage.toFixed(1)}% used</span>
-            <span>{(100 - storageUsagePercentage).toFixed(1)}% available</span>
-          </div>
-        </div>
-
-        {/* Additional Info */}
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-          <div className="bg-blue-50 rounded-lg p-3">
-            <p className="text-xs text-gray-600 mb-1">Average per link</p>
-            <p className="text-sm font-semibold text-gray-900">
-              {formatBytes(averagePerLink)}
-            </p>
-          </div>
-          <div className="bg-purple-50 rounded-lg p-3">
-            <p className="text-xs text-gray-600 mb-1">Est. at current usage</p>
-            <p className="text-sm font-semibold text-gray-900">
-              {stats.linksUsed > 0 && stats.storageUsed > 0 
-                ? `~${Math.round((stats.linksLimit * averagePerLink) / 1024 / 1024)} MB`
-                : 'N/A'
-              }
-            </p>
-          </div>
-        </div>
       </div>
 
       {isApproachingLimits && (
@@ -198,9 +144,7 @@ export const UsageStats: React.FC = () => {
             <div>
               <p className="font-medium mb-1">Approaching Usage Limits</p>
               <p className="text-sm">
-                You're using {linkUsagePercentage > 80 ? `${linkUsagePercentage.toFixed(0)}% of your links` : ''}
-                {linkUsagePercentage > 80 && storageUsagePercentage > 80 ? ' and ' : ''}
-                {storageUsagePercentage > 80 ? `${storageUsagePercentage.toFixed(0)}% of your storage` : ''}.
+                You're using {linkUsagePercentage.toFixed(0)}% of your links.
                 Consider upgrading your plan for more capacity.
               </p>
             </div>

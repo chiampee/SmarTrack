@@ -1519,6 +1519,13 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
   const [total, setTotal] = useState(0)
   const [search, setSearch] = useState('')
   const [activeOnly, setActiveOnly] = useState<boolean | undefined>(undefined)
+  const [inactivityFilter, setInactivityFilter] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<'lastInteraction' | 'none'>('none')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmation, setDeleteConfirmation] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
   const toast = useToast()
   
   // Use ref to prevent concurrent requests
@@ -1531,8 +1538,26 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
       loadingRef.current = true
       setLoading(true)
       setError(null)
-      const data = await adminApi.getUsers(page, 25, search || undefined, activeOnly)
-      setUsers(data.users)
+      
+      // Map inactivity filter to inactive_days parameter
+      let inactiveDays: number | undefined = undefined
+      if (inactivityFilter === 'very_inactive') {
+        inactiveDays = 90 // 3 months
+      }
+      
+      const data = await adminApi.getUsers(page, 25, search || undefined, activeOnly, inactiveDays)
+      
+      // Apply client-side sorting if needed
+      const sortedUsers = [...data.users]
+      if (sortBy === 'lastInteraction') {
+        sortedUsers.sort((a, b) => {
+          const aDate = a.lastInteraction ? new Date(a.lastInteraction).getTime() : 0
+          const bDate = b.lastInteraction ? new Date(b.lastInteraction).getTime() : 0
+          return sortOrder === 'asc' ? aDate - bDate : bDate - aDate
+        })
+      }
+      
+      setUsers(sortedUsers)
       setTotal(data.pagination.total)
       setError(null)
     } catch (error: any) {
@@ -1547,11 +1572,113 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
       setLoading(false)
     }
   }
+  
+  const handleBulkDelete = async () => {
+    if (deleteConfirmation !== 'DELETE') {
+      toast.error('Please type "DELETE" to confirm')
+      return
+    }
+    
+    if (selectedUsers.size === 0) {
+      toast.error('No users selected')
+      return
+    }
+    
+    try {
+      setIsDeleting(true)
+      const result = await adminApi.bulkDeleteUsers(Array.from(selectedUsers))
+      toast.success(`Successfully deleted ${result.deleted} user(s)`)
+      setSelectedUsers(new Set())
+      setShowDeleteModal(false)
+      setDeleteConfirmation('')
+      await loadUsers()
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to delete users')
+      console.error('Failed to delete users:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+  
+  const handleDeleteInactive = async () => {
+    if (deleteConfirmation !== 'DELETE') {
+      toast.error('Please type "DELETE" to confirm')
+      return
+    }
+    
+    try {
+      setIsDeleting(true)
+      
+      // Load all users inactive for 3+ months (90 days) from the API
+      // Use pagination loop to fetch ALL inactive users (not just first 10000)
+      const allInactiveUserIds: string[] = []
+      let page = 1
+      const limit = 1000 // Use larger page size for efficiency
+      let hasMore = true
+      
+      while (hasMore) {
+        const data = await adminApi.getUsers(page, limit, undefined, undefined, 90)
+        allInactiveUserIds.push(...data.users.map(user => user.userId))
+        
+        // Check if there are more pages
+        hasMore = data.users.length === limit && page * limit < data.pagination.total
+        page++
+        
+        // Safety limit: prevent infinite loops
+        if (page > 100) {
+          console.warn('[DELETE INACTIVE] Reached safety limit of 100 pages')
+          break
+        }
+      }
+      
+      if (allInactiveUserIds.length === 0) {
+        toast.error('No inactive users found (inactive for 3+ months)')
+        setShowDeleteModal(false)
+        setDeleteConfirmation('')
+        return
+      }
+      
+      // Process in batches of 100 (API limit)
+      const batchSize = 100
+      let totalDeleted = 0
+      let totalErrors = 0
+      
+      for (let i = 0; i < allInactiveUserIds.length; i += batchSize) {
+        const batch = allInactiveUserIds.slice(i, i + batchSize)
+        try {
+          const result = await adminApi.bulkDeleteUsers(batch)
+          totalDeleted += result.deleted
+          if (result.summary?.errors?.length > 0) {
+            totalErrors += result.summary.errors.length
+          }
+        } catch (error: any) {
+          totalErrors++
+          console.error(`Failed to delete batch ${i / batchSize + 1}:`, error)
+        }
+      }
+      
+      if (totalErrors > 0) {
+        toast.warning(`Deleted ${totalDeleted} user(s) with ${totalErrors} error(s)`)
+      } else {
+        toast.success(`Successfully deleted ${totalDeleted} inactive user(s)`)
+      }
+      
+      setSelectedUsers(new Set())
+      setShowDeleteModal(false)
+      setDeleteConfirmation('')
+      await loadUsers()
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to delete users')
+      console.error('Failed to delete users:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   useEffect(() => {
     loadUsers()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, activeOnly]) // Only reload when filters change
+  }, [page, search, activeOnly, inactivityFilter, sortBy, sortOrder]) // Only reload when filters change
 
   if (error && users.length === 0 && !loading) {
     return (
@@ -1655,6 +1782,72 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
           <option value="active">Active Only</option>
           <option value="inactive">Inactive Only</option>
         </select>
+        <select
+          value={inactivityFilter}
+          onChange={(e) => setInactivityFilter(e.target.value)}
+          className="input-field h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-w-[200px]"
+        >
+          <option value="all">All Users</option>
+          <option value="active">Active (&lt; 1 month)</option>
+          <option value="inactive">Inactive (1-3 months)</option>
+          <option value="very_inactive">Very Inactive (&gt; 3 months)</option>
+        </select>
+        <select
+          value={sortBy === 'none' ? 'none' : `${sortBy}-${sortOrder}`}
+          onChange={(e) => {
+            const value = e.target.value
+            if (value === 'none') {
+              setSortBy('none')
+            } else {
+              const [field, order] = value.split('-')
+              setSortBy(field as 'lastInteraction')
+              setSortOrder(order as 'asc' | 'desc')
+            }
+          }}
+          className="input-field h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-w-[180px]"
+        >
+          <option value="none">Sort by...</option>
+          <option value="lastInteraction-desc">Last Interaction (Newest)</option>
+          <option value="lastInteraction-asc">Last Interaction (Oldest)</option>
+        </select>
+      </div>
+      
+      {/* Bulk Action Toolbar */}
+      {selectedUsers.size > 0 && (
+        <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-blue-900">
+              {selectedUsers.size} user{selectedUsers.size !== 1 ? 's' : ''} selected
+            </span>
+            <button
+              onClick={() => setSelectedUsers(new Set())}
+              className="text-sm text-blue-600 hover:text-blue-800 underline"
+            >
+              Clear selection
+            </button>
+          </div>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Selected
+          </button>
+        </div>
+      )}
+      
+      {/* Delete Inactive Button */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => {
+            setSelectedUsers(new Set())
+            setShowDeleteModal(true)
+          }}
+          className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center gap-2"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete Inactive &gt; 3 Months
+        </button>
       </div>
 
       {loading ? (
@@ -1687,6 +1880,22 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
               <table className="w-full">
                 <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                   <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.size === users.length && users.length > 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedUsers(new Set(users.map(u => u.userId)))
+                            } else {
+                              setSelectedUsers(new Set())
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </div>
+                    </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-gray-500" />
@@ -1734,6 +1943,12 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                         <span>Status</span>
                       </div>
                     </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-gray-500" />
+                        <span>Last Interaction</span>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -1742,6 +1957,22 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                       key={user.userId} 
                       className="hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 transition-all duration-150 group"
                     >
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.has(user.userId)}
+                          onChange={(e) => {
+                            const newSelected = new Set(selectedUsers)
+                            if (e.target.checked) {
+                              newSelected.add(user.userId)
+                            } else {
+                              newSelected.delete(user.userId)
+                            }
+                            setSelectedUsers(newSelected)
+                          }}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </td>
                       <td className="px-6 py-4">
                         {user.email ? (
                           <div className="flex flex-col">
@@ -1881,6 +2112,42 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
                           )}
                         </div>
                       </td>
+                      <td className="px-6 py-4">
+                        {user.lastInteraction ? (
+                          (() => {
+                            const lastInteractionDate = new Date(user.lastInteraction)
+                            const now = new Date()
+                            const daysAgo = Math.floor((now.getTime() - lastInteractionDate.getTime()) / (1000 * 60 * 60 * 24))
+                            const monthsAgo = Math.floor(daysAgo / 30)
+                            
+                            let colorClass = 'text-green-600'
+                            let bgClass = 'bg-green-50'
+                            if (monthsAgo >= 3) {
+                              colorClass = 'text-red-600'
+                              bgClass = 'bg-red-50'
+                            } else if (monthsAgo >= 1) {
+                              colorClass = 'text-yellow-600'
+                              bgClass = 'bg-yellow-50'
+                            }
+                            
+                            return (
+                              <div className={`px-3 py-1.5 rounded-lg font-medium text-sm ${bgClass} ${colorClass}`}>
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  <span>{lastInteractionDate.toLocaleDateString()}</span>
+                                </div>
+                                <div className="text-xs mt-0.5 opacity-75">
+                                  {daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`}
+                                </div>
+                              </div>
+                            )
+                          })()
+                        ) : (
+                          <span className="px-3 py-1.5 rounded-lg font-medium text-sm bg-gray-50 text-gray-400">
+                            Never
+                          </span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1927,6 +2194,135 @@ const UsersTab: React.FC<{ adminApi: ReturnType<typeof useAdminApi> }> = ({ admi
             </div>
           </div>
         </>
+      )}
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl border-2 border-red-200">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="flex-shrink-0">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  ⚠️ Confirm Permanent Deletion
+                </h3>
+                <p className="text-sm text-red-700 font-medium mb-3">
+                  This action cannot be undone!
+                </p>
+              </div>
+            </div>
+            
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-gray-800 mb-2">
+                {selectedUsers.size > 0 ? (
+                  <>
+                    You are about to permanently delete <strong className="text-red-700">{selectedUsers.size}</strong> user{selectedUsers.size !== 1 ? 's' : ''}.
+                  </>
+                ) : (
+                  <>
+                    You are about to delete all users inactive for more than 3 months.
+                  </>
+                )}
+              </p>
+              <p className="text-xs text-gray-700 mb-2">
+                This will permanently delete:
+              </p>
+              <ul className="text-xs text-gray-700 list-disc list-inside space-y-1 mb-2">
+                <li>All links and collections</li>
+                <li>User profiles and settings</li>
+                <li>All associated data</li>
+              </ul>
+              <p className="text-xs font-semibold text-red-700">
+                System logs will be anonymized (not deleted) for audit purposes.
+              </p>
+            </div>
+            
+            {selectedUsers.size > 0 && (
+              <div className="mb-4 max-h-48 overflow-y-auto bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <p className="text-xs font-semibold text-gray-700 mb-2">
+                  Users to be deleted ({selectedUsers.size}):
+                </p>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  {Array.from(selectedUsers).slice(0, 15).map(userId => {
+                    const user = users.find(u => u.userId === userId)
+                    return (
+                      <li key={userId} className="truncate flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0"></span>
+                        <span className="truncate">{user?.email || userId}</span>
+                      </li>
+                    )
+                  })}
+                  {selectedUsers.size > 15 && (
+                    <li className="text-gray-500 italic pt-1">
+                      ... and {selectedUsers.size - 15} more user{selectedUsers.size - 15 !== 1 ? 's' : ''}
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Type <strong className="text-red-700">DELETE</strong> to confirm:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmation}
+                onChange={(e) => setDeleteConfirmation(e.target.value)}
+                className={`input-field w-full border-2 ${
+                  deleteConfirmation === 'DELETE' 
+                    ? 'border-red-500 focus:border-red-600 focus:ring-red-500' 
+                    : 'border-gray-300 focus:border-red-500 focus:ring-red-500'
+                }`}
+                placeholder="Type DELETE here"
+                autoFocus
+              />
+              {deleteConfirmation && deleteConfirmation !== 'DELETE' && (
+                <p className="text-xs text-red-600 mt-1">
+                  Please type exactly "DELETE" to confirm
+                </p>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setDeleteConfirmation('')
+                }}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedUsers.size > 0) {
+                    handleBulkDelete()
+                  } else {
+                    handleDeleteInactive()
+                  }
+                }}
+                disabled={deleteConfirmation !== 'DELETE' || isDeleting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-medium disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300 flex items-center gap-2 shadow-sm"
+              >
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Delete Permanently
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

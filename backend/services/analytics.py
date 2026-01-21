@@ -1196,26 +1196,28 @@ class AnalyticsService:
             
             # Step 5: Apply active_only filter if provided
             if active_only is not None:
+                # ✅ TIMEZONE SAFE: Use UTC consistently
                 thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
                 if active_only:
                     # Active: Has activity in last 30 days
                     all_users_with_stats = [
                         u for u in all_users_with_stats
-                        if u.get("lastInteraction") and u["lastInteraction"] >= thirty_days_ago
+                        if u.get("lastInteraction") and AnalyticsService.normalize_datetime(u["lastInteraction"]) >= thirty_days_ago
                     ]
                 else:
                     # Inactive: No activity in last 30 days
                     all_users_with_stats = [
                         u for u in all_users_with_stats
-                        if not u.get("lastInteraction") or u["lastInteraction"] < thirty_days_ago
+                        if not u.get("lastInteraction") or AnalyticsService.normalize_datetime(u["lastInteraction"]) < thirty_days_ago
                     ]
             
             # Step 6: Apply inactive_days filter if provided
             if inactive_days is not None:
+                # ✅ TIMEZONE SAFE: Use UTC consistently for threshold calculation
                 threshold_date = datetime.now(timezone.utc) - timedelta(days=inactive_days)
                 all_users_with_stats = [
                     u for u in all_users_with_stats
-                    if not u.get("lastInteraction") or u["lastInteraction"] < threshold_date
+                    if not u.get("lastInteraction") or AnalyticsService.normalize_datetime(u["lastInteraction"]) < threshold_date
                 ]
             
             # Step 7: Sort by linkCount descending
@@ -1231,43 +1233,6 @@ class AnalyticsService:
             
             # Collect user IDs for additional lookups
             user_ids = [u["_id"] for u in paginated_users]
-            
-            # Get last interaction from multiple sources (links, collections, system_logs)
-            last_interactions = {}
-            for user_id in user_ids:
-                dates = []
-                
-                # From system_logs (any API activity)
-                last_log = await db.system_logs.find_one(
-                    {"userId": user_id},
-                    sort=[("timestamp", -1)]
-                )
-                if last_log and last_log.get("timestamp"):
-                    dates.append(last_log["timestamp"])
-                
-                # From links (data changes)
-                last_link = await db.links.find_one(
-                    {"userId": user_id},
-                    sort=[("updatedAt", -1)]
-                )
-                if last_link:
-                    if last_link.get("createdAt"):
-                        dates.append(last_link["createdAt"])
-                    if last_link.get("updatedAt"):
-                        dates.append(last_link["updatedAt"])
-                
-                # From collections (data changes)
-                last_collection = await db.collections.find_one(
-                    {"userId": user_id},
-                    sort=[("updatedAt", -1)]
-                )
-                if last_collection:
-                    if last_collection.get("createdAt"):
-                        dates.append(last_collection["createdAt"])
-                    if last_collection.get("updatedAt"):
-                        dates.append(last_collection["updatedAt"])
-                
-                last_interactions[user_id] = max(dates) if dates else None
             
             # Lookup emails from system_logs (most recent log entry with email for each user)
             user_emails = {}
