@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 /**
  * Hook to detect if the SmarTrack Chrome extension is installed and get its version
@@ -13,6 +13,8 @@ export interface ExtensionDetectionResult {
 export const useExtensionDetection = (): ExtensionDetectionResult => {
   const [isExtensionInstalled, setIsExtensionInstalled] = useState<boolean>(false)
   const [extensionVersion, setExtensionVersion] = useState<string | null>(null)
+  const detectionAttemptsRef = useRef(0)
+  const isDetectedRef = useRef(false)
 
   useEffect(() => {
     // Check if we're in a browser environment
@@ -97,6 +99,7 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
         const result = await detectViaMessage()
         
         if (result.detected) {
+          isDetectedRef.current = true
           setIsExtensionInstalled(true)
           setExtensionVersion(result.version)
         } else {
@@ -128,11 +131,33 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
 
     // Small delay to ensure page is fully loaded
     const detectionTimeout = setTimeout(() => runDetection(0), 500)
+    
+    // Periodic re-check for edge cases (extensions that load slowly or don't respond immediately)
+    // This helps catch old extensions that might take longer to initialize
+    let periodicCheckInterval: NodeJS.Timeout | null = null
+    let checkCount = 0
+    const maxChecks = 3 // Check up to 3 times (15 seconds total)
+    
+    periodicCheckInterval = setInterval(() => {
+      checkCount++
+      // Only re-check if we haven't detected the extension yet and haven't exceeded max checks
+      if (!isDetectedRef.current && checkCount <= maxChecks) {
+        runDetection(0)
+      } else if (checkCount > maxChecks) {
+        // Stop checking after max attempts
+        if (periodicCheckInterval) {
+          clearInterval(periodicCheckInterval)
+        }
+      }
+    }, 5000) // Check every 5 seconds
 
     // Cleanup
     return () => {
       if (detectionTimeout) {
         clearTimeout(detectionTimeout)
+      }
+      if (periodicCheckInterval) {
+        clearInterval(periodicCheckInterval)
       }
       if (messageListener) {
         window.removeEventListener('message', messageListener)
