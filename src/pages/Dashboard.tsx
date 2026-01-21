@@ -84,27 +84,39 @@ export const Dashboard: React.FC = () => {
   // Check if extension update is needed
   // IMPORTANT: Older extensions (v1.0.0, v1.0.1) don't send version info in their response
   // If extension is installed but version is null/undefined, we assume it's an old version that needs updating
+  
+  // Fallback detection: Check if user has extension links (indicates they've used extension before)
+  // If they have extension links but extension isn't detected, likely an old extension
+  // Note: source field may not be in TypeScript interface but exists in API response
+  const hasExtensionLinks = links.some(link => (link as any).source === 'extension')
+  const likelyHasOldExtension = hasExtensionLinks && !isExtensionInstalled
+  
   const hasOldExtension = isExtensionInstalled && (extensionVersion === null || extensionVersion === undefined || extensionVersion === '')
   const hasOutdatedExtension = isExtensionInstalled && extensionVersion && isVersionOutdated(extensionVersion, LATEST_EXTENSION_VERSION)
   
   // Show update notice if:
   // 1. Extension is installed but version is null/undefined/empty (old extension without version reporting)
   // 2. Extension version is outdated compared to latest
-  const needsUpdate = hasOldExtension || hasOutdatedExtension
-
-  // Debug logging for extension version detection
+  // 3. User has extension links but extension isn't detected (likely old extension that doesn't respond)
+  const needsUpdate = hasOldExtension || hasOutdatedExtension || likelyHasOldExtension
+  
+  // Debug: Log extension detection state to help diagnose why notice might not show
   useEffect(() => {
-    console.log('[Dashboard] Extension detection status:', {
-      isExtensionInstalled,
-      extensionVersion: extensionVersion || 'null (old extension or not detected)',
-      latestVersion: LATEST_EXTENSION_VERSION,
-      needsUpdate,
-      hasOldExtension: hasOldExtension,
-      hasOutdatedExtension: hasOutdatedExtension,
-      isAuthenticated,
-      isOutdated: extensionVersion ? isVersionOutdated(extensionVersion, LATEST_EXTENSION_VERSION) : 'unknown - assuming outdated'
-    })
-  }, [isExtensionInstalled, extensionVersion, needsUpdate, hasOldExtension, hasOutdatedExtension, isAuthenticated])
+    if (isAuthenticated) {
+      console.log('[Extension Update Notice] Detection state:', {
+        isExtensionInstalled,
+        extensionVersion: extensionVersion || 'null/undefined',
+        hasExtensionLinks,
+        likelyHasOldExtension,
+        hasOldExtension,
+        hasOutdatedExtension,
+        needsUpdate,
+        latestVersion: LATEST_EXTENSION_VERSION,
+        willShowNotice: needsUpdate && isAuthenticated
+      })
+    }
+  }, [isExtensionInstalled, extensionVersion, hasExtensionLinks, likelyHasOldExtension, hasOldExtension, hasOutdatedExtension, needsUpdate, isAuthenticated, links])
+
 
   // Check if we should redirect to analytics after login
   useEffect(() => {
@@ -1226,14 +1238,26 @@ export const Dashboard: React.FC = () => {
           </motion.div>
         )}
 
-        {/* Extension Update Notice */}
+        {/* Extension Update Notice - Always show at top of dashboard when update is needed */}
         {/* Show notice if extension is installed but version is unknown/null (old extension) or outdated */}
+        {/* Also show if user has extension links but extension isn't detected (likely old extension) */}
         {needsUpdate && isAuthenticated && (
-          <ExtensionUpdateNotice
-            currentVersion={extensionVersion || 'unknown'}
-            latestVersion={LATEST_EXTENSION_VERSION}
-            onDownload={handleDownloadExtension}
-          />
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 sm:mb-5 md:mb-6"
+          >
+            <ExtensionUpdateNotice
+              currentVersion={
+                likelyHasOldExtension 
+                  ? 'unknown' 
+                  : (extensionVersion || 'unknown')
+              }
+              latestVersion={LATEST_EXTENSION_VERSION}
+              onDownload={handleDownloadExtension}
+              isOldExtension={hasOldExtension || likelyHasOldExtension}
+            />
+          </motion.div>
         )}
 
         {/* ✅ TITLE SECTION: Displayed first per user request */}

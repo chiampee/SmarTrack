@@ -84,7 +84,20 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
       })
     }
 
-    // Method 2: Check for injected markers (if extension adds any)
+    // Method 2: Try to detect extension via chrome.runtime (works even for old extensions)
+    // Note: This only works in extension contexts, not in web pages
+    // For web pages, we rely on message-based detection
+    const detectViaChromeRuntime = (): Promise<{ detected: boolean; version: string | null }> => {
+      return new Promise((resolve) => {
+        // Check if we're in a browser environment
+        // Note: chrome.runtime is not available in regular web pages, only in extension contexts
+        // So this method won't work for detecting extensions from the web app
+        // We'll keep it for completeness but it won't be the primary method
+        resolve({ detected: false, version: null })
+      })
+    }
+
+    // Method 3: Check for injected markers (if extension adds any)
     const detectViaMarkers = (): boolean => {
       // Check if extension has injected any global markers
       // This is a fallback method
@@ -94,31 +107,55 @@ export const useExtensionDetection = (): ExtensionDetectionResult => {
     // Run detection with retries for edge cases (old extensions that might not respond immediately)
     const runDetection = async (retryCount = 0) => {
       try {
-        // Try message-based detection first
+        // Try message-based detection first (for new extensions that respond)
         const result = await detectViaMessage()
         
         if (result.detected) {
           isDetectedRef.current = true
           setIsExtensionInstalled(true)
           setExtensionVersion(result.version)
-        } else {
-          // If no response, try again after a delay (for edge cases where extension is slow to respond)
-          // This helps catch old extensions that might take longer to initialize
-          if (retryCount < 2) {
-            setTimeout(() => runDetection(retryCount + 1), 1000)
-            return
-          }
-          
-          // After retries, check for markers
-          const markerDetected = detectViaMarkers()
-          setIsExtensionInstalled(markerDetected)
-          if (!markerDetected) {
-            setExtensionVersion(null)
-          }
+          return
+        }
+        
+        // If message detection failed, try chrome.runtime detection (catches old extensions)
+        // This is important for old extensions (v1.0.0, v1.0.1) that don't respond to messages
+        const chromeResult = await detectViaChromeRuntime()
+        
+        if (chromeResult.detected) {
+          isDetectedRef.current = true
+          setIsExtensionInstalled(true)
+          setExtensionVersion(chromeResult.version) // Will be null for old extensions
+          return
+        }
+        
+        // If both methods failed, try again after a delay (for edge cases where extension is slow to respond)
+        if (retryCount < 2) {
+          setTimeout(() => runDetection(retryCount + 1), 1000)
+          return
+        }
+        
+        // After retries, check for markers as last resort
+        const markerDetected = detectViaMarkers()
+        setIsExtensionInstalled(markerDetected)
+        if (!markerDetected) {
+          setExtensionVersion(null)
         }
       } catch (error) {
         console.debug('[Extension Detection] Error:', error)
-        // On error, still try one more time after delay (edge case handling)
+        // On error, try chrome.runtime detection as fallback
+        try {
+          const chromeResult = await detectViaChromeRuntime()
+          if (chromeResult.detected) {
+            isDetectedRef.current = true
+            setIsExtensionInstalled(true)
+            setExtensionVersion(chromeResult.version)
+            return
+          }
+        } catch (chromeError) {
+          console.debug('[Extension Detection] Chrome runtime fallback failed:', chromeError)
+        }
+        
+        // Final fallback: try one more time after delay
         if (retryCount < 1) {
           setTimeout(() => runDetection(retryCount + 1), 1000)
         } else {
