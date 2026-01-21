@@ -1412,9 +1412,9 @@ class AnalyticsService:
                 # From user_activity (MOST RELIABLE - tracks every authenticated request)
                 if user_id in activity_records and activity_records[user_id]:
                     activity_date = activity_records[user_id]
-                    if isinstance(activity_date, datetime) and activity_date.tzinfo is None:
-                        activity_date = activity_date.replace(tzinfo=timezone.utc)
-                    dates.append(activity_date)
+                    if isinstance(activity_date, datetime):
+                        activity_date = AnalyticsService.normalize_datetime(activity_date)
+                        dates.append(activity_date)
                 
                 # From system_logs (any API activity)
                 last_log = await db.system_logs.find_one(
@@ -1422,7 +1422,10 @@ class AnalyticsService:
                     sort=[("timestamp", -1)]
                 )
                 if last_log and last_log.get("timestamp"):
-                    dates.append(last_log["timestamp"])
+                    log_timestamp = last_log["timestamp"]
+                    if isinstance(log_timestamp, datetime):
+                        log_timestamp = AnalyticsService.normalize_datetime(log_timestamp)
+                        dates.append(log_timestamp)
                 
                 # From links (data changes)
                 last_link = await db.links.find_one(
@@ -1431,9 +1434,15 @@ class AnalyticsService:
                 )
                 if last_link:
                     if last_link.get("createdAt"):
-                        dates.append(last_link["createdAt"])
+                        link_created = last_link["createdAt"]
+                        if isinstance(link_created, datetime):
+                            link_created = AnalyticsService.normalize_datetime(link_created)
+                            dates.append(link_created)
                     if last_link.get("updatedAt"):
-                        dates.append(last_link["updatedAt"])
+                        link_updated = last_link["updatedAt"]
+                        if isinstance(link_updated, datetime):
+                            link_updated = AnalyticsService.normalize_datetime(link_updated)
+                            dates.append(link_updated)
                 
                 # From collections (data changes)
                 last_collection = await db.collections.find_one(
@@ -1442,9 +1451,15 @@ class AnalyticsService:
                 )
                 if last_collection:
                     if last_collection.get("createdAt"):
-                        dates.append(last_collection["createdAt"])
+                        coll_created = last_collection["createdAt"]
+                        if isinstance(coll_created, datetime):
+                            coll_created = AnalyticsService.normalize_datetime(coll_created)
+                            dates.append(coll_created)
                     if last_collection.get("updatedAt"):
-                        dates.append(last_collection["updatedAt"])
+                        coll_updated = last_collection["updatedAt"]
+                        if isinstance(coll_updated, datetime):
+                            coll_updated = AnalyticsService.normalize_datetime(coll_updated)
+                            dates.append(coll_updated)
                 
                 last_interactions_all[user_id] = max(dates) if dates else None
             
