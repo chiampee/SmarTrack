@@ -134,7 +134,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
       {/* Overlay for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-[90] bg-black/60 lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -146,10 +146,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } ${
           isMiniMode ? 'w-20 lg:w-20' : 'w-[85vw] max-w-[280px] sm:w-64 lg:w-80'
-        } ${
-          // Solid background on mobile, semi-transparent on desktop
-          'bg-white lg:bg-white/98 lg:backdrop-blur-sm'
-        }`}
+        } bg-white lg:bg-white/98 lg:backdrop-blur-sm`}
+        style={{ backgroundColor: 'white' }}
         aria-hidden={!isOpen}
       >
         <div className="flex flex-col h-full">

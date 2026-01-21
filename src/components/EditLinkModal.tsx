@@ -314,27 +314,31 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
               </p>
             </div>
 
-            {/* Collection */}
-            {collections.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Folder className="w-4 h-4 inline mr-1" />
-                  Collection
-                </label>
+            {/* Project/Collection */}
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                <Folder className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1" />
+                Project
+              </label>
+              {collections.length > 0 ? (
                 <select
                   value={collectionId}
                   onChange={(e) => setCollectionId(e.target.value)}
-                  className="input-field w-full"
+                  className="input-field w-full text-base sm:text-sm py-3 sm:py-3"
                 >
-                  <option value="">None - Remove from collection</option>
+                  <option value="">None - Remove from project</option>
                   {collections.map((collection) => (
                     <option key={collection.id} value={collection.id}>
                       {collection.name}
                     </option>
                   ))}
                 </select>
-              </div>
-            )}
+              ) : (
+                <div className="input-field w-full bg-gray-50 text-gray-500 py-3 px-4 rounded-lg border border-gray-200 text-sm sm:text-sm">
+                  <p>No projects yet. Create one from the sidebar to organize your links.</p>
+                </div>
+              )}
+            </div>
 
             {/* Checkboxes */}
             <div className="flex items-center gap-6">

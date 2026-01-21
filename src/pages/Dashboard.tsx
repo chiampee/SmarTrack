@@ -1238,7 +1238,7 @@ export const Dashboard: React.FC = () => {
         >
           <div className="flex flex-col gap-2.5 sm:gap-3 md:gap-4">
             {/* Search Bar Row */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 md:gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 md:gap-4">
               {/* Left: Search with integrated Filter */}
               <div className="flex-1 min-w-0 relative">
                 <div className="relative flex items-center">
@@ -1270,11 +1270,11 @@ export const Dashboard: React.FC = () => {
               </div>
 
               {/* Right: Action Buttons - New Link, Filter, Export - Compact on mobile */}
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-3 sm:gap-3 md:gap-4 flex-shrink-0">
                 {/* New Link Button */}
                 <button 
                   onClick={() => setShowAddModal(true)}
-                  className="px-3 py-2 sm:px-4 md:px-5 sm:py-2 md:py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 active:from-blue-800 active:via-blue-800 active:to-indigo-800 transition-all duration-200 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 active:scale-[0.96] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-1.5 sm:gap-2 h-[36px] sm:h-[38px] md:h-[36px] touch-manipulation"
+                  className="px-3 py-2 sm:px-4 md:px-5 sm:py-2 md:py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 active:from-blue-800 active:via-blue-800 active:to-indigo-800 transition-all duration-200 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 active:scale-[0.96] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2 h-[36px] sm:h-[38px] md:h-[40px] touch-manipulation whitespace-nowrap"
                   aria-label="Add new link"
                 >
                   <Plus className="w-4 h-4 flex-shrink-0" />
@@ -1285,7 +1285,7 @@ export const Dashboard: React.FC = () => {
                 <button 
                   onClick={handleExport}
                   disabled={filteredLinksCount === 0}
-                  className="px-3 py-2 sm:px-4 md:px-5 sm:py-2 md:py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm active:bg-gray-100 active:shadow-sm active:scale-[0.96] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm items-center justify-center gap-1.5 sm:gap-2 h-[36px] sm:h-[38px] md:h-[36px] touch-manipulation"
+                  className="px-3 py-2 sm:px-4 md:px-5 sm:py-2 md:py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm active:bg-gray-100 active:shadow-sm active:scale-[0.96] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm flex items-center justify-center gap-2 h-[36px] sm:h-[38px] md:h-[40px] touch-manipulation whitespace-nowrap min-w-[fit-content]"
                   aria-label="Export links"
                   title={filteredLinksCount === 0 ? 'No links to export' : 'Export filtered links'}
                 >
@@ -1974,11 +1974,18 @@ export const Dashboard: React.FC = () => {
 
             {/* Folders Button */}
             <button
-              onClick={() => {
-                openSidebar()
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                try {
+                  openSidebar()
+                } catch (error) {
+                  console.error('Error opening sidebar:', error)
+                }
               }}
               className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50 transition-colors"
               aria-label="Folders"
+              type="button"
             >
               <Folder className="w-6 h-6 text-gray-600" />
               <span className="text-xs text-gray-600 font-medium">Folders</span>
