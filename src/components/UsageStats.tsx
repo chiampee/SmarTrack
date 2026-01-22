@@ -11,14 +11,16 @@ export const UsageStats: React.FC = () => {
 
   // Debug: Log when stats change
   useEffect(() => {
+    console.log('[UsageStats] Component rendered, stats:', stats, 'loading:', loading, 'isValidating:', isValidating)
     if (stats) {
       console.log('[UsageStats] Stats updated:', {
         linksUsed: stats.linksUsed,
         linksLimit: stats.linksLimit,
+        linksRemaining: stats.linksRemaining,
         timestamp: new Date().toISOString()
       })
     }
-  }, [stats])
+  }, [stats, loading, isValidating])
 
   // Handle retry
   const handleRetry = () => {

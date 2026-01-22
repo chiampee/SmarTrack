@@ -71,7 +71,7 @@ export const useBulkOperations = ({
       } else {
         // Invalidate stats cache to trigger refresh
         // Use global mutate function - this will trigger revalidation for all components using this key
-        mutate(STATS_KEY).catch(error => {
+        mutate(STATS_KEY).catch((error: any) => {
           console.error('[SWR] Failed to invalidate stats cache:', error)
         })
         console.log('[SWR] Stats cache invalidation triggered after bulk operation')
@@ -132,7 +132,7 @@ export const useBulkOperations = ({
       } else {
         // Invalidate stats cache to trigger refresh
         // Use global mutate function - this will trigger revalidation for all components using this key
-        mutate(STATS_KEY).catch(error => {
+        mutate(STATS_KEY).catch((error: any) => {
           console.error('[SWR] Failed to invalidate stats cache:', error)
         })
         console.log('[SWR] Stats cache invalidation triggered after bulk operation')
