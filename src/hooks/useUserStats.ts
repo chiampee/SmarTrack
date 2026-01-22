@@ -22,9 +22,9 @@ export const useUserStats = () => {
     {
       // OPTIMIZATION: Show previous data while revalidating (prevents loading flicker)
       keepPreviousData: true,
-      // OPTIMIZATION: Don't revalidate if data is fresh (mutate handles updates)
-      revalidateIfStale: false,
-      // OPTIMIZATION: Stats change infrequently, disable focus revalidation
+      // IMPORTANT: Allow revalidation when mutate() is called explicitly
+      // revalidateIfStale: false would prevent mutate() from working
+      // Stats change infrequently, disable focus revalidation
       // Mutate calls handle updates, focus revalidation is unnecessary
       revalidateOnFocus: false,
       // Keep reconnect revalidation for network recovery

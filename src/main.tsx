@@ -32,7 +32,7 @@ if (!auth0Domain || !auth0ClientId || !auth0Audience) {
               fetcher: swrFetcher,
               revalidateOnFocus: true,
               revalidateOnReconnect: true,
-              revalidateIfStale: false, // Don't revalidate if data is fresh
+              // NOTE: revalidateIfStale removed - mutate() calls should always trigger revalidation
               // OPTIMIZATION: Throttle focus revalidation to prevent request spam
               focusThrottleInterval: 5000, // Max once per 5 seconds
               // OPTIMIZATION: Dedupe requests within 2 seconds

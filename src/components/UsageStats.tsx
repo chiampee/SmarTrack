@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Database, AlertTriangle } from 'lucide-react'
 import { useUserStats } from '../hooks/useUserStats'
 import { useBackendApi } from '../hooks/useBackendApi'
@@ -9,8 +9,20 @@ export const UsageStats: React.FC = () => {
   const { stats, loading, isValidating, error, mutate } = useUserStats()
   const { isAuthenticated } = useBackendApi()
 
+  // Debug: Log when stats change
+  useEffect(() => {
+    if (stats) {
+      console.log('[UsageStats] Stats updated:', {
+        linksUsed: stats.linksUsed,
+        linksLimit: stats.linksLimit,
+        timestamp: new Date().toISOString()
+      })
+    }
+  }, [stats])
+
   // Handle retry
   const handleRetry = () => {
+    console.log('[UsageStats] Manual retry triggered')
     mutate()
   }
 

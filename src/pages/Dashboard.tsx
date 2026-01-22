@@ -26,6 +26,7 @@ import { DashboardSkeleton } from '../components/LoadingSkeleton'
 import { validateRedirectUrl } from '../utils/validation'
 import { mutate } from 'swr'
 import { STATS_KEY } from '../hooks/useUserStats'
+import { useUserStats } from '../hooks/useUserStats'
 
 export const Dashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -54,6 +55,9 @@ export const Dashboard: React.FC = () => {
   const toast = useToast()
   const { computeCategories, setCategories } = useCategories()
   const { openSidebar } = useSidebar()
+  // Use SWR stats hook to ensure stats are fetched and cached
+  // This ensures mutate() calls will trigger updates
+  const { stats: userStats } = useUserStats()
   const [collections, setCollections] = useState<Collection[]>([])
   const [categories, setCategoriesState] = useState<Category[]>([])
   
@@ -849,7 +853,10 @@ export const Dashboard: React.FC = () => {
           }
           
           // Invalidate stats cache to trigger refresh
-          mutate(STATS_KEY)
+          // Use mutateCache from SWRConfig to ensure it works even if component isn't mounted
+          mutate(STATS_KEY).catch((error: any) => {
+            console.error('[SWR] Failed to invalidate stats cache:', error)
+          })
           
           toast.success('Link deleted')
         } catch (error) {
@@ -872,7 +879,9 @@ export const Dashboard: React.FC = () => {
             ))
             
             // Invalidate stats cache to trigger refresh
-            mutate(STATS_KEY)
+            mutate(STATS_KEY).catch((error: any) => {
+            console.error('[SWR] Failed to invalidate stats cache:', error)
+          })
             
             toast.success('Favorite updated')
           }
@@ -896,7 +905,9 @@ export const Dashboard: React.FC = () => {
             ))
             
             // Invalidate stats cache to trigger refresh
-            mutate(STATS_KEY)
+            mutate(STATS_KEY).catch((error: any) => {
+            console.error('[SWR] Failed to invalidate stats cache:', error)
+          })
             
             toast.success('Archive status updated')
           }
@@ -932,7 +943,10 @@ export const Dashboard: React.FC = () => {
           }
           
           // Invalidate stats cache to trigger refresh
-          mutate(STATS_KEY)
+          // Use mutateCache from SWRConfig to ensure it works even if component isn't mounted
+          mutate(STATS_KEY).catch((error: any) => {
+            console.error('[SWR] Failed to invalidate stats cache:', error)
+          })
           
           if (newCollectionId) {
             const collection = collections.find(c => c.id === newCollectionId)
@@ -978,7 +992,10 @@ export const Dashboard: React.FC = () => {
           }
           
           // Invalidate stats cache to trigger refresh
-          mutate(STATS_KEY)
+          // Use mutateCache from SWRConfig to ensure it works even if component isn't mounted
+          mutate(STATS_KEY).catch((error: any) => {
+            console.error('[SWR] Failed to invalidate stats cache:', error)
+          })
           
           toast.success('Link updated!')
         } catch (error) {
@@ -1031,7 +1048,11 @@ export const Dashboard: React.FC = () => {
       }
 
       // Invalidate stats cache to trigger refresh
-      mutate(STATS_KEY)
+      // Use global mutate function - this will trigger revalidation for all components using this key
+      mutate(STATS_KEY).catch((error: any) => {
+        console.error('[SWR] Failed to invalidate stats cache:', error)
+      })
+      console.log('[SWR] Stats cache invalidation triggered after editing link, key:', STATS_KEY)
 
       // Close the edit modal
       setEditingLink(null)
@@ -1245,7 +1266,12 @@ export const Dashboard: React.FC = () => {
       }
       
       // Invalidate stats cache to trigger refresh
-      mutate(STATS_KEY)
+      // Use global mutate function - this will trigger revalidation for all components using this key
+      // IMPORTANT: mutate() without arguments triggers revalidation
+      mutate(STATS_KEY).catch((error: any) => {
+        console.error('[SWR] Failed to invalidate stats cache:', error)
+      })
+      console.log('[SWR] Stats cache invalidation triggered after adding link, key:', STATS_KEY, 'current stats:', userStats)
       
       toast.success('Link added successfully!')
       setShowAddModal(false) // Close modal on success
@@ -1979,7 +2005,9 @@ export const Dashboard: React.FC = () => {
                               }
                               
                               // Invalidate stats cache to trigger refresh
-                              mutate(STATS_KEY)
+                              mutate(STATS_KEY).catch((error: any) => {
+            console.error('[SWR] Failed to invalidate stats cache:', error)
+          })
                               
                               toast.success(`${linkIds.length} link(s) deleted successfully`)
                             } catch (error) {

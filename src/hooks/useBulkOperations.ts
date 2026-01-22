@@ -70,7 +70,11 @@ export const useBulkOperations = ({
         toast.error(`${failed} of ${linkIds.length} link(s) failed to ${operationName}`)
       } else {
         // Invalidate stats cache to trigger refresh
-        mutate(STATS_KEY)
+        // Use global mutate function - this will trigger revalidation for all components using this key
+        mutate(STATS_KEY).catch(error => {
+          console.error('[SWR] Failed to invalidate stats cache:', error)
+        })
+        console.log('[SWR] Stats cache invalidation triggered after bulk operation')
         
         const message = successMessage.replace('{count}', linkIds.length.toString())
         toast.success(message)
@@ -127,7 +131,11 @@ export const useBulkOperations = ({
         toast.error(`${failed} of ${linkIds.length} link(s) failed to delete`)
       } else {
         // Invalidate stats cache to trigger refresh
-        mutate(STATS_KEY)
+        // Use global mutate function - this will trigger revalidation for all components using this key
+        mutate(STATS_KEY).catch(error => {
+          console.error('[SWR] Failed to invalidate stats cache:', error)
+        })
+        console.log('[SWR] Stats cache invalidation triggered after bulk operation')
         
         toast.success(`${linkIds.length} link(s) deleted successfully`)
       }
