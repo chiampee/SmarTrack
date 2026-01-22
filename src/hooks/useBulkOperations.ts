@@ -97,6 +97,14 @@ export const useBulkOperations = ({
       'Failed to archive links. Please try again.'
     )
 
+  const bulkUnarchive = () =>
+    bulkUpdate(
+      { isArchived: false },
+      'unarchive',
+      '{count} link(s) unarchived successfully',
+      'Failed to unarchive links. Please try again.'
+    )
+
   const bulkFavorite = () =>
     bulkUpdate(
       { isFavorite: true },
@@ -151,6 +159,7 @@ export const useBulkOperations = ({
   return {
     loading,
     bulkArchive,
+    bulkUnarchive,
     bulkFavorite,
     bulkDelete,
   }

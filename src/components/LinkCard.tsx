@@ -917,10 +917,11 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                     </button>
                     <button 
                       onClick={() => handleAction('toggleArchive')} 
-                      className={`flex items-center justify-center gap-2 p-3 sm:p-2 rounded-lg transition-colors touch-manipulation ${link.isArchived ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300'}`}
+                      className={`flex items-center justify-center gap-2 p-3 sm:p-2 rounded-lg transition-colors touch-manipulation ${link.isArchived ? 'bg-green-100 text-green-600 hover:bg-green-200 active:bg-green-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300'}`}
+                      title={link.isArchived ? 'Unarchive this link' : 'Archive this link'}
                     >
                       <Archive className="w-5 h-5 sm:w-4 sm:h-4" />
-                      <span className="sm:hidden">{link.isArchived ? 'Archived' : 'Archive'}</span>
+                      <span className="sm:hidden">{link.isArchived ? 'Unarchive' : 'Archive'}</span>
                     </button>
                     <button 
                       onClick={startEditing} 
@@ -1455,10 +1456,11 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   </button>
                   <button 
                     onClick={() => handleAction('toggleArchive')} 
-                    className={`flex items-center justify-center gap-2 p-3 sm:p-2 rounded-lg transition-colors touch-manipulation ${link.isArchived ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300'}`}
+                    className={`flex items-center justify-center gap-2 p-3 sm:p-2 rounded-lg transition-colors touch-manipulation ${link.isArchived ? 'bg-green-100 text-green-600 hover:bg-green-200 active:bg-green-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300'}`}
+                    title={link.isArchived ? 'Unarchive this link' : 'Archive this link'}
                   >
                     <Archive className="w-5 h-5 sm:w-4 sm:h-4" />
-                    <span className="sm:hidden">{link.isArchived ? 'Archived' : 'Archive'}</span>
+                    <span className="sm:hidden">{link.isArchived ? 'Unarchive' : 'Archive'}</span>
                   </button>
                   <button 
                     onClick={startEditing} 

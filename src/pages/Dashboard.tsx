@@ -1167,6 +1167,7 @@ export const Dashboard: React.FC = () => {
   const {
     loading: bulkLoading,
     bulkArchive: handleBulkArchive,
+    bulkUnarchive: handleBulkUnarchive,
     bulkFavorite: handleBulkFavorite,
     bulkDelete: handleBulkDelete,
   } = useBulkOperations({
@@ -1988,23 +1989,43 @@ export const Dashboard: React.FC = () => {
                         <Folder className="w-4 h-4" />
                         <span>Move</span>
                       </button>
-                      <button 
-                        onClick={handleBulkArchive}
-                        disabled={isLoading}
-                        className="px-4 sm:px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-xl text-sm font-semibold hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-sm flex items-center gap-2 shadow-sm"
-                      >
-                        {isLoading ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-                            <span>Archiving...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Archive className="w-4 h-4" />
-                            <span>Archive</span>
-                          </>
-                        )}
-                      </button>
+                      {activeFilterId === 'archived' ? (
+                        <button 
+                          onClick={handleBulkUnarchive}
+                          disabled={isLoading}
+                          className="px-4 sm:px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-xl text-sm font-semibold hover:bg-green-50 hover:border-green-400 hover:text-green-700 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-sm flex items-center gap-2 shadow-sm"
+                        >
+                          {isLoading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-gray-300 border-t-green-600 rounded-full animate-spin"></div>
+                              <span>Unarchiving...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Archive className="w-4 h-4" />
+                              <span>Unarchive</span>
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={handleBulkArchive}
+                          disabled={isLoading}
+                          className="px-4 sm:px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-xl text-sm font-semibold hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-sm flex items-center gap-2 shadow-sm"
+                        >
+                          {isLoading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                              <span>Archiving...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Archive className="w-4 h-4" />
+                              <span>Archive</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                       <button 
                         onClick={handleBulkFavorite}
                         disabled={isLoading}
