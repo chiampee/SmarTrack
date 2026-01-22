@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link } from '../types/Link'
 import { useToast } from '../components/Toast'
+import { mutate } from 'swr'
+import { STATS_KEY } from './useUserStats'
 
 interface UseBulkOperationsOptions {
   links: Link[]
@@ -67,6 +69,9 @@ export const useBulkOperations = ({
         setLinks(previousLinks)
         toast.error(`${failed} of ${linkIds.length} link(s) failed to ${operationName}`)
       } else {
+        // Invalidate stats cache to trigger refresh
+        mutate(STATS_KEY)
+        
         const message = successMessage.replace('{count}', linkIds.length.toString())
         toast.success(message)
       }
@@ -121,6 +126,9 @@ export const useBulkOperations = ({
         setLinks(previousLinks)
         toast.error(`${failed} of ${linkIds.length} link(s) failed to delete`)
       } else {
+        // Invalidate stats cache to trigger refresh
+        mutate(STATS_KEY)
+        
         toast.success(`${linkIds.length} link(s) deleted successfully`)
       }
     } catch (error) {

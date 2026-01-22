@@ -24,6 +24,8 @@ import { logger } from '../utils/logger'
 import { cacheManager } from '../utils/cacheManager'
 import { DashboardSkeleton } from '../components/LoadingSkeleton'
 import { validateRedirectUrl } from '../utils/validation'
+import { mutate } from 'swr'
+import { STATS_KEY } from '../hooks/useUserStats'
 
 export const Dashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -846,6 +848,9 @@ export const Dashboard: React.FC = () => {
             refetchCollections()
           }
           
+          // Invalidate stats cache to trigger refresh
+          mutate(STATS_KEY)
+          
           toast.success('Link deleted')
         } catch (error) {
           logger.error('Failed to delete link', { component: 'Dashboard', action: 'deleteLink', metadata: { linkId } }, error as Error)
@@ -865,6 +870,10 @@ export const Dashboard: React.FC = () => {
             setLinks(links.map(l => 
               l.id === linkId ? { ...l, isFavorite: !l.isFavorite } : l
             ))
+            
+            // Invalidate stats cache to trigger refresh
+            mutate(STATS_KEY)
+            
             toast.success('Favorite updated')
           }
         } catch (error) {
@@ -885,6 +894,10 @@ export const Dashboard: React.FC = () => {
             setLinks(links.map(l => 
               l.id === linkId ? { ...l, isArchived: !l.isArchived } : l
             ))
+            
+            // Invalidate stats cache to trigger refresh
+            mutate(STATS_KEY)
+            
             toast.success('Archive status updated')
           }
         } catch (error) {
@@ -917,6 +930,9 @@ export const Dashboard: React.FC = () => {
           if (oldCollectionId !== newCollectionId) {
             refetchCollections()
           }
+          
+          // Invalidate stats cache to trigger refresh
+          mutate(STATS_KEY)
           
           if (newCollectionId) {
             const collection = collections.find(c => c.id === newCollectionId)
@@ -960,6 +976,9 @@ export const Dashboard: React.FC = () => {
           if (normalizedOld !== normalizedNew) {
             refetchCollections()
           }
+          
+          // Invalidate stats cache to trigger refresh
+          mutate(STATS_KEY)
           
           toast.success('Link updated!')
         } catch (error) {
@@ -1010,6 +1029,9 @@ export const Dashboard: React.FC = () => {
       if (collectionChanged) {
         refetchCollections()
       }
+
+      // Invalidate stats cache to trigger refresh
+      mutate(STATS_KEY)
 
       // Close the edit modal
       setEditingLink(null)
@@ -1221,6 +1243,9 @@ export const Dashboard: React.FC = () => {
       if (linkData.collectionId) {
         refetchCollections()
       }
+      
+      // Invalidate stats cache to trigger refresh
+      mutate(STATS_KEY)
       
       toast.success('Link added successfully!')
       setShowAddModal(false) // Close modal on success
@@ -1952,6 +1977,9 @@ export const Dashboard: React.FC = () => {
                               if (hadCollectionLinks) {
                                 refetchCollections()
                               }
+                              
+                              // Invalidate stats cache to trigger refresh
+                              mutate(STATS_KEY)
                               
                               toast.success(`${linkIds.length} link(s) deleted successfully`)
                             } catch (error) {

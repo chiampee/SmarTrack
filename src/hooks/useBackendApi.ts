@@ -77,7 +77,7 @@ export interface UserStats {
  * @param bufferSeconds - Number of seconds before expiration to consider token as expired (default: 300 = 5 minutes)
  * @returns true if token is expired or expiring soon
  */
-const isTokenExpired = (token: string, bufferSeconds: number = 300): boolean => {
+export const isTokenExpired = (token: string, bufferSeconds: number = 300): boolean => {
   try {
     const decoded = jwtDecode<JWTPayload>(token)
     const currentTime = Math.floor(Date.now() / 1000)

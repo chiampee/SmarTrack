@@ -6,6 +6,8 @@ import { Auth0Provider } from '@auth0/auth0-react'
 import { BrowserRouter } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ToastProvider } from './components/Toast'
+import { SWRConfig } from 'swr'
+import { swrFetcher } from './utils/swrFetcher'
 
 const auth0Domain = import.meta.env.VITE_AUTH0_DOMAIN
 const auth0ClientId = import.meta.env.VITE_AUTH0_CLIENT_ID
@@ -25,25 +27,53 @@ if (!auth0Domain || !auth0ClientId || !auth0Audience) {
     <React.StrictMode>
       <ErrorBoundary>
         <ToastProvider>
-          <Auth0Provider
-            domain={auth0Domain}
-            clientId={auth0ClientId}
-            cacheLocation="localstorage"
-            authorizationParams={{
-              redirect_uri: window.location.origin + '/dashboard', // Redirect to dashboard after login
-              audience: auth0Audience,
-              scope: 'openid profile email'
+          <SWRConfig
+            value={{
+              fetcher: swrFetcher,
+              revalidateOnFocus: true,
+              revalidateOnReconnect: true,
+              revalidateIfStale: false, // Don't revalidate if data is fresh
+              // OPTIMIZATION: Throttle focus revalidation to prevent request spam
+              focusThrottleInterval: 5000, // Max once per 5 seconds
+              // OPTIMIZATION: Dedupe requests within 2 seconds
+              dedupingInterval: 2000,
+              // OPTIMIZATION: Show previous data while revalidating (better UX)
+              keepPreviousData: true,
+              shouldRetryOnError: (error) => {
+                // SECURITY: Don't retry on authentication errors
+                const errorMessage = error?.message || ''
+                if (errorMessage.includes('401') || 
+                    errorMessage.includes('403') || 
+                    errorMessage.includes('Not authenticated') ||
+                    errorMessage.includes('Token expired')) {
+                  return false
+                }
+                return true
+              },
+              errorRetryCount: 3,
+              errorRetryInterval: 5000,
             }}
           >
-            <BrowserRouter
-              future={{
-                v7_startTransition: true,
-                v7_relativeSplatPath: true
+            <Auth0Provider
+              domain={auth0Domain}
+              clientId={auth0ClientId}
+              cacheLocation="localstorage"
+              authorizationParams={{
+                redirect_uri: window.location.origin + '/dashboard', // Redirect to dashboard after login
+                audience: auth0Audience,
+                scope: 'openid profile email'
               }}
             >
-              <App />
-            </BrowserRouter>
-          </Auth0Provider>
+              <BrowserRouter
+                future={{
+                  v7_startTransition: true,
+                  v7_relativeSplatPath: true
+                }}
+              >
+                <App />
+              </BrowserRouter>
+            </Auth0Provider>
+          </SWRConfig>
         </ToastProvider>
       </ErrorBoundary>
     </React.StrictMode>

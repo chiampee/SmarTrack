@@ -1,67 +1,30 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React from 'react'
 import { Database, AlertTriangle } from 'lucide-react'
-import { useBackendApi, UserStats } from '../hooks/useBackendApi'
-import { useToast } from './Toast'
+import { useUserStats } from '../hooks/useUserStats'
+import { useBackendApi } from '../hooks/useBackendApi'
 import { getUserFriendlyMessage } from '../utils/errorHandler'
 import { isAppError } from '../utils/errorHandler'
 
 export const UsageStats: React.FC = () => {
-  const [stats, setStats] = useState<UserStats | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const { getUserStats, isAuthenticated } = useBackendApi()
-  const toast = useToast()
+  const { stats, loading, isValidating, error, mutate } = useUserStats()
+  const { isAuthenticated } = useBackendApi()
 
-  const fetchStats = useCallback(async () => {
-    if (!isAuthenticated) {
-      setLoading(false)
-      setError('Please log in to view usage statistics')
-      return
-    }
+  // Handle retry
+  const handleRetry = () => {
+    mutate()
+  }
 
-    try {
-      setLoading(true)
-      setError(null)
-      
-      // Set a timeout for the stats API
-      const timeoutPromise = new Promise<UserStats>((_, reject) => 
-        setTimeout(() => reject(new Error('Stats request timeout after 10 seconds')), 10000)
-      )
-      
-      const userStats = await Promise.race([
-        getUserStats(),
-        timeoutPromise
-      ])
-      
-      setStats(userStats)
-      setError(null)
-    } catch (err) {
-      // Log detailed error for debugging
-      const errorMessage = isAppError(err) ? getUserFriendlyMessage(err) : 'Stats temporarily unavailable'
-      const errorDetails = err instanceof Error ? err.message : String(err)
-      console.error('Failed to fetch usage stats:', errorDetails, err)
-      
-      // Show error to user with option to retry
-      setError(errorMessage)
-      
-      // Fallback to zero stats but still show error
-      setStats({
-        linksUsed: 0,
-        linksLimit: 40,
-        storageUsed: 0,
-        storageLimit: 40 * 1024, // 40 KB
-        linksRemaining: 40,
-        storageRemaining: 40 * 1024,
-        averagePerLink: 0,
-      })
-    } finally {
-      setLoading(false)
-    }
-  }, [getUserStats, isAuthenticated])
-
-  useEffect(() => {
-    fetchStats()
-  }, [fetchStats])
+  // Show error message if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="card p-6">
+        <div className="flex items-center gap-3 text-red-600 mb-3">
+          <AlertTriangle className="w-5 h-5" />
+          <span className="font-medium">Please log in to view usage statistics</span>
+        </div>
+      </div>
+    )
+  }
 
   const getProgressBarColor = (percentage: number) => {
     if (percentage > 90) return 'bg-red-500'
@@ -80,15 +43,22 @@ export const UsageStats: React.FC = () => {
   }
 
   if (error) {
+    // OPTIMIZATION: Better error message extraction
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : isAppError(error) 
+        ? getUserFriendlyMessage(error) 
+        : 'Stats temporarily unavailable'
+    
     return (
       <div className="card p-6">
         <div className="flex items-center gap-3 text-red-600 mb-3">
           <AlertTriangle className="w-5 h-5" />
           <span className="font-medium">Failed to load usage stats</span>
         </div>
-        <p className="text-red-500 text-sm mb-4">{error}</p>
+        <p className="text-red-500 text-sm mb-4">{errorMessage}</p>
         <button
-          onClick={fetchStats}
+          onClick={handleRetry}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
         >
           Retry
