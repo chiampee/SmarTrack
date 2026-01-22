@@ -854,11 +854,13 @@ export const Dashboard: React.FC = () => {
           }
           
           // Invalidate stats cache to trigger refresh
-          // Use both hook mutate and global mutate to ensure revalidation
+          // Force revalidation by calling mutate with undefined data
+          console.log('[SWR] Triggering stats revalidation after delete...')
           try {
-            await mutateStats()
-            await mutate(STATS_KEY)
-            console.log('[SWR] Stats cache invalidated after delete')
+            // mutate() with no args triggers revalidation, but we need to ensure it actually refetches
+            const result1 = await mutateStats(undefined, { revalidate: true })
+            const result2 = await mutate(STATS_KEY, undefined, { revalidate: true })
+            console.log('[SWR] Stats revalidation triggered, results:', { result1, result2 })
           } catch (error: any) {
             console.error('[SWR] Failed to invalidate stats cache:', error)
           }
@@ -956,11 +958,13 @@ export const Dashboard: React.FC = () => {
           }
           
           // Invalidate stats cache to trigger refresh
-          // Use both hook mutate and global mutate to ensure revalidation
+          // Force revalidation by calling mutate with undefined data
+          console.log('[SWR] Triggering stats revalidation after delete...')
           try {
-            await mutateStats()
-            await mutate(STATS_KEY)
-            console.log('[SWR] Stats cache invalidated after delete')
+            // mutate() with no args triggers revalidation, but we need to ensure it actually refetches
+            const result1 = await mutateStats(undefined, { revalidate: true })
+            const result2 = await mutate(STATS_KEY, undefined, { revalidate: true })
+            console.log('[SWR] Stats revalidation triggered, results:', { result1, result2 })
           } catch (error: any) {
             console.error('[SWR] Failed to invalidate stats cache:', error)
           }
@@ -1009,11 +1013,13 @@ export const Dashboard: React.FC = () => {
           }
           
           // Invalidate stats cache to trigger refresh
-          // Use both hook mutate and global mutate to ensure revalidation
+          // Force revalidation by calling mutate with undefined data
+          console.log('[SWR] Triggering stats revalidation after delete...')
           try {
-            await mutateStats()
-            await mutate(STATS_KEY)
-            console.log('[SWR] Stats cache invalidated after delete')
+            // mutate() with no args triggers revalidation, but we need to ensure it actually refetches
+            const result1 = await mutateStats(undefined, { revalidate: true })
+            const result2 = await mutate(STATS_KEY, undefined, { revalidate: true })
+            console.log('[SWR] Stats revalidation triggered, results:', { result1, result2 })
           } catch (error: any) {
             console.error('[SWR] Failed to invalidate stats cache:', error)
           }
@@ -1072,9 +1078,9 @@ export const Dashboard: React.FC = () => {
       // Use both hook mutate and global mutate to ensure revalidation
       console.log('[SWR] Triggering stats cache invalidation after editing link...')
       try {
-        await mutateStats()
-        await mutate(STATS_KEY)
-        console.log('[SWR] Stats cache invalidation completed after edit')
+        const result1 = await mutateStats(undefined, { revalidate: true })
+        const result2 = await mutate(STATS_KEY, undefined, { revalidate: true })
+        console.log('[SWR] Stats revalidation triggered after edit, results:', { result1, result2 })
       } catch (error: any) {
         console.error('[SWR] Failed to invalidate stats cache:', error)
       }
@@ -1297,16 +1303,10 @@ export const Dashboard: React.FC = () => {
       console.log('[SWR] Triggering stats cache invalidation after adding link...')
       console.log('[SWR] Current stats before mutation:', userStats)
       try {
-        // Call mutate to trigger revalidation - mutate() without args triggers revalidation
-        console.log('[SWR] Calling mutateStats()...')
-        await mutateStats()
-        console.log('[SWR] mutateStats() completed, calling global mutate()...')
-        await mutate(STATS_KEY)
-        console.log('[SWR] Both mutate calls completed successfully')
-        // Give SWR a moment to update, then log again
-        setTimeout(() => {
-          console.log('[SWR] Stats after mutation (delayed check):', userStats)
-        }, 100)
+        // Force revalidation by explicitly passing undefined and revalidate option
+        const result1 = await mutateStats(undefined, { revalidate: true })
+        const result2 = await mutate(STATS_KEY, undefined, { revalidate: true })
+        console.log('[SWR] Stats revalidation triggered, results:', { result1, result2 })
       } catch (error: any) {
         console.error('[SWR] Failed to invalidate stats cache:', error)
       }

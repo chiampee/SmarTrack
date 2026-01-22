@@ -22,8 +22,9 @@ export const useUserStats = () => {
     {
       // OPTIMIZATION: Show previous data while revalidating (prevents loading flicker)
       keepPreviousData: true,
-      // IMPORTANT: Allow revalidation when mutate() is called explicitly
-      // revalidateIfStale: false would prevent mutate() from working
+      // CRITICAL: Allow revalidation when data is stale or when mutate() is called
+      // Without this, mutate() won't trigger a refetch if data exists
+      revalidateIfStale: true,
       // Stats change infrequently, disable focus revalidation
       // Mutate calls handle updates, focus revalidation is unnecessary
       revalidateOnFocus: false,
