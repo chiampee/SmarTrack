@@ -195,10 +195,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
 
   return (
     <>
-      {/* Overlay for mobile */}
+      {/* Overlay for mobile - with backdrop blur */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-[90] bg-black/60 lg:hidden"
+          className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -215,40 +215,40 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
         aria-hidden={!isOpen}
       >
         <div className="flex flex-col h-full">
-          {/* ✅ MOBILE RESPONSIVE: User Profile Section with better mobile layout - matches dashboard design */}
+          {/* ✅ Premium Mobile: User Profile Section - Minimalist design */}
           {isAuthenticated && user && (
-            <div className={`p-4 sm:p-4 border-b border-slate-200/80 bg-gradient-to-br from-blue-50 via-indigo-50/20 to-purple-50/30 flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'}`}>
+            <div className={`p-6 sm:p-5 border-b border-slate-200/80 flex items-center ${isMiniMode ? 'justify-center' : 'gap-4'}`}>
               <img
                 src={user.picture}
                 alt={user.name}
-                className={`${isMiniMode ? 'w-10 h-10' : 'w-14 h-14 sm:w-12 sm:h-12'} rounded-full border-2 border-blue-200 shadow-sm flex-shrink-0`}
+                className={`${isMiniMode ? 'w-10 h-10' : 'w-14 h-14 sm:w-12 sm:h-12'} rounded-full border-2 border-gray-200 shadow-sm flex-shrink-0`}
               />
               {!isMiniMode && (
                 <>
                   <div className="flex-1 min-w-0">
-                    <p className="text-base sm:text-sm font-semibold text-slate-900 truncate">
+                    <p className="text-lg sm:text-base font-bold text-gray-900 truncate">
                       {displayName || user.name || user.email}
                     </p>
-                    <p className="text-xs text-slate-600 break-words leading-tight" style={{ wordBreak: 'break-word' }}>
+                    <p className="text-xs text-gray-400 break-words leading-tight mt-0.5" style={{ wordBreak: 'break-word' }}>
                       {user.email}
                     </p>
                   </div>
                   <button
                     onClick={onClose}
-                    className="lg:hidden p-2.5 sm:p-2 text-gray-600 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center touch-manipulation"
+                    className="lg:hidden p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-50 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
                     aria-label="Close sidebar"
                   >
-                    <X className="w-6 h-6 sm:w-5 sm:h-5" />
+                    <X className="w-5 h-5" strokeWidth={1.5} />
                   </button>
                 </>
               )}
             </div>
           )}
 
-          {/* ✅ MOBILE RESPONSIVE: Header with better mobile sizing - matches dashboard design */}
-          <div className="mt-2 sm:mt-0 p-4 sm:p-4 border-b border-slate-200/80 bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/10 flex items-center justify-between">
+          {/* ✅ Premium Mobile: Header - Minimalist design */}
+          <div className="mt-2 sm:mt-0 p-4 sm:p-4 border-b border-slate-200/80 flex items-center justify-between">
             {!isMiniMode && (
-              <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">Navigation</h1>
+              <h1 className="text-base sm:text-lg font-bold text-gray-900">Navigation</h1>
             )}
             {/* Mini mode toggle - desktop only */}
             <button
@@ -257,7 +257,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               aria-label={isMiniMode ? 'Expand sidebar' : 'Collapse sidebar'}
               title={isMiniMode ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-              {isMiniMode ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+              {isMiniMode ? <ChevronRight className="w-5 h-5" strokeWidth={1.5} /> : <ChevronLeft className="w-5 h-5" strokeWidth={1.5} />}
             </button>
           </div>
 
@@ -274,20 +274,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }
               }}
-              className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation ${
+              className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation relative ${
                 location.pathname === '/main' || location.pathname === '/'
-                  ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50'
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
               title={isMiniMode ? 'Main' : undefined}
             >
-              <Home className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/main' || location.pathname === '/' ? 'text-blue-600' : 'text-slate-500'}`} />
+              {(location.pathname === '/main' || location.pathname === '/') && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+              )}
+              <Home className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/main' || location.pathname === '/' ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={1.5} />
               {!isMiniMode && <span className="font-medium text-base sm:text-sm">Main</span>}
             </Link>
 
-            {/* ✅ MOBILE RESPONSIVE: Projects Quick Filters with better touch targets - matches dashboard design */}
-            <div className="mt-6 sm:mt-8 pt-4 border-t border-slate-300">
-              {!isMiniMode && <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-3 px-2">Projects</h3>}
+            {/* ✅ Premium Mobile: Projects Quick Filters - Minimalist design */}
+            <div className="mt-6 sm:mt-8 pt-4">
+              {!isMiniMode && <h3 className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-2">Projects</h3>}
               <div className="space-y-1">
                 <Link
                   to="/?filter=favorites"
@@ -296,14 +299,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       onClose()
                     }
                   }}
-                  className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-3 py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-sm transition-all min-h-[44px] sm:min-h-0 touch-manipulation ${
+                  className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-3 py-3.5 sm:py-2.5 rounded-lg text-sm sm:text-sm transition-all min-h-[44px] sm:min-h-0 touch-manipulation relative ${
                     isActivePath('/?filter=favorites')
-                      ? 'bg-gradient-to-r from-blue-50 via-blue-100/80 to-indigo-50 text-blue-700 border border-blue-200/80 shadow-md shadow-blue-500/10'
-                      : 'text-slate-700 hover:bg-gradient-to-br hover:from-slate-50 hover:via-blue-50/20 hover:to-indigo-50/10 hover:text-slate-900'
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                   title={isMiniMode ? 'Favorites' : undefined}
                 >
-                  <Star className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" />
+                  {isActivePath('/?filter=favorites') && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+                  )}
+                  <Star className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" strokeWidth={1.5} />
                   {!isMiniMode && <span className="font-medium text-base sm:text-sm">Favorites</span>}
                 </Link>
                 <Link
@@ -313,14 +319,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       onClose()
                     }
                   }}
-                  className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-3 py-3.5 sm:py-2.5 rounded-xl text-sm sm:text-sm transition-all min-h-[44px] sm:min-h-0 touch-manipulation ${
+                  className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-3 py-3.5 sm:py-2.5 rounded-lg text-sm sm:text-sm transition-all min-h-[44px] sm:min-h-0 touch-manipulation relative ${
                     isActivePath('/?filter=recent')
-                      ? 'bg-gradient-to-r from-blue-50 via-blue-100/80 to-indigo-50 text-blue-700 border border-blue-200/80 shadow-md shadow-blue-500/10'
-                      : 'text-slate-700 hover:bg-gradient-to-br hover:from-slate-50 hover:via-blue-50/20 hover:to-indigo-50/10 hover:text-slate-900'
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                   title={isMiniMode ? 'Recent' : undefined}
                 >
-                  <Clock className="w-4 h-4" />
+                  {isActivePath('/?filter=recent') && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+                  )}
+                  <Clock className="w-4 h-4" strokeWidth={1.5} />
                   {!isMiniMode && <span className="font-medium text-base sm:text-sm">Recent (Last 7 days)</span>}
                 </Link>
                 <Link
@@ -330,14 +339,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       onClose()
                     }
                   }}
-                  className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-3 py-2 rounded-xl text-sm min-h-[44px] sm:min-h-0 touch-manipulation ${
+                  className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-3 py-2 rounded-lg text-sm min-h-[44px] sm:min-h-0 touch-manipulation relative ${
                     isActivePath('/?filter=archived')
-                      ? 'bg-gradient-to-r from-blue-50 via-blue-100/80 to-indigo-50 text-blue-700 border border-blue-200/80 shadow-md shadow-blue-500/10'
-                      : 'text-slate-700 hover:bg-gradient-to-br hover:from-slate-50 hover:via-blue-50/20 hover:to-indigo-50/10'
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                   title={isMiniMode ? 'Archived' : undefined}
                 >
-                  <Archive className="w-4 h-4" />
+                  {isActivePath('/?filter=archived') && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+                  )}
+                  <Archive className="w-4 h-4" strokeWidth={1.5} />
                   {!isMiniMode && <span className="font-medium text-base sm:text-sm">Archived</span>}
                 </Link>
               </div>
@@ -348,12 +360,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                     <div className="flex items-center justify-between mb-2">
                       <button
                         onClick={() => setIsProjectsExpanded(!isProjectsExpanded)}
-                        className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-700 transition-colors group"
+                        className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors group"
                       >
                         {isProjectsExpanded ? (
-                          <ChevronDown className="w-3 h-3 group-hover:text-slate-700" />
+                          <ChevronDown className="w-3 h-3 group-hover:text-gray-600" strokeWidth={1.5} />
                         ) : (
-                          <ChevronUp className="w-3 h-3 group-hover:text-slate-700" />
+                          <ChevronUp className="w-3 h-3 group-hover:text-gray-600" strokeWidth={1.5} />
                         )}
                         <span>My Projects</span>
                       </button>
@@ -378,13 +390,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       return (
                         <div 
                           key={c.id} 
-                          className={`group flex items-center ${isMiniMode ? 'justify-center' : 'gap-2'} px-2 sm:px-2.5 lg:px-3 py-3 sm:py-2 rounded-xl text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 ${
+                          className={`group flex items-center ${isMiniMode ? 'justify-center' : 'gap-2'} px-2 sm:px-2.5 lg:px-3 py-3 sm:py-2 rounded-lg text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 relative ${
                             active 
-                              ? 'bg-gradient-to-r from-blue-50 via-blue-100/80 to-indigo-50 text-blue-700 border border-blue-200/80 shadow-md shadow-blue-500/10' 
-                              : 'text-slate-700 hover:bg-gradient-to-br hover:from-slate-50 hover:via-blue-50/20 hover:to-indigo-50/10'
+                              ? 'bg-gray-100 text-gray-900' 
+                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                           }`}
                           title={isMiniMode ? `${c.name} (${c.linkCount || 0} links)` : `View collection: ${c.name} (${c.linkCount || 0} links)`}
                         >
+                          {active && (
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+                          )}
                           <Link 
                             to={to} 
                             onClick={() => {
@@ -417,14 +432,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                                 className="opacity-0 group-hover:opacity-100 sm:opacity-0 p-2 sm:p-1 rounded-lg hover:bg-slate-200 active:bg-slate-300 text-slate-600 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center touch-manipulation"
                                 onClick={() => renameCollection(c.id, c.name)}
                               >
-                                <Edit2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                                <Edit2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" strokeWidth={1.5} />
                               </button>
                               <button
                                 aria-label="Delete"
                                 className="opacity-0 group-hover:opacity-100 sm:opacity-0 p-2 sm:p-1 rounded hover:bg-red-100 active:bg-red-200 text-red-600 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center touch-manipulation"
                                 onClick={() => deleteCollection(c.id, c.name)}
                               >
-                                <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                                <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" strokeWidth={1.5} />
                               </button>
                             </>
                           )}
@@ -450,18 +465,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               )}
             </div>
 
-            {/* ✅ MOBILE RESPONSIVE: Categories Section with better touch targets - matches dashboard design */}
+            {/* ✅ Premium Mobile: Categories Section - Minimalist design */}
             {categories.length > 0 && (
-              <div className="mt-4 sm:mt-6 pt-4 border-t border-slate-300">
+              <div className="mt-4 sm:mt-6 pt-4">
                 {!isMiniMode && (
                   <button
                     onClick={() => setIsCategoriesExpanded(!isCategoriesExpanded)}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2 hover:text-slate-700 transition-colors group w-full text-left"
+                    className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-2 hover:text-gray-600 transition-colors group w-full text-left"
                   >
                     {isCategoriesExpanded ? (
-                      <ChevronDown className="w-3 h-3 group-hover:text-slate-700" />
+                      <ChevronDown className="w-3 h-3 group-hover:text-gray-600" strokeWidth={1.5} />
                     ) : (
-                      <ChevronUp className="w-3 h-3 group-hover:text-slate-700" />
+                      <ChevronUp className="w-3 h-3 group-hover:text-gray-600" strokeWidth={1.5} />
                     )}
                     <span>Categories</span>
                   </button>
@@ -471,11 +486,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   {categories.map((category, index) => {
                     const getIcon = () => {
                       const name = category.name.toLowerCase()
-                      if (name.includes('research')) return <BookOpen className="w-4 h-4" />
-                      if (name.includes('article')) return <FileText className="w-4 h-4" />
-                      if (name.includes('tool')) return <Wrench className="w-4 h-4" />
-                      if (name.includes('reference')) return <Bookmark className="w-4 h-4" />
-                      return <BookOpen className="w-4 h-4" />
+                      if (name.includes('research')) return <BookOpen className="w-4 h-4" strokeWidth={1.5} />
+                      if (name.includes('article')) return <FileText className="w-4 h-4" strokeWidth={1.5} />
+                      if (name.includes('tool')) return <Wrench className="w-4 h-4" strokeWidth={1.5} />
+                      if (name.includes('reference')) return <Bookmark className="w-4 h-4" strokeWidth={1.5} />
+                      return <BookOpen className="w-4 h-4" strokeWidth={1.5} />
                     }
 
                       const getColor = () => {
@@ -492,11 +507,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                     return (
                       <div 
                         key={`${category.id}-${index}-${category.linkCount}`} 
-                        className={`group flex items-center ${isMiniMode ? 'justify-center' : 'gap-2'} px-2 sm:px-2.5 lg:px-3 py-3 sm:py-2 rounded-xl text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 ${
-                          active ? 'bg-gradient-to-r from-blue-50 via-blue-100/80 to-indigo-50 text-blue-700 border border-blue-200/80 shadow-md shadow-blue-500/10' : 'text-slate-700 hover:bg-gradient-to-br hover:from-slate-50 hover:via-blue-50/20 hover:to-indigo-50/10'
+                        className={`group flex items-center ${isMiniMode ? 'justify-center' : 'gap-2'} px-2 sm:px-2.5 lg:px-3 py-3 sm:py-2 rounded-lg text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 relative ${
+                          active ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                         }`}
                         title={isMiniMode ? `${capitalizeCategoryName(category.name)} (${category.linkCount} links)` : `Filter by ${capitalizeCategoryName(category.name)} (${category.linkCount} links)`}
                       >
+                        {active && (
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+                        )}
                         <Link 
                           to={to} 
                           onClick={() => {
@@ -516,7 +534,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                               </span>
                               {typeof category.linkCount === 'number' && (
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
-                                  active ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600'
+                                  active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
                                 }`}>
                                   {category.linkCount}
                                 </span>
@@ -534,7 +552,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                                 renameCategory(category.name, category.linkCount || 0)
                               }}
                             >
-                              <Edit2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                              <Edit2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" strokeWidth={1.5} />
                             </button>
                             <button
                               aria-label="Delete category"
@@ -544,7 +562,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                                 deleteCategory(category.name, category.linkCount || 0)
                               }}
                             >
-                              <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                              <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" strokeWidth={1.5} />
                             </button>
                           </>
                         )}
@@ -556,8 +574,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               </div>
             )}
 
-            {/* ✅ MOBILE RESPONSIVE: Settings and Admin with better touch targets - matches dashboard design */}
-            <div className="mt-4 sm:mt-6 pt-4 border-t border-slate-300 space-y-1 sm:space-y-2">
+            {/* ✅ Premium Mobile: Settings and Admin - Minimalist design */}
+            <div className="mt-4 sm:mt-6 pt-4 space-y-1 sm:space-y-2">
               <Link
                 to="/settings"
                 onClick={() => {
@@ -565,14 +583,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                     onClose()
                   }
                 }}
-                className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-4 py-3.5 sm:py-3 rounded-xl transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation ${
+                className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation relative ${
                   isSettingsActive
-                    ? 'bg-gradient-to-r from-blue-50 via-blue-100/80 to-indigo-50 text-blue-700 border border-blue-200/80 shadow-md shadow-blue-500/10'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-gradient-to-br hover:from-slate-50 hover:via-blue-50/20 hover:to-indigo-50/10'
+                    ? 'bg-gray-100 text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
                 title={isMiniMode ? 'Settings' : undefined}
               >
-                <Settings className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${isSettingsActive ? 'text-blue-600' : 'text-slate-500'}`} />
+                {isSettingsActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+                )}
+                <Settings className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${isSettingsActive ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={1.5} />
                 {!isMiniMode && <span className="font-medium text-base sm:text-sm">Settings</span>}
               </Link>
               
@@ -585,37 +606,40 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       onClose()
                     }
                   }}
-                  className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-4 py-3.5 sm:py-3 rounded-xl transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation ${
+                  className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation relative ${
                     location.pathname === '/analytics'
-                      ? 'bg-gradient-to-r from-purple-50 via-purple-100/80 to-pink-50 text-purple-700 border border-purple-200/80 shadow-md shadow-purple-500/10'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-gradient-to-br hover:from-slate-50 hover:via-purple-50/20 hover:to-pink-50/10'
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                   title={isMiniMode ? 'Analytics' : undefined}
                 >
-                  <BarChart3 className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/analytics' ? 'text-purple-600' : 'text-slate-500'}`} />
+                  {location.pathname === '/analytics' && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+                  )}
+                  <BarChart3 className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/analytics' ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={1.5} />
                   {!isMiniMode && <span className="font-medium text-base sm:text-sm">Analytics</span>}
                 </Link>
               )}
             </div>
           </nav>
 
-          {/* ✅ MOBILE RESPONSIVE: Footer with better touch targets - matches dashboard design */}
-          <div className="p-4 sm:p-6 border-t border-slate-200/80 bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/10 space-y-3">
+          {/* ✅ Premium Mobile: Footer - Minimalist design with whitespace separation */}
+          <div className="p-4 sm:p-6 space-y-4">
             {isAuthenticated && (
               <button
                 onClick={() => {
                   logout({ logoutParams: { returnTo: window.location.origin } })
                   onClose()
                 }}
-                className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-4 py-3.5 sm:py-3 rounded-xl text-slate-600 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-all duration-300 w-full min-h-[44px] sm:min-h-0 touch-manipulation`}
+                className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-4 py-3.5 sm:py-3 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-all duration-300 w-full min-h-[44px] sm:min-h-0 touch-manipulation`}
                 aria-label="Logout"
                 title={isMiniMode ? 'Logout' : undefined}
               >
-                <LogOut className="w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0" />
+                <LogOut className="w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0" strokeWidth={1.5} />
                 {!isMiniMode && <span className="font-medium text-base sm:text-sm">Logout</span>}
               </button>
             )}
-            <div className="text-xs text-slate-600 text-center font-medium">
+            <div className="text-[10px] text-gray-300 text-center">
               SmarTrack v1.0
             </div>
           </div>

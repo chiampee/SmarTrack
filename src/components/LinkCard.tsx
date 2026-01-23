@@ -414,16 +414,16 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     return (
       <div 
         data-link-id={link.id}
-        className={`group bg-white rounded-xl border transition-all duration-200 cursor-pointer relative touch-manipulation ${
-          isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200 hover:shadow-lg hover:border-blue-300 hover:scale-[1.02] active:bg-gray-50'
+        className={`group bg-white rounded-xl transition-all duration-200 cursor-pointer relative touch-manipulation ${
+          isSelected ? 'ring-2 ring-blue-500 bg-blue-50/30 shadow-md' : 'shadow-sm sm:border sm:border-gray-200 hover:shadow-lg hover:scale-[1.02] active:bg-gray-50'
         }`}
         role="article"
         onClick={handleCardClick}
       >
         {/* Main Row - Content First Design for Mobile */}
         <div className="flex items-start gap-3 sm:gap-3 p-3 sm:p-4 relative">
-          {/* Checkbox with larger touch target */}
-          <div className="flex items-center flex-shrink-0 pt-1">
+          {/* Checkbox - Hidden on mobile, shown on desktop */}
+          <div className="hidden sm:flex items-center flex-shrink-0 pt-1">
             <label 
               className="p-2 -m-2 cursor-pointer touch-manipulation"
               onClick={(e) => {
@@ -454,7 +454,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               <img 
                 src={faviconUrl} 
                 alt="" 
-                className={`w-16 h-16 sm:w-14 sm:h-14 rounded-xl bg-slate-50 border-2 border-slate-200 p-1.5 shadow-sm ${
+                className={`w-20 h-20 sm:w-14 sm:h-14 rounded-xl bg-slate-50 sm:border-2 sm:border-slate-200 p-1.5 shadow-sm ${
                   link.thumbnail ? 'object-cover' : 'object-contain'
                 }`}
                 referrerPolicy="no-referrer-when-downgrade"
@@ -477,8 +477,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 }}
               />
             ) : (
-              <div className="w-16 h-16 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-200 flex items-center justify-center shadow-sm">
-                <Globe className="w-8 h-8 sm:w-7 sm:h-7 text-slate-400" />
+              <div className="w-20 h-20 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 sm:border-2 sm:border-slate-200 flex items-center justify-center shadow-sm">
+                <Globe className="w-10 h-10 sm:w-7 sm:h-7 text-slate-400" strokeWidth={1.5} />
               </div>
             )}
             {/* Category tag overlay on image (mobile only) */}
@@ -493,27 +493,35 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
 
           {/* Title & Domain - Stacked vertically for content-first design */}
           <div className="flex-1 min-w-0">
-            {/* Title - Stacked on top */}
+            {/* Title - Stacked on top, larger on mobile, truncated to 1.5 lines */}
             <h3 
               data-link-title
               onClick={(e) => {
                 handleLinkClick(e);
               }}
-              className="font-medium text-gray-900 hover:text-blue-600 active:text-blue-700 text-sm sm:text-sm cursor-pointer w-full mb-1 touch-manipulation line-clamp-2"
+              className="font-medium text-gray-900 hover:text-blue-600 active:text-blue-700 text-base sm:text-sm cursor-pointer w-full mb-1 touch-manipulation line-clamp-2 leading-tight"
+              style={{ 
+                display: '-webkit-box',
+                WebkitLineClamp: 1.5,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                lineHeight: '1.4em',
+                maxHeight: '2.1em'
+              }}
               title={link.title}
             >
               {link.title}
             </h3>
-            {/* Domain - Stacked below title in smaller gray text */}
-            <p className="text-xs text-gray-500 truncate mb-1">{getCleanDomain(link.url) || link.url}</p>
+            {/* Domain - Stacked below title in much lighter gray text */}
+            <p className="text-xs text-gray-400 truncate">{getCleanDomain(link.url) || link.url}</p>
             
-            {/* Icons and metadata row */}
-            <div className="flex items-center gap-2 flex-wrap mt-1">
+            {/* Icons and metadata row - Hidden on mobile */}
+            <div className="hidden sm:flex items-center gap-2 flex-wrap mt-1">
               {/* Icons */}
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                {link.description && <span title="Has notes"><StickyNote className="w-3.5 h-3.5 text-amber-400" /></span>}
-                {link.isFavorite && <Star className="w-3.5 h-3.5 text-amber-400 fill-current" />}
-                {link.isArchived && <Archive className="w-3.5 h-3.5 text-gray-400" />}
+                {link.description && <span title="Has notes"><StickyNote className="w-3.5 h-3.5 text-amber-400" strokeWidth={1.5} /></span>}
+                {link.isFavorite && <Star className="w-3.5 h-3.5 text-amber-400 fill-current" strokeWidth={1.5} />}
+                {link.isArchived && <Archive className="w-3.5 h-3.5 text-gray-400" strokeWidth={1.5} />}
               </div>
               {/* Date display on desktop */}
               <span className="hidden md:flex items-center gap-1 text-xs text-gray-400 ml-auto">
@@ -531,22 +539,22 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             {link.category && <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-full border border-gray-200">{capitalizeCategoryName(link.category)}</span>}
             {link.collectionId && (
               <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs font-medium rounded-full flex items-center gap-1">
-                <Folder className="w-3 h-3" />{getCollectionName(link.collectionId)}
+                <Folder className="w-3 h-3" strokeWidth={1.5} />{getCollectionName(link.collectionId)}
               </span>
             )}
           </div>
 
           {/* Date - hide on small screens */}
           <div className="hidden lg:flex items-center gap-1 text-xs text-gray-400 flex-shrink-0">
-            <Clock className="w-3 h-3" />{formatDate(link.createdAt)}
+            <Clock className="w-3 h-3" strokeWidth={1.5} />{formatDate(link.createdAt)}
           </div>
 
-          {/* Expand/Collapse - larger touch target */}
+          {/* Expand/Collapse - Hidden on mobile, shown on desktop */}
           <button 
-            className="flex-shrink-0 p-2 -m-1 rounded-lg hover:bg-gray-100 active:bg-gray-200 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="hidden sm:flex flex-shrink-0 p-2 -m-1 rounded-lg hover:bg-gray-100 active:bg-gray-200 touch-manipulation min-h-[44px] min-w-[44px] items-center justify-center"
             onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded) }}
           >
-            {isExpanded ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4 text-gray-500" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4 text-gray-400" />}
+            {isExpanded ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4 text-gray-500" strokeWidth={1.5} /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4 text-gray-400" strokeWidth={1.5} />}
           </button>
         </div>
 
@@ -945,145 +953,488 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     )
   }
 
-  // ============ GRID VIEW ============
+  // ============ GRID VIEW - Instagram-inspired Post Style ============
   return (
     <div 
-      className={`group bg-white rounded-xl border transition-all duration-200 cursor-pointer relative overflow-hidden touch-manipulation ${
-        isSelected ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50/30' : 'border-gray-200 hover:shadow-xl hover:border-blue-300 hover:scale-[1.02] active:bg-gray-50'
-      } ${!isExpanded ? 'hover:-translate-y-1' : ''}`}
+      className={`group bg-white rounded-xl overflow-hidden cursor-pointer relative touch-manipulation transition-all duration-200 ${
+        isSelected ? 'ring-2 ring-blue-500' : 'shadow-sm hover:shadow-md'
+      } active:scale-[0.98]`}
       role="article"
       onClick={handleCardClick}
     >
-      <div>
-        {link.thumbnail && link.thumbnail.startsWith('http') && (
-          <div className="aspect-video w-full overflow-hidden bg-gray-100">
+      {/* Edge-to-edge image with rounded top corners */}
+      {link.thumbnail && link.thumbnail.startsWith('http') ? (
+        <div className="aspect-video w-full overflow-hidden bg-gray-100">
+          <img 
+            src={link.thumbnail} 
+            alt="Post thumbnail" 
+            className="w-full h-full object-cover rounded-t-xl transition-transform duration-300 group-hover:scale-105"
+            referrerPolicy="no-referrer-when-downgrade"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              console.warn('[LinkCard] Failed to load thumbnail:', link.thumbnail);
+            }}
+            onLoad={() => {
+              console.debug('[LinkCard] Thumbnail loaded successfully:', link.thumbnail);
+            }}
+          />
+        </div>
+      ) : (
+        // Fallback: Show aspect-video placeholder if no thumbnail
+        <div className="aspect-video w-full bg-gray-100 rounded-t-xl flex items-center justify-center">
+          {faviconUrl && !faviconError ? (
             <img 
-              src={link.thumbnail} 
-              alt="Post thumbnail" 
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              src={faviconUrl} 
+              alt="" 
+              className="w-16 h-16 rounded-lg object-contain"
               referrerPolicy="no-referrer-when-downgrade"
               loading="lazy"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                console.warn('[LinkCard] Failed to load thumbnail:', link.thumbnail);
-              }}
-              onLoad={() => {
-                console.debug('[LinkCard] Thumbnail loaded successfully:', link.thumbnail);
-              }}
+              onError={() => setFaviconError(true)}
             />
-          </div>
-        )}
-
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div className="flex items-center gap-2 min-w-0">
-              {faviconUrl && !faviconError ? (
-                <img 
-                  src={faviconUrl} 
-                  alt="" 
-                  className={`w-8 h-8 sm:w-7 sm:h-7 rounded-lg bg-slate-50 border-2 border-slate-200 p-1 flex-shrink-0 shadow-sm ${
-                    link.thumbnail ? 'object-cover' : 'object-contain'
-                  }`}
-                  referrerPolicy="no-referrer-when-downgrade"
-                  loading="lazy"
-                  onError={() => {
-                    // Tier 4: Image failed to load, show Globe icon fallback
-                    setFaviconError(true)
-                  }}
-                />
-              ) : (
-                <div className="w-8 h-8 sm:w-7 sm:h-7 rounded-lg bg-slate-200 border-2 border-slate-300 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Globe className="w-5 h-5 sm:w-4 sm:h-4 text-slate-400" />
-                </div>
-              )}
-              <span className="text-sm sm:text-xs text-gray-500 truncate font-semibold">{getCleanDomain(link.url) || link.url}</span>
-            </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <label 
-                className={`p-1 cursor-pointer transition-opacity touch-manipulation ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-                onClick={(e) => {
-                  // Only handle if clicking directly on label (not checkbox)
-                  if (e.target === e.currentTarget || (e.target as HTMLElement).tagName !== 'INPUT') {
-                    e.stopPropagation()
-                    onSelect(e)
-                  }
-                }}
-              >
-                <input 
-                  type="checkbox" 
-                  checked={isSelected} 
-                  readOnly
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    onSelect(e)
-                  }} 
-                  className="w-5 h-5 sm:w-4 sm:h-4 rounded border-gray-300 text-blue-600 cursor-pointer" 
-                />
-              </label>
-              <button 
-                className="p-1.5 rounded hover:bg-gray-100 active:bg-gray-200 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
-                onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded) }}
-              >
-                {isExpanded ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4 text-gray-500" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4 text-gray-400" />}
-              </button>
-            </div>
-          </div>
-
-          {/* Title is the clickable link */}
-          <h3 
-            data-link-title
-            onClick={(e) => {
-              handleLinkClick(e);
-            }}
-            className="font-semibold text-blue-600 hover:text-blue-800 active:text-blue-900 hover:underline text-base sm:text-sm line-clamp-2 mb-2 leading-snug cursor-pointer touch-manipulation"
-            title="Click to open link"
-          >
-            {link.title}
-          </h3>
-
-          {link.description && !isExpanded && (
-            <div className="mb-3 p-2.5 sm:p-2 bg-amber-50/70 border border-amber-100 rounded-lg">
-              <div className="flex items-start gap-2">
-                <StickyNote className="w-4 h-4 sm:w-3 sm:h-3 text-amber-500 mt-0.5 flex-shrink-0" />
-                <p className="text-sm sm:text-xs text-amber-800 line-clamp-2">{link.description}</p>
-              </div>
-            </div>
-          )}
-
-          {!isExpanded && (
-            <>
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                <span className={`px-2.5 py-1 sm:px-2 sm:py-0.5 text-sm sm:text-xs font-medium rounded-full flex items-center gap-1 ${contentTypeInfo.color}`}>
-                  <contentTypeInfo.icon className="w-3.5 h-3.5 sm:w-3 sm:h-3" />{contentTypeInfo.label}
-                </span>
-                {link.category && (
-                  <span className="px-2.5 py-1 sm:px-2 sm:py-0.5 bg-gray-100 text-gray-700 text-sm sm:text-xs font-medium rounded-full border border-gray-200">
-                    {capitalizeCategoryName(link.category)}
-                  </span>
-                )}
-                {link.collectionId && (
-                  <span className="px-2.5 py-1 sm:px-2 sm:py-0.5 bg-green-50 text-green-700 text-sm sm:text-xs font-medium rounded-full flex items-center gap-1">
-                    <Folder className="w-3.5 h-3.5 sm:w-3 sm:h-3" />{getCollectionName(link.collectionId)}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                <div className="flex items-center gap-2 text-sm sm:text-xs text-gray-400">
-                  <span>{formatDate(link.createdAt)}</span>
-                  {link.isFavorite && <Star className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-amber-400 fill-current" />}
-                  {link.isArchived && <Archive className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-gray-400" />}
-                </div>
-                <div className="text-sm sm:text-xs text-blue-500 font-medium">Tap for details →</div>
-              </div>
-            </>
+          ) : (
+            <Globe className="w-12 h-12 text-gray-300" strokeWidth={1.5} />
           )}
         </div>
+      )}
+
+      {/* Content section - no padding on sides, only vertical */}
+      <div className="px-3 py-3">
+        {/* Favicon & Domain - Above title, tiny light gray */}
+        <div className="flex items-center gap-1.5 mb-2">
+          {faviconUrl && !faviconError ? (
+            <img 
+              src={faviconUrl} 
+              alt="" 
+              className="w-4 h-4 rounded flex-shrink-0"
+              referrerPolicy="no-referrer-when-downgrade"
+              loading="lazy"
+              onError={() => setFaviconError(true)}
+            />
+          ) : (
+            <Globe className="w-4 h-4 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
+          )}
+          <span className="text-[10px] text-gray-400 truncate">{getCleanDomain(link.url) || link.url}</span>
+        </div>
+
+        {/* Title - Deep charcoal, exactly 2 lines */}
+        <h3 
+          data-link-title
+          onClick={(e) => {
+            handleLinkClick(e);
+          }}
+          className="font-medium text-gray-900 text-sm line-clamp-2 mb-3 leading-snug cursor-pointer touch-manipulation"
+          title={link.title}
+        >
+          {link.title}
+        </h3>
+
+        {/* Tags at bottom - Ghost style (no background, light gray border or #) */}
+        {!isExpanded && (link.category || link.collectionId) && (
+          <div className="flex flex-wrap gap-2 mt-auto pt-2 border-t border-gray-100">
+            {link.category && (
+              <span className="text-[10px] text-gray-400 border border-gray-200 rounded-full px-2 py-0.5">
+                #{capitalizeCategoryName(link.category)}
+              </span>
+            )}
+            {link.collectionId && (
+              <span className="text-[10px] text-gray-400 border border-gray-200 rounded-full px-2 py-0.5">
+                #{getCollectionName(link.collectionId)}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Expanded Content */}
+      {/* Expanded Content - Minimal for grid view */}
       {isExpanded && (
-        <div className="px-4 pb-5 sm:pb-4 border-t border-gray-100 animate-in slide-in-from-top-2 duration-200" onClick={(e) => e.stopPropagation()}>
+        <div className="px-3 pb-4 border-t border-gray-100 animate-in slide-in-from-top-2 duration-200" onClick={(e) => e.stopPropagation()}>
+          <div className="pt-4 space-y-4">
+            {isEditing ? (
+              /* ===== EDIT MODE ===== */
+              <>
+                  {/* Form Header */}
+                  <div className="pb-3 border-b border-gray-200">
+                    <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                      <Edit className="w-4 h-4 text-blue-600" strokeWidth={1.5} />
+                      Edit Link
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">Update the link details below</p>
+                  </div>
+
+                  {/* Basic Information Section */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 mb-2 block flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                        Title
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <input 
+                        type="text" 
+                        value={editTitle} 
+                        onChange={(e) => setEditTitle(e.target.value)} 
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all touch-manipulation" 
+                        placeholder="Enter link title"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 mb-2 block flex items-center gap-1.5">
+                        <StickyNote className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                        Notes
+                      </label>
+                      <textarea 
+                        value={editDescription} 
+                        onChange={(e) => setEditDescription(e.target.value)} 
+                        rows={3} 
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all touch-manipulation" 
+                        placeholder="Add your thoughts, key takeaways, or summary..."
+                      />
+                      <p className="text-xs text-gray-500 mt-1.5">Optional: Add notes to help you remember why you saved this link</p>
+                    </div>
+                  </div>
+
+                  {/* Organization Section */}
+                  <div className="pt-4 sm:pt-2 border-t border-gray-100">
+                    <h4 className="text-base sm:text-sm font-semibold text-gray-700 mb-4 sm:mb-3 flex items-center gap-2">
+                      <Folder className="w-5 h-5 sm:w-4 sm:h-4 text-gray-500" strokeWidth={1.5} />
+                      Organization
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-4">
+                      <div>
+                        <label className="text-base sm:text-sm font-medium text-gray-700 mb-2.5 sm:mb-2 block flex items-center gap-2">
+                          <Globe className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-gray-500" strokeWidth={1.5} />
+                          Category
+                        </label>
+                        {!showNewCategoryInput ? (
+                          <select 
+                            value={editCategory} 
+                            onChange={(e) => {
+                              if (e.target.value === '__add_new__') {
+                                setShowNewCategoryInput(true)
+                              } else {
+                                setEditCategory(e.target.value)
+                              }
+                            }} 
+                            className="w-full px-4 py-3.5 sm:py-3 text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all touch-manipulation"
+                          >
+                            <option value="">None</option>
+                            {categories.map(c => <option key={c.id} value={c.name}>{capitalizeCategoryName(c.name)}</option>)}
+                            <option value="__add_new__">+ Create New Category</option>
+                          </select>
+                        ) : (
+                          <div className="space-y-2">
+                            <input 
+                              type="text" 
+                              value={newCategoryName} 
+                              onChange={(e) => setNewCategoryName(autoCapitalizeCategoryInput(e.target.value))} 
+                              className="w-full px-4 py-3.5 sm:py-3 text-base border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all touch-manipulation" 
+                              placeholder="Category name"
+                            />
+                            <div className="flex gap-2">
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  if (newCategoryName.trim()) {
+                                    setEditCategory(newCategoryName.trim())
+                                    setShowNewCategoryInput(false)
+                                    setNewCategoryName('')
+                                  }
+                                }}
+                                className="flex-1 sm:flex-none px-5 py-3 sm:px-4 sm:py-2 text-base sm:text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors touch-manipulation active:bg-blue-100"
+                              >
+                                Add
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowNewCategoryInput(false)
+                                  setNewCategoryName('')
+                                }}
+                                className="flex-1 sm:flex-none px-5 py-3 sm:px-4 sm:py-2 text-base sm:text-sm font-medium text-gray-600 hover:text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors touch-manipulation active:bg-gray-100"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="text-base sm:text-sm font-medium text-gray-700 mb-2.5 sm:mb-2 block flex items-center gap-2">
+                          <Folder className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-gray-500" strokeWidth={1.5} />
+                          Project
+                        </label>
+                        <select 
+                          value={editCollectionId} 
+                          onChange={(e) => setEditCollectionId(e.target.value)} 
+                          className="w-full px-4 py-3.5 sm:py-3 text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all touch-manipulation"
+                        >
+                          <option value="">None</option>
+                          {collections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                        {collections.length === 0 && (
+                          <p className="text-sm sm:text-xs text-gray-500 mt-2 sm:mt-1.5">No projects yet. Create one to organize your links.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tags Section */}
+                  <div className="pt-2 border-t border-gray-100">
+                    <label className="text-sm font-semibold text-gray-700 mb-2 block flex items-center gap-1.5">
+                      <Tag className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                      Tags
+                    </label>
+                    {/* Current Tags Display */}
+                    {currentTags.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {currentTags.map((tag, i) => (
+                          <span key={i} className="px-2.5 py-1 bg-blue-50 text-blue-700 text-sm rounded-full flex items-center gap-1.5 border border-blue-200">
+                            <Tag className="w-3 h-3" strokeWidth={1.5} />
+                            {tag}
+                            <button 
+                              onClick={() => removeTag(tag)} 
+                              className="ml-1 p-0.5 hover:bg-blue-100 rounded-full transition-colors touch-manipulation"
+                              aria-label={`Remove ${tag} tag`}
+                            >
+                              <X className="w-3.5 h-3.5" strokeWidth={1.5} />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                          <Tag className="w-3.5 h-3.5" strokeWidth={1.5} />
+                          No tags yet. Add tags to organize and find your links easily.
+                        </p>
+                      </div>
+                    )}
+                    <div className="relative">
+                      <div className="flex gap-2">
+                        <div className="flex-1 relative">
+                          <input 
+                            ref={tagInputRef}
+                            type="text" 
+                            value={newTag} 
+                            onChange={(e) => {
+                              setNewTag(e.target.value)
+                              setShowTagSuggestions(true)
+                            }}
+                            onFocus={() => setShowTagSuggestions(true)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                if (tagSuggestions.length > 0) {
+                                  addTag(tagSuggestions[0])
+                                } else {
+                                  addTag()
+                                }
+                              } else if (e.key === 'Escape') {
+                                setShowTagSuggestions(false)
+                              }
+                            }}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all touch-manipulation" 
+                            placeholder="Type to search or add new tag..."
+                          />
+                          {/* Tag Suggestions Dropdown */}
+                          {showTagSuggestions && tagSuggestions.length > 0 && (
+                            <div
+                              ref={tagSuggestionsRef}
+                              className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                            >
+                              {tagSuggestions.map((suggestion) => (
+                                <button
+                                  key={suggestion}
+                                  type="button"
+                                  onClick={() => addTag(suggestion)}
+                                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors first:rounded-t-lg last:rounded-b-lg flex items-center gap-2 touch-manipulation"
+                                >
+                                  <Tag className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                  {suggestion}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {/* Show message when typing new tag */}
+                          {showTagSuggestions && newTag.trim() && tagSuggestions.length === 0 && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm text-gray-500">
+                              Press Enter to add "{newTag.trim()}"
+                            </div>
+                          )}
+                        </div>
+                        <button 
+                          onClick={() => addTag()} 
+                          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg touch-manipulation transition-colors shadow-sm hover:shadow"
+                          aria-label="Add tag"
+                        >
+                          <Plus className="w-4 h-4" strokeWidth={1.5} />
+                        </button>
+                      </div>
+                      {/* Show existing tags as quick-add buttons when input is empty */}
+                      {!newTag.trim() && allTags.length > 0 && currentTags.length < allTags.length && (
+                        <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                          <p className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                            <Tag className="w-3.5 h-3.5" strokeWidth={1.5} />
+                            Quick add existing tags:
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {allTags
+                              .filter(tag => !currentTags.includes(tag))
+                              .slice(0, 12)
+                              .map((tag) => (
+                                <button
+                                  key={tag}
+                                  type="button"
+                                  onClick={() => addTag(tag)}
+                                  className="px-2.5 py-1 text-xs font-medium text-gray-700 bg-white hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-gray-300 rounded-md transition-all shadow-sm hover:shadow touch-manipulation"
+                                >
+                                  + {tag}
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action buttons - full width on mobile */}
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <button 
+                        onClick={saveEdits} 
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-lg touch-manipulation transition-all shadow-md hover:shadow-lg"
+                      >
+                        <Save className="w-4 h-4" strokeWidth={1.5} /> 
+                        Save Changes
+                      </button>
+                      <button 
+                        onClick={cancelEditing} 
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 border border-gray-300 text-sm font-medium rounded-lg touch-manipulation transition-all"
+                      >
+                        <X className="w-4 h-4" strokeWidth={1.5} /> 
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+              </>
+            ) : (
+              /* ===== VIEW MODE ===== */
+              <>
+                {link.description && (
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 text-gray-600 text-sm font-medium mb-2">
+                      <StickyNote className="w-4 h-4" strokeWidth={1.5} />
+                      <span>Notes</span>
+                    </div>
+                    <p className="text-base sm:text-sm text-gray-800 leading-relaxed mb-1">{link.description}</p>
+                    <p className="text-xs text-gray-400">{formatDate(link.createdAt)}</p>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
+                  <p className="text-sm text-gray-600 truncate flex-1">{link.url}</p>
+                  <button 
+                    onClick={copyToClipboard} 
+                    className={`p-2.5 sm:p-2 rounded-lg transition-colors touch-manipulation ${copied ? 'bg-green-100 text-green-600' : 'bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-500 shadow-sm sm:border sm:border-gray-200'}`}
+                  >
+                    <Copy className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} />
+                  </button>
+                  {copied && <span className="text-sm text-green-600 font-medium">Copied!</span>}
+                </div>
+
+                {/* Metadata grid - single column on mobile */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
+                  <div className={`p-3 rounded-lg shadow-sm sm:border sm:border-gray-200 ${contentTypeInfo.color.replace('text-', 'bg-').split(' ')[0]}`}>
+                    <div className={`font-medium mb-0.5 flex items-center gap-1.5 text-sm ${contentTypeInfo.color.split(' ')[1]}`}>
+                      <contentTypeInfo.icon className="w-4 h-4" strokeWidth={1.5} /> Type
+                    </div>
+                    <div className={`text-base sm:text-sm ${contentTypeInfo.color.split(' ')[1]}`}>{contentTypeInfo.label}</div>
+                  </div>
+                  {link.category && (
+                    <div className="p-3 bg-gray-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
+                      <div className="text-gray-600 font-medium mb-0.5 text-sm">Category</div>
+                      <div className="text-gray-800 text-base sm:text-sm">{capitalizeCategoryName(link.category)}</div>
+                    </div>
+                  )}
+                  {link.collectionId && (
+                    <div className="p-3 bg-green-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
+                      <div className="text-green-600 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><Folder className="w-4 h-4" strokeWidth={1.5} /> Project</div>
+                      <div className="text-green-800 text-base sm:text-sm">{getCollectionName(link.collectionId)}</div>
+                    </div>
+                  )}
+                  <div className="p-3 bg-gray-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
+                    <div className="text-gray-500 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><Clock className="w-4 h-4" strokeWidth={1.5} /> Added</div>
+                    <div className="text-gray-700 text-base sm:text-sm">{formatFullDate(link.createdAt)}</div>
+                  </div>
+                  <div className="p-3 bg-blue-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
+                    <div className="text-blue-600 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><MousePointer className="w-4 h-4" strokeWidth={1.5} /> Clicks</div>
+                    <div className="text-blue-800 text-base sm:text-sm">{localClickCount}</div>
+                  </div>
+                </div>
+
+                {link.tags && link.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {link.tags.map((tag, i) => (
+                      <span key={i} className="px-3 py-1.5 bg-gray-100 text-gray-600 text-sm rounded-full flex items-center gap-1.5">
+                        <Tag className="w-4 h-4" strokeWidth={1.5} />{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Open Link Button - Full width */}
+                <a 
+                  href={link.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-base sm:text-sm font-medium rounded-lg touch-manipulation shadow-sm mb-4"
+                >
+                  <ExternalLink className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} /> Open Link
+                </a>
+
+                {/* Action buttons - Single flex row on mobile with icons and labels */}
+                <div className="flex flex-row justify-around items-center gap-2 pt-2 sm:flex sm:flex-wrap">
+                  <button 
+                    onClick={() => handleAction('toggleFavorite')} 
+                    className={`flex flex-col items-center justify-center gap-1 p-3 sm:p-2 rounded-lg transition-colors touch-manipulation min-w-[60px] ${link.isFavorite ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 active:bg-gray-200'}`}
+                  >
+                    <Star className={`w-5 h-5 sm:w-4 sm:h-4 ${link.isFavorite ? 'fill-current' : ''}`} strokeWidth={1.5} />
+                    <span className="text-xs font-medium">{link.isFavorite ? 'Favorited' : 'Favorite'}</span>
+                  </button>
+                  <button 
+                    onClick={() => handleAction('toggleArchive')} 
+                    className={`flex flex-col items-center justify-center gap-1 p-3 sm:p-2 rounded-lg transition-colors touch-manipulation min-w-[60px] ${link.isArchived ? 'bg-green-50 text-green-600 hover:bg-green-100 active:bg-green-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 active:bg-gray-200'}`}
+                    title={link.isArchived ? 'Unarchive this link' : 'Archive this link'}
+                  >
+                    <Archive className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} />
+                    <span className="text-xs font-medium">{link.isArchived ? 'Unarchive' : 'Archive'}</span>
+                  </button>
+                  <button 
+                    onClick={startEditing} 
+                    className="flex flex-col items-center justify-center gap-1 p-3 sm:p-2 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-700 rounded-lg touch-manipulation min-w-[60px]"
+                  >
+                    <Edit className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} />
+                    <span className="text-xs font-medium">Edit</span>
+                  </button>
+                  <button 
+                    onClick={() => handleAction('delete')} 
+                    className="flex flex-col items-center justify-center gap-1 p-3 sm:p-2 bg-red-50 hover:bg-red-100 active:bg-red-200 text-red-600 rounded-lg touch-manipulation min-w-[60px]"
+                  >
+                    <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} />
+                    <span className="text-xs font-medium">Delete</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Expanded Content - Minimal for grid view */}
+      {isExpanded && (
+        <div className="px-3 pb-4 border-t border-gray-100 animate-in slide-in-from-top-2 duration-200" onClick={(e) => e.stopPropagation()}>
           <div className="pt-5 sm:pt-4 space-y-5 sm:space-y-4">
             {isEditing ? (
               /* ===== EDIT MODE ===== */
@@ -1379,49 +1730,53 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               /* ===== VIEW MODE ===== */
               <>
                 {link.description && (
-                  <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
-                    <div className="flex items-center gap-2 text-amber-700 text-sm font-medium mb-1"><StickyNote className="w-4 h-4" /> Notes</div>
-                    <p className="text-base sm:text-sm text-gray-700 leading-relaxed">{link.description}</p>
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 text-gray-600 text-sm font-medium mb-2">
+                      <StickyNote className="w-4 h-4" strokeWidth={1.5} />
+                      <span>Notes</span>
+                    </div>
+                    <p className="text-base sm:text-sm text-gray-800 leading-relaxed mb-1">{link.description}</p>
+                    <p className="text-xs text-gray-400">{formatDate(link.createdAt)}</p>
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
                   <p className="text-sm text-gray-600 truncate flex-1">{link.url}</p>
                   <button 
                     onClick={copyToClipboard} 
-                    className={`p-2.5 sm:p-2 rounded-lg transition-colors touch-manipulation ${copied ? 'bg-green-100 text-green-600' : 'bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-500 border border-gray-200'}`}
+                    className={`p-2.5 sm:p-2 rounded-lg transition-colors touch-manipulation ${copied ? 'bg-green-100 text-green-600' : 'bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-500 shadow-sm sm:border sm:border-gray-200'}`}
                   >
-                    <Copy className="w-5 h-5 sm:w-4 sm:h-4" />
+                    <Copy className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} />
                   </button>
                   {copied && <span className="text-sm text-green-600 font-medium">Copied!</span>}
                 </div>
 
                 {/* Metadata grid - single column on mobile */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
-                  <div className={`p-3 rounded-lg ${contentTypeInfo.color.replace('text-', 'bg-').split(' ')[0]}`}>
+                  <div className={`p-3 rounded-lg shadow-sm sm:border sm:border-gray-200 ${contentTypeInfo.color.replace('text-', 'bg-').split(' ')[0]}`}>
                     <div className={`font-medium mb-0.5 flex items-center gap-1.5 text-sm ${contentTypeInfo.color.split(' ')[1]}`}>
-                      <contentTypeInfo.icon className="w-4 h-4" /> Type
+                      <contentTypeInfo.icon className="w-4 h-4" strokeWidth={1.5} /> Type
                     </div>
                     <div className={`text-base sm:text-sm ${contentTypeInfo.color.split(' ')[1]}`}>{contentTypeInfo.label}</div>
                   </div>
                   {link.category && (
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-gray-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
                       <div className="text-gray-600 font-medium mb-0.5 text-sm">Category</div>
                       <div className="text-gray-800 text-base sm:text-sm">{capitalizeCategoryName(link.category)}</div>
                     </div>
                   )}
                   {link.collectionId && (
-                    <div className="p-3 bg-green-50 rounded-lg">
-                      <div className="text-green-600 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><Folder className="w-4 h-4" /> Project</div>
+                    <div className="p-3 bg-green-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
+                      <div className="text-green-600 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><Folder className="w-4 h-4" strokeWidth={1.5} /> Project</div>
                       <div className="text-green-800 text-base sm:text-sm">{getCollectionName(link.collectionId)}</div>
                     </div>
                   )}
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <div className="text-gray-500 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><Clock className="w-4 h-4" /> Added</div>
+                  <div className="p-3 bg-gray-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
+                    <div className="text-gray-500 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><Clock className="w-4 h-4" strokeWidth={1.5} /> Added</div>
                     <div className="text-gray-700 text-base sm:text-sm">{formatFullDate(link.createdAt)}</div>
                   </div>
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <div className="text-blue-600 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><MousePointer className="w-4 h-4" /> Clicks</div>
+                  <div className="p-3 bg-blue-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
+                    <div className="text-blue-600 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><MousePointer className="w-4 h-4" strokeWidth={1.5} /> Clicks</div>
                     <div className="text-blue-800 text-base sm:text-sm">{localClickCount}</div>
                   </div>
                 </div>
@@ -1430,49 +1785,52 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   <div className="flex flex-wrap gap-2">
                     {link.tags.map((tag, i) => (
                       <span key={i} className="px-3 py-1.5 bg-gray-100 text-gray-600 text-sm rounded-full flex items-center gap-1.5">
-                        <Tag className="w-4 h-4" />{tag}
+                        <Tag className="w-4 h-4" strokeWidth={1.5} />{tag}
                       </span>
                     ))}
                   </div>
                 )}
 
-                {/* Action buttons - stacked on mobile */}
-                <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 pt-2">
-                  <a 
-                    href={link.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-base sm:text-sm font-medium rounded-lg col-span-2 touch-manipulation"
-                  >
-                    <ExternalLink className="w-5 h-5 sm:w-4 sm:h-4" /> Open Link
-                  </a>
+                {/* Open Link Button - Full width */}
+                <a 
+                  href={link.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-base sm:text-sm font-medium rounded-lg touch-manipulation shadow-sm mb-4"
+                >
+                  <ExternalLink className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} /> Open Link
+                </a>
+
+                {/* Action buttons - Single flex row on mobile with icons and labels */}
+                <div className="flex flex-row justify-around items-center gap-2 pt-2 sm:flex sm:flex-wrap">
                   <button 
                     onClick={() => handleAction('toggleFavorite')} 
-                    className={`flex items-center justify-center gap-2 p-3 sm:p-2 rounded-lg transition-colors touch-manipulation ${link.isFavorite ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300'}`}
+                    className={`flex flex-col items-center justify-center gap-1 p-3 sm:p-2 rounded-lg transition-colors touch-manipulation min-w-[60px] ${link.isFavorite ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 active:bg-gray-200'}`}
                   >
-                    <Star className={`w-5 h-5 sm:w-4 sm:h-4 ${link.isFavorite ? 'fill-current' : ''}`} />
-                    <span className="sm:hidden">{link.isFavorite ? 'Favorited' : 'Favorite'}</span>
+                    <Star className={`w-5 h-5 sm:w-4 sm:h-4 ${link.isFavorite ? 'fill-current' : ''}`} strokeWidth={1.5} />
+                    <span className="text-xs font-medium">{link.isFavorite ? 'Favorited' : 'Favorite'}</span>
                   </button>
                   <button 
                     onClick={() => handleAction('toggleArchive')} 
-                    className={`flex items-center justify-center gap-2 p-3 sm:p-2 rounded-lg transition-colors touch-manipulation ${link.isArchived ? 'bg-green-100 text-green-600 hover:bg-green-200 active:bg-green-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300'}`}
+                    className={`flex flex-col items-center justify-center gap-1 p-3 sm:p-2 rounded-lg transition-colors touch-manipulation min-w-[60px] ${link.isArchived ? 'bg-green-50 text-green-600 hover:bg-green-100 active:bg-green-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 active:bg-gray-200'}`}
                     title={link.isArchived ? 'Unarchive this link' : 'Archive this link'}
                   >
-                    <Archive className="w-5 h-5 sm:w-4 sm:h-4" />
-                    <span className="sm:hidden">{link.isArchived ? 'Unarchive' : 'Archive'}</span>
+                    <Archive className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} />
+                    <span className="text-xs font-medium">{link.isArchived ? 'Unarchive' : 'Archive'}</span>
                   </button>
                   <button 
                     onClick={startEditing} 
-                    className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 text-base sm:text-sm font-medium rounded-lg touch-manipulation"
+                    className="flex flex-col items-center justify-center gap-1 p-3 sm:p-2 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-700 rounded-lg touch-manipulation min-w-[60px]"
                   >
-                    <Edit className="w-5 h-5 sm:w-4 sm:h-4" /> Edit
+                    <Edit className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} />
+                    <span className="text-xs font-medium">Edit</span>
                   </button>
                   <button 
                     onClick={() => handleAction('delete')} 
-                    className="flex items-center justify-center gap-2 p-3 sm:p-2 bg-gray-100 hover:bg-red-50 active:bg-red-100 text-gray-600 hover:text-red-600 rounded-lg touch-manipulation"
+                    className="flex flex-col items-center justify-center gap-1 p-3 sm:p-2 bg-red-50 hover:bg-red-100 active:bg-red-200 text-red-600 rounded-lg touch-manipulation min-w-[60px]"
                   >
-                    <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
-                    <span className="sm:hidden">Delete</span>
+                    <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} />
+                    <span className="text-xs font-medium">Delete</span>
                   </button>
                 </div>
               </>

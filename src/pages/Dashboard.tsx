@@ -54,7 +54,7 @@ export const Dashboard: React.FC = () => {
   const { getLinks, isAuthenticated, makeRequest } = backendApi
   const toast = useToast()
   const { computeCategories, setCategories } = useCategories()
-  const { openSidebar } = useSidebar()
+  const { openSidebar, isSidebarOpen } = useSidebar()
   // Use SWR stats hook to ensure stats are fetched and cached
   // This ensures mutate() calls will trigger updates
   const { stats: userStats, mutate: mutateStats } = useUserStats()
@@ -1467,44 +1467,39 @@ export const Dashboard: React.FC = () => {
           transition={{ duration: animationConfig.duration, ease: "easeOut" }}
           className="mb-4 sm:mb-5 md:mb-6"
         >
-          {/* Title based on current view */}
-          <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3 flex-wrap">
-            <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-2.5 md:gap-3">
-              <div className="p-1.5 sm:p-2 md:p-2.5 rounded-lg sm:rounded-xl md:rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/20">
-                <Archive className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white flex-shrink-0" />
-              </div>
-              <span className="truncate bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                {currentCategoryName 
-                  ? currentCategoryName
-                  : selectedCollectionId 
-                    ? collections.find(c => c.id === selectedCollectionId)?.name || 'Collection'
-                    : activeFilterId === 'favorites'
-                      ? 'Favorites'
-                      : activeFilterId === 'archived'
-                        ? 'Archived'
-                        : 'All Links'}
-              </span>
+          {/* Title - Simplified, clean header */}
+          <div>
+            <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">
+              {currentCategoryName 
+                ? currentCategoryName
+                : selectedCollectionId 
+                  ? collections.find(c => c.id === selectedCollectionId)?.name || 'Collection'
+                  : activeFilterId === 'favorites'
+                    ? 'Favorites'
+                    : activeFilterId === 'archived'
+                      ? 'Archived'
+                      : 'All Links'}
             </h2>
+            
+            {/* Stats - Small gray text directly under title */}
+            {filteredLinks.length > 0 && (() => {
+              const uniqueCategories = new Set(filteredLinks.map(l => l.category).filter(Boolean))
+              const favCount = filteredLinks.filter(l => l.isFavorite && !l.isArchived).length
+              return (
+                <div className="mt-1 text-xs text-gray-500">
+                  <span>{filteredLinks.length} {filteredLinks.length === 1 ? 'link' : 'links'}</span>
+                  <span className="mx-1">•</span>
+                  <span>{uniqueCategories.size} {uniqueCategories.size === 1 ? 'category' : 'categories'}</span>
+                  {favCount > 0 && (
+                    <>
+                      <span className="mx-1">•</span>
+                      <span>{favCount} {favCount === 1 ? 'favorite' : 'favorites'}</span>
+                    </>
+                  )}
+                </div>
+              )
+            })()}
           </div>
-          
-          {/* Stats Row - Consolidated below title with subtle gray styling */}
-          {filteredLinks.length > 0 && (() => {
-            const uniqueCategories = new Set(filteredLinks.map(l => l.category).filter(Boolean))
-            const favCount = filteredLinks.filter(l => l.isFavorite && !l.isArchived).length
-            return (
-              <div className="mt-2 sm:mt-3 flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500">
-                <span className="font-medium text-gray-600">{filteredLinks.length} {filteredLinks.length === 1 ? 'link' : 'links'}</span>
-                <span className="text-gray-400">·</span>
-                <span className="font-medium text-gray-600">{uniqueCategories.size} {uniqueCategories.size === 1 ? 'category' : 'categories'}</span>
-                {favCount > 0 && (
-                  <>
-                    <span className="text-gray-400">·</span>
-                    <span className="font-medium text-gray-600">{favCount} {favCount === 1 ? 'favorite' : 'favorites'}</span>
-                  </>
-                )}
-              </div>
-            )
-          })()}
         </motion.div>
 
         {/* ✅ SEARCH BAR: Full-width with modern styling */}
@@ -1515,8 +1510,8 @@ export const Dashboard: React.FC = () => {
           transition={{ delay: shouldAnimate ? 0.05 : 0, duration: animationConfig.duration, ease: "easeOut" }}
           className="relative z-20 mb-3 sm:mb-4 md:mb-6"
         >
-          {/* Search Bar Row - Full width with bg-gray-50 on mobile */}
-          <div className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 md:gap-4 ${isMobile ? 'bg-gray-50 rounded-xl p-3' : 'bg-white/98 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg shadow-gray-900/5 border border-gray-200/80 p-3 sm:p-4 md:p-5'}`}>
+          {/* Search Bar Row - Simplified container */}
+          <div className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 md:gap-4 ${isMobile ? '' : 'bg-white/98 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg shadow-gray-900/5 border border-gray-200/80 p-3 sm:p-4 md:p-5'}`}>
             {/* Left: Search with integrated Filter */}
             <div className="flex-1 min-w-0 relative">
               <div className="relative flex items-center">
@@ -2120,7 +2115,7 @@ export const Dashboard: React.FC = () => {
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            className="flex items-center gap-3 mb-4 sm:mb-5 pb-3 sm:pb-4 border-b border-gray-200/60"
+                            className="flex items-center gap-3 mb-6 sm:mb-5 pb-3 sm:pb-4 border-b border-gray-200/60"
                           >
                             <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                               <div className="w-1.5 h-8 sm:h-10 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-600 rounded-full shadow-sm shadow-blue-500/30"></div>
@@ -2135,7 +2130,7 @@ export const Dashboard: React.FC = () => {
 
                           {/* Links for this category - enhanced spacing with more breathing room */}
                           <div className={viewMode === 'grid' 
-                            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-5 md:gap-6' 
+                            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-5 md:gap-6 pb-24' 
                             : 'flex flex-col gap-5 sm:gap-4'
                           }>
                             {categoryLinks.map((link, index) => (
@@ -2214,77 +2209,86 @@ export const Dashboard: React.FC = () => {
       />
 
       {/* Bottom Navigation Bar - Mobile Only */}
-      {isMobile && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg flex md:hidden">
-          <div className="flex items-center justify-around w-full h-16">
-            {/* Home Button */}
-            <button
-              onClick={() => {
-                navigate('/')
-                setSearchQuery('')
-                setActiveFilterId(null)
-                setSelectedCollectionId(null)
-                setCurrentCategoryName(null)
-                setFilters({
-                  category: '',
-                  dateRange: 'all_time',
-                  tags: [],
-                  contentType: ''
-                })
-                // Scroll to top of page
-                window.scrollTo({ top: 0, behavior: 'smooth' })
-              }}
-              className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50 transition-colors"
-              aria-label="Home"
-            >
-              <Home className="w-6 h-6 text-gray-600" />
-              <span className="text-xs text-gray-600 font-medium">Home</span>
-            </button>
+      {isMobile && (() => {
+        const isHomeActive = location.pathname === '/' || location.pathname === '/main' || location.pathname === '/dashboard'
+        const isSearchActive = false // Search is always available, not a route
+        const isFoldersActive = false // Folders opens sidebar, not a route
+        
+        return (
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md flex md:hidden">
+            <div className="flex items-center justify-around w-full h-16">
+              {/* Home Button */}
+              <button
+                onClick={() => {
+                  navigate('/')
+                  setSearchQuery('')
+                  setActiveFilterId(null)
+                  setSelectedCollectionId(null)
+                  setCurrentCategoryName(null)
+                  setFilters({
+                    category: '',
+                    dateRange: 'all_time',
+                    tags: [],
+                    contentType: ''
+                  })
+                  // Scroll to top of page
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50/50 transition-colors"
+                aria-label="Home"
+              >
+                <Home className={`w-6 h-6 ${isHomeActive ? 'text-blue-600' : 'text-gray-600'}`} strokeWidth={1.5} />
+                <span className={`text-xs font-medium ${isHomeActive ? 'text-blue-600' : 'text-gray-600'}`}>Home</span>
+                {isHomeActive && <div className="w-0.5 h-0.5 bg-blue-600 rounded-full mt-1" />}
+              </button>
 
-            {/* Search Button */}
-            <button
-              onClick={() => {
-                // Focus the search input
-                const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement
-                searchInput?.focus()
-              }}
-              className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50 transition-colors"
-              aria-label="Search"
-            >
-              <Search className="w-6 h-6 text-gray-600" />
-              <span className="text-xs text-gray-600 font-medium">Search</span>
-            </button>
+              {/* Search Button */}
+              <button
+                onClick={() => {
+                  // Focus the search input
+                  const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement
+                  searchInput?.focus()
+                }}
+                className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50/50 transition-colors"
+                aria-label="Search"
+              >
+                <Search className={`w-6 h-6 ${isSearchActive ? 'text-blue-600' : 'text-gray-600'}`} strokeWidth={1.5} />
+                <span className={`text-xs font-medium ${isSearchActive ? 'text-blue-600' : 'text-gray-600'}`}>Search</span>
+                {isSearchActive && <div className="w-0.5 h-0.5 bg-blue-600 rounded-full mt-1" />}
+              </button>
 
-            {/* Folders Button */}
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                try {
-                  openSidebar()
-                } catch (error) {
-                  console.error('Error opening sidebar:', error)
-                }
-              }}
-              className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50 transition-colors"
-              aria-label="Folders"
-              type="button"
-            >
-              <Folder className="w-6 h-6 text-gray-600" />
-              <span className="text-xs text-gray-600 font-medium">Folders</span>
-            </button>
+              {/* Folders Button */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  try {
+                    openSidebar()
+                  } catch (error) {
+                    console.error('Error opening sidebar:', error)
+                  }
+                }}
+                className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50/50 transition-colors"
+                aria-label="Folders"
+                type="button"
+              >
+                <Folder className={`w-6 h-6 ${isFoldersActive ? 'text-blue-600' : 'text-gray-600'}`} strokeWidth={1.5} />
+                <span className={`text-xs font-medium ${isFoldersActive ? 'text-blue-600' : 'text-gray-600'}`}>Folders</span>
+                {isFoldersActive && <div className="w-0.5 h-0.5 bg-blue-600 rounded-full mt-1" />}
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
-      {/* Floating Action Button - Mobile Only */}
-      {isMobile && (
+      {/* Floating Action Button - Mobile Only with Glassmorphism - Hidden when sidebar or link details are open */}
+      {isMobile && !editingLink && !isSidebarOpen && (
         <button
           onClick={() => setShowAddModal(true)}
-          className="fixed bottom-20 right-4 z-50 w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full shadow-lg shadow-blue-500/40 hover:shadow-xl hover:shadow-blue-500/50 active:scale-95 transition-all duration-200 flex items-center justify-center touch-manipulation md:hidden"
+          className="fixed bottom-20 right-4 z-[60] w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 backdrop-blur-md text-white rounded-full shadow-2xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 active:scale-95 transition-all duration-200 flex items-center justify-center touch-manipulation md:hidden"
           aria-label="Add new link"
         >
-          <Plus className="w-6 h-6" />
+          <Plus className="w-6 h-6" strokeWidth={2} />
         </button>
       )}
 
