@@ -185,7 +185,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="pl-4 pr-12 h-10 sm:h-9 text-base sm:text-sm w-full rounded-full focus:outline-none focus:ring-1 focus:ring-blue-500 bg-gray-100/50 sm:bg-white sm:border sm:border-gray-200 focus:border-blue-500"
+          className="pl-4 pr-16 h-10 sm:h-9 text-base sm:text-sm w-full rounded-full focus:outline-none focus:ring-1 focus:ring-blue-500 bg-gray-100/50 sm:bg-white sm:border sm:border-gray-200 focus:border-blue-500"
         />
         {value && (
           <button
@@ -194,7 +194,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
               setIsOpen(false)
               inputRef.current?.focus()
             }}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm"
+            className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm z-10"
           >
             ✕
           </button>

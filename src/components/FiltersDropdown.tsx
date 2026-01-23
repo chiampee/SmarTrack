@@ -84,7 +84,7 @@ export const FiltersDropdown: React.FC<FiltersDropdownProps> = ({ filters, onFil
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={iconOnly 
-          ? `p-1.5 rounded-md transition-colors hover:bg-gray-100 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation ${
+          ? `p-1.5 rounded-md transition-colors hover:bg-gray-100 h-8 w-8 flex items-center justify-center touch-manipulation ${
               hasActiveFilters ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-gray-600'
             }`
           : `btn btn-secondary flex items-center gap-2 min-h-[44px] touch-manipulation ${

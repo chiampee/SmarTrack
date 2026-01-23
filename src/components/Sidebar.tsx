@@ -204,7 +204,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
       {/* Overlay for mobile - with backdrop blur */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-[40] bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -212,7 +212,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
 
       {/* ✅ MOBILE RESPONSIVE: Sidebar with better mobile sizing - floating navigation bar on desktop */}
       <aside
-        className={`fixed z-50 transform transition-all duration-300 ease-in-out ${
+        className={`fixed z-[60] transform transition-all duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } ${
           // Mobile: full sidebar, Desktop: fixed narrow 64px rail

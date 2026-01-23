@@ -1593,29 +1593,33 @@ export const Dashboard: React.FC = () => {
             {!isMobile && (
               <div className="flex-1 max-w-md mx-auto relative">
                 <div className="relative flex items-center">
-                  <SearchAutocomplete
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    links={links}
-                    placeholder="Search your library..."
-                  />
-                  {/* Filter Button inside Search */}
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20">
-                    <FiltersDropdown
-                      filters={{
-                        category: filters.category,
-                        dateRange: filters.dateRange,
-                        tags: filters.tags,
-                        contentType: filters.contentType,
-                      }}
-                      onFiltersChange={(newFilters) => {
-                        setFilters(prev => ({
-                          ...prev,
-                          ...newFilters
-                        }))
-                      }}
-                      iconOnly={true}
+                  <div className="relative flex-1">
+                    <SearchAutocomplete
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      links={links}
+                      placeholder="Search your library..."
                     />
+                    {/* Filter Button inside Search - properly aligned */}
+                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 flex items-center pointer-events-none">
+                      <div className="pointer-events-auto">
+                        <FiltersDropdown
+                          filters={{
+                            category: filters.category,
+                            dateRange: filters.dateRange,
+                            tags: filters.tags,
+                            contentType: filters.contentType,
+                          }}
+                          onFiltersChange={(newFilters) => {
+                            setFilters(prev => ({
+                              ...prev,
+                              ...newFilters
+                            }))
+                          }}
+                          iconOnly={true}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1625,28 +1629,32 @@ export const Dashboard: React.FC = () => {
             {isMobile && (
               <div className="flex-1 relative">
                 <div className="relative flex items-center">
-                  <SearchAutocomplete
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    links={links}
-                    placeholder="Search links..."
-                  />
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20">
-                    <FiltersDropdown
-                      filters={{
-                        category: filters.category,
-                        dateRange: filters.dateRange,
-                        tags: filters.tags,
-                        contentType: filters.contentType,
-                      }}
-                      onFiltersChange={(newFilters) => {
-                        setFilters(prev => ({
-                          ...prev,
-                          ...newFilters
-                        }))
-                      }}
-                      iconOnly={true}
+                  <div className="relative flex-1">
+                    <SearchAutocomplete
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      links={links}
+                      placeholder="Search links..."
                     />
+                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 flex items-center pointer-events-none">
+                      <div className="pointer-events-auto">
+                        <FiltersDropdown
+                          filters={{
+                            category: filters.category,
+                            dateRange: filters.dateRange,
+                            tags: filters.tags,
+                            contentType: filters.contentType,
+                          }}
+                          onFiltersChange={(newFilters) => {
+                            setFilters(prev => ({
+                              ...prev,
+                              ...newFilters
+                            }))
+                          }}
+                          iconOnly={true}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
