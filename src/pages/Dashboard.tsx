@@ -1483,8 +1483,8 @@ export const Dashboard: React.FC = () => {
                   : activeFilterId === 'favorites'
                     ? 'Favorites'
                     : activeFilterId === 'archived'
-                      ? 'Archived'
-                      : 'All Links'}
+                      ? 'Vault'
+                      : 'My Library'}
             </h2>
             
             {/* Stats - Small gray text directly under title */}
@@ -1493,9 +1493,13 @@ export const Dashboard: React.FC = () => {
               const favCount = filteredLinks.filter(l => l.isFavorite && !l.isArchived).length
               return (
                 <div className="mt-1 text-xs text-gray-400">
-                  <span>{filteredLinks.length} {filteredLinks.length === 1 ? 'link' : 'links'}</span>
-                  <span className="mx-1">•</span>
-                  <span>{uniqueCategories.size} {uniqueCategories.size === 1 ? 'category' : 'categories'}</span>
+                  <span>{filteredLinks.length} {filteredLinks.length === 1 ? 'resource captured' : 'resources captured'}</span>
+                  {uniqueCategories.size > 0 && (
+                    <>
+                      <span className="mx-1">•</span>
+                      <span>{uniqueCategories.size} {uniqueCategories.size === 1 ? 'category' : 'categories'}</span>
+                    </>
+                  )}
                   {favCount > 0 && (
                     <>
                       <span className="mx-1">•</span>
@@ -1588,7 +1592,7 @@ export const Dashboard: React.FC = () => {
                 aria-label="Add new link"
               >
                 <Plus className="w-4 h-4" strokeWidth={2} />
-                <span>Add Link</span>
+                <span>Capture New</span>
               </button>
             )}
           </div>
@@ -1604,7 +1608,7 @@ export const Dashboard: React.FC = () => {
             className="mb-4 sm:mb-5 md:mb-6"
           >
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2">
-              {/* All Links button */}
+              {/* My Library button */}
               <button
                 onClick={() => {
                   setFilters(prev => ({ ...prev, category: '' }))
@@ -1616,7 +1620,7 @@ export const Dashboard: React.FC = () => {
                     : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm'
                 }`}
               >
-                All Links
+                My Library
               </button>
               
               {/* Category badges */}
@@ -1943,7 +1947,7 @@ export const Dashboard: React.FC = () => {
                       </h3>
                       <p className="text-base sm:text-lg text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed">
                         {searchQuery ? (
-                          <>Try different keywords or check your spelling. You can search by title, description, URL, or tags.</>
+                          'Nothing matches your search—try a broader term?'
                         ) : activeFilterId === 'archived' ? (
                           <>Archived links are hidden from your main view. Unarchive them to see them again.</>
                         ) : activeFilterId === 'favorites' ? (
@@ -2404,7 +2408,7 @@ export const Dashboard: React.FC = () => {
                     clearSelection()
                     setShowBulkMoveModal(false)
                     refetchCollections()
-                    toast.success(`Moved ${linkIds.length} link(s) to All Links`)
+                    toast.success(`Moved ${linkIds.length} link(s) to My Library`)
                   } catch (error) {
                     toast.error('Failed to move links. Please try again.')
                   } finally {
@@ -2413,7 +2417,7 @@ export const Dashboard: React.FC = () => {
                 }}
                 className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-blue-300 transition-colors"
               >
-                <div className="font-medium text-gray-900">All Links</div>
+                <div className="font-medium text-gray-900">My Library</div>
                 <div className="text-sm text-gray-500">Remove from projects</div>
               </button>
               {collections.map(collection => (

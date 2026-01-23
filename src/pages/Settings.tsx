@@ -402,9 +402,9 @@ export const Settings: React.FC = () => {
                           <CheckCircle2 className="w-5 h-5 text-green-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-slate-900 mb-1">Extension Installed</h4>
+                          <h4 className="font-semibold text-slate-900 mb-1">SmarTrack is Active</h4>
                           <p className="text-sm text-slate-600">
-                            The SmarTrack extension is installed and active. You can save webpages directly from your browser.
+                            Capture Enabled. You can save webpages directly from your browser.
                           </p>
                         </div>
                       </div>
@@ -440,7 +440,7 @@ export const Settings: React.FC = () => {
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium"
                         >
-                          Manage Auth0 Settings
+                          Security & Login
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                       </div>
@@ -687,7 +687,7 @@ export const Settings: React.FC = () => {
                     <div className="flex items-center justify-between py-3">
                       <div>
                         <p className="font-medium text-slate-900">Compact View</p>
-                        <p className="text-sm text-slate-500">Reduce spacing and padding</p>
+                        <p className="text-sm text-slate-500">Information Density</p>
                       </div>
                       <div className="bg-blue-600 w-12 h-6 rounded-full relative">
                         <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition"></div>

@@ -293,6 +293,23 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     return new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(date))
   }
 
+  const formatRelativeTime = (date: Date | string) => {
+    const now = new Date()
+    const then = new Date(date)
+    const diffMs = now.getTime() - then.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+    
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`
+    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) !== 1 ? 's' : ''} ago`
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) !== 1 ? 's' : ''} ago`
+    return `${Math.floor(diffDays / 365)} year${Math.floor(diffDays / 365) !== 1 ? 's' : ''} ago`
+  }
+
   /**
    * Extract clean domain from URL (handles subdomains correctly)
    * Examples:
@@ -434,7 +451,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         onClick={handleCardClick}
       >
         {/* Main Row - Content First Design for Mobile */}
-        <div className="flex items-center gap-3 sm:gap-3 p-3 sm:p-4 relative">
+        <div className="flex items-center gap-4 sm:gap-5 p-3 sm:p-4 relative">
           {/* Checkbox - Hidden on mobile, shown on desktop hover */}
           <div className="hidden sm:flex items-center flex-shrink-0 pt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <label 
@@ -504,7 +521,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               onClick={(e) => {
                 handleLinkClick(e);
               }}
-              className="font-semibold text-gray-900 hover:text-blue-600 active:text-blue-700 text-[15px] sm:text-sm cursor-pointer w-full mb-1 touch-manipulation line-clamp-2 leading-relaxed"
+              className="font-semibold text-gray-900 hover:text-blue-600 active:text-blue-700 text-[15px] sm:text-sm cursor-pointer w-full mb-1 touch-manipulation line-clamp-1 truncate leading-relaxed"
               title={link.title}
             >
               {link.title}
@@ -533,8 +550,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             </div>
           </div>
 
-          {/* Desktop: Badges */}
-          <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+          {/* Desktop: Badges - Vertically centered */}
+          <div className="hidden sm:flex items-center gap-2 flex-shrink-0 self-center">
             <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1 ${contentTypeInfo.color}`}>
               <contentTypeInfo.icon className="w-3 h-3" />{contentTypeInfo.label}
             </span>
@@ -596,7 +613,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                     <div>
                       <label className="text-sm font-semibold text-gray-700 mb-2 block flex items-center gap-1.5">
                         <StickyNote className="w-4 h-4 text-gray-500" />
-                        Notes
+                        Context
                       </label>
                       <textarea 
                         value={editDescription} 
@@ -605,7 +622,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                         className="w-full px-4 py-3 text-base border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all" 
                         placeholder="Add your thoughts, key takeaways, or summary..."
                       />
-                      <p className="text-xs text-gray-500 mt-1.5">Optional: Add notes to help you remember why you saved this link</p>
+                      <p className="text-xs text-gray-500 mt-1.5">Optional: Add context to help you remember why you saved this link</p>
                     </div>
                   </div>
 
@@ -920,12 +937,12 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-gray-500 mb-3">
                   <div className="flex items-center gap-1">
                     <Clock size={14} strokeWidth={1.5} />
-                    <span>{formatFullDate(link.createdAt)}</span>
+                    <span>Captured {formatRelativeTime(link.createdAt)}</span>
                   </div>
                   <span>•</span>
                   <div className="flex items-center gap-1">
                     <MousePointer size={14} strokeWidth={1.5} />
-                    <span>{localClickCount} {localClickCount === 1 ? 'click' : 'clicks'}</span>
+                    <span>{localClickCount} {localClickCount === 1 ? 'visit' : 'visits'}</span>
                   </div>
                 </div>
 
@@ -936,7 +953,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                     rel="noopener noreferrer" 
                     className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-base font-medium rounded-lg touch-manipulation shadow-sm mb-3"
                   >
-                    <ExternalLink className="w-5 h-5" strokeWidth={1.5} /> Open Link
+                    <ExternalLink className="w-5 h-5" strokeWidth={1.5} /> Visit Site
                   </a>
 
                   {/* Thumb-Friendly Actions - 4 icons with labels */}
@@ -1122,7 +1139,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                     <div>
                       <label className="text-sm font-semibold text-gray-700 mb-2 block flex items-center gap-1.5">
                         <StickyNote className="w-4 h-4 text-gray-500" />
-                        Notes
+                        Context
                       </label>
                       <textarea 
                         value={editDescription} 
@@ -1131,7 +1148,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                         className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all touch-manipulation" 
                         placeholder="Add your thoughts, key takeaways, or summary..."
                       />
-                      <p className="text-xs text-gray-500 mt-1.5">Optional: Add notes to help you remember why you saved this link</p>
+                      <p className="text-xs text-gray-500 mt-1.5">Optional: Add context to help you remember why you saved this link</p>
                     </div>
                   </div>
 
@@ -1444,12 +1461,12 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-gray-500 mb-3">
                   <div className="flex items-center gap-1">
                     <Clock size={14} strokeWidth={1.5} />
-                    <span>{formatFullDate(link.createdAt)}</span>
+                    <span>Captured {formatRelativeTime(link.createdAt)}</span>
                   </div>
                   <span>•</span>
                   <div className="flex items-center gap-1">
                     <MousePointer size={14} strokeWidth={1.5} />
-                    <span>{localClickCount} {localClickCount === 1 ? 'click' : 'clicks'}</span>
+                    <span>{localClickCount} {localClickCount === 1 ? 'visit' : 'visits'}</span>
                   </div>
                 </div>
 

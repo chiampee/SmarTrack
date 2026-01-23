@@ -414,7 +414,7 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
               type="submit"
               className="px-5 py-3 text-base sm:text-sm font-semibold sm:font-medium text-white bg-blue-600 rounded-xl sm:rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-all shadow-lg sm:shadow-sm min-h-[48px] sm:min-h-0 flex-1 sm:flex-initial touch-manipulation"
             >
-              Add Link
+              Capture New
             </button>
           </div>
         </form>

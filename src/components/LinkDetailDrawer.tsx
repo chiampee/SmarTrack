@@ -55,7 +55,7 @@ export const LinkDetailDrawer: React.FC<LinkDetailDrawerProps> = ({ link, isOpen
                 </h3>
               </div>
 
-              {/* Notes */}
+              {/* Context */}
               {link.description && (
                 <div>
                   <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
@@ -64,7 +64,7 @@ export const LinkDetailDrawer: React.FC<LinkDetailDrawerProps> = ({ link, isOpen
                 </div>
               )}
 
-              {/* Open Link Button - Large and prominent */}
+              {/* Visit Site Button - Large and prominent */}
               <div className="pt-4">
                 <a
                   href={link.url}
@@ -73,7 +73,7 @@ export const LinkDetailDrawer: React.FC<LinkDetailDrawerProps> = ({ link, isOpen
                   className="flex items-center justify-center gap-2 w-full px-6 py-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-base font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   <ExternalLink className="w-5 h-5" strokeWidth={2} />
-                  Open Link
+                  Visit Site
                 </a>
               </div>
             </div>
