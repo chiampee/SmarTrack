@@ -77,6 +77,11 @@ export const Dashboard: React.FC = () => {
   const { isMobile, prefersReducedMotion, animationConfig } = useMobileOptimizations()
   const { isExtensionInstalled, extensionVersion } = useExtensionDetection()
 
+  // Fallback detection: Check if user has extension links (indicates they've used extension before)
+  // If they have extension links but extension isn't detected, likely an old extension
+  // Note: source field may not be in TypeScript interface but exists in API response
+  const hasExtensionLinks = links.some(link => (link as any).source === 'extension')
+
   // Show extension install modal for first-time users (desktop only)
   // ONLY show if user has NOT installed the extension AND has no extension links
   // This ensures users who have used the extension before (even if not currently detected) don't see install modal
@@ -118,11 +123,6 @@ export const Dashboard: React.FC = () => {
       type: typeof extensionVersion
     })
   }
-  
-  // Fallback detection: Check if user has extension links (indicates they've used extension before)
-  // If they have extension links but extension isn't detected, likely an old extension
-  // Note: source field may not be in TypeScript interface but exists in API response
-  const hasExtensionLinks = links.some(link => (link as any).source === 'extension')
   
   // Only use likelyHasOldExtension if extension is NOT detected at all
   // If extension is detected (even with null version), don't use this fallback
