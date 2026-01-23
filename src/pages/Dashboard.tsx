@@ -57,7 +57,7 @@ export const Dashboard: React.FC = () => {
   const backendApi = useBackendApi()
   const { getLinks, isAuthenticated, makeRequest } = backendApi
   const toast = useToast()
-  const { computeCategories, setCategories } = useCategories()
+  const { computeCategories, setCategories, categories: contextCategories } = useCategories()
   const { openSidebar, isSidebarOpen } = useSidebar()
   // Use SWR stats hook to ensure stats are fetched and cached
   // This ensures mutate() calls will trigger updates
@@ -781,7 +781,9 @@ export const Dashboard: React.FC = () => {
 
     // Category filter
     if (filters.category) {
-      filtered = filtered.filter(link => link.category === filters.category)
+      filtered = filtered.filter(link => 
+        link.category && link.category.toLowerCase() === filters.category.toLowerCase()
+      )
     }
 
     // Date filter
@@ -1591,6 +1593,59 @@ export const Dashboard: React.FC = () => {
             )}
           </div>
         </motion.div>
+
+        {/* ✅ CATEGORY BAR: Horizontal scrollable category filter */}
+        {!isMobile && contextCategories.length > 0 && (
+          <motion.div
+            initial={shouldAnimate ? "hidden" : "visible"}
+            animate="visible"
+            variants={fadeInUp}
+            transition={{ delay: shouldAnimate ? 0.075 : 0, duration: animationConfig.duration, ease: "easeOut" }}
+            className="mb-4 sm:mb-5 md:mb-6"
+          >
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2">
+              {/* All Links button */}
+              <button
+                onClick={() => {
+                  setFilters(prev => ({ ...prev, category: '' }))
+                  setActiveFilterId(null)
+                }}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                  !filters.category && !activeFilterId
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm'
+                }`}
+              >
+                All Links
+              </button>
+              
+              {/* Category badges */}
+              {contextCategories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => {
+                    setFilters(prev => ({ ...prev, category: category.name }))
+                    setActiveFilterId(null)
+                  }}
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                    filters.category && filters.category.toLowerCase() === category.name.toLowerCase()
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm'
+                  }`}
+                >
+                  {category.name}
+                  {category.linkCount > 0 && (
+                    <span className={`ml-1.5 ${
+                      filters.category && filters.category.toLowerCase() === category.name.toLowerCase() ? 'text-blue-100' : 'text-gray-400'
+                    }`}>
+                      ({category.linkCount})
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         {/* ✅ VIEW CONTROLS: List/Grid toggle */}
         <motion.div
