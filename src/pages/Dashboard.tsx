@@ -14,6 +14,7 @@ import { EditLinkModal } from '../components/EditLinkModal'
 import { CreateCollectionModal } from '../components/CreateCollectionModal'
 import { ExtensionInstallModal } from '../components/ExtensionInstallModal'
 import { FiltersDropdown } from '../components/FiltersDropdown'
+import { LinkDetailDrawer } from '../components/LinkDetailDrawer'
 import { useBackendApi } from '../hooks/useBackendApi'
 import { useBulkOperations } from '../hooks/useBulkOperations'
 import { useToast } from '../components/Toast'
@@ -30,7 +31,7 @@ import { useUserStats } from '../hooks/useUserStats'
 
 export const Dashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [links, setLinks] = useState<Link[]>([])
   const [filteredLinks, setFilteredLinks] = useState<Link[]>([])
   const [loading, setLoading] = useState(false)
@@ -40,6 +41,8 @@ export const Dashboard: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingLink, setEditingLink] = useState<Link | null>(null)
   const [expandedLinkId, setExpandedLinkId] = useState<string | null>(null)
+  const [selectedLink, setSelectedLink] = useState<Link | null>(null)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [showCreateCollectionModal, setShowCreateCollectionModal] = useState(false)
   const [showExtensionInstallModal, setShowExtensionInstallModal] = useState(false)
   const [showBulkMoveModal, setShowBulkMoveModal] = useState(false)
@@ -1384,8 +1387,8 @@ export const Dashboard: React.FC = () => {
   const shouldAnimate = !prefersReducedMotion
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-indigo-50/10 ${isMobile ? 'pb-24' : 'pb-8 sm:pb-6 md:pb-0'}`}>
-      <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6 lg:py-8">
+    <div className={`min-h-screen bg-gray-50 ${isMobile ? 'pb-24' : 'pb-8 sm:pb-6 md:pb-0'}`}>
+      <div>
         
         {/* Extension Install Banner - Removed per user request */}
         {false && !isExtensionInstalled && isAuthenticated && !isMobile && (
@@ -1487,7 +1490,7 @@ export const Dashboard: React.FC = () => {
               const uniqueCategories = new Set(filteredLinks.map(l => l.category).filter(Boolean))
               const favCount = filteredLinks.filter(l => l.isFavorite && !l.isArchived).length
               return (
-                <div className="mt-1 text-xs text-gray-500">
+                <div className="mt-1 text-xs text-gray-400">
                   <span>{filteredLinks.length} {filteredLinks.length === 1 ? 'link' : 'links'}</span>
                   <span className="mx-1">•</span>
                   <span>{uniqueCategories.size} {uniqueCategories.size === 1 ? 'category' : 'categories'}</span>
@@ -1503,7 +1506,7 @@ export const Dashboard: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* ✅ SEARCH BAR: Full-width with modern styling */}
+        {/* ✅ SEARCH BAR: Small centered pill with Add Link in top-right */}
         <motion.div
           initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
@@ -1511,63 +1514,82 @@ export const Dashboard: React.FC = () => {
           transition={{ delay: shouldAnimate ? 0.05 : 0, duration: animationConfig.duration, ease: "easeOut" }}
           className="relative z-20 mb-3 sm:mb-4 md:mb-6"
         >
-          {/* Search Bar Row - Simplified container */}
-          <div className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 md:gap-4 ${isMobile ? '' : 'bg-white/98 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg shadow-gray-900/5 border border-gray-200/80 p-3 sm:p-4 md:p-5'}`}>
-            {/* Left: Search with integrated Filter */}
-            <div className="flex-1 min-w-0 relative">
-              <div className="relative flex items-center">
-                <SearchAutocomplete
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  links={links}
-                  placeholder={isMobile ? "Search links..." : "Search your library..."}
-                />
-                {/* Filter Button inside Search */}
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20">
-                  <FiltersDropdown
-                    filters={{
-                      category: filters.category,
-                      dateRange: filters.dateRange,
-                      tags: filters.tags,
-                      contentType: filters.contentType,
-                    }}
-                    onFiltersChange={(newFilters) => {
-                      setFilters(prev => ({
-                        ...prev,
-                        ...newFilters
-                      }))
-                    }}
-                    iconOnly={true}
+          <div className="flex items-center gap-4">
+            {/* Centered Search Bar - small pill shape */}
+            {!isMobile && (
+              <div className="flex-1 max-w-md mx-auto relative">
+                <div className="relative flex items-center">
+                  <SearchAutocomplete
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    links={links}
+                    placeholder="Search your library..."
                   />
+                  {/* Filter Button inside Search */}
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20">
+                    <FiltersDropdown
+                      filters={{
+                        category: filters.category,
+                        dateRange: filters.dateRange,
+                        tags: filters.tags,
+                        contentType: filters.contentType,
+                      }}
+                      onFiltersChange={(newFilters) => {
+                        setFilters(prev => ({
+                          ...prev,
+                          ...newFilters
+                        }))
+                      }}
+                      iconOnly={true}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-              {/* Right: Action Buttons - New Link, Filter, Export - Hidden on mobile, shown on desktop */}
-              <div className="hidden sm:flex items-center gap-3 sm:gap-3 md:gap-4 flex-shrink-0">
-                {/* New Link Button */}
-                <button 
-                  onClick={() => setShowAddModal(true)}
-                  className="px-3 py-2 sm:px-4 md:px-5 sm:py-2 md:py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 active:from-blue-800 active:via-blue-800 active:to-indigo-800 transition-all duration-200 shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 active:scale-[0.96] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2 h-[36px] sm:h-[38px] md:h-[40px] touch-manipulation whitespace-nowrap"
-                  aria-label="Add new link"
-                >
-                  <Plus className="w-4 h-4 flex-shrink-0" />
-                  <span className="hidden sm:inline">Add Link</span>
-                </button>
-                
-                {/* Export Button */}
-                <button 
-                  onClick={handleExport}
-                  disabled={filteredLinksCount === 0}
-                  className="px-3 py-2 sm:px-4 md:px-5 sm:py-2 md:py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 hover:shadow-sm active:bg-gray-100 active:shadow-sm active:scale-[0.96] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm flex items-center justify-center gap-2 h-[36px] sm:h-[38px] md:h-[40px] touch-manipulation whitespace-nowrap min-w-[fit-content]"
-                  aria-label="Export links"
-                  title={filteredLinksCount === 0 ? 'No links to export' : 'Export filtered links'}
-                >
-                  <Download className="w-4 h-4 flex-shrink-0" />
-                  <span className="hidden sm:inline">Export</span>
-                </button>
+            {/* Mobile Search - Full width */}
+            {isMobile && (
+              <div className="flex-1 relative">
+                <div className="relative flex items-center">
+                  <SearchAutocomplete
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    links={links}
+                    placeholder="Search links..."
+                  />
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20">
+                    <FiltersDropdown
+                      filters={{
+                        category: filters.category,
+                        dateRange: filters.dateRange,
+                        tags: filters.tags,
+                        contentType: filters.contentType,
+                      }}
+                      onFiltersChange={(newFilters) => {
+                        setFilters(prev => ({
+                          ...prev,
+                          ...newFilters
+                        }))
+                      }}
+                      iconOnly={true}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Add Link Button - Top-right corner */}
+            {!isMobile && (
+              <button 
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
+                aria-label="Add new link"
+              >
+                <Plus className="w-4 h-4" strokeWidth={2} />
+                <span>Add Link</span>
+              </button>
+            )}
+          </div>
         </motion.div>
 
         {/* ✅ VIEW CONTROLS: List/Grid toggle */}
@@ -2131,7 +2153,7 @@ export const Dashboard: React.FC = () => {
 
                           {/* Links for this category - enhanced spacing with more breathing room */}
                           <div className={viewMode === 'grid' 
-                            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-5 md:gap-6 pb-24' 
+                            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-24' 
                             : 'flex flex-col gap-5 sm:gap-4'
                           }>
                             {categoryLinks.map((link, index) => (
@@ -2155,8 +2177,14 @@ export const Dashboard: React.FC = () => {
                                   categories={categories}
                                   allTags={allTags}
                                   onCardClick={() => {
-                                    // Track expanded state for FAB hiding
-                                    setEditingLink(link)
+                                    // Open drawer on desktop, expand inline on mobile
+                                    if (!isMobile) {
+                                      setSelectedLink(link)
+                                      setIsDrawerOpen(true)
+                                    } else {
+                                      // Mobile: keep inline expansion
+                                      setEditingLink(link)
+                                    }
                                   }}
                                   onExpandedChange={(expanded) => {
                                     setExpandedLinkId(expanded ? link.id : null)
@@ -2379,6 +2407,19 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Link Detail Drawer - Desktop only */}
+      {!isMobile && (
+        <LinkDetailDrawer
+          link={selectedLink}
+          isOpen={isDrawerOpen}
+          onClose={() => {
+            setIsDrawerOpen(false)
+            setSelectedLink(null)
+          }}
+        />
+      )}
+
     </div>
   )
 }

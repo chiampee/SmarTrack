@@ -427,7 +427,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     return (
       <div 
         data-link-id={link.id}
-        className={`group bg-white rounded-xl transition-all duration-200 cursor-pointer relative touch-manipulation ${
+        className={`group bg-white rounded-2xl transition-all duration-200 cursor-pointer relative touch-manipulation ${
           isSelected ? 'ring-2 ring-blue-500 bg-blue-50/30 shadow-md' : 'shadow-sm hover:shadow-lg hover:scale-[1.02] active:scale-95'
         }`}
         role="article"
@@ -435,8 +435,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       >
         {/* Main Row - Content First Design for Mobile */}
         <div className="flex items-center gap-3 sm:gap-3 p-3 sm:p-4 relative">
-          {/* Checkbox - Hidden on mobile, shown on desktop */}
-          <div className="hidden sm:flex items-center flex-shrink-0 pt-1">
+          {/* Checkbox - Hidden on mobile, shown on desktop hover */}
+          <div className="hidden sm:flex items-center flex-shrink-0 pt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <label 
               className="p-2 -m-2 cursor-pointer touch-manipulation"
               onClick={(e) => {
@@ -467,7 +467,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               <img 
                 src={faviconUrl} 
                 alt="" 
-                className={`w-20 h-20 sm:w-14 sm:h-14 rounded-lg bg-slate-50 sm:border-2 sm:border-slate-200 p-1.5 shadow-sm ${
+                className={`w-20 h-20 sm:w-14 sm:h-14 rounded-lg bg-slate-50 p-1.5 shadow-sm ${
                   link.thumbnail ? 'object-cover' : 'object-contain'
                 }`}
                 referrerPolicy="no-referrer-when-downgrade"
@@ -490,7 +490,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 }}
               />
             ) : (
-              <div className="w-20 h-20 sm:w-14 sm:h-14 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 sm:border-2 sm:border-slate-200 flex items-center justify-center shadow-sm">
+              <div className="w-20 h-20 sm:w-14 sm:h-14 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shadow-sm">
                 <Globe className="w-10 h-10 sm:w-7 sm:h-7 text-slate-400" strokeWidth={1.5} />
               </div>
             )}
@@ -504,7 +504,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               onClick={(e) => {
                 handleLinkClick(e);
               }}
-              className="font-medium text-gray-900 hover:text-blue-600 active:text-blue-700 text-[15px] sm:text-sm cursor-pointer w-full mb-1 touch-manipulation line-clamp-2 leading-relaxed"
+              className="font-semibold text-gray-900 hover:text-blue-600 active:text-blue-700 text-[15px] sm:text-sm cursor-pointer w-full mb-1 touch-manipulation line-clamp-2 leading-relaxed"
               title={link.title}
             >
               {link.title}
@@ -553,7 +553,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
 
           {/* Expand/Collapse - Hidden on mobile, shown on desktop */}
           <button 
-            className="hidden sm:flex flex-shrink-0 p-2 -m-1 rounded-lg hover:bg-gray-100 active:bg-gray-200 touch-manipulation min-h-[44px] min-w-[44px] items-center justify-center"
+            className="hidden sm:flex flex-shrink-0 p-2 -m-1 rounded-lg hover:bg-gray-100 active:bg-gray-200 touch-manipulation min-h-[44px] min-w-[44px] items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
             onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded) }}
           >
             {isExpanded ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4 text-gray-500" strokeWidth={1.5} /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4 text-gray-400" strokeWidth={1.5} />}
@@ -983,7 +983,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   // ============ GRID VIEW - Instagram-inspired Post Style ============
   return (
     <div 
-      className={`group bg-white rounded-xl overflow-hidden cursor-pointer relative touch-manipulation transition-all duration-200 ${
+      className={`group bg-white rounded-2xl overflow-hidden cursor-pointer relative touch-manipulation transition-all duration-200 ${
         isSelected ? 'ring-2 ring-blue-500' : 'shadow-sm hover:shadow-md'
       } active:scale-95`}
       role="article"
@@ -991,11 +991,11 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     >
       {/* Edge-to-edge image with rounded top corners */}
       {link.thumbnail && link.thumbnail.startsWith('http') ? (
-        <div className="aspect-video w-full overflow-hidden bg-gray-100">
+        <div className="aspect-video w-full overflow-hidden bg-gray-100 relative">
           <img 
             src={link.thumbnail} 
             alt="Post thumbnail" 
-            className="w-full h-full object-cover rounded-t-xl transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-full object-cover rounded-t-2xl transition-transform duration-300 group-hover:scale-105"
             referrerPolicy="no-referrer-when-downgrade"
             loading="lazy"
             onError={(e) => {
@@ -1006,10 +1006,39 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               console.debug('[LinkCard] Thumbnail loaded successfully:', link.thumbnail);
             }}
           />
+          {/* Hover Overlay with Quick Actions - Grid view only */}
+          {viewMode === 'grid' && (
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-t-2xl flex items-start justify-between p-3">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleLinkClick(e)
+                }}
+                className="p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all hover:scale-110"
+                aria-label="Quick open link"
+              >
+                <ExternalLink className="w-4 h-4 text-gray-900" strokeWidth={2} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleAction('toggleFavorite')
+                }}
+                className={`p-2 rounded-full shadow-lg transition-all hover:scale-110 ${
+                  link.isFavorite 
+                    ? 'bg-amber-500/90 hover:bg-amber-500' 
+                    : 'bg-white/90 hover:bg-white'
+                }`}
+                aria-label={link.isFavorite ? 'Unfavorite' : 'Favorite'}
+              >
+                <Star className={`w-4 h-4 ${link.isFavorite ? 'fill-white text-white' : 'text-gray-900'}`} strokeWidth={2} />
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         // Fallback: Show aspect-video placeholder if no thumbnail
-        <div className="aspect-video w-full bg-gray-100 rounded-t-xl flex items-center justify-center">
+        <div className="aspect-video w-full bg-gray-100 rounded-t-2xl flex items-center justify-center">
           {faviconUrl && !faviconError ? (
             <img 
               src={faviconUrl} 
@@ -1050,7 +1079,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
           onClick={(e) => {
             handleLinkClick(e);
           }}
-          className="font-medium text-gray-900 text-sm line-clamp-2 mb-3 leading-relaxed cursor-pointer touch-manipulation min-h-[2.5rem]"
+          className="font-semibold text-gray-900 text-sm line-clamp-2 mb-3 leading-relaxed cursor-pointer touch-manipulation min-h-[2.5rem]"
           title={link.title}
         >
           {link.title}
