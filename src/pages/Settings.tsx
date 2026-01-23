@@ -222,25 +222,25 @@ export const Settings: React.FC = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 pb-4 sm:pb-0">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-1 sm:pt-2 pb-3 sm:pb-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 pb-6 sm:pb-0">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-4 sm:pb-8">
         {/* Header */}
-        <div className="mb-3 sm:mb-5">
+        <div className="mb-4 sm:mb-6">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-2 transition-colors group"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3 sm:mb-4 transition-colors group touch-manipulation active:scale-[0.98]"
           >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-medium">Back to Dashboard</span>
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" strokeWidth={2} />
+            <span className="text-sm font-semibold">Back to Dashboard</span>
           </button>
           
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <SettingsIcon className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blue-100 rounded-2xl flex items-center justify-center shadow-sm">
+              <SettingsIcon className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600" strokeWidth={1.5} />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Settings</h1>
-              <p className="text-sm sm:text-base text-slate-600 mt-0.5">Manage your account settings and preferences</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1 leading-relaxed">Manage your account settings and preferences</p>
             </div>
           </div>
         </div>
@@ -468,52 +468,53 @@ export const Settings: React.FC = () => {
                     </button>
                     
                     {/* Delete All Links */}
-                    <div className="pt-4 border-t border-slate-200">
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Trash2 className="w-5 h-5 text-slate-600" />
+                    <div className="pt-4 border-t border-gray-100">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Trash2 className="w-6 h-6 text-gray-600" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-slate-900 mb-1">Permanently Delete All Links</h4>
-                          <p className="text-sm text-slate-600 mb-4">
+                          <h4 className="font-semibold text-gray-900 mb-1.5">Clear My Library</h4>
+                          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Danger Zone</p>
+                          <p className="text-sm text-gray-600 mb-4 leading-relaxed">
                             This will permanently delete all your saved links from the database. This action cannot be undone.
                           </p>
                           
                           {!showDeleteConfirm ? (
                             <button
                               onClick={() => setShowDeleteConfirm(true)}
-                              className="px-5 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium flex items-center gap-2"
+                              className="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 active:scale-[0.98] transition-all font-semibold flex items-center gap-2 shadow-sm touch-manipulation"
                             >
-                              <Trash2 className="w-4 h-4" />
-                              Delete All Links
+                              <Trash2 className="w-4 h-4" strokeWidth={2} />
+                              Clear My Library
                             </button>
                           ) : (
-                            <div className="space-y-3">
-                              <p className="text-sm font-medium text-slate-900">
-                                Are you absolutely sure? Type <span className="font-mono bg-slate-100 px-2 py-0.5 rounded">DELETE</span> to confirm.
+                            <div className="space-y-4">
+                              <p className="text-sm font-medium text-gray-900 leading-relaxed">
+                                Are you absolutely sure? Type <span className="font-mono bg-gray-100 px-2 py-1 rounded text-gray-900">DELETE</span> to confirm.
                               </p>
                               <input
                                 type="text"
                                 value={confirmText}
                                 onChange={(e) => setConfirmText(e.target.value)}
                                 placeholder="Type DELETE"
-                                className="input-field w-full border-slate-300 focus:border-slate-500 focus:ring-slate-500"
+                                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all"
                                 autoFocus
                               />
-                              <div className="flex flex-col sm:flex-row gap-2.5">
+                              <div className="flex flex-col sm:flex-row gap-3">
                                 <button
                                   onClick={() => {
                                     setShowDeleteConfirm(false)
                                     setConfirmText('')
                                   }}
-                                  className="flex-1 px-4 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+                                  className="flex-1 px-5 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all font-semibold touch-manipulation"
                                 >
                                   Cancel
                                 </button>
                                 <button
                                   onClick={handleDeleteAll}
                                   disabled={isDeleting || confirmText !== 'DELETE'}
-                                  className="flex-1 px-4 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                  className="flex-1 px-5 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold touch-manipulation"
                                 >
                                   {isDeleting ? 'Deleting...' : 'Confirm Delete'}
                                 </button>
@@ -528,64 +529,64 @@ export const Settings: React.FC = () => {
 
                 {/* Danger Zone */}
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Danger Zone</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Danger Zone</h3>
                   
                   {/* Delete Account */}
-                  <div className="bg-white border-2 border-red-300 rounded-lg p-5">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-red-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <AlertTriangle className="w-5 h-5 text-red-700" />
+                  <div className="bg-white border-2 border-red-300 rounded-2xl shadow-sm p-5 sm:p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-red-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <AlertTriangle className="w-6 h-6 text-red-700" strokeWidth={1.5} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-slate-900 mb-1">Permanently Delete Account</h4>
-                        <p className="text-sm text-slate-600 mb-2">
+                        <h4 className="font-semibold text-gray-900 mb-1.5">Permanently Delete Account</h4>
+                        <p className="text-sm text-gray-600 mb-3 leading-relaxed">
                           This will permanently delete your account and <strong>all associated data</strong> including:
                         </p>
-                        <ul className="text-sm text-slate-600 mb-4 list-disc list-inside space-y-1">
+                        <ul className="text-sm text-gray-600 mb-4 list-disc list-inside space-y-1.5 leading-relaxed">
                           <li>All saved links</li>
                           <li>All collections</li>
                           <li>All user preferences and settings</li>
                           <li>All account data</li>
                         </ul>
-                        <p className="text-sm text-red-600 font-medium mb-4">
+                        <p className="text-sm text-red-600 font-semibold mb-5 leading-relaxed">
                           ⚠️ This action cannot be undone. Your data will be permanently deleted in compliance with GDPR/CCPA Right to Erasure.
                         </p>
                         
                         {!showDeleteAccountConfirm ? (
                           <button
                             onClick={() => setShowDeleteAccountConfirm(true)}
-                            className="px-5 py-2.5 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors font-medium flex items-center gap-2"
+                            className="px-6 py-3 bg-red-700 text-white rounded-xl hover:bg-red-800 active:scale-[0.98] transition-all font-semibold flex items-center gap-2 shadow-sm touch-manipulation"
                           >
-                            <AlertTriangle className="w-4 h-4" />
+                            <AlertTriangle className="w-4 h-4" strokeWidth={2} />
                             Delete Account
                           </button>
                         ) : (
-                          <div className="space-y-3">
-                            <p className="text-sm font-medium text-slate-900">
-                              Are you absolutely sure? Type <span className="font-mono bg-red-100 text-red-700 px-2 py-0.5 rounded">DELETE ACCOUNT</span> to confirm.
+                          <div className="space-y-4">
+                            <p className="text-sm font-medium text-gray-900 leading-relaxed">
+                              Are you absolutely sure? Type <span className="font-mono bg-red-100 text-red-700 px-2 py-1 rounded">DELETE ACCOUNT</span> to confirm.
                             </p>
                             <input
                               type="text"
                               value={accountConfirmText}
                               onChange={(e) => setAccountConfirmText(e.target.value)}
                               placeholder="Type DELETE ACCOUNT"
-                              className="input-field w-full border-red-400 focus:border-red-600 focus:ring-red-600"
+                              className="w-full px-4 py-3 rounded-xl border border-red-400 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
                               autoFocus
                             />
-                            <div className="flex flex-col sm:flex-row gap-2.5">
+                            <div className="flex flex-col sm:flex-row gap-3">
                               <button
                                 onClick={() => {
                                   setShowDeleteAccountConfirm(false)
                                   setAccountConfirmText('')
                                 }}
-                                className="flex-1 px-4 py-2.5 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors font-medium"
+                                className="flex-1 px-5 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all font-semibold touch-manipulation"
                               >
                                 Cancel
                               </button>
                               <button
                                 onClick={handleDeleteAccount}
                                 disabled={isDeletingAccount || accountConfirmText !== 'DELETE ACCOUNT'}
-                                className="flex-1 px-4 py-2.5 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                className="flex-1 px-5 py-3 bg-red-700 text-white rounded-xl hover:bg-red-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold touch-manipulation"
                               >
                                 {isDeletingAccount ? 'Deleting Account...' : 'Confirm Account Deletion'}
                               </button>
@@ -607,60 +608,60 @@ export const Settings: React.FC = () => {
                 className="space-y-6"
               >
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Usage & Limits</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Usage & Limits</h3>
                   <UsageStats />
                 </div>
 
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Plan Information</h3>
-                  <div className="bg-white border border-slate-200 rounded-lg p-5 sm:p-6">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-5 gap-3">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Plan Information</h3>
+                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
                       <div>
-                        <h4 className="text-lg sm:text-xl font-bold text-slate-900">Free Plan</h4>
-                        <p className="text-sm text-slate-600 mt-1">
+                        <h4 className="text-lg sm:text-xl font-bold text-gray-900">Free Plan</h4>
+                        <p className="text-sm text-gray-600 mt-1.5">
                           Current subscription tier
                         </p>
                       </div>
-                      <div className="px-3 sm:px-4 py-1.5 bg-blue-600 text-white rounded-full text-xs sm:text-sm font-semibold">
+                      <div className="px-4 py-1.5 bg-blue-600 text-white rounded-full text-xs sm:text-sm font-semibold">
                         Active
                       </div>
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Download className="w-5 h-5 text-blue-600" />
-                          <span className="text-sm font-medium text-slate-700">Links Limit</span>
+                      <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                        <div className="flex items-center gap-2.5 mb-3">
+                          <Download className="w-5 h-5 text-blue-600" strokeWidth={1.5} />
+                          <span className="text-sm font-semibold text-gray-700">Links Limit</span>
                         </div>
-                        <p className="text-2xl font-bold text-slate-900">40</p>
-                        <p className="text-xs text-slate-500 mt-1">links per account</p>
+                        <p className="text-3xl font-bold text-gray-900 mb-1">40</p>
+                        <p className="text-xs text-gray-500">links per account</p>
                       </div>
                       
-                      <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Database className="w-5 h-5 text-blue-600" />
-                          <span className="text-sm font-medium text-slate-700">Storage Limit</span>
+                      <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                        <div className="flex items-center gap-2.5 mb-3">
+                          <Database className="w-5 h-5 text-blue-600" strokeWidth={1.5} />
+                          <span className="text-sm font-semibold text-gray-700">Storage Limit</span>
                         </div>
-                        <p className="text-2xl font-bold text-slate-900">40 KB</p>
-                        <p className="text-xs text-slate-500 mt-1">total storage</p>
+                        <p className="text-3xl font-bold text-gray-900 mb-1">40 KB</p>
+                        <p className="text-xs text-gray-500">total storage</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Export Data</h3>
-                  <div className="bg-white border border-slate-200 rounded-lg p-5">
-                    <p className="text-sm text-slate-600 mb-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Export Data</h3>
+                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
+                    <p className="text-sm text-gray-600 mb-5 leading-relaxed">
                       Download all your research links as a JSON file for backup or migration.
                     </p>
                     <button
-                      className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium"
+                      className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center gap-2 font-semibold shadow-sm touch-manipulation"
                       onClick={() => {
                         toast.info('Export functionality coming soon!')
                       }}
                     >
-                      <Download className="w-4 h-4" />
+                      <Download className="w-4 h-4" strokeWidth={2} />
                       Export All Links
                     </button>
                   </div>
@@ -677,24 +678,24 @@ export const Settings: React.FC = () => {
               >
                 <div>
                   <div className="flex items-center gap-2 mb-4">
-                    <h3 className="text-base sm:text-lg font-semibold text-slate-900">Display Settings</h3>
-                    <span className="px-2 py-0.5 text-xs font-medium text-slate-500 bg-slate-100 rounded-full">Coming Soon</span>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">Display Settings</h3>
+                    <span className="px-2.5 py-1 text-xs font-semibold text-gray-500 bg-gray-100 rounded-full">Coming Soon</span>
                   </div>
-                  <div className="bg-white border border-slate-200 rounded-lg p-5 space-y-4 opacity-60 pointer-events-none">
-                    <div className="flex items-center justify-between py-3 border-b border-slate-200">
+                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6 space-y-4 opacity-60 pointer-events-none">
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
                       <div>
-                        <p className="font-medium text-slate-900">Dark Mode</p>
-                        <p className="text-sm text-slate-500">Switch to dark theme</p>
+                        <p className="font-semibold text-gray-900 mb-0.5">Dark Mode</p>
+                        <p className="text-sm text-gray-500">Switch to dark theme</p>
                       </div>
-                      <div className="bg-slate-300 w-12 h-6 rounded-full relative">
+                      <div className="bg-gray-300 w-12 h-6 rounded-full relative">
                         <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition"></div>
                       </div>
                     </div>
                     
                     <div className="flex items-center justify-between py-3">
                       <div>
-                        <p className="font-medium text-slate-900">Compact View</p>
-                        <p className="text-sm text-slate-500">Information Density</p>
+                        <p className="font-semibold text-gray-900 mb-0.5">Compact View</p>
+                        <p className="text-sm text-gray-500">Information Density</p>
                       </div>
                       <div className="bg-blue-600 w-12 h-6 rounded-full relative">
                         <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition"></div>
@@ -704,23 +705,23 @@ export const Settings: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Default Settings</h3>
-                  <div className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Default Settings</h3>
+                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6 space-y-5">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-900 mb-2.5">
                         Default View Mode
                       </label>
-                      <select className="input-field w-full">
+                      <select className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                         <option>List View</option>
                         <option>Grid View</option>
                       </select>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-900 mb-2.5">
                         Items Per Page
                       </label>
-                      <select className="input-field w-full">
+                      <select className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
                         <option>10</option>
                         <option>25</option>
                         <option>50</option>
@@ -730,9 +731,9 @@ export const Settings: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-2">
-                  <button className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium">
-                    <Save className="w-4 h-4" />
+                <div className="flex justify-end pt-4">
+                  <button className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center gap-2 font-semibold shadow-sm touch-manipulation">
+                    <Save className="w-4 h-4" strokeWidth={2} />
                     Save Preferences
                   </button>
                 </div>
