@@ -251,12 +251,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               </div>
               <div className="flex-1 min-w-0 md:hidden lg:block">
                 <Tooltip content={displayName || user.name || user.email || ''} disabled={!isTabletMode && !((displayName || user.name || user.email || '').length > 15)}>
-                  <p className="text-lg sm:text-base lg:text-base font-bold text-gray-900 truncate whitespace-nowrap">
+                  <p 
+                    className="text-lg sm:text-base lg:text-base font-bold text-gray-900 truncate whitespace-nowrap"
+                    title={displayName || user.name || user.email || ''}
+                  >
                     {displayName || user.name || user.email}
                   </p>
                 </Tooltip>
                 <Tooltip content={user.email || ''} disabled={!isTabletMode && !((user.email || '').length > 20)}>
-                  <p className="text-xs text-gray-400 truncate whitespace-nowrap mt-0.5">
+                  <p 
+                    className="text-xs text-gray-400 truncate whitespace-nowrap mt-0.5"
+                    title={user.email || ''}
+                  >
                     {user.email}
                   </p>
                 </Tooltip>
@@ -302,7 +308,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               )}
               <Home className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/main' || location.pathname === '/' ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
               <Tooltip content="Feed" disabled={!isTabletMode}>
-                <span className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline">Feed</span>
+                <span 
+                  className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline"
+                  title="Feed"
+                >
+                  Feed
+                </span>
               </Tooltip>
             </Link>
 
@@ -330,7 +341,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   )}
                   <Star className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${isActivePath('/?filter=favorites') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
                   <Tooltip content="Favorites" disabled={!isTabletMode}>
-                    <span className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline">Favorites</span>
+                    <span 
+                      className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline"
+                      title="Favorites"
+                    >
+                      Favorites
+                    </span>
                   </Tooltip>
                 </Link>
                 <Link
@@ -351,7 +367,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   )}
                   <Clock className={`w-4 h-4 flex-shrink-0 ${isActivePath('/?filter=recent') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
                   <Tooltip content="Recents" disabled={!isTabletMode}>
-                    <span className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline">Recents</span>
+                    <span 
+                      className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline"
+                      title="Recents"
+                    >
+                      Recents
+                    </span>
                   </Tooltip>
                 </Link>
                 <Link
@@ -372,7 +393,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   )}
                   <Archive className={`w-4 h-4 flex-shrink-0 ${isActivePath('/?filter=archived') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
                   <Tooltip content="Vault" disabled={!isTabletMode}>
-                    <span className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline">Vault</span>
+                    <span 
+                      className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline"
+                      title="Vault"
+                    >
+                      Vault
+                    </span>
                   </Tooltip>
                 </Link>
               </div>
@@ -452,7 +478,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                           >
                             <Library className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${active ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} />
                             <Tooltip content={c.name} disabled={!isTabletMode && !(c.name.length > 15)}>
-                              <span className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium truncate min-w-0 md:hidden lg:inline">
+                              <span 
+                                className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium truncate min-w-0 md:hidden lg:inline"
+                                title={c.name}
+                              >
                                 {c.name}
                               </span>
                             </Tooltip>
@@ -571,7 +600,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                             {getIcon()}
                           </div>
                           <Tooltip content={capitalizeCategoryName(category.name)} disabled={!isTabletMode && !(category.name.length > 15)}>
-                            <span className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium truncate min-w-0 md:hidden lg:inline">
+                            <span 
+                              className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium truncate min-w-0 md:hidden lg:inline"
+                              title={capitalizeCategoryName(category.name)}
+                            >
                               {capitalizeCategoryName(category.name)}
                             </span>
                           </Tooltip>
@@ -631,7 +663,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               )}
               <Settings className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${isSettingsActive ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={1.5} />
               <Tooltip content="Settings" disabled={!isTabletMode}>
-                <span className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline">Settings</span>
+                <span 
+                  className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline"
+                  title="Settings"
+                >
+                  Settings
+                </span>
               </Tooltip>
               </Link>
               
@@ -675,7 +712,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               >
                 <LogOut className="w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0" strokeWidth={1.5} />
                 <Tooltip content="Logout" disabled={!isTabletMode}>
-                  <span className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline">Logout</span>
+                  <span 
+                    className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline"
+                    title="Logout"
+                  >
+                    Logout
+                  </span>
                 </Tooltip>
               </button>
             )}

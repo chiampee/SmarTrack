@@ -27,6 +27,7 @@ import {
   Link2
 } from 'lucide-react'
 import { Link, Collection, Category } from '../types/Link'
+import { Tooltip } from './Tooltip'
 
 interface LinkCardProps {
   link: Link
@@ -518,24 +519,28 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
 
           {/* Title & Domain - Stacked vertically for content-first design */}
           <div className="flex-1 min-w-0">
-            {/* Title - Stacked on top, truncated to 2 full lines */}
-            <h3 
-              data-link-title
-              onClick={(e) => {
-                handleLinkClick(e);
-              }}
-              className="font-semibold text-gray-900 hover:text-blue-600 active:text-blue-700 text-[15px] sm:text-sm cursor-pointer w-full mb-1 touch-manipulation line-clamp-1 truncate leading-relaxed"
-              title={link.title}
-            >
-              {link.title}
-            </h3>
+            {/* Title - Stacked on top, allow up to 2 lines for better readability */}
+            <Tooltip content={link.title} disabled={link.title.length < 50}>
+              <h3 
+                data-link-title
+                onClick={(e) => {
+                  handleLinkClick(e);
+                }}
+                className="font-semibold text-gray-900 hover:text-blue-600 active:text-blue-700 text-[15px] sm:text-sm cursor-pointer w-full mb-1 touch-manipulation line-clamp-2 leading-relaxed"
+                title={link.title}
+              >
+                {link.title}
+              </h3>
+            </Tooltip>
             {/* Domain and Category - Same line with dot separator */}
-            <p className="text-[12px] text-gray-400 truncate">
-              {getCleanDomain(link.url) || link.url}
-              {link.category && (
-                <span> • {capitalizeCategoryName(link.category)}</span>
-              )}
-            </p>
+            <Tooltip content={`${getCleanDomain(link.url) || link.url}${link.category ? ` • ${capitalizeCategoryName(link.category)}` : ''}`} disabled={!link.category && (getCleanDomain(link.url) || link.url).length < 30}>
+              <p className="text-[12px] text-gray-400 truncate" title={`${getCleanDomain(link.url) || link.url}${link.category ? ` • ${capitalizeCategoryName(link.category)}` : ''}`}>
+                {getCleanDomain(link.url) || link.url}
+                {link.category && (
+                  <span> • {capitalizeCategoryName(link.category)}</span>
+                )}
+              </p>
+            </Tooltip>
             
             {/* Icons and metadata row - Hidden on mobile */}
             <div className="hidden sm:flex items-center gap-2 flex-wrap mt-1">
@@ -1094,20 +1099,29 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
           ) : (
             <Globe className="w-4 h-4 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
           )}
-          <span className="text-[10px] text-gray-400 truncate">{getCleanDomain(link.url) || link.url}</span>
+          <Tooltip content={getCleanDomain(link.url) || link.url} disabled={(getCleanDomain(link.url) || link.url).length < 25}>
+            <span 
+              className="text-[10px] text-gray-400 truncate"
+              title={getCleanDomain(link.url) || link.url}
+            >
+              {getCleanDomain(link.url) || link.url}
+            </span>
+          </Tooltip>
         </div>
 
         {/* Title - Deep charcoal, exactly 2 lines, allow card height expansion */}
-        <h3 
-          data-link-title
-          onClick={(e) => {
-            handleLinkClick(e);
-          }}
-          className="font-semibold text-gray-900 text-sm line-clamp-2 mb-3 leading-relaxed cursor-pointer touch-manipulation min-h-[2.5rem]"
-          title={link.title}
-        >
-          {link.title}
-        </h3>
+        <Tooltip content={link.title} disabled={link.title.length < 50}>
+          <h3 
+            data-link-title
+            onClick={(e) => {
+              handleLinkClick(e);
+            }}
+            className="font-semibold text-gray-900 text-sm line-clamp-2 mb-3 leading-relaxed cursor-pointer touch-manipulation min-h-[2.5rem]"
+            title={link.title}
+          >
+            {link.title}
+          </h3>
+        </Tooltip>
         
         {/* Context Preview - Desktop hover only */}
         {link.description && viewMode === 'grid' && (
