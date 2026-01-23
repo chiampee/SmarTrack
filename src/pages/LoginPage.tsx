@@ -1,6 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { 
   Chrome, 
   ScanEye, 
@@ -19,7 +19,6 @@ import { CategorySelectionPreview } from '../components/CategorySelectionPreview
 
 export const LoginPage = () => {
   const { loginWithRedirect } = useAuth0()
-  const navigate = useNavigate()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
   const fadeIn = {
