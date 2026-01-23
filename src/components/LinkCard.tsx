@@ -856,47 +856,18 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                     </div>
                   </div>
                 </>
-              ) : (
-                /* ===== VIEW MODE ===== */
-                <>
-                  {/* Compact Header: Preview Image, Title, and Domain */}
-                  <div className="mb-3">
-                    {/* Reduced height preview image/logo - max 80px */}
-                    {link.thumbnail && link.thumbnail.startsWith('http') ? (
-                      <div className="w-full h-20 overflow-hidden bg-gray-100 rounded-lg mb-2">
-                        <img 
-                          src={link.thumbnail} 
-                          alt="Link preview" 
-                          className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer-when-downgrade"
-                          loading="lazy"
-                        />
-                      </div>
-                    ) : faviconUrl && !faviconError ? (
-                      <div className="w-12 h-12 mx-auto mb-2 flex items-center justify-center">
-                        <img 
-                          src={faviconUrl} 
-                          alt="" 
-                          className="w-full h-full object-contain rounded-lg"
-                          referrerPolicy="no-referrer-when-downgrade"
-                          loading="lazy"
-                          onError={() => setFaviconError(true)}
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-12 h-12 mx-auto mb-2 flex items-center justify-center bg-gray-100 rounded-lg">
-                        <Globe className="w-6 h-6 text-gray-400" strokeWidth={1.5} />
-                      </div>
-                    )}
-                    
-                    {/* Title and Domain - Tight vertical stack */}
-                    <div className="text-center sm:text-left">
-                      <h2 className="text-base font-semibold text-gray-900 leading-tight mb-0.5 break-words">
-                        {link.title}
-                      </h2>
-                      <p className="text-xs text-gray-400">{getCleanDomain(link.url) || link.url}</p>
-                    </div>
+            ) : (
+              /* ===== VIEW MODE ===== */
+              <>
+                {/* Title and Domain - Compact header without image (image already shown in collapsed card) */}
+                <div className="mb-3">
+                  <div className="text-center sm:text-left">
+                    <h2 className="text-base font-semibold text-gray-900 leading-tight mb-0.5 break-words">
+                      {link.title}
+                    </h2>
+                    <p className="text-xs text-gray-400">{getCleanDomain(link.url) || link.url}</p>
                   </div>
+                </div>
 
                   {/* Info-Cluster: Horizontal Metadata Row */}
                   <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-gray-500 mb-3">
@@ -933,6 +904,19 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                       </p>
                     </div>
                   )}
+
+                  {/* Date and Clicks - Single horizontal row */}
+                  <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-gray-500 mb-3">
+                    <div className="flex items-center gap-1">
+                      <Clock size={14} strokeWidth={1.5} />
+                      <span>{formatFullDate(link.createdAt)}</span>
+                    </div>
+                    <span>•</span>
+                    <div className="flex items-center gap-1">
+                      <MousePointer size={14} strokeWidth={1.5} />
+                      <span>{localClickCount} {localClickCount === 1 ? 'click' : 'clicks'}</span>
+                    </div>
+                  </div>
 
                   {/* URL with copy button */}
                   <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg mb-3">
@@ -1372,33 +1356,42 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   {copied && <span className="text-sm text-green-600 font-medium">Copied!</span>}
                 </div>
 
-                {/* Metadata grid - single column on mobile */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
-                  <div className={`p-3 rounded-lg shadow-sm sm:border sm:border-gray-200 ${contentTypeInfo.color.replace('text-', 'bg-').split(' ')[0]}`}>
-                    <div className={`font-medium mb-0.5 flex items-center gap-1.5 text-sm ${contentTypeInfo.color.split(' ')[1]}`}>
-                      <contentTypeInfo.icon className="w-4 h-4" strokeWidth={1.5} /> Type
-                    </div>
-                    <div className={`text-base sm:text-sm ${contentTypeInfo.color.split(' ')[1]}`}>{contentTypeInfo.label}</div>
+                {/* Info-Cluster: Type, Category, Project - Single horizontal row */}
+                <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-gray-500 mb-3">
+                  <div className="flex items-center gap-1">
+                    <contentTypeInfo.icon size={14} strokeWidth={1.5} />
+                    <span>{contentTypeInfo.label}</span>
                   </div>
                   {link.category && (
-                    <div className="p-3 bg-gray-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
-                      <div className="text-gray-600 font-medium mb-0.5 text-sm">Category</div>
-                      <div className="text-gray-800 text-base sm:text-sm">{capitalizeCategoryName(link.category)}</div>
-                    </div>
+                    <>
+                      <span>•</span>
+                      <div className="flex items-center gap-1">
+                        <Tag size={14} strokeWidth={1.5} />
+                        <span>{capitalizeCategoryName(link.category)}</span>
+                      </div>
+                    </>
                   )}
                   {link.collectionId && (
-                    <div className="p-3 bg-green-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
-                      <div className="text-green-600 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><Folder className="w-4 h-4" strokeWidth={1.5} /> Project</div>
-                      <div className="text-green-800 text-base sm:text-sm">{getCollectionName(link.collectionId)}</div>
-                    </div>
+                    <>
+                      <span>•</span>
+                      <div className="flex items-center gap-1">
+                        <Folder size={14} strokeWidth={1.5} />
+                        <span>{getCollectionName(link.collectionId)}</span>
+                      </div>
+                    </>
                   )}
-                  <div className="p-3 bg-gray-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
-                    <div className="text-gray-500 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><Clock className="w-4 h-4" strokeWidth={1.5} /> Added</div>
-                    <div className="text-gray-700 text-base sm:text-sm">{formatFullDate(link.createdAt)}</div>
+                </div>
+
+                {/* Date and Clicks - Single horizontal row */}
+                <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-gray-500 mb-3">
+                  <div className="flex items-center gap-1">
+                    <Clock size={14} strokeWidth={1.5} />
+                    <span>{formatFullDate(link.createdAt)}</span>
                   </div>
-                  <div className="p-3 bg-blue-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
-                    <div className="text-blue-600 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><MousePointer className="w-4 h-4" strokeWidth={1.5} /> Clicks</div>
-                    <div className="text-blue-800 text-base sm:text-sm">{localClickCount}</div>
+                  <span>•</span>
+                  <div className="flex items-center gap-1">
+                    <MousePointer size={14} strokeWidth={1.5} />
+                    <span>{localClickCount} {localClickCount === 1 ? 'click' : 'clicks'}</span>
                   </div>
                 </div>
 
@@ -1757,37 +1750,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             ) : (
               /* ===== VIEW MODE ===== */
               <>
-                {/* Compact Header: Preview Image, Title, and Domain */}
+                {/* Title and Domain - Compact header without image (image already shown in collapsed card) */}
                 <div className="mb-3">
-                  {/* Reduced height preview image/logo - max 80px */}
-                  {link.thumbnail && link.thumbnail.startsWith('http') ? (
-                    <div className="w-full h-20 overflow-hidden bg-gray-100 rounded-lg mb-2">
-                      <img 
-                        src={link.thumbnail} 
-                        alt="Link preview" 
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer-when-downgrade"
-                        loading="lazy"
-                      />
-                    </div>
-                  ) : faviconUrl && !faviconError ? (
-                    <div className="w-12 h-12 mx-auto mb-2 flex items-center justify-center">
-                      <img 
-                        src={faviconUrl} 
-                        alt="" 
-                        className="w-full h-full object-contain rounded-lg"
-                        referrerPolicy="no-referrer-when-downgrade"
-                        loading="lazy"
-                        onError={() => setFaviconError(true)}
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-12 h-12 mx-auto mb-2 flex items-center justify-center bg-gray-100 rounded-lg">
-                      <Globe className="w-6 h-6 text-gray-400" strokeWidth={1.5} />
-                    </div>
-                  )}
-                  
-                  {/* Title and Domain - Tight vertical stack */}
                   <div className="text-center sm:text-left">
                     <h2 className="text-base font-semibold text-gray-900 leading-tight mb-0.5 break-words">
                       {link.title}
