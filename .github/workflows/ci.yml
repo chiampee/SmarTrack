@@ -30,8 +30,7 @@ jobs:
       
       - name: Security Scan - npm audit (Dependency Vulnerabilities)
         run: |
-          npm audit --audit-level=moderate || true
-          # Fail on moderate and higher severity vulnerabilities
+          # Run audit and fail on moderate and higher severity vulnerabilities
           npm audit --audit-level=moderate
       
       - name: Lint
