@@ -2239,7 +2239,7 @@ export const Dashboard: React.FC = () => {
               >
                 <Home className={`w-6 h-6 ${isHomeActive ? 'text-blue-600' : 'text-gray-600'}`} strokeWidth={1.5} />
                 <span className={`text-xs font-medium ${isHomeActive ? 'text-blue-600' : 'text-gray-600'}`}>Home</span>
-                {isHomeActive && <div className="w-0.5 h-0.5 bg-blue-600 rounded-full mt-1" />}
+                {isHomeActive && <div className="w-[3px] h-[3px] bg-blue-600 rounded-full mt-[4px]" />}
               </button>
 
               {/* Search Button */}
@@ -2254,7 +2254,7 @@ export const Dashboard: React.FC = () => {
               >
                 <Search className={`w-6 h-6 ${isSearchActive ? 'text-blue-600' : 'text-gray-600'}`} strokeWidth={1.5} />
                 <span className={`text-xs font-medium ${isSearchActive ? 'text-blue-600' : 'text-gray-600'}`}>Search</span>
-                {isSearchActive && <div className="w-0.5 h-0.5 bg-blue-600 rounded-full mt-1" />}
+                {isSearchActive && <div className="w-[3px] h-[3px] bg-blue-600 rounded-full mt-[4px]" />}
               </button>
 
               {/* Folders Button */}
@@ -2274,7 +2274,7 @@ export const Dashboard: React.FC = () => {
               >
                 <Folder className={`w-6 h-6 ${isFoldersActive ? 'text-blue-600' : 'text-gray-600'}`} strokeWidth={1.5} />
                 <span className={`text-xs font-medium ${isFoldersActive ? 'text-blue-600' : 'text-gray-600'}`}>Folders</span>
-                {isFoldersActive && <div className="w-0.5 h-0.5 bg-blue-600 rounded-full mt-1" />}
+                {isFoldersActive && <div className="w-[3px] h-[3px] bg-blue-600 rounded-full mt-[4px]" />}
               </button>
             </div>
           </div>

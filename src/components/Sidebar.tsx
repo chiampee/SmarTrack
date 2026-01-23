@@ -282,7 +282,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               title={isMiniMode ? 'Main' : undefined}
             >
               {(location.pathname === '/main' || location.pathname === '/') && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
               )}
               <Home className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/main' || location.pathname === '/' ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={1.5} />
               {!isMiniMode && <span className="font-medium text-base sm:text-sm">Main</span>}
@@ -307,7 +307,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   title={isMiniMode ? 'Favorites' : undefined}
                 >
                   {isActivePath('/?filter=favorites') && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
                   )}
                   <Star className="w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0" strokeWidth={1.5} />
                   {!isMiniMode && <span className="font-medium text-base sm:text-sm">Favorites</span>}
@@ -327,7 +327,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   title={isMiniMode ? 'Recent' : undefined}
                 >
                   {isActivePath('/?filter=recent') && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
                   )}
                   <Clock className="w-4 h-4" strokeWidth={1.5} />
                   {!isMiniMode && <span className="font-medium text-base sm:text-sm">Recent (Last 7 days)</span>}
@@ -347,7 +347,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   title={isMiniMode ? 'Archived' : undefined}
                 >
                   {isActivePath('/?filter=archived') && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
                   )}
                   <Archive className="w-4 h-4" strokeWidth={1.5} />
                   {!isMiniMode && <span className="font-medium text-base sm:text-sm">Archived</span>}
@@ -398,7 +398,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                           title={isMiniMode ? `${c.name} (${c.linkCount || 0} links)` : `View collection: ${c.name} (${c.linkCount || 0} links)`}
                         >
                           {active && (
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
                           )}
                           <Link 
                             to={to} 
@@ -511,11 +511,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                           active ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                         }`}
                         title={isMiniMode ? `${capitalizeCategoryName(category.name)} (${category.linkCount} links)` : `Filter by ${capitalizeCategoryName(category.name)} (${category.linkCount} links)`}
-                      >
-                        {active && (
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
-                        )}
-                        <Link 
+                        >
+                          {active && (
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
+                          )}
+                          <Link
                           to={to} 
                           onClick={() => {
                             if (window.innerWidth < 1024) {
@@ -591,7 +591,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 title={isMiniMode ? 'Settings' : undefined}
               >
                 {isSettingsActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
                 )}
                 <Settings className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${isSettingsActive ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={1.5} />
                 {!isMiniMode && <span className="font-medium text-base sm:text-sm">Settings</span>}
@@ -614,7 +614,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   title={isMiniMode ? 'Analytics' : undefined}
                 >
                   {location.pathname === '/analytics' && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-600 rounded-r" />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
                   )}
                   <BarChart3 className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/analytics' ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={1.5} />
                   {!isMiniMode && <span className="font-medium text-base sm:text-sm">Analytics</span>}

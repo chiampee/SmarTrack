@@ -415,7 +415,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       <div 
         data-link-id={link.id}
         className={`group bg-white rounded-xl transition-all duration-200 cursor-pointer relative touch-manipulation ${
-          isSelected ? 'ring-2 ring-blue-500 bg-blue-50/30 shadow-md' : 'shadow-sm sm:border sm:border-gray-200 hover:shadow-lg hover:scale-[1.02] active:bg-gray-50'
+          isSelected ? 'ring-2 ring-blue-500 bg-blue-50/30 shadow-md' : 'shadow-sm hover:shadow-lg hover:scale-[1.02] active:scale-95'
         }`}
         role="article"
         onClick={handleCardClick}
@@ -454,7 +454,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               <img 
                 src={faviconUrl} 
                 alt="" 
-                className={`w-20 h-20 sm:w-14 sm:h-14 rounded-xl bg-slate-50 sm:border-2 sm:border-slate-200 p-1.5 shadow-sm ${
+                className={`w-20 h-20 sm:w-14 sm:h-14 rounded-lg bg-slate-50 sm:border-2 sm:border-slate-200 p-1.5 shadow-sm ${
                   link.thumbnail ? 'object-cover' : 'object-contain'
                 }`}
                 referrerPolicy="no-referrer-when-downgrade"
@@ -477,16 +477,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 }}
               />
             ) : (
-              <div className="w-20 h-20 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 sm:border-2 sm:border-slate-200 flex items-center justify-center shadow-sm">
+              <div className="w-20 h-20 sm:w-14 sm:h-14 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 sm:border-2 sm:border-slate-200 flex items-center justify-center shadow-sm">
                 <Globe className="w-10 h-10 sm:w-7 sm:h-7 text-slate-400" strokeWidth={1.5} />
-              </div>
-            )}
-            {/* Category tag overlay on image (mobile only) */}
-            {link.category && (
-              <div className="absolute -bottom-1 -right-1 sm:hidden">
-                <span className="px-1.5 py-0.5 bg-gray-700/90 text-white text-[10px] font-medium rounded-md backdrop-blur-sm">
-                  {capitalizeCategoryName(link.category)}
-                </span>
               </div>
             )}
           </div>
@@ -514,6 +506,10 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             </h3>
             {/* Domain - Stacked below title in much lighter gray text */}
             <p className="text-xs text-gray-400 truncate">{getCleanDomain(link.url) || link.url}</p>
+            {/* Category label - Simple text-gray-400 below domain */}
+            {link.category && (
+              <p className="text-xs text-gray-400 mt-0.5">{capitalizeCategoryName(link.category)}</p>
+            )}
             
             {/* Icons and metadata row - Hidden on mobile */}
             <div className="hidden sm:flex items-center gap-2 flex-wrap mt-1">
@@ -958,7 +954,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     <div 
       className={`group bg-white rounded-xl overflow-hidden cursor-pointer relative touch-manipulation transition-all duration-200 ${
         isSelected ? 'ring-2 ring-blue-500' : 'shadow-sm hover:shadow-md'
-      } active:scale-[0.98]`}
+      } active:scale-95`}
       role="article"
       onClick={handleCardClick}
     >
@@ -1028,22 +1024,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         >
           {link.title}
         </h3>
-
-        {/* Tags at bottom - Ghost style (no background, light gray border or #) */}
-        {!isExpanded && (link.category || link.collectionId) && (
-          <div className="flex flex-wrap gap-2 mt-auto pt-2 border-t border-gray-100">
-            {link.category && (
-              <span className="text-[10px] text-gray-400 border border-gray-200 rounded-full px-2 py-0.5">
-                #{capitalizeCategoryName(link.category)}
-              </span>
-            )}
-            {link.collectionId && (
-              <span className="text-[10px] text-gray-400 border border-gray-200 rounded-full px-2 py-0.5">
-                #{getCollectionName(link.collectionId)}
-              </span>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Expanded Content - Minimal for grid view */}
