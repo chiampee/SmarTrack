@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
 interface SidebarContextType {
   isSidebarOpen: boolean
@@ -20,6 +20,18 @@ export const useSidebar = () => {
 
 export const SidebarProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  // Auto-open sidebar on desktop (≥1024px)
+  useEffect(() => {
+    const checkDesktop = () => {
+      if (window.innerWidth >= 1024) {
+        setIsSidebarOpen(true)
+      }
+    }
+    checkDesktop()
+    window.addEventListener('resize', checkDesktop)
+    return () => window.removeEventListener('resize', checkDesktop)
+  }, [])
 
   const openSidebar = () => setIsSidebarOpen(true)
   const closeSidebar = () => setIsSidebarOpen(false)

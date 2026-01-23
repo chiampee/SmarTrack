@@ -209,15 +209,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
       {/* ✅ MOBILE RESPONSIVE: Sidebar with better mobile sizing - floating navigation bar on desktop */}
       <aside
         className={`fixed z-[60] transform transition-all duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:!translate-x-0 lg:!block'
         } ${
-          // Mobile: full sidebar, Desktop: permanent fixed width
-          'w-[85vw] max-w-[280px] sm:w-64 lg:w-64 lg:left-0 lg:top-0 lg:h-full'
+          // Mobile: full sidebar, Desktop: permanent fixed width (256px)
+          'w-[85vw] max-w-[280px] sm:w-64 lg:!w-64 lg:min-w-[256px] lg:left-0 lg:top-0 lg:h-full'
         } ${
           // Mobile: full height with border, Desktop: permanent sidebar
-          'top-0 left-0 h-full border-r border-gray-100 bg-white shadow-xl shadow-gray-900/5 lg:shadow-none'
+          'top-0 left-0 h-full border-r border-gray-100 bg-white shadow-xl shadow-gray-900/5 lg:shadow-none lg:!block'
         }`}
-        aria-hidden={!isOpen}
+        aria-hidden={typeof window !== 'undefined' && window.innerWidth < 1024 ? !isOpen : false}
       >
         <div className="flex flex-col h-full">
           {/* ✅ Premium Mobile: User Profile Section - Minimalist design */}

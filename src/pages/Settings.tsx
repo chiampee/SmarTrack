@@ -215,10 +215,10 @@ export const Settings: React.FC = () => {
   }
 
   const tabs = [
-    { id: 'general', label: 'General', icon: User },
-    { id: 'account', label: 'Account', icon: Shield },
-    { id: 'usage', label: 'Usage & Limits', icon: Download },
-    { id: 'preferences', label: 'Preferences', icon: Palette },
+    { id: 'general', label: 'General', icon: User, shortLabel: 'General' },
+    { id: 'account', label: 'Account', icon: Shield, shortLabel: 'Account' },
+    { id: 'usage', label: 'Usage & Limits', icon: Download, shortLabel: 'Usage' },
+    { id: 'preferences', label: 'Preferences', icon: Palette, shortLabel: 'Prefs' },
   ]
 
   return (
@@ -245,25 +245,32 @@ export const Settings: React.FC = () => {
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm mb-6 overflow-hidden">
-          <div className="flex border-b border-slate-200 overflow-x-auto">
+        {/* Tab Navigation - Premium Mobile UX */}
+        <div className="bg-white rounded-2xl shadow-sm mb-6 overflow-hidden">
+          <div className="flex border-b border-gray-100 overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => {
               const Icon = tab.icon
+              const isActive = activeTab === tab.id
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex items-center gap-2 px-4 sm:px-6 py-3.5 sm:py-4 text-sm font-medium transition-all whitespace-nowrap relative ${
-                    activeTab === tab.id
-                      ? 'text-blue-600 bg-blue-50'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  className={`flex items-center gap-2.5 px-5 sm:px-6 py-4 text-sm font-medium transition-all duration-200 whitespace-nowrap relative min-w-fit flex-shrink-0 ${
+                    isActive
+                      ? 'text-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                  <span>{tab.label}</span>
-                  {activeTab === tab.id && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+                  <Icon 
+                    className={`w-4.5 h-4.5 sm:w-5 sm:h-5 flex-shrink-0 transition-colors ${
+                      isActive ? 'text-blue-600' : 'text-gray-400'
+                    }`} 
+                    strokeWidth={1.5}
+                  />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.shortLabel}</span>
+                  {isActive && (
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-600 rounded-t-full" />
                   )}
                 </button>
               )
@@ -271,7 +278,7 @@ export const Settings: React.FC = () => {
           </div>
 
           {/* Tab Content */}
-          <div className="p-5 sm:p-6 lg:p-8">
+          <div className="p-4 sm:p-6 lg:p-8">
             {activeTab === 'general' && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -280,10 +287,10 @@ export const Settings: React.FC = () => {
                 className="space-y-6"
               >
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Profile Information</h3>
-                  <div className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
+                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6 space-y-5">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-900 mb-2.5">
                         Display Name
                       </label>
                       <input
@@ -292,30 +299,30 @@ export const Settings: React.FC = () => {
                         onChange={(e) => setDisplayName(e.target.value)}
                         disabled={isLoadingProfile || isSavingProfile}
                         placeholder="Enter your display name"
-                        className="input-field w-full"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                         maxLength={100}
                       />
-                      <p className="text-xs text-slate-500 mt-1.5">
+                      <p className="text-xs text-gray-500 mt-2 leading-relaxed">
                         Automatically syncs from your first name. You can also edit it manually.
                       </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-900 mb-2.5">
                         Email Address
                       </label>
                       <input
                         type="email"
                         value={user?.email || ''}
                         disabled
-                        className="input-field w-full bg-slate-50 cursor-not-allowed"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
                       />
-                      <p className="text-xs text-slate-500 mt-1.5">
+                      <p className="text-xs text-gray-500 mt-2 leading-relaxed">
                         Managed by your authentication provider
                       </p>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2.5">
                           First Name
                         </label>
                         <input
@@ -324,12 +331,12 @@ export const Settings: React.FC = () => {
                           onChange={(e) => setFirstName(e.target.value)}
                           disabled={isLoadingProfile || isSavingProfile}
                           placeholder="Enter your first name"
-                          className="input-field w-full"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                           maxLength={100}
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2.5">
                           Last Name
                         </label>
                         <input
@@ -338,16 +345,16 @@ export const Settings: React.FC = () => {
                           onChange={(e) => setLastName(e.target.value)}
                           disabled={isLoadingProfile || isSavingProfile}
                           placeholder="Enter your last name"
-                          className="input-field w-full"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                           maxLength={100}
                         />
                       </div>
                     </div>
-                    <div className="flex justify-end pt-2">
+                    <div className="flex justify-end pt-4">
                       <button
                         onClick={handleSaveProfile}
                         disabled={isLoadingProfile || isSavingProfile}
-                        className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+                        className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold shadow-sm"
                       >
                         {isSavingProfile ? (
                           <>
@@ -356,7 +363,7 @@ export const Settings: React.FC = () => {
                           </>
                         ) : (
                           <>
-                            <Save className="w-4 h-4" />
+                            <Save className="w-4 h-4" strokeWidth={2} />
                             Save Profile
                           </>
                         )}
@@ -368,22 +375,22 @@ export const Settings: React.FC = () => {
                 {/* Extension Download */}
                 {!isExtensionInstalled && (
                   <div>
-                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Browser Extension</h3>
-                    <div className="bg-white border border-slate-200 rounded-lg p-5">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Browser Extension</h3>
+                    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Chrome className="w-5 h-5 text-blue-600" />
+                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Chrome className="w-6 h-6 text-blue-600" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-slate-900 mb-1">Install SmarTrack Extension</h4>
-                          <p className="text-sm text-slate-600 mb-4">
+                          <h4 className="font-semibold text-gray-900 mb-1.5">Install SmarTrack Extension</h4>
+                          <p className="text-sm text-gray-600 mb-5 leading-relaxed">
                             Get the full power of SmarTrack! Save any webpage with one click, extract content automatically, and access your library from anywhere.
                           </p>
                           <button
                             onClick={handleDownloadExtension}
-                            className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium"
+                            className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center gap-2 font-semibold shadow-sm"
                           >
-                            <Download className="w-4 h-4" />
+                            <Download className="w-4 h-4" strokeWidth={2} />
                             Download Extension
                           </button>
                         </div>
@@ -395,15 +402,15 @@ export const Settings: React.FC = () => {
                 {/* Extension Installed Status */}
                 {isExtensionInstalled && (
                   <div>
-                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Browser Extension</h3>
-                    <div className="bg-white border border-green-200 rounded-lg p-5">
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Browser Extension</h3>
+                    <div className="bg-white border border-green-200 rounded-2xl shadow-sm p-5 sm:p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <CheckCircle2 className="w-6 h-6 text-green-600" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-slate-900 mb-1">SmarTrack is Active</h4>
-                          <p className="text-sm text-slate-600">
+                          <h4 className="font-semibold text-gray-900 mb-1.5">SmarTrack is Active</h4>
+                          <p className="text-sm text-gray-600 leading-relaxed">
                             Capture Enabled. You can save webpages directly from your browser.
                           </p>
                         </div>
@@ -423,25 +430,25 @@ export const Settings: React.FC = () => {
               >
                 {/* Account Security */}
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Account Security</h3>
-                  <div className="bg-white border border-slate-200 rounded-lg p-5">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Lock className="w-5 h-5 text-slate-600" />
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Account Security</h3>
+                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <Lock className="w-6 h-6 text-gray-600" strokeWidth={1.5} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-slate-900 mb-1">Auth0 Authentication</h4>
-                        <p className="text-sm text-slate-600 mb-3">
+                        <h4 className="font-semibold text-gray-900 mb-1.5">Auth0 Authentication</h4>
+                        <p className="text-sm text-gray-600 mb-4 leading-relaxed">
                           Your account is secured through Auth0. Password and security settings are managed in your Auth0 account.
                         </p>
                         <a
                           href="https://manage.auth0.com"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-semibold transition-colors"
                         >
                           Security & Login
-                          <ExternalLink className="w-3.5 h-3.5" />
+                          <ExternalLink className="w-4 h-4" strokeWidth={1.5} />
                         </a>
                       </div>
                     </div>
@@ -450,13 +457,13 @@ export const Settings: React.FC = () => {
 
                 {/* Account Actions */}
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4">Account Actions</h3>
-                  <div className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Account Actions</h3>
+                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6 space-y-4">
                     <button
                       onClick={() => logout()}
-                      className="px-5 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-2 font-medium"
+                      className="w-full px-5 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-semibold"
                     >
-                      <LogOut className="w-4 h-4" />
+                      <LogOut className="w-4 h-4" strokeWidth={2} />
                       Sign Out
                     </button>
                     
