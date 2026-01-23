@@ -34,6 +34,7 @@ export const Dashboard: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [links, setLinks] = useState<Link[]>([])
   const [filteredLinks, setFilteredLinks] = useState<Link[]>([])
+  const [searchBlur, setSearchBlur] = useState(false)
   const [loading, setLoading] = useState(false)
   const [slowLoading, setSlowLoading] = useState(false)
   const [selectedLinks, setSelectedLinks] = useState<Set<string>>(new Set())
@@ -496,25 +497,58 @@ export const Dashboard: React.FC = () => {
   // Keyboard shortcuts for power users
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.target && (e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') {
+      // Don't intercept if user is typing in input/textarea
+      if (e.target && ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA')) {
         return
       }
+      
+      // Esc to close modals/drawers
+      if (e.key === 'Escape') {
+        if (isDrawerOpen) {
+          setIsDrawerOpen(false)
+          setSelectedLink(null)
+        }
+        if (showAddModal) setShowAddModal(false)
+        if (editingLink) setEditingLink(null)
+        if (showCreateCollectionModal) setShowCreateCollectionModal(false)
+        if (showBulkMoveModal) setShowBulkMoveModal(false)
+        return
+      }
+      
       // Focus search
       if (e.key === '/') {
         e.preventDefault()
-        const input = document.querySelector('input[placeholder="Search your research library..."]') as HTMLInputElement | null
+        const input = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement | null
         input?.focus()
         return
       }
+      
       // Quick filters
       if (e.key.toLowerCase() === 'g') navigate('/?')
-      if (e.key.toLowerCase() === 'f') navigate('/?filter=favorites')
+      if (e.key.toLowerCase() === 'f' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        // 'f' for favorites filter (only if not in combination)
+        navigate('/?filter=favorites')
+      }
       if (e.key.toLowerCase() === 'r') navigate('/?filter=recent')
       if (e.key.toLowerCase() === 'a') navigate('/?filter=archived')
+      
+      // 'e' for edit - open edit modal for first selected link or first visible link
+      if (e.key.toLowerCase() === 'e' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault()
+        if (selectedLinks.size > 0) {
+          const firstSelectedId = Array.from(selectedLinks)[0]
+          const linkToEdit = links.find(l => l.id === firstSelectedId)
+          if (linkToEdit) {
+            setEditingLink(linkToEdit)
+          }
+        } else if (filteredLinks.length > 0) {
+          setEditingLink(filteredLinks[0])
+        }
+      }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [navigate])
+  }, [navigate, isDrawerOpen, showAddModal, editingLink, showCreateCollectionModal, showBulkMoveModal, selectedLinks, links, filteredLinks])
 
   // Debounced collection refetch to prevent multiple simultaneous requests
   const refetchCollectionsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -769,8 +803,12 @@ export const Dashboard: React.FC = () => {
     // Default view: exclude archived
     filtered = filtered.filter(link => !link.isArchived)
 
-    // Search filter
+    // Search filter with blur-in effect
     if (searchQuery) {
+      // Trigger blur-in effect when search query changes
+      setSearchBlur(true)
+      setTimeout(() => setSearchBlur(false), 200)
+      
       filtered = filtered.filter(link => 
         link.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         link.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -900,6 +938,11 @@ export const Dashboard: React.FC = () => {
             }
             
             toast.success('Favorite updated')
+            
+            // Haptic feedback for mobile
+            if (navigator.vibrate) {
+              navigator.vibrate(10)
+            }
           }
         } catch (error) {
           logger.error('Failed to toggle favorite', { component: 'Dashboard', action: 'toggleFavorite', metadata: { linkId } }, error as Error)
@@ -1297,6 +1340,11 @@ export const Dashboard: React.FC = () => {
       const refreshedLinks = await getLinks()
       setLinks(refreshedLinks)
       
+      // Haptic feedback for mobile
+      if (navigator.vibrate) {
+        navigator.vibrate(10)
+      }
+      
       // If link was added to a collection, refresh collections to update counts
       if (linkData.collectionId) {
         refetchCollections()
@@ -1470,21 +1518,41 @@ export const Dashboard: React.FC = () => {
           initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
           variants={fadeInUp}
-          transition={{ duration: animationConfig.duration, ease: "easeOut" }}
+          transition={{ type: "spring", damping: 25, stiffness: 200 }}
           className="mb-4 sm:mb-5 md:mb-6"
         >
-          {/* Title - Simplified, clean header */}
+          {/* Title - Simplified, clean header with time-of-day greeting */}
           <div>
             <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">
-              {currentCategoryName 
-                ? currentCategoryName
-                : selectedCollectionId 
-                  ? collections.find(c => c.id === selectedCollectionId)?.name || 'Collection'
-                  : activeFilterId === 'favorites'
-                    ? 'Favorites'
-                    : activeFilterId === 'archived'
-                      ? 'Vault'
-                      : 'My Library'}
+              {(() => {
+                // Time-of-day greeting for default view
+                if (!currentCategoryName && !selectedCollectionId && !activeFilterId) {
+                  const hour = new Date().getHours()
+                  let greeting = 'My Library'
+                  
+                  if (hour >= 5 && hour < 12) {
+                    greeting = 'Good Morning. Ready to build?'
+                  } else if (hour >= 12 && hour < 17) {
+                    greeting = 'Good Afternoon. Ready to build?'
+                  } else if (hour >= 17 && hour < 22) {
+                    greeting = 'Good Evening. Ready to build?'
+                  } else {
+                    greeting = 'Good Night. Ready to build?'
+                  }
+                  
+                  return greeting
+                }
+                
+                return currentCategoryName 
+                  ? currentCategoryName
+                  : selectedCollectionId 
+                    ? collections.find(c => c.id === selectedCollectionId)?.name || 'Collection'
+                    : activeFilterId === 'favorites'
+                      ? 'Favorites'
+                      : activeFilterId === 'archived'
+                        ? 'Vault'
+                        : 'My Library'
+              })()}
             </h2>
             
             {/* Stats - Small gray text directly under title */}
@@ -2181,7 +2249,9 @@ export const Dashboard: React.FC = () => {
                   return (
                     <motion.div
                       variants={staggerContainer}
-                      className="relative z-0 space-y-6 sm:space-y-7 md:space-y-8"
+                      className={`relative z-0 space-y-6 sm:space-y-7 md:space-y-8 transition-all duration-200 ${
+                        searchBlur ? 'blur-sm opacity-50' : 'blur-0 opacity-100'
+                      }`}
                     >
                       {/* Stats removed - now shown in search bar section above */}
 

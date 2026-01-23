@@ -445,8 +445,11 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       <div 
         data-link-id={link.id}
         className={`group bg-white rounded-2xl transition-all duration-200 cursor-pointer relative touch-manipulation ${
-          isSelected ? 'ring-2 ring-blue-500 bg-blue-50/30 shadow-md' : 'shadow-sm hover:shadow-lg hover:scale-[1.02] active:scale-95'
+          isSelected ? 'ring-2 ring-blue-500 bg-blue-50/30 shadow-md' : 'hover:shadow-lg hover:scale-[1.02] active:scale-95'
         }`}
+        style={{
+          boxShadow: isSelected ? undefined : '0 10px 15px -3px rgba(0, 0, 0, 0.05)'
+        }}
         role="article"
         onClick={handleCardClick}
       >
@@ -1001,8 +1004,11 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   return (
     <div 
       className={`group bg-white rounded-2xl overflow-hidden cursor-pointer relative touch-manipulation transition-all duration-200 ${
-        isSelected ? 'ring-2 ring-blue-500' : 'shadow-sm hover:shadow-md'
+        isSelected ? 'ring-2 ring-blue-500' : 'hover:shadow-md'
       } active:scale-95`}
+      style={{
+        boxShadow: isSelected ? undefined : '0 10px 15px -3px rgba(0, 0, 0, 0.05)'
+      }}
       role="article"
       onClick={handleCardClick}
     >
@@ -1013,6 +1019,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             src={link.thumbnail} 
             alt="Post thumbnail" 
             className="w-full h-full object-cover rounded-t-2xl transition-transform duration-300 group-hover:scale-105"
+            style={{ border: '1px solid rgba(0, 0, 0, 0.05)' }}
             referrerPolicy="no-referrer-when-downgrade"
             loading="lazy"
             onError={(e) => {
@@ -1101,6 +1108,15 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         >
           {link.title}
         </h3>
+        
+        {/* Context Preview - Desktop hover only */}
+        {link.description && viewMode === 'grid' && (
+          <div className="hidden lg:block opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-2">
+            <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
+              {link.description}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Expanded Content - Minimal for grid view */}

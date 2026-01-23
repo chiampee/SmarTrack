@@ -217,8 +217,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
         } ${
           // Mobile: full sidebar, Desktop: fixed narrow 64px rail
           isMiniMode 
-            ? 'w-20 lg:w-16 lg:left-0 lg:top-0 lg:h-full lg:rounded-none lg:border-r lg:border-gray-100 lg:shadow-none lg:bg-white/80 lg:backdrop-blur-md'
-            : 'w-[85vw] max-w-[280px] sm:w-64 lg:w-16 lg:left-0 lg:top-0 lg:h-full lg:rounded-none lg:border-r lg:border-gray-100 lg:shadow-none lg:bg-white/80 lg:backdrop-blur-md'
+            ? 'w-20 lg:w-16 lg:left-0 lg:top-0 lg:h-full lg:rounded-none lg:border-r lg:border-gray-200/60 lg:shadow-sm lg:bg-white/95 lg:backdrop-blur-md'
+            : 'w-[85vw] max-w-[280px] sm:w-64 lg:w-16 lg:left-0 lg:top-0 lg:h-full lg:rounded-none lg:border-r lg:border-gray-200/60 lg:shadow-sm lg:bg-white/95 lg:backdrop-blur-md'
         } ${
           // Mobile: full height with border, Desktop: fixed rail
           'top-0 left-0 h-full border-r border-slate-200/80 shadow-xl shadow-gray-900/5 bg-white lg:shadow-none'
@@ -228,12 +228,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
         <div className="flex flex-col h-full">
           {/* ✅ Premium Mobile: User Profile Section - Minimalist design */}
           {isAuthenticated && user && (
-            <div className={`p-6 sm:p-5 lg:border-b-0 border-b border-slate-200/80 flex items-center ${isMiniMode ? 'justify-center' : 'gap-4'}`}>
-              <img
-                src={user.picture}
-                alt={user.name}
-                className={`${isMiniMode ? 'w-10 h-10' : 'w-14 h-14 sm:w-12 sm:h-12'} rounded-full border-2 border-gray-200 shadow-sm flex-shrink-0`}
-              />
+            <div className={`${isMiniMode ? 'p-4 lg:p-3' : 'p-6 sm:p-5'} lg:border-b-0 border-b border-slate-200/80 flex items-center ${isMiniMode ? 'justify-center flex-col gap-2' : 'gap-4'}`}>
+              <div className="relative">
+                <img
+                  src={user.picture}
+                  alt={user.name}
+                  className={`${isMiniMode ? 'w-10 h-10 lg:w-9 lg:h-9' : 'w-14 h-14 sm:w-12 sm:h-12'} rounded-full border-2 border-gray-200/60 shadow-sm flex-shrink-0`}
+                />
+                {isMiniMode && (
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                )}
+              </div>
               {!isMiniMode && (
                 <>
                   <div className="flex-1 min-w-0">
@@ -273,7 +278,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
           </div>
 
           {/* ✅ MOBILE RESPONSIVE: Navigation with better touch targets - optimized padding for more space */}
-          <nav className="flex-1 p-3 sm:p-4 lg:p-5 space-y-2 overflow-y-auto">
+          <nav className={`flex-1 ${isMiniMode ? 'px-2 lg:px-1.5' : 'p-3 sm:p-4 lg:p-5'} space-y-1 lg:space-y-0.5 overflow-y-auto`}>
             {/* Main */}
             <Link
               to="/main"
@@ -285,17 +290,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }
               }}
-              className={`group flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation relative ${
+              className={`group flex items-center ${isMiniMode ? 'justify-center lg:px-2 lg:py-2.5' : 'gap-3 px-4 py-3.5 sm:py-3'} rounded-lg transition-all duration-200 ${isMiniMode ? 'lg:rounded-xl' : ''} min-h-[44px] sm:min-h-0 touch-manipulation relative ${
                 location.pathname === '/main' || location.pathname === '/'
-                  ? 'bg-gray-100 text-gray-900'
+                  ? `${isMiniMode ? 'lg:bg-blue-50' : 'bg-gray-100'} text-gray-900`
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
               title={isMiniMode ? 'Feed' : undefined}
             >
               {(location.pathname === '/main' || location.pathname === '/') && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
+                <div className={`absolute left-0 top-1/2 -translate-y-1/2 ${isMiniMode ? 'lg:w-1 lg:h-8' : 'w-[3px] h-6'} bg-blue-600 rounded-r`} />
               )}
-              <Home className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/main' || location.pathname === '/' ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
+              <Home className={`${isMiniMode ? 'w-5 h-5 lg:w-4.5 lg:h-4.5' : 'w-5 h-5 sm:w-5 sm:h-5'} flex-shrink-0 ${location.pathname === '/main' || location.pathname === '/' ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
               <span className={`font-medium text-base sm:text-sm lg:opacity-0 lg:group-hover:opacity-100 lg:absolute lg:left-full lg:ml-3 lg:px-2 lg:py-1 lg:bg-gray-900 lg:text-white lg:rounded-lg lg:text-xs lg:whitespace-nowrap lg:pointer-events-none lg:transition-opacity lg:z-50 ${isMiniMode ? 'hidden' : ''}`}>Feed</span>
             </Link>
 
@@ -310,17 +315,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       onClose()
                     }
                   }}
-                  className={`group flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-3 py-3.5 sm:py-2.5 rounded-lg text-sm sm:text-sm transition-all min-h-[44px] sm:min-h-0 touch-manipulation relative ${
+                  className={`group flex items-center ${isMiniMode ? 'justify-center lg:px-2 lg:py-2.5' : 'gap-3 px-3 py-3.5 sm:py-2.5'} rounded-lg ${isMiniMode ? 'lg:rounded-xl' : ''} text-sm sm:text-sm transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation relative ${
                     isActivePath('/?filter=favorites')
-                      ? 'bg-gray-100 text-gray-900'
+                      ? `${isMiniMode ? 'lg:bg-blue-50' : 'bg-gray-100'} text-gray-900`
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                   title={isMiniMode ? 'Favorites' : undefined}
                 >
                   {isActivePath('/?filter=favorites') && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
+                    <div className={`absolute left-0 top-1/2 -translate-y-1/2 ${isMiniMode ? 'lg:w-1 lg:h-8' : 'w-[3px] h-6'} bg-blue-600 rounded-r`} />
                   )}
-                  <Star className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${isActivePath('/?filter=favorites') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
+                  <Star className={`${isMiniMode ? 'w-5 h-5 lg:w-4.5 lg:h-4.5' : 'w-5 h-5 sm:w-4 sm:h-4'} flex-shrink-0 ${isActivePath('/?filter=favorites') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
                   <span className={`font-medium text-base sm:text-sm lg:opacity-0 lg:group-hover:opacity-100 lg:absolute lg:left-full lg:ml-3 lg:px-2 lg:py-1 lg:bg-gray-900 lg:text-white lg:rounded-lg lg:text-xs lg:whitespace-nowrap lg:pointer-events-none lg:transition-opacity lg:z-50 ${isMiniMode ? 'hidden' : ''}`}>Favorites</span>
                 </Link>
                 <Link
@@ -330,17 +335,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       onClose()
                     }
                   }}
-                  className={`group flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-3 py-3.5 sm:py-2.5 rounded-lg text-sm sm:text-sm transition-all min-h-[44px] sm:min-h-0 touch-manipulation relative ${
+                  className={`group flex items-center ${isMiniMode ? 'justify-center lg:px-2 lg:py-2.5' : 'gap-3 px-3 py-3.5 sm:py-2.5'} rounded-lg ${isMiniMode ? 'lg:rounded-xl' : ''} text-sm sm:text-sm transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation relative ${
                     isActivePath('/?filter=recent')
-                      ? 'bg-gray-100 text-gray-900'
+                      ? `${isMiniMode ? 'lg:bg-blue-50' : 'bg-gray-100'} text-gray-900`
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                   title={isMiniMode ? 'Recents' : undefined}
                 >
                   {isActivePath('/?filter=recent') && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
+                    <div className={`absolute left-0 top-1/2 -translate-y-1/2 ${isMiniMode ? 'lg:w-1 lg:h-8' : 'w-[3px] h-6'} bg-blue-600 rounded-r`} />
                   )}
-                  <Clock className={`w-4 h-4 flex-shrink-0 ${isActivePath('/?filter=recent') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
+                  <Clock className={`${isMiniMode ? 'w-5 h-5 lg:w-4.5 lg:h-4.5' : 'w-4 h-4'} flex-shrink-0 ${isActivePath('/?filter=recent') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
                   <span className={`font-medium text-base sm:text-sm lg:opacity-0 lg:group-hover:opacity-100 lg:absolute lg:left-full lg:ml-3 lg:px-2 lg:py-1 lg:bg-gray-900 lg:text-white lg:rounded-lg lg:text-xs lg:whitespace-nowrap lg:pointer-events-none lg:transition-opacity lg:z-50 ${isMiniMode ? 'hidden' : ''}`}>Recents</span>
                 </Link>
                 <Link
@@ -350,17 +355,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       onClose()
                     }
                   }}
-                  className={`group flex items-center ${isMiniMode ? 'justify-center' : 'gap-3'} px-3 py-2 rounded-lg text-sm min-h-[44px] sm:min-h-0 touch-manipulation relative ${
+                  className={`group flex items-center ${isMiniMode ? 'justify-center lg:px-2 lg:py-2.5' : 'gap-3 px-3 py-2'} rounded-lg ${isMiniMode ? 'lg:rounded-xl' : ''} text-sm transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation relative ${
                     isActivePath('/?filter=archived')
-                      ? 'bg-gray-100 text-gray-900'
+                      ? `${isMiniMode ? 'lg:bg-blue-50' : 'bg-gray-100'} text-gray-900`
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                   title={isMiniMode ? 'Vault' : undefined}
                 >
                   {isActivePath('/?filter=archived') && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
+                    <div className={`absolute left-0 top-1/2 -translate-y-1/2 ${isMiniMode ? 'lg:w-1 lg:h-8' : 'w-[3px] h-6'} bg-blue-600 rounded-r`} />
                   )}
-                  <Archive className={`w-4 h-4 flex-shrink-0 ${isActivePath('/?filter=archived') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
+                  <Archive className={`${isMiniMode ? 'w-5 h-5 lg:w-4.5 lg:h-4.5' : 'w-4 h-4'} flex-shrink-0 ${isActivePath('/?filter=archived') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
                   <span className={`font-medium text-base sm:text-sm lg:opacity-0 lg:group-hover:opacity-100 lg:absolute lg:left-full lg:ml-3 lg:px-2 lg:py-1 lg:bg-gray-900 lg:text-white lg:rounded-lg lg:text-xs lg:whitespace-nowrap lg:pointer-events-none lg:transition-opacity lg:z-50 ${isMiniMode ? 'hidden' : ''}`}>Vault</span>
                 </Link>
               </div>
@@ -401,15 +406,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       return (
                         <div 
                           key={c.id} 
-                          className={`group flex items-center ${isMiniMode ? 'justify-center' : 'gap-2'} px-2 sm:px-2.5 lg:px-3 py-3 sm:py-2 rounded-lg text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 relative ${
+                          className={`group flex items-center ${isMiniMode ? 'justify-center lg:px-2 lg:py-2.5' : 'gap-2 px-2 sm:px-2.5 lg:px-3 py-3 sm:py-2'} rounded-lg ${isMiniMode ? 'lg:rounded-xl' : ''} text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 relative ${
                             active 
-                              ? 'bg-gray-100 text-gray-900' 
+                              ? `${isMiniMode ? 'lg:bg-blue-50' : 'bg-gray-100'} text-gray-900` 
                               : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                           }`}
                           title={isMiniMode ? `${c.name} (${c.linkCount || 0} links)` : `View collection: ${c.name} (${c.linkCount || 0} links)`}
                         >
                           {active && (
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
+                            <div className={`absolute left-0 top-1/2 -translate-y-1/2 ${isMiniMode ? 'lg:w-1 lg:h-8' : 'w-[3px] h-6'} bg-blue-600 rounded-r`} />
                           )}
                           <Link 
                             to={to} 
@@ -420,7 +425,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                             }} 
                             className={`flex items-center ${isMiniMode ? 'justify-center' : 'gap-2 sm:gap-2.5 lg:gap-3'} flex-1 min-w-0 touch-manipulation`}
                           >
-                            <Library className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${active ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} />
+                            <Library className={`${isMiniMode ? 'w-5 h-5 lg:w-4.5 lg:h-4.5' : 'w-5 h-5 sm:w-4 sm:h-4'} flex-shrink-0 ${active ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} />
                             {!isMiniMode && (
                               <>
                                 <span className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium break-words hyphens-auto min-w-0" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
@@ -650,8 +655,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 <span className={`font-medium text-base sm:text-sm lg:opacity-0 lg:group-hover:opacity-100 lg:absolute lg:left-full lg:ml-3 lg:px-2 lg:py-1 lg:bg-gray-900 lg:text-white lg:rounded-lg lg:text-xs lg:whitespace-nowrap lg:pointer-events-none lg:transition-opacity lg:z-50 ${isMiniMode ? 'hidden' : ''}`}>Logout</span>
               </button>
             )}
-            <div className="text-[10px] text-gray-300 text-center">
-              Version 2.0 • Built for Focus
+            <div className={`${isMiniMode ? 'px-2 lg:px-1' : 'px-4'} py-3 lg:py-2`}>
+              <div className={`text-[10px] lg:text-[9px] text-gray-400 ${isMiniMode ? 'text-center leading-tight' : 'text-center'} font-medium`}>
+                {isMiniMode ? (
+                  <>
+                    <div className="lg:leading-tight">Version</div>
+                    <div className="lg:leading-tight">2.0 •</div>
+                    <div className="lg:leading-tight">Built for</div>
+                    <div className="lg:leading-tight">Focus</div>
+                  </>
+                ) : (
+                  'Version 2.0 • Built for Focus'
+                )}
+              </div>
             </div>
           </div>
         </div>
