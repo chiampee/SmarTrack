@@ -82,7 +82,7 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, children, disabled = 
       {isVisible && (
         <div
           ref={tooltipRef}
-          className={`absolute z-[100] px-2 py-1.5 bg-gray-900/90 backdrop-blur-sm text-white text-xs font-medium rounded-lg shadow-xl whitespace-nowrap pointer-events-none transition-opacity duration-150 ${
+          className={`absolute z-[100] px-2 py-1.5 bg-gray-900/90 backdrop-blur-sm text-white text-xs font-medium rounded-lg shadow-xl whitespace-nowrap pointer-events-none animate-fade-in ${
             position === 'right' ? 'left-full ml-2 top-1/2 -translate-y-1/2' :
             position === 'left' ? 'right-full mr-2 top-1/2 -translate-y-1/2' :
             position === 'top' ? 'bottom-full mb-2 left-1/2 -translate-x-1/2' :

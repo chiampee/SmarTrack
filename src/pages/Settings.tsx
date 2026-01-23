@@ -246,8 +246,8 @@ export const Settings: React.FC = () => {
         </div>
 
         {/* Tab Navigation - Premium Mobile UX */}
-        <div className="bg-white rounded-2xl shadow-sm mb-6 overflow-hidden">
-          <div className="flex border-b border-gray-100 overflow-x-auto scrollbar-hide">
+        <div className="bg-white rounded-2xl shadow-sm mb-4 sm:mb-6 overflow-hidden">
+          <div className="flex border-b border-gray-100 overflow-x-auto scrollbar-hide -mx-1 px-1">
             {tabs.map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id
@@ -255,22 +255,22 @@ export const Settings: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex items-center gap-2.5 px-5 sm:px-6 py-4 text-sm font-medium transition-all duration-200 whitespace-nowrap relative min-w-fit flex-shrink-0 ${
+                  className={`flex items-center gap-2 sm:gap-2.5 px-4 sm:px-6 py-3.5 sm:py-4 text-sm sm:text-base font-medium transition-all duration-200 whitespace-nowrap relative min-w-fit flex-shrink-0 touch-manipulation ${
                     isActive
                       ? 'text-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
+                      : 'text-gray-500 hover:text-gray-700 active:text-gray-900'
                   }`}
                 >
                   <Icon 
-                    className={`w-4.5 h-4.5 sm:w-5 sm:h-5 flex-shrink-0 transition-colors ${
+                    className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 transition-colors ${
                       isActive ? 'text-blue-600' : 'text-gray-400'
                     }`} 
                     strokeWidth={1.5}
                   />
                   <span className="hidden sm:inline">{tab.label}</span>
-                  <span className="sm:hidden">{tab.shortLabel}</span>
+                  <span className="sm:hidden text-[14px]">{tab.shortLabel}</span>
                   {isActive && (
-                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-600 rounded-t-full" />
+                    <div className="absolute bottom-0 left-0 right-0 h-[3px] sm:h-[2px] bg-blue-600 rounded-t-full" />
                   )}
                 </button>
               )
@@ -278,7 +278,7 @@ export const Settings: React.FC = () => {
           </div>
 
           {/* Tab Content */}
-          <div className="p-4 sm:p-6 lg:p-8">
+          <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
             {activeTab === 'general' && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -299,7 +299,7 @@ export const Settings: React.FC = () => {
                         onChange={(e) => setDisplayName(e.target.value)}
                         disabled={isLoadingProfile || isSavingProfile}
                         placeholder="Enter your display name"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
+                        className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed touch-manipulation"
                         maxLength={100}
                       />
                       <p className="text-xs text-gray-500 mt-2 leading-relaxed">
@@ -314,15 +314,15 @@ export const Settings: React.FC = () => {
                         type="email"
                         value={user?.email || ''}
                         disabled
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+                        className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-sm rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
                       />
                       <p className="text-xs text-gray-500 mt-2 leading-relaxed">
                         Managed by your authentication provider
                       </p>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-4 pt-4 border-t border-gray-100">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2.5">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2 sm:mb-2.5">
                           First Name
                         </label>
                         <input
@@ -331,12 +331,12 @@ export const Settings: React.FC = () => {
                           onChange={(e) => setFirstName(e.target.value)}
                           disabled={isLoadingProfile || isSavingProfile}
                           placeholder="Enter your first name"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
+                          className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed touch-manipulation"
                           maxLength={100}
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2.5">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2 sm:mb-2.5">
                           Last Name
                         </label>
                         <input
@@ -345,7 +345,7 @@ export const Settings: React.FC = () => {
                           onChange={(e) => setLastName(e.target.value)}
                           disabled={isLoadingProfile || isSavingProfile}
                           placeholder="Enter your last name"
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
+                          className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed touch-manipulation"
                           maxLength={100}
                         />
                       </div>
@@ -354,7 +354,7 @@ export const Settings: React.FC = () => {
                       <button
                         onClick={handleSaveProfile}
                         disabled={isLoadingProfile || isSavingProfile}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold shadow-sm"
+                        className="w-full sm:w-auto px-6 py-3.5 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold shadow-sm text-base sm:text-sm touch-manipulation min-h-[44px]"
                       >
                         {isSavingProfile ? (
                           <>
@@ -375,20 +375,20 @@ export const Settings: React.FC = () => {
                 {/* Extension Download */}
                 {!isExtensionInstalled && (
                   <div>
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Browser Extension</h3>
-                    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
-                      <div className="flex items-start gap-3">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Browser Extension</h3>
+                    <div className="bg-white border border-gray-100 rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6">
+                      <div className="flex items-start gap-3 sm:gap-4">
                         <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
                           <Chrome className="w-6 h-6 text-blue-600" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 mb-1.5">Install SmarTrack Extension</h4>
-                          <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+                          <h4 className="font-semibold text-gray-900 mb-1.5 text-base sm:text-lg">Install SmarTrack Extension</h4>
+                          <p className="text-sm text-gray-600 mb-4 sm:mb-5 leading-relaxed">
                             Get the full power of SmarTrack! Save any webpage with one click, extract content automatically, and access your library from anywhere.
                           </p>
                           <button
                             onClick={handleDownloadExtension}
-                            className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center gap-2 font-semibold shadow-sm"
+                            className="w-full sm:w-auto px-6 py-3.5 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-semibold shadow-sm text-base sm:text-sm touch-manipulation min-h-[44px]"
                           >
                             <Download className="w-4 h-4" strokeWidth={2} />
                             Download Extension
@@ -402,14 +402,14 @@ export const Settings: React.FC = () => {
                 {/* Extension Installed Status */}
                 {isExtensionInstalled && (
                   <div>
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Browser Extension</h3>
-                    <div className="bg-white border border-green-200 rounded-2xl shadow-sm p-5 sm:p-6">
-                      <div className="flex items-start gap-4">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Browser Extension</h3>
+                    <div className="bg-white border border-green-200 rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6">
+                      <div className="flex items-start gap-3 sm:gap-4">
                         <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
                           <CheckCircle2 className="w-6 h-6 text-green-600" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 mb-1.5">SmarTrack is Active</h4>
+                          <h4 className="font-semibold text-gray-900 mb-1.5 text-base sm:text-lg">SmarTrack is Active</h4>
                           <p className="text-sm text-gray-600 leading-relaxed">
                             Capture Enabled. You can save webpages directly from your browser.
                           </p>
@@ -430,22 +430,22 @@ export const Settings: React.FC = () => {
               >
                 {/* Account Security */}
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Account Security</h3>
-                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
-                    <div className="flex items-start gap-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Account Security</h3>
+                  <div className="bg-white border border-gray-100 rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6">
+                    <div className="flex items-start gap-3 sm:gap-4">
                       <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
                         <Lock className="w-6 h-6 text-gray-600" strokeWidth={1.5} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-900 mb-1.5">Auth0 Authentication</h4>
-                        <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                        <h4 className="font-semibold text-gray-900 mb-1.5 text-base sm:text-lg">Auth0 Authentication</h4>
+                        <p className="text-sm text-gray-600 mb-3 sm:mb-4 leading-relaxed">
                           Your account is secured through Auth0. Password and security settings are managed in your Auth0 account.
                         </p>
                         <a
                           href="https://manage.auth0.com"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-semibold transition-colors"
+                          className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-semibold transition-colors touch-manipulation min-h-[44px]"
                         >
                           Security & Login
                           <ExternalLink className="w-4 h-4" strokeWidth={1.5} />
@@ -457,11 +457,11 @@ export const Settings: React.FC = () => {
 
                 {/* Account Actions */}
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Account Actions</h3>
-                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6 space-y-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Account Actions</h3>
+                  <div className="bg-white border border-gray-100 rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6 space-y-3 sm:space-y-4">
                     <button
                       onClick={() => logout()}
-                      className="w-full px-5 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-semibold"
+                      className="w-full px-5 py-3.5 sm:py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-semibold text-base sm:text-sm touch-manipulation min-h-[44px]"
                     >
                       <LogOut className="w-4 h-4" strokeWidth={2} />
                       Sign Out
@@ -469,21 +469,21 @@ export const Settings: React.FC = () => {
                     
                     {/* Delete All Links */}
                     <div className="pt-4 border-t border-gray-100">
-                      <div className="flex items-start gap-4">
+                      <div className="flex items-start gap-3 sm:gap-4">
                         <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
                           <Trash2 className="w-6 h-6 text-gray-600" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 mb-1.5">Clear My Library</h4>
+                          <h4 className="font-semibold text-gray-900 mb-1.5 text-base sm:text-lg">Clear My Library</h4>
                           <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Danger Zone</p>
-                          <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                          <p className="text-sm text-gray-600 mb-3 sm:mb-4 leading-relaxed">
                             This will permanently delete all your saved links from the database. This action cannot be undone.
                           </p>
                           
                           {!showDeleteConfirm ? (
                             <button
                               onClick={() => setShowDeleteConfirm(true)}
-                              className="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 active:scale-[0.98] transition-all font-semibold flex items-center gap-2 shadow-sm touch-manipulation"
+                              className="w-full sm:w-auto px-6 py-3.5 sm:py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 active:scale-[0.98] transition-all font-semibold flex items-center justify-center gap-2 shadow-sm touch-manipulation text-base sm:text-sm min-h-[44px]"
                             >
                               <Trash2 className="w-4 h-4" strokeWidth={2} />
                               Clear My Library
@@ -498,7 +498,7 @@ export const Settings: React.FC = () => {
                                 value={confirmText}
                                 onChange={(e) => setConfirmText(e.target.value)}
                                 placeholder="Type DELETE"
-                                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all"
+                                className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-sm rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all touch-manipulation min-h-[44px]"
                                 autoFocus
                               />
                               <div className="flex flex-col sm:flex-row gap-3">
@@ -529,33 +529,33 @@ export const Settings: React.FC = () => {
 
                 {/* Danger Zone */}
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Danger Zone</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Danger Zone</h3>
                   
                   {/* Delete Account */}
-                  <div className="bg-white border-2 border-red-300 rounded-2xl shadow-sm p-5 sm:p-6">
-                    <div className="flex items-start gap-4">
+                  <div className="bg-white border-2 border-red-300 rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6">
+                    <div className="flex items-start gap-3 sm:gap-4">
                       <div className="w-12 h-12 bg-red-200 rounded-xl flex items-center justify-center flex-shrink-0">
                         <AlertTriangle className="w-6 h-6 text-red-700" strokeWidth={1.5} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-900 mb-1.5">Permanently Delete Account</h4>
+                        <h4 className="font-semibold text-gray-900 mb-1.5 text-base sm:text-lg">Permanently Delete Account</h4>
                         <p className="text-sm text-gray-600 mb-3 leading-relaxed">
                           This will permanently delete your account and <strong>all associated data</strong> including:
                         </p>
-                        <ul className="text-sm text-gray-600 mb-4 list-disc list-inside space-y-1.5 leading-relaxed">
+                        <ul className="text-sm text-gray-600 mb-3 sm:mb-4 list-disc list-inside space-y-1.5 leading-relaxed">
                           <li>All saved links</li>
                           <li>All collections</li>
                           <li>All user preferences and settings</li>
                           <li>All account data</li>
                         </ul>
-                        <p className="text-sm text-red-600 font-semibold mb-5 leading-relaxed">
+                        <p className="text-sm text-red-600 font-semibold mb-4 sm:mb-5 leading-relaxed">
                           ⚠️ This action cannot be undone. Your data will be permanently deleted in compliance with GDPR/CCPA Right to Erasure.
                         </p>
                         
                         {!showDeleteAccountConfirm ? (
                           <button
                             onClick={() => setShowDeleteAccountConfirm(true)}
-                            className="px-6 py-3 bg-red-700 text-white rounded-xl hover:bg-red-800 active:scale-[0.98] transition-all font-semibold flex items-center gap-2 shadow-sm touch-manipulation"
+                            className="w-full sm:w-auto px-6 py-3.5 sm:py-3 bg-red-700 text-white rounded-xl hover:bg-red-800 active:scale-[0.98] transition-all font-semibold flex items-center justify-center gap-2 shadow-sm touch-manipulation text-base sm:text-sm min-h-[44px]"
                           >
                             <AlertTriangle className="w-4 h-4" strokeWidth={2} />
                             Delete Account
@@ -570,7 +570,7 @@ export const Settings: React.FC = () => {
                               value={accountConfirmText}
                               onChange={(e) => setAccountConfirmText(e.target.value)}
                               placeholder="Type DELETE ACCOUNT"
-                              className="w-full px-4 py-3 rounded-xl border border-red-400 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
+                              className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-sm rounded-xl border border-red-400 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all touch-manipulation min-h-[44px]"
                               autoFocus
                             />
                             <div className="flex flex-col sm:flex-row gap-3">
@@ -608,13 +608,13 @@ export const Settings: React.FC = () => {
                 className="space-y-6"
               >
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Usage & Limits</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Usage & Limits</h3>
                   <UsageStats />
                 </div>
 
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Plan Information</h3>
-                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Plan Information</h3>
+                  <div className="bg-white border border-gray-100 rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
                       <div>
                         <h4 className="text-lg sm:text-xl font-bold text-gray-900">Free Plan</h4>
@@ -650,13 +650,13 @@ export const Settings: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Export Data</h3>
-                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6">
-                    <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Export Data</h3>
+                  <div className="bg-white border border-gray-100 rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6">
+                    <p className="text-sm text-gray-600 mb-4 sm:mb-5 leading-relaxed">
                       Download all your research links as a JSON file for backup or migration.
                     </p>
                     <button
-                      className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center gap-2 font-semibold shadow-sm touch-manipulation"
+                      className="w-full sm:w-auto px-6 py-3.5 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-semibold shadow-sm touch-manipulation text-base sm:text-sm min-h-[44px]"
                       onClick={() => {
                         toast.info('Export functionality coming soon!')
                       }}
@@ -677,11 +677,11 @@ export const Settings: React.FC = () => {
                 className="space-y-6"
               >
                 <div>
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2 mb-3 sm:mb-4">
                     <h3 className="text-base sm:text-lg font-semibold text-gray-900">Display Settings</h3>
                     <span className="px-2.5 py-1 text-xs font-semibold text-gray-500 bg-gray-100 rounded-full">Coming Soon</span>
                   </div>
-                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6 space-y-4 opacity-60 pointer-events-none">
+                  <div className="bg-white border border-gray-100 rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6 space-y-4 opacity-60 pointer-events-none">
                     <div className="flex items-center justify-between py-3 border-b border-gray-100">
                       <div>
                         <p className="font-semibold text-gray-900 mb-0.5">Dark Mode</p>
@@ -705,23 +705,23 @@ export const Settings: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Default Settings</h3>
-                  <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6 space-y-5">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Default Settings</h3>
+                  <div className="bg-white border border-gray-100 rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6 space-y-4 sm:space-y-5">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2.5">
+                      <label className="block text-sm font-semibold text-gray-900 mb-2 sm:mb-2.5">
                         Default View Mode
                       </label>
-                      <select className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                      <select className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all touch-manipulation min-h-[44px]">
                         <option>List View</option>
                         <option>Grid View</option>
                       </select>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2.5">
+                      <label className="block text-sm font-semibold text-gray-900 mb-2 sm:mb-2.5">
                         Items Per Page
                       </label>
-                      <select className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                      <select className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all touch-manipulation min-h-[44px]">
                         <option>10</option>
                         <option>25</option>
                         <option>50</option>
@@ -732,7 +732,7 @@ export const Settings: React.FC = () => {
                 </div>
 
                 <div className="flex justify-end pt-4">
-                  <button className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center gap-2 font-semibold shadow-sm touch-manipulation">
+                  <button className="w-full sm:w-auto px-6 py-3.5 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-semibold shadow-sm touch-manipulation text-base sm:text-sm min-h-[44px]">
                     <Save className="w-4 h-4" strokeWidth={2} />
                     Save Preferences
                   </button>

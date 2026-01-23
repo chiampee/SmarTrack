@@ -78,8 +78,19 @@ export const Dashboard: React.FC = () => {
   const { isExtensionInstalled, extensionVersion } = useExtensionDetection()
 
   // Show extension install modal for first-time users (desktop only)
+  // ONLY show if user has NOT installed the extension AND has no extension links
+  // This ensures users who have used the extension before (even if not currently detected) don't see install modal
   useEffect(() => {
-    if (!isExtensionInstalled && isAuthenticated && !isMobile) {
+    // Only show install modal if:
+    // 1. Extension is not currently detected
+    // 2. User has no extension links (never used extension before)
+    // 3. User is authenticated and on desktop
+    const shouldShowInstallModal = !isExtensionInstalled && 
+                                   !hasExtensionLinks && 
+                                   isAuthenticated && 
+                                   !isMobile
+    
+    if (shouldShowInstallModal) {
       // Check if user has dismissed the modal
       const dismissed = localStorage.getItem('smartrack-extension-install-dismissed')
       if (!dismissed) {
@@ -90,7 +101,7 @@ export const Dashboard: React.FC = () => {
         return () => clearTimeout(timer)
       }
     }
-  }, [isExtensionInstalled, isAuthenticated, isMobile])
+  }, [isExtensionInstalled, hasExtensionLinks, isAuthenticated, isMobile])
 
   // Check if extension update is needed
   // IMPORTANT: Older extensions (v1.0.0, v1.0.1) don't send version info in their response
@@ -1469,11 +1480,20 @@ export const Dashboard: React.FC = () => {
         )}
 
         {/* Extension Update Notice - Desktop only (extensions don't work on mobile/tablet) */}
+        {/* Show notice ONLY for users who HAVE installed the extension (currently installed OR have extension links) */}
         {/* Show notice if extension is installed but version is unknown/null (old extension) or outdated */}
         {/* Also show if user has extension links but extension isn't detected (likely old extension) */}
         {/* Logic: Check if version has been dismissed - if dismissed version matches latest, don't show */}
         {/* CRITICAL: Also check if extension is actually up to date - if so, don't show notice */}
         {(() => {
+          // CRITICAL: Only show update notice for users who HAVE installed the extension
+          // This means: extension is currently detected OR user has extension links (used it before)
+          const hasInstalledExtension = isExtensionInstalled || hasExtensionLinks
+          
+          if (!hasInstalledExtension) {
+            return false // User has never installed extension, don't show update notice
+          }
+          
           // First check: Is extension up to date? If yes, never show notice
           const isUpToDate = isExtensionInstalled && 
                              normalizedExtensionVersion !== null && 
@@ -1490,8 +1510,8 @@ export const Dashboard: React.FC = () => {
           const isVersionDismissed = dismissedVersion === LATEST_EXTENSION_VERSION
           
           // Only show on desktop (not mobile/tablet) - extensions don't work on mobile
-          // Only show if update is needed AND version hasn't been dismissed
-          return needsUpdate && isAuthenticated && !isVersionDismissed && !isMobile
+          // Only show if update is needed AND version hasn't been dismissed AND user has installed extension
+          return needsUpdate && isAuthenticated && !isVersionDismissed && !isMobile && hasInstalledExtension
         })() && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}

@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import React, { useEffect, useState, useRef } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, Star, Clock, Archive, Library, Edit2, Trash2, Home, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useBackendApi } from '../hooks/useBackendApi'
 import { isAppError, getUserFriendlyMessage } from '../utils/errorHandler'
 import { capitalizeCategoryName } from '../utils/categoryUtils'
 import { Tooltip } from './Tooltip'
+import { useIsTruncated } from '../hooks/useIsTruncated'
 
 interface Category {
   id: string
@@ -21,6 +22,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = [] }) => {
   const location = useLocation()
+  const navigate = useNavigate()
   const { user, isAuthenticated, logout } = useAuth0()
   const { makeRequest } = useBackendApi()
   const [collections, setCollections] = useState<Array<{ id: string; name: string; linkCount?: number }>>([])
@@ -30,6 +32,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
   // Tablet mode: collapse to icons only between 768px-1024px
   const [isTabletMode, setIsTabletMode] = useState(false)
   const [displayName, setDisplayName] = useState<string | null>(null)
+
+  // Detect active category filter from URL
+  const searchParams = new URLSearchParams(location.search)
+  const activeCategoryParam = searchParams.get('category')
+  const activeCategory = activeCategoryParam 
+    ? categories.find(c => c.name === activeCategoryParam || c.name.toLowerCase() === activeCategoryParam.toLowerCase())
+    : null
+
 
   // Detect tablet mode (768px-1024px)
   useEffect(() => {
@@ -214,6 +224,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
 
   const isSettingsActive = location.pathname === '/settings'
 
+  // Component for tooltip that detects truncation
+  const TruncatedTooltip: React.FC<{ text: string; isTabletMode: boolean; children: React.ReactElement }> = ({ text, isTabletMode, children }) => {
+    const textRef = useRef<HTMLElement | null>(null)
+    const isTruncated = useIsTruncated(textRef)
+    
+    // Clone the child element and add ref callback
+    const childWithRef = React.cloneElement(children, {
+      ref: (node: HTMLElement | null) => {
+        // Use a mutable ref object
+        (textRef as React.MutableRefObject<HTMLElement | null>).current = node
+        // Preserve existing ref if any
+        const originalRef = (children as any).ref
+        if (typeof originalRef === 'function') {
+          originalRef(node)
+        } else if (originalRef && typeof originalRef === 'object' && 'current' in originalRef) {
+          (originalRef as React.MutableRefObject<HTMLElement | null>).current = node
+        }
+      }
+    })
+
+    return (
+      <Tooltip content={text} disabled={!isTabletMode && !isTruncated}>
+        {childWithRef}
+      </Tooltip>
+    )
+  }
+
   return (
     <>
       {/* Overlay for mobile - with backdrop blur */}
@@ -230,8 +267,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
         className={`fixed z-[60] transform transition-all duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:!translate-x-0 lg:!block'
         } ${
-          // Mobile: full sidebar, Tablet: icons only (w-20), Desktop: permanent fixed width (256px)
-          'w-[85vw] max-w-[280px] sm:w-64 md:w-20 lg:!w-64 lg:min-w-[256px] lg:left-0 lg:top-0 lg:h-full'
+          // Mobile: full sidebar, Tablet: icons only (w-20), Desktop: permanent fixed width (slightly wider for better text clarity)
+          'w-[85vw] max-w-[300px] sm:w-72 md:w-20 lg:!w-72 lg:min-w-[288px] lg:left-0 lg:top-0 lg:h-full'
         } ${
           // Mobile: full height with border, Desktop: permanent sidebar
           'top-0 left-0 h-full border-r border-gray-100 bg-white shadow-xl shadow-gray-900/5 lg:shadow-none lg:!block'
@@ -250,22 +287,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 />
               </div>
               <div className="flex-1 min-w-0 md:hidden lg:block">
-                <Tooltip content={displayName || user.name || user.email || ''} disabled={!isTabletMode && !((displayName || user.name || user.email || '').length > 15)}>
+                <TruncatedTooltip text={displayName || user.name || user.email || ''} isTabletMode={isTabletMode}>
                   <p 
                     className="text-lg sm:text-base lg:text-base font-bold text-gray-900 truncate whitespace-nowrap"
                     title={displayName || user.name || user.email || ''}
                   >
                     {displayName || user.name || user.email}
                   </p>
-                </Tooltip>
-                <Tooltip content={user.email || ''} disabled={!isTabletMode && !((user.email || '').length > 20)}>
+                </TruncatedTooltip>
+                <TruncatedTooltip text={user.email || ''} isTabletMode={isTabletMode}>
                   <p 
                     className="text-xs text-gray-400 truncate whitespace-nowrap mt-0.5"
                     title={user.email || ''}
                   >
                     {user.email}
                   </p>
-                </Tooltip>
+                </TruncatedTooltip>
               </div>
               <button
                 onClick={onClose}
@@ -284,6 +321,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
             </Tooltip>
           </div>
 
+          {/* Active Filter Badge */}
+          {activeCategory && (
+            <div className="px-4 pb-3">
+              <div className="flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-3 py-1.5 text-xs font-medium">
+                <span className="flex-1 truncate">
+                  Filter by {capitalizeCategoryName(activeCategory.name)} ({activeCategory.linkCount} links)
+                </span>
+                <button
+                  onClick={() => {
+                    navigate('/main')
+                    if (window.innerWidth < 1024) {
+                      onClose()
+                    }
+                  }}
+                  className="flex-shrink-0 p-0.5 hover:bg-blue-100 rounded-full transition-colors"
+                  aria-label="Clear filter"
+                  title="Clear filter"
+                >
+                  <X className="w-3.5 h-3.5" strokeWidth={2} />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ✅ MOBILE RESPONSIVE: Navigation with better touch targets - optimized padding for more space */}
           <nav className="flex-1 p-3 sm:p-4 lg:p-5 space-y-1 overflow-y-auto custom-scrollbar">
             {/* Main */}
@@ -297,9 +358,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }
               }}
-              className={`group flex items-center gap-3 px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation relative whitespace-nowrap ${
+              className={`group flex items-center gap-3 px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-200 ease-in-out min-h-[44px] sm:min-h-0 touch-manipulation relative whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                 location.pathname === '/main' || location.pathname === '/'
-                  ? 'bg-gray-100 text-gray-900'
+                  ? 'bg-gray-100 text-gray-900 shadow-md shadow-gray-200/50'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
@@ -309,7 +370,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               <Home className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/main' || location.pathname === '/' ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
               <Tooltip content="Feed" disabled={!isTabletMode}>
                 <span 
-                  className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline"
+                  className="font-medium text-[15px] sm:text-sm lg:text-[15px] text-gray-900 flex-shrink-0 truncate md:hidden lg:inline"
                   title="Feed"
                 >
                   Feed
@@ -330,9 +391,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       onClose()
                     }
                   }}
-                  className={`group flex items-center gap-3 px-3 py-3.5 sm:py-2.5 rounded-lg text-sm sm:text-sm transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation relative whitespace-nowrap ${
+                  className={`group flex items-center gap-3 px-3 py-3.5 sm:py-2.5 rounded-lg text-sm sm:text-sm transition-all duration-200 ease-in-out min-h-[44px] sm:min-h-0 touch-manipulation relative whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                     isActivePath('/?filter=favorites')
-                      ? 'bg-gray-100 text-gray-900'
+                      ? 'bg-gray-100 text-gray-900 shadow-md shadow-gray-200/50'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
@@ -342,7 +403,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   <Star className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${isActivePath('/?filter=favorites') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
                   <Tooltip content="Favorites" disabled={!isTabletMode}>
                     <span 
-                      className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline"
+                      className="font-medium text-[15px] sm:text-sm lg:text-[15px] text-gray-900 flex-shrink-0 truncate md:hidden lg:inline"
                       title="Favorites"
                     >
                       Favorites
@@ -356,9 +417,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       onClose()
                     }
                   }}
-                  className={`group flex items-center gap-3 px-3 py-3.5 sm:py-2.5 rounded-lg text-sm sm:text-sm transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation relative whitespace-nowrap ${
+                  className={`group flex items-center gap-3 px-3 py-3.5 sm:py-2.5 rounded-lg text-sm sm:text-sm transition-all duration-200 ease-in-out min-h-[44px] sm:min-h-0 touch-manipulation relative whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                     isActivePath('/?filter=recent')
-                      ? 'bg-gray-100 text-gray-900'
+                      ? 'bg-gray-100 text-gray-900 shadow-md shadow-gray-200/50'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
@@ -368,7 +429,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   <Clock className={`w-4 h-4 flex-shrink-0 ${isActivePath('/?filter=recent') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
                   <Tooltip content="Recents" disabled={!isTabletMode}>
                     <span 
-                      className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline"
+                      className="font-medium text-[15px] sm:text-sm lg:text-[15px] text-gray-900 flex-shrink-0 truncate md:hidden lg:inline"
                       title="Recents"
                     >
                       Recents
@@ -382,9 +443,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       onClose()
                     }
                   }}
-                  className={`group flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 min-h-[44px] sm:min-h-0 touch-manipulation relative whitespace-nowrap ${
+                  className={`group flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ease-in-out min-h-[44px] sm:min-h-0 touch-manipulation relative whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                     isActivePath('/?filter=archived')
-                      ? 'bg-gray-100 text-gray-900'
+                      ? 'bg-gray-100 text-gray-900 shadow-md shadow-gray-200/50'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
@@ -394,7 +455,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   <Archive className={`w-4 h-4 flex-shrink-0 ${isActivePath('/?filter=archived') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
                   <Tooltip content="Vault" disabled={!isTabletMode}>
                     <span 
-                      className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline"
+                      className="font-medium text-[15px] sm:text-sm lg:text-[15px] text-gray-900 flex-shrink-0 truncate md:hidden lg:inline"
                       title="Vault"
                     >
                       Vault
@@ -457,10 +518,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       return (
                         <div 
                           key={c.id} 
-                          className={`group flex items-center gap-2 px-2 sm:px-2.5 lg:px-3 py-3 sm:py-2 rounded-lg text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 relative whitespace-nowrap ${
+                          className={`group flex items-center gap-2 px-2.5 sm:px-3 lg:px-3.5 py-3 sm:py-2.5 rounded-lg text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 ease-in-out relative whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                             active 
-                              ? 'bg-gray-100 text-gray-900' 
-                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                              ? 'bg-gray-100 text-gray-900 shadow-md shadow-gray-200/50' 
+                              : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
                           }`}
                           title={`View collection: ${c.name} (${c.linkCount || 0} links)`}
                         >
@@ -474,17 +535,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                                 onClose()
                               }
                             }} 
-                            className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-1 min-w-0 touch-manipulation"
+                            className="flex items-center gap-2.5 sm:gap-3 lg:gap-3.5 flex-1 min-w-0 touch-manipulation"
                           >
                             <Library className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${active ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} />
-                            <Tooltip content={c.name} disabled={!isTabletMode && !(c.name.length > 15)}>
+                            <TruncatedTooltip text={c.name} isTabletMode={isTabletMode}>
                               <span 
-                                className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium truncate min-w-0 md:hidden lg:inline"
+                                className="flex-1 text-left text-[15px] sm:text-sm lg:text-[15px] font-medium text-gray-900 truncate min-w-[80px] md:hidden lg:inline leading-tight"
                                 title={c.name}
                               >
                                 {c.name}
                               </span>
-                            </Tooltip>
+                            </TruncatedTooltip>
                             {typeof c.linkCount === 'number' && (
                               <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 md:hidden lg:inline ${
                                 active ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600'
@@ -577,10 +638,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                     const to = `/?category=${encodeURIComponent(category.name)}`
                     const active = isActivePath(to)
                     return (
-                      <div 
+                        <div 
                         key={`${category.id}-${index}-${category.linkCount}`} 
-                        className={`group flex items-center gap-2 px-2 sm:px-2.5 lg:px-3 py-3 sm:py-2 rounded-lg text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 relative whitespace-nowrap ${
-                          active ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                        className={`group flex items-center gap-2 px-2.5 sm:px-3 lg:px-3.5 py-3 sm:py-2.5 rounded-lg text-sm min-h-[44px] sm:min-h-0 transition-all duration-200 ease-in-out relative whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                          active ? 'bg-gray-100 text-gray-900 shadow-md shadow-gray-200/50' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
                         }`}
                         title={`Filter by ${capitalizeCategoryName(category.name)} (${category.linkCount} links)`}
                       >
@@ -594,19 +655,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                               onClose()
                             }
                           }} 
-                          className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-1 min-w-0 touch-manipulation"
+                          className="flex items-center gap-2.5 sm:gap-3 lg:gap-3.5 flex-1 min-w-0 touch-manipulation"
                         >
                           <div className={`p-1.5 sm:p-1 rounded flex-shrink-0 ${getColor()}`}>
                             {getIcon()}
                           </div>
-                          <Tooltip content={capitalizeCategoryName(category.name)} disabled={!isTabletMode && !(category.name.length > 15)}>
+                          <TruncatedTooltip text={capitalizeCategoryName(category.name)} isTabletMode={isTabletMode}>
                             <span 
-                              className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium truncate min-w-0 md:hidden lg:inline"
+                              className="flex-1 text-left text-[15px] sm:text-sm lg:text-[15px] font-medium text-gray-900 truncate min-w-[80px] md:hidden lg:inline leading-tight"
                               title={capitalizeCategoryName(category.name)}
                             >
                               {capitalizeCategoryName(category.name)}
                             </span>
-                          </Tooltip>
+                          </TruncatedTooltip>
                           {typeof category.linkCount === 'number' && (
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 md:hidden lg:inline ${
                               active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
@@ -652,9 +713,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                     onClose()
                   }
                 }}
-              className={`group flex items-center gap-3 px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation relative whitespace-nowrap ${
+              className={`group flex items-center gap-3 px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-200 ease-in-out min-h-[44px] sm:min-h-0 touch-manipulation relative whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                 isSettingsActive
-                  ? 'bg-gray-100 text-gray-900'
+                  ? 'bg-gray-100 text-gray-900 shadow-md shadow-gray-200/50'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
@@ -664,7 +725,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               <Settings className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${isSettingsActive ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={1.5} />
               <Tooltip content="Settings" disabled={!isTabletMode}>
                 <span 
-                  className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline"
+                  className="font-medium text-[15px] sm:text-sm lg:text-[15px] text-gray-900 flex-shrink-0 truncate md:hidden lg:inline"
                   title="Settings"
                 >
                   Settings
@@ -681,9 +742,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       onClose()
                     }
                   }}
-                  className={`group flex items-center gap-3 px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-300 min-h-[44px] sm:min-h-0 touch-manipulation relative whitespace-nowrap ${
+                  className={`group flex items-center gap-3 px-4 py-3.5 sm:py-3 rounded-lg transition-all duration-200 ease-in-out min-h-[44px] sm:min-h-0 touch-manipulation relative whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                     location.pathname === '/analytics'
-                      ? 'bg-gray-100 text-gray-900'
+                      ? 'bg-gray-100 text-gray-900 shadow-md shadow-gray-200/50'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
@@ -692,7 +753,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   )}
                   <BarChart3 className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/analytics' ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={1.5} />
                   <Tooltip content="Analytics" disabled={!isTabletMode}>
-                    <span className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline">Analytics</span>
+                    <span className="font-medium text-[15px] sm:text-sm lg:text-[15px] text-gray-900 flex-shrink-0 truncate md:hidden lg:inline">Analytics</span>
                   </Tooltip>
                 </Link>
               )}
@@ -713,7 +774,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 <LogOut className="w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0" strokeWidth={1.5} />
                 <Tooltip content="Logout" disabled={!isTabletMode}>
                   <span 
-                    className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline"
+                    className="font-medium text-[15px] sm:text-sm lg:text-[15px] text-gray-900 flex-shrink-0 truncate md:hidden lg:inline"
                     title="Logout"
                   >
                     Logout
