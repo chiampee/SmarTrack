@@ -1,5 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate, Link } from 'react-router-dom'
 import { 
   Chrome, 
   ScanEye, 
@@ -18,6 +19,7 @@ import { CategorySelectionPreview } from '../components/CategorySelectionPreview
 
 export const LoginPage = () => {
   const { loginWithRedirect } = useAuth0()
+  const navigate = useNavigate()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
   const fadeIn = {
@@ -47,18 +49,18 @@ export const LoginPage = () => {
 
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-4">
-              <a 
-                href="/docs"
+              <Link 
+                to="/docs"
                 className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
               >
                 Documentation
-              </a>
-              <a 
-                href="/faq"
+              </Link>
+              <Link 
+                to="/faq"
                 className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
               >
                 FAQ
-              </a>
+              </Link>
               <button 
                 onClick={() => loginWithRedirect()}
                 className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
@@ -90,20 +92,20 @@ export const LoginPage = () => {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-white border-b border-slate-200 px-4 py-3 space-y-2">
-            <a 
-              href="/docs"
+            <Link 
+              to="/docs"
               onClick={() => setIsMobileMenuOpen(false)}
               className="block w-full text-left px-4 py-3 text-slate-600 font-medium rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors touch-manipulation"
             >
               Documentation
-            </a>
-            <a 
-              href="/faq"
+            </Link>
+            <Link 
+              to="/faq"
               onClick={() => setIsMobileMenuOpen(false)}
               className="block w-full text-left px-4 py-3 text-slate-600 font-medium rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors touch-manipulation"
             >
               FAQ
-            </a>
+            </Link>
              <button 
                 onClick={() => {
                   setIsMobileMenuOpen(false)
