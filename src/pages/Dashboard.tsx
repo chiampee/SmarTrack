@@ -27,7 +27,6 @@ import { validateRedirectUrl } from '../utils/validation'
 import { mutate } from 'swr'
 import { STATS_KEY } from '../hooks/useUserStats'
 import { useUserStats } from '../hooks/useUserStats'
-import { UsageStats } from '../components/UsageStats'
 
 export const Dashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -1582,11 +1581,6 @@ export const Dashboard: React.FC = () => {
                 </div>
               )
             })()}
-            
-            {/* Usage Stats - Shows links used / limit with SWR */}
-            <div className="mt-4">
-              <UsageStats />
-            </div>
           </div>
         </motion.div>
 
