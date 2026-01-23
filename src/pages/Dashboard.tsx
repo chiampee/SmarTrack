@@ -39,6 +39,7 @@ export const Dashboard: React.FC = () => {
   const lastSelectedIndexRef = useRef<number | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingLink, setEditingLink] = useState<Link | null>(null)
+  const [expandedLinkId, setExpandedLinkId] = useState<string | null>(null)
   const [showCreateCollectionModal, setShowCreateCollectionModal] = useState(false)
   const [showExtensionInstallModal, setShowExtensionInstallModal] = useState(false)
   const [showBulkMoveModal, setShowBulkMoveModal] = useState(false)
@@ -2153,7 +2154,13 @@ export const Dashboard: React.FC = () => {
                                   collections={collections}
                                   categories={categories}
                                   allTags={allTags}
-                                  onCardClick={() => setEditingLink(link)}
+                                  onCardClick={() => {
+                                    // Track expanded state for FAB hiding
+                                    setEditingLink(link)
+                                  }}
+                                  onExpandedChange={(expanded) => {
+                                    setExpandedLinkId(expanded ? link.id : null)
+                                  }}
                                 />
                               </motion.div>
                             ))}
@@ -2282,7 +2289,7 @@ export const Dashboard: React.FC = () => {
       })()}
 
       {/* Floating Action Button - Mobile Only with Glassmorphism - Hidden when sidebar or link details are open */}
-      {isMobile && !editingLink && !isSidebarOpen && (
+      {isMobile && !editingLink && !isSidebarOpen && !expandedLinkId && (
         <button
           onClick={() => setShowAddModal(true)}
           className="fixed bottom-20 right-4 z-[60] w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 backdrop-blur-md text-white rounded-full shadow-2xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 active:scale-95 transition-all duration-200 flex items-center justify-center touch-manipulation md:hidden"

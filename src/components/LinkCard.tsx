@@ -38,6 +38,7 @@ interface LinkCardProps {
   categories?: Category[]
   allTags?: string[] // All existing tags from all links for suggestions
   onCardClick?: () => void
+  onExpandedChange?: (expanded: boolean) => void
 }
 
 const LinkCardComponent: React.FC<LinkCardProps> = ({ 
@@ -49,7 +50,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   collections = [],
   categories = [],
   allTags = [],
-  onCardClick
+  onCardClick,
+  onExpandedChange
 }) => {
   // #region agent log
   React.useEffect(() => {
@@ -172,9 +174,20 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       return
     }
     if (!isEditing) {
-      setIsExpanded(!isExpanded)
+      const newExpandedState = !isExpanded
+      setIsExpanded(newExpandedState)
+      if (onExpandedChange) {
+        onExpandedChange(newExpandedState)
+      }
     }
   }
+
+  // Notify parent when expanded state changes (e.g., when closing)
+  React.useEffect(() => {
+    if (onExpandedChange) {
+      onExpandedChange(isExpanded)
+    }
+  }, [isExpanded, onExpandedChange])
 
   // Local state for optimistic click count update
   const [localClickCount, setLocalClickCount] = useState(link.clickCount || 0)
@@ -421,7 +434,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         onClick={handleCardClick}
       >
         {/* Main Row - Content First Design for Mobile */}
-        <div className="flex items-start gap-3 sm:gap-3 p-3 sm:p-4 relative">
+        <div className="flex items-center gap-3 sm:gap-3 p-3 sm:p-4 relative">
           {/* Checkbox - Hidden on mobile, shown on desktop */}
           <div className="hidden sm:flex items-center flex-shrink-0 pt-1">
             <label 
@@ -485,31 +498,24 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
 
           {/* Title & Domain - Stacked vertically for content-first design */}
           <div className="flex-1 min-w-0">
-            {/* Title - Stacked on top, larger on mobile, truncated to 1.5 lines */}
+            {/* Title - Stacked on top, truncated to 2 full lines */}
             <h3 
               data-link-title
               onClick={(e) => {
                 handleLinkClick(e);
               }}
-              className="font-medium text-gray-900 hover:text-blue-600 active:text-blue-700 text-base sm:text-sm cursor-pointer w-full mb-1 touch-manipulation line-clamp-2 leading-tight"
-              style={{ 
-                display: '-webkit-box',
-                WebkitLineClamp: 1.5,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                lineHeight: '1.4em',
-                maxHeight: '2.1em'
-              }}
+              className="font-medium text-gray-900 hover:text-blue-600 active:text-blue-700 text-[15px] sm:text-sm cursor-pointer w-full mb-1 touch-manipulation line-clamp-2 leading-relaxed"
               title={link.title}
             >
               {link.title}
             </h3>
-            {/* Domain - Stacked below title in much lighter gray text */}
-            <p className="text-xs text-gray-400 truncate">{getCleanDomain(link.url) || link.url}</p>
-            {/* Category label - Simple text-gray-400 below domain */}
-            {link.category && (
-              <p className="text-xs text-gray-400 mt-0.5">{capitalizeCategoryName(link.category)}</p>
-            )}
+            {/* Domain and Category - Same line with dot separator */}
+            <p className="text-[12px] text-gray-400 truncate">
+              {getCleanDomain(link.url) || link.url}
+              {link.category && (
+                <span> • {capitalizeCategoryName(link.category)}</span>
+              )}
+            </p>
             
             {/* Icons and metadata row - Hidden on mobile */}
             <div className="hidden sm:flex items-center gap-2 flex-wrap mt-1">
@@ -853,91 +859,133 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
               ) : (
                 /* ===== VIEW MODE ===== */
                 <>
+                  {/* Compact Header: Preview Image, Title, and Domain */}
+                  <div className="mb-3">
+                    {/* Reduced height preview image/logo - max 80px */}
+                    {link.thumbnail && link.thumbnail.startsWith('http') ? (
+                      <div className="w-full h-20 overflow-hidden bg-gray-100 rounded-lg mb-2">
+                        <img 
+                          src={link.thumbnail} 
+                          alt="Link preview" 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer-when-downgrade"
+                          loading="lazy"
+                        />
+                      </div>
+                    ) : faviconUrl && !faviconError ? (
+                      <div className="w-12 h-12 mx-auto mb-2 flex items-center justify-center">
+                        <img 
+                          src={faviconUrl} 
+                          alt="" 
+                          className="w-full h-full object-contain rounded-lg"
+                          referrerPolicy="no-referrer-when-downgrade"
+                          loading="lazy"
+                          onError={() => setFaviconError(true)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 mx-auto mb-2 flex items-center justify-center bg-gray-100 rounded-lg">
+                        <Globe className="w-6 h-6 text-gray-400" strokeWidth={1.5} />
+                      </div>
+                    )}
+                    
+                    {/* Title and Domain - Tight vertical stack */}
+                    <div className="text-center sm:text-left">
+                      <h2 className="text-base font-semibold text-gray-900 leading-tight mb-0.5 break-words">
+                        {link.title}
+                      </h2>
+                      <p className="text-xs text-gray-400">{getCleanDomain(link.url) || link.url}</p>
+                    </div>
+                  </div>
+
+                  {/* Info-Cluster: Horizontal Metadata Row */}
+                  <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-gray-500 mb-3">
+                    <div className="flex items-center gap-1">
+                      <contentTypeInfo.icon size={14} strokeWidth={1.5} />
+                      <span>{contentTypeInfo.label}</span>
+                    </div>
+                    {link.category && (
+                      <>
+                        <span>•</span>
+                        <div className="flex items-center gap-1">
+                          <Tag size={14} strokeWidth={1.5} />
+                          <span>{capitalizeCategoryName(link.category)}</span>
+                        </div>
+                      </>
+                    )}
+                    {link.collectionId && (
+                      <>
+                        <span>•</span>
+                        <div className="flex items-center gap-1">
+                          <Folder size={14} strokeWidth={1.5} />
+                          <span>{getCollectionName(link.collectionId)}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Instagram-Style Notes - Clean text on white, date inline */}
                   {link.description && (
-                    <div className="p-3 sm:p-3 bg-amber-50 border border-amber-100 rounded-lg">
-                      <div className="flex items-center gap-2 text-amber-700 text-sm font-medium mb-1"><StickyNote className="w-4 h-4" /> Notes</div>
-                      <p className="text-base sm:text-sm text-gray-700 leading-relaxed">{link.description}</p>
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        {link.description}
+                        <span className="text-[11px] text-gray-400 ml-2">• {formatDate(link.createdAt)}</span>
+                      </p>
                     </div>
                   )}
 
                   {/* URL with copy button */}
-                  <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg mb-3">
                     <p className="text-sm text-gray-600 truncate flex-1">{link.url}</p>
                     <button 
                       onClick={copyToClipboard} 
-                      className={`p-2.5 sm:p-2 rounded-lg transition-colors touch-manipulation ${copied ? 'bg-green-100 text-green-600' : 'bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-500 border border-gray-200'}`}
+                      className={`p-2 rounded-lg transition-colors touch-manipulation ${copied ? 'bg-green-100 text-green-600' : 'bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-500 border border-gray-200'}`}
                     >
-                      <Copy className="w-5 h-5 sm:w-4 sm:h-4" />
+                      <Copy className="w-4 h-4" strokeWidth={1.5} />
                     </button>
-                    {copied && <span className="text-sm text-green-600 font-medium">Copied!</span>}
+                    {copied && <span className="text-xs text-green-600 font-medium">Copied!</span>}
                   </div>
 
-                  {/* Metadata badges */}
-                  <div className="flex flex-wrap gap-2">
-                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm ${contentTypeInfo.color}`}>
-                      <contentTypeInfo.icon className="w-4 h-4" />{contentTypeInfo.label}
-                    </div>
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-sm text-gray-600">
-                      <Clock className="w-4 h-4" />{formatFullDate(link.createdAt)}
-                    </div>
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 rounded-full text-sm text-blue-600">
-                      <MousePointer className="w-4 h-4" />{localClickCount} clicks
-                    </div>
-                    {link.collectionId && (
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 rounded-full text-sm text-green-700">
-                        <Folder className="w-4 h-4" />{getCollectionName(link.collectionId)}
-                      </div>
-                    )}
-                  </div>
+                  {/* Open Link Button - Primary full-width */}
+                  <a 
+                    href={link.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-base font-medium rounded-lg touch-manipulation shadow-sm mb-3"
+                  >
+                    <ExternalLink className="w-5 h-5" strokeWidth={1.5} /> Open Link
+                  </a>
 
-                  {/* Tags */}
-                  {link.tags && link.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {link.tags.map((tag, i) => (
-                        <span key={i} className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full flex items-center gap-1.5">
-                          <Tag className="w-3.5 h-3.5" />{tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Action buttons - larger on mobile */}
-                  <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 pt-2">
-                    <a 
-                      href={link.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-base sm:text-sm font-medium rounded-lg col-span-2 touch-manipulation"
+                  {/* Thumb-Friendly Actions - 4 icons with labels */}
+                  <div className="flex flex-row justify-around items-center gap-2 pt-2 border-t border-gray-100">
+                    <button 
+                      onClick={startEditing} 
+                      className="flex flex-col items-center justify-center gap-1 p-2 text-gray-600 hover:text-gray-900 rounded-lg touch-manipulation"
                     >
-                      <ExternalLink className="w-5 h-5 sm:w-4 sm:h-4" /> Open Link
-                    </a>
+                      <Edit className="w-5 h-5" strokeWidth={1.5} />
+                      <span className="text-xs font-medium">Edit</span>
+                    </button>
                     <button 
                       onClick={() => handleAction('toggleFavorite')} 
-                      className={`flex items-center justify-center gap-2 p-3 sm:p-2 rounded-lg transition-colors touch-manipulation ${link.isFavorite ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300'}`}
+                      className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-colors touch-manipulation ${link.isFavorite ? 'text-amber-600' : 'text-gray-600 hover:text-gray-900'}`}
                     >
-                      <Star className={`w-5 h-5 sm:w-4 sm:h-4 ${link.isFavorite ? 'fill-current' : ''}`} />
-                      <span className="sm:hidden">{link.isFavorite ? 'Favorited' : 'Favorite'}</span>
+                      <Star className={`w-5 h-5 ${link.isFavorite ? 'fill-current' : ''}`} strokeWidth={1.5} />
+                      <span className="text-xs font-medium">{link.isFavorite ? 'Favorited' : 'Favorite'}</span>
                     </button>
                     <button 
                       onClick={() => handleAction('toggleArchive')} 
-                      className={`flex items-center justify-center gap-2 p-3 sm:p-2 rounded-lg transition-colors touch-manipulation ${link.isArchived ? 'bg-green-100 text-green-600 hover:bg-green-200 active:bg-green-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300'}`}
+                      className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-colors touch-manipulation ${link.isArchived ? 'text-green-600' : 'text-gray-600 hover:text-gray-900'}`}
                       title={link.isArchived ? 'Unarchive this link' : 'Archive this link'}
                     >
-                      <Archive className="w-5 h-5 sm:w-4 sm:h-4" />
-                      <span className="sm:hidden">{link.isArchived ? 'Unarchive' : 'Archive'}</span>
-                    </button>
-                    <button 
-                      onClick={startEditing} 
-                      className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 text-base sm:text-sm font-medium rounded-lg touch-manipulation"
-                    >
-                      <Edit className="w-5 h-5 sm:w-4 sm:h-4" /> Edit
+                      <Archive className="w-5 h-5" strokeWidth={1.5} />
+                      <span className="text-xs font-medium">{link.isArchived ? 'Unarchive' : 'Archive'}</span>
                     </button>
                     <button 
                       onClick={() => handleAction('delete')} 
-                      className="flex items-center justify-center gap-2 p-3 sm:p-2 bg-gray-100 hover:bg-red-50 active:bg-red-100 text-gray-600 hover:text-red-600 rounded-lg touch-manipulation"
+                      className="flex flex-col items-center justify-center gap-1 p-2 text-gray-600 hover:text-red-600 rounded-lg touch-manipulation"
                     >
-                      <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
-                      <span className="sm:hidden">Delete</span>
+                      <Trash2 className="w-5 h-5" strokeWidth={1.5} />
+                      <span className="text-xs font-medium">Delete</span>
                     </button>
                   </div>
                 </>
@@ -1013,13 +1061,13 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
           <span className="text-[10px] text-gray-400 truncate">{getCleanDomain(link.url) || link.url}</span>
         </div>
 
-        {/* Title - Deep charcoal, exactly 2 lines */}
+        {/* Title - Deep charcoal, exactly 2 lines, allow card height expansion */}
         <h3 
           data-link-title
           onClick={(e) => {
             handleLinkClick(e);
           }}
-          className="font-medium text-gray-900 text-sm line-clamp-2 mb-3 leading-snug cursor-pointer touch-manipulation"
+          className="font-medium text-gray-900 text-sm line-clamp-2 mb-3 leading-relaxed cursor-pointer touch-manipulation min-h-[2.5rem]"
           title={link.title}
         >
           {link.title}
@@ -1308,7 +1356,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                       <StickyNote className="w-4 h-4" strokeWidth={1.5} />
                       <span>Notes</span>
                     </div>
-                    <p className="text-base sm:text-sm text-gray-800 leading-relaxed mb-1">{link.description}</p>
+                    <p className="text-base sm:text-sm text-gray-700 leading-relaxed mb-1">{link.description}</p>
                     <p className="text-xs text-gray-400">{formatDate(link.createdAt)}</p>
                   </div>
                 )}
@@ -1709,107 +1757,132 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             ) : (
               /* ===== VIEW MODE ===== */
               <>
-                {link.description && (
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 text-gray-600 text-sm font-medium mb-2">
-                      <StickyNote className="w-4 h-4" strokeWidth={1.5} />
-                      <span>Notes</span>
+                {/* Compact Header: Preview Image, Title, and Domain */}
+                <div className="mb-3">
+                  {/* Reduced height preview image/logo - max 80px */}
+                  {link.thumbnail && link.thumbnail.startsWith('http') ? (
+                    <div className="w-full h-20 overflow-hidden bg-gray-100 rounded-lg mb-2">
+                      <img 
+                        src={link.thumbnail} 
+                        alt="Link preview" 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        loading="lazy"
+                      />
                     </div>
-                    <p className="text-base sm:text-sm text-gray-800 leading-relaxed mb-1">{link.description}</p>
-                    <p className="text-xs text-gray-400">{formatDate(link.createdAt)}</p>
+                  ) : faviconUrl && !faviconError ? (
+                    <div className="w-12 h-12 mx-auto mb-2 flex items-center justify-center">
+                      <img 
+                        src={faviconUrl} 
+                        alt="" 
+                        className="w-full h-full object-contain rounded-lg"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        loading="lazy"
+                        onError={() => setFaviconError(true)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 mx-auto mb-2 flex items-center justify-center bg-gray-100 rounded-lg">
+                      <Globe className="w-6 h-6 text-gray-400" strokeWidth={1.5} />
+                    </div>
+                  )}
+                  
+                  {/* Title and Domain - Tight vertical stack */}
+                  <div className="text-center sm:text-left">
+                    <h2 className="text-base font-semibold text-gray-900 leading-tight mb-0.5 break-words">
+                      {link.title}
+                    </h2>
+                    <p className="text-xs text-gray-400">{getCleanDomain(link.url) || link.url}</p>
+                  </div>
+                </div>
+
+                {/* Info-Cluster: Horizontal Metadata Row */}
+                <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-gray-500 mb-3">
+                  <div className="flex items-center gap-1">
+                    <contentTypeInfo.icon size={14} strokeWidth={1.5} />
+                    <span>{contentTypeInfo.label}</span>
+                  </div>
+                  {link.category && (
+                    <>
+                      <span>•</span>
+                      <div className="flex items-center gap-1">
+                        <Tag size={14} strokeWidth={1.5} />
+                        <span>{capitalizeCategoryName(link.category)}</span>
+                      </div>
+                    </>
+                  )}
+                  {link.collectionId && (
+                    <>
+                      <span>•</span>
+                      <div className="flex items-center gap-1">
+                        <Folder size={14} strokeWidth={1.5} />
+                        <span>{getCollectionName(link.collectionId)}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Instagram-Style Notes - Clean text on white, date inline */}
+                {link.description && (
+                  <div className="mb-3">
+                    <p className="text-sm text-gray-900 leading-relaxed">
+                      {link.description}
+                      <span className="text-[11px] text-gray-400 ml-2">• {formatDate(link.createdAt)}</span>
+                    </p>
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
+                {/* URL with copy button */}
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg mb-3">
                   <p className="text-sm text-gray-600 truncate flex-1">{link.url}</p>
                   <button 
                     onClick={copyToClipboard} 
-                    className={`p-2.5 sm:p-2 rounded-lg transition-colors touch-manipulation ${copied ? 'bg-green-100 text-green-600' : 'bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-500 shadow-sm sm:border sm:border-gray-200'}`}
+                    className={`p-2 rounded-lg transition-colors touch-manipulation ${copied ? 'bg-green-100 text-green-600' : 'bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-500 border border-gray-200'}`}
                   >
-                    <Copy className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} />
+                    <Copy className="w-4 h-4" strokeWidth={1.5} />
                   </button>
-                  {copied && <span className="text-sm text-green-600 font-medium">Copied!</span>}
+                  {copied && <span className="text-xs text-green-600 font-medium">Copied!</span>}
                 </div>
 
-                {/* Metadata grid - single column on mobile */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
-                  <div className={`p-3 rounded-lg shadow-sm sm:border sm:border-gray-200 ${contentTypeInfo.color.replace('text-', 'bg-').split(' ')[0]}`}>
-                    <div className={`font-medium mb-0.5 flex items-center gap-1.5 text-sm ${contentTypeInfo.color.split(' ')[1]}`}>
-                      <contentTypeInfo.icon className="w-4 h-4" strokeWidth={1.5} /> Type
-                    </div>
-                    <div className={`text-base sm:text-sm ${contentTypeInfo.color.split(' ')[1]}`}>{contentTypeInfo.label}</div>
-                  </div>
-                  {link.category && (
-                    <div className="p-3 bg-gray-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
-                      <div className="text-gray-600 font-medium mb-0.5 text-sm">Category</div>
-                      <div className="text-gray-800 text-base sm:text-sm">{capitalizeCategoryName(link.category)}</div>
-                    </div>
-                  )}
-                  {link.collectionId && (
-                    <div className="p-3 bg-green-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
-                      <div className="text-green-600 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><Folder className="w-4 h-4" strokeWidth={1.5} /> Project</div>
-                      <div className="text-green-800 text-base sm:text-sm">{getCollectionName(link.collectionId)}</div>
-                    </div>
-                  )}
-                  <div className="p-3 bg-gray-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
-                    <div className="text-gray-500 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><Clock className="w-4 h-4" strokeWidth={1.5} /> Added</div>
-                    <div className="text-gray-700 text-base sm:text-sm">{formatFullDate(link.createdAt)}</div>
-                  </div>
-                  <div className="p-3 bg-blue-50 rounded-lg shadow-sm sm:border sm:border-gray-200">
-                    <div className="text-blue-600 font-medium mb-0.5 flex items-center gap-1.5 text-sm"><MousePointer className="w-4 h-4" strokeWidth={1.5} /> Clicks</div>
-                    <div className="text-blue-800 text-base sm:text-sm">{localClickCount}</div>
-                  </div>
-                </div>
-
-                {link.tags && link.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {link.tags.map((tag, i) => (
-                      <span key={i} className="px-3 py-1.5 bg-gray-100 text-gray-600 text-sm rounded-full flex items-center gap-1.5">
-                        <Tag className="w-4 h-4" strokeWidth={1.5} />{tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Open Link Button - Full width */}
+                {/* Open Link Button - Primary full-width */}
                 <a 
                   href={link.url} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-base sm:text-sm font-medium rounded-lg touch-manipulation shadow-sm mb-4"
+                  className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-base font-medium rounded-lg touch-manipulation shadow-sm mb-3"
                 >
-                  <ExternalLink className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} /> Open Link
+                  <ExternalLink className="w-5 h-5" strokeWidth={1.5} /> Open Link
                 </a>
 
-                {/* Action buttons - Single flex row on mobile with icons and labels */}
-                <div className="flex flex-row justify-around items-center gap-2 pt-2 sm:flex sm:flex-wrap">
+                {/* Thumb-Friendly Actions - 4 icons with labels */}
+                <div className="flex flex-row justify-around items-center gap-2 pt-2 border-t border-gray-100">
+                  <button 
+                    onClick={startEditing} 
+                    className="flex flex-col items-center justify-center gap-1 p-2 text-gray-600 hover:text-gray-900 rounded-lg touch-manipulation"
+                  >
+                    <Edit className="w-5 h-5" strokeWidth={1.5} />
+                    <span className="text-xs font-medium">Edit</span>
+                  </button>
                   <button 
                     onClick={() => handleAction('toggleFavorite')} 
-                    className={`flex flex-col items-center justify-center gap-1 p-3 sm:p-2 rounded-lg transition-colors touch-manipulation min-w-[60px] ${link.isFavorite ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 active:bg-gray-200'}`}
+                    className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-colors touch-manipulation ${link.isFavorite ? 'text-amber-600' : 'text-gray-600 hover:text-gray-900'}`}
                   >
-                    <Star className={`w-5 h-5 sm:w-4 sm:h-4 ${link.isFavorite ? 'fill-current' : ''}`} strokeWidth={1.5} />
+                    <Star className={`w-5 h-5 ${link.isFavorite ? 'fill-current' : ''}`} strokeWidth={1.5} />
                     <span className="text-xs font-medium">{link.isFavorite ? 'Favorited' : 'Favorite'}</span>
                   </button>
                   <button 
                     onClick={() => handleAction('toggleArchive')} 
-                    className={`flex flex-col items-center justify-center gap-1 p-3 sm:p-2 rounded-lg transition-colors touch-manipulation min-w-[60px] ${link.isArchived ? 'bg-green-50 text-green-600 hover:bg-green-100 active:bg-green-200' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 active:bg-gray-200'}`}
+                    className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-colors touch-manipulation ${link.isArchived ? 'text-green-600' : 'text-gray-600 hover:text-gray-900'}`}
                     title={link.isArchived ? 'Unarchive this link' : 'Archive this link'}
                   >
-                    <Archive className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} />
+                    <Archive className="w-5 h-5" strokeWidth={1.5} />
                     <span className="text-xs font-medium">{link.isArchived ? 'Unarchive' : 'Archive'}</span>
                   </button>
                   <button 
-                    onClick={startEditing} 
-                    className="flex flex-col items-center justify-center gap-1 p-3 sm:p-2 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-700 rounded-lg touch-manipulation min-w-[60px]"
-                  >
-                    <Edit className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} />
-                    <span className="text-xs font-medium">Edit</span>
-                  </button>
-                  <button 
                     onClick={() => handleAction('delete')} 
-                    className="flex flex-col items-center justify-center gap-1 p-3 sm:p-2 bg-red-50 hover:bg-red-100 active:bg-red-200 text-red-600 rounded-lg touch-manipulation min-w-[60px]"
+                    className="flex flex-col items-center justify-center gap-1 p-2 text-gray-600 hover:text-red-600 rounded-lg touch-manipulation"
                   >
-                    <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" strokeWidth={1.5} />
+                    <Trash2 className="w-5 h-5" strokeWidth={1.5} />
                     <span className="text-xs font-medium">Delete</span>
                   </button>
                 </div>
