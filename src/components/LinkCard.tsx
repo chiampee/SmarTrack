@@ -420,10 +420,10 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         role="article"
         onClick={handleCardClick}
       >
-        {/* Main Row - Enhanced for mobile */}
-        <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-4">
+        {/* Main Row - Content First Design for Mobile */}
+        <div className="flex items-start gap-3 sm:gap-3 p-3 sm:p-4 relative">
           {/* Checkbox with larger touch target */}
-          <div className="flex items-center flex-shrink-0">
+          <div className="flex items-center flex-shrink-0 pt-1">
             <label 
               className="p-2 -m-2 cursor-pointer touch-manipulation"
               onClick={(e) => {
@@ -448,13 +448,13 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             </label>
           </div>
 
-          {/* Favicon/Thumbnail - 4-Tier Fallback System - Larger size for better visibility */}
-          <div className="flex-shrink-0">
+          {/* Favicon/Thumbnail - Larger size on mobile for content-first design */}
+          <div className="flex-shrink-0 relative">
             {faviconUrl && !faviconError ? (
               <img 
                 src={faviconUrl} 
                 alt="" 
-                className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-slate-50 border-2 border-slate-200 p-1.5 shadow-sm ${
+                className={`w-16 h-16 sm:w-14 sm:h-14 rounded-xl bg-slate-50 border-2 border-slate-200 p-1.5 shadow-sm ${
                   link.thumbnail ? 'object-cover' : 'object-contain'
                 }`}
                 referrerPolicy="no-referrer-when-downgrade"
@@ -477,47 +477,46 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 }}
               />
             ) : (
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-200 flex items-center justify-center shadow-sm">
-                <Globe className="w-6 h-6 sm:w-7 sm:h-7 text-slate-400" />
+              <div className="w-16 h-16 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-200 flex items-center justify-center shadow-sm">
+                <Globe className="w-8 h-8 sm:w-7 sm:h-7 text-slate-400" />
+              </div>
+            )}
+            {/* Category tag overlay on image (mobile only) */}
+            {link.category && (
+              <div className="absolute -bottom-1 -right-1 sm:hidden">
+                <span className="px-1.5 py-0.5 bg-gray-700/90 text-white text-[10px] font-medium rounded-md backdrop-blur-sm">
+                  {capitalizeCategoryName(link.category)}
+                </span>
               </div>
             )}
           </div>
 
-          {/* Title & Domain - Full width from start to end */}
+          {/* Title & Domain - Stacked vertically for content-first design */}
           <div className="flex-1 min-w-0">
-            {/* Title - Full width from start to end, spanning entire available space */}
+            {/* Title - Stacked on top */}
             <h3 
               data-link-title
               onClick={(e) => {
                 handleLinkClick(e);
               }}
-              className="font-medium text-blue-600 hover:text-blue-800 active:text-blue-900 hover:underline text-base sm:text-sm cursor-pointer w-full mb-1 touch-manipulation"
-              style={{ 
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                display: 'block'
-              }}
+              className="font-medium text-gray-900 hover:text-blue-600 active:text-blue-700 text-sm sm:text-sm cursor-pointer w-full mb-1 touch-manipulation line-clamp-2"
               title={link.title}
             >
               {link.title}
             </h3>
-            {/* Domain, Category, and Icons row */}
-            <div className="flex items-center gap-2 flex-wrap mt-0.5">
-              <p className="text-xs text-gray-500 truncate font-semibold">{getCleanDomain(link.url) || link.url}</p>
-              {link.category && (
-                <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full flex-shrink-0 border border-purple-200">
-                  {capitalizeCategoryName(link.category)}
-                </span>
-              )}
-              {/* Icons moved here */}
-              <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
-                {link.description && <span title="Has notes"><StickyNote className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-amber-400" /></span>}
-                {link.isFavorite && <Star className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-amber-400 fill-current" />}
-                {link.isArchived && <Archive className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-gray-400" />}
+            {/* Domain - Stacked below title in smaller gray text */}
+            <p className="text-xs text-gray-500 truncate mb-1">{getCleanDomain(link.url) || link.url}</p>
+            
+            {/* Icons and metadata row */}
+            <div className="flex items-center gap-2 flex-wrap mt-1">
+              {/* Icons */}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {link.description && <span title="Has notes"><StickyNote className="w-3.5 h-3.5 text-amber-400" /></span>}
+                {link.isFavorite && <Star className="w-3.5 h-3.5 text-amber-400 fill-current" />}
+                {link.isArchived && <Archive className="w-3.5 h-3.5 text-gray-400" />}
               </div>
               {/* Date display on desktop */}
-              <span className="hidden md:flex items-center gap-1 text-xs text-gray-400">
+              <span className="hidden md:flex items-center gap-1 text-xs text-gray-400 ml-auto">
                 <Clock className="w-3 h-3" />
                 {formatDate(link.createdAt)}
               </span>
@@ -529,7 +528,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1 ${contentTypeInfo.color}`}>
               <contentTypeInfo.icon className="w-3 h-3" />{contentTypeInfo.label}
             </span>
-            {link.category && <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full border border-purple-200">{link.category}</span>}
+            {link.category && <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-full border border-gray-200">{capitalizeCategoryName(link.category)}</span>}
             {link.collectionId && (
               <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs font-medium rounded-full flex items-center gap-1">
                 <Folder className="w-3 h-3" />{getCollectionName(link.collectionId)}
@@ -1059,8 +1058,8 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   <contentTypeInfo.icon className="w-3.5 h-3.5 sm:w-3 sm:h-3" />{contentTypeInfo.label}
                 </span>
                 {link.category && (
-                  <span className="px-2.5 py-1 sm:px-2 sm:py-0.5 bg-purple-100 text-purple-800 text-sm sm:text-xs font-semibold rounded-full border border-purple-200">
-                    {link.category}
+                  <span className="px-2.5 py-1 sm:px-2 sm:py-0.5 bg-gray-100 text-gray-700 text-sm sm:text-xs font-medium rounded-full border border-gray-200">
+                    {capitalizeCategoryName(link.category)}
                   </span>
                 )}
                 {link.collectionId && (
@@ -1406,9 +1405,9 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                     <div className={`text-base sm:text-sm ${contentTypeInfo.color.split(' ')[1]}`}>{contentTypeInfo.label}</div>
                   </div>
                   {link.category && (
-                    <div className="p-3 bg-purple-50 rounded-lg">
-                      <div className="text-purple-600 font-medium mb-0.5 text-sm">Category</div>
-                      <div className="text-purple-800 text-base sm:text-sm">{link.category}</div>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-gray-600 font-medium mb-0.5 text-sm">Category</div>
+                      <div className="text-gray-800 text-base sm:text-sm">{capitalizeCategoryName(link.category)}</div>
                     </div>
                   )}
                   {link.collectionId && (

@@ -1486,51 +1486,69 @@ export const Dashboard: React.FC = () => {
               </span>
             </h2>
           </div>
+          
+          {/* Stats Row - Consolidated below title with subtle gray styling */}
+          {filteredLinks.length > 0 && (() => {
+            const uniqueCategories = new Set(filteredLinks.map(l => l.category).filter(Boolean))
+            const favCount = filteredLinks.filter(l => l.isFavorite && !l.isArchived).length
+            return (
+              <div className="mt-2 sm:mt-3 flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500">
+                <span className="font-medium text-gray-600">{filteredLinks.length} {filteredLinks.length === 1 ? 'link' : 'links'}</span>
+                <span className="text-gray-400">·</span>
+                <span className="font-medium text-gray-600">{uniqueCategories.size} {uniqueCategories.size === 1 ? 'category' : 'categories'}</span>
+                {favCount > 0 && (
+                  <>
+                    <span className="text-gray-400">·</span>
+                    <span className="font-medium text-gray-600">{favCount} {favCount === 1 ? 'favorite' : 'favorites'}</span>
+                  </>
+                )}
+              </div>
+            )
+          })()}
         </motion.div>
 
-        {/* ✅ SEARCH BAR WITH STATS AND ACTIONS: Displayed second per user request */}
+        {/* ✅ SEARCH BAR: Full-width with modern styling */}
         <motion.div
           initial={shouldAnimate ? "hidden" : "visible"}
           animate="visible"
           variants={fadeInUp}
           transition={{ delay: shouldAnimate ? 0.05 : 0, duration: animationConfig.duration, ease: "easeOut" }}
-          className="relative z-20 bg-white/98 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg shadow-gray-900/5 border border-gray-200/80 mb-3 sm:mb-4 md:mb-6 p-3 sm:p-4 md:p-5"
+          className="relative z-20 mb-3 sm:mb-4 md:mb-6"
         >
-          <div className="flex flex-col gap-2.5 sm:gap-3 md:gap-4">
-            {/* Search Bar Row */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 md:gap-4">
-              {/* Left: Search with integrated Filter */}
-              <div className="flex-1 min-w-0 relative">
-                <div className="relative flex items-center">
-                  <SearchAutocomplete
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    links={links}
-                    placeholder={isMobile ? "Search links..." : "Search your library..."}
+          {/* Search Bar Row - Full width with bg-gray-50 on mobile */}
+          <div className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 md:gap-4 ${isMobile ? 'bg-gray-50 rounded-xl p-3' : 'bg-white/98 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg shadow-gray-900/5 border border-gray-200/80 p-3 sm:p-4 md:p-5'}`}>
+            {/* Left: Search with integrated Filter */}
+            <div className="flex-1 min-w-0 relative">
+              <div className="relative flex items-center">
+                <SearchAutocomplete
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  links={links}
+                  placeholder={isMobile ? "Search links..." : "Search your library..."}
+                />
+                {/* Filter Button inside Search */}
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20">
+                  <FiltersDropdown
+                    filters={{
+                      category: filters.category,
+                      dateRange: filters.dateRange,
+                      tags: filters.tags,
+                      contentType: filters.contentType,
+                    }}
+                    onFiltersChange={(newFilters) => {
+                      setFilters(prev => ({
+                        ...prev,
+                        ...newFilters
+                      }))
+                    }}
+                    iconOnly={true}
                   />
-                  {/* Filter Button inside Search */}
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20">
-                    <FiltersDropdown
-                      filters={{
-                        category: filters.category,
-                        dateRange: filters.dateRange,
-                        tags: filters.tags,
-                        contentType: filters.contentType,
-                      }}
-                      onFiltersChange={(newFilters) => {
-                        setFilters(prev => ({
-                          ...prev,
-                          ...newFilters
-                        }))
-                      }}
-                      iconOnly={true}
-                    />
-                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Right: Action Buttons - New Link, Filter, Export - Compact on mobile */}
-              <div className="flex items-center gap-3 sm:gap-3 md:gap-4 flex-shrink-0">
+              {/* Right: Action Buttons - New Link, Filter, Export - Hidden on mobile, shown on desktop */}
+              <div className="hidden sm:flex items-center gap-3 sm:gap-3 md:gap-4 flex-shrink-0">
                 {/* New Link Button */}
                 <button 
                   onClick={() => setShowAddModal(true)}
@@ -1554,34 +1572,6 @@ export const Dashboard: React.FC = () => {
                 </button>
               </div>
             </div>
-
-            {/* Stats Row - Links count, Categories count, Favorites count - Enhanced as chips */}
-            {filteredLinks.length > 0 && (() => {
-              const uniqueCategories = new Set(filteredLinks.map(l => l.category).filter(Boolean))
-              const favCount = filteredLinks.filter(l => l.isFavorite && !l.isArchived).length
-              return (
-                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs sm:text-sm">
-                    <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
-                    <span className="font-semibold text-gray-700">{filteredLinks.length}</span>
-                    <span className="text-gray-500">{filteredLinks.length === 1 ? 'link' : 'links'}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-xs sm:text-sm">
-                    <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" />
-                    <span className="font-semibold text-blue-600">{uniqueCategories.size}</span>
-                    <span className="text-gray-500">categories</span>
-                  </div>
-                  {favCount > 0 && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full text-xs sm:text-sm">
-                      <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500 flex-shrink-0" />
-                      <span className="font-semibold text-amber-600">{favCount}</span>
-                      <span className="text-gray-500">favorites</span>
-                    </div>
-                  )}
-                </div>
-              )
-            })()}
-          </div>
         </motion.div>
 
         {/* ✅ VIEW CONTROLS: List/Grid toggle */}
@@ -2143,10 +2133,10 @@ export const Dashboard: React.FC = () => {
                             </div>
                           </motion.div>
 
-                          {/* Links for this category - enhanced spacing */}
+                          {/* Links for this category - enhanced spacing with more breathing room */}
                           <div className={viewMode === 'grid' 
                             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-5 md:gap-6' 
-                            : 'flex flex-col gap-3 sm:gap-4'
+                            : 'flex flex-col gap-5 sm:gap-4'
                           }>
                             {categoryLinks.map((link, index) => (
                               <motion.div
