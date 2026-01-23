@@ -313,6 +313,47 @@ const debounce = (func, wait) => {
   };
 };
 
+/**
+ * Checks if a URL's hostname matches any of the allowed domains
+ * Handles exact matches and subdomains (e.g., myblog.wordpress.com matches wordpress.com)
+ * @param {string} url - URL to check
+ * @param {string[]} allowedDomains - Array of allowed domain strings (e.g., ['wordpress.com', 'medium.com'])
+ * @returns {boolean} True if hostname matches any allowed domain
+ */
+const isDomainMatch = (url, allowedDomains) => {
+  if (!url || typeof url !== 'string' || !Array.isArray(allowedDomains) || allowedDomains.length === 0) {
+    return false;
+  }
+  
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.toLowerCase();
+    
+    // Check each allowed domain
+    for (const domain of allowedDomains) {
+      const normalizedDomain = domain.toLowerCase().trim();
+      if (!normalizedDomain) continue;
+      
+      // Exact match
+      if (hostname === normalizedDomain) {
+        return true;
+      }
+      
+      // Subdomain match (e.g., myblog.wordpress.com matches wordpress.com)
+      // Check if hostname ends with '.' + domain
+      if (hostname.endsWith('.' + normalizedDomain)) {
+        return true;
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    // Invalid URL - return false (don't crash extension)
+    console.debug('[SRT] Failed to parse URL for domain matching:', error);
+    return false;
+  }
+};
+
 // ============================================================================
 // Main Popup Class
 // ============================================================================
@@ -908,7 +949,7 @@ class SmarTrackPopup {
           }
           
           // For Medium specifically, check article header images and specific selectors
-          if (!imageMeta && url.includes('medium.com')) {
+          if (!imageMeta && isDomainMatch(url, ['medium.com'])) {
             try {
               // Medium often uses figure or picture elements in article
               const articleFigure = document.querySelector('article figure img, article picture img, article img');
@@ -985,11 +1026,7 @@ class SmarTrackPopup {
       if (urlLower.includes('.pdf') || urlLower.endsWith('.pdf')) return 'pdf';
       
       // Video platforms
-      if (urlLower.includes('youtube.com') || 
-          urlLower.includes('youtu.be') ||
-          urlLower.includes('vimeo.com') ||
-          urlLower.includes('dailymotion.com') ||
-          urlLower.includes('twitch.tv')) {
+      if (isDomainMatch(url, ['youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com', 'twitch.tv'])) {
         return 'video';
       }
       
@@ -1000,10 +1037,7 @@ class SmarTrackPopup {
       if (urlLower.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt|rtf)$/)) return 'document';
       
       // Academic/Research articles
-      if (urlLower.includes('arxiv.org') || 
-          urlLower.includes('scholar.google') ||
-          urlLower.includes('pubmed.ncbi.nlm.nih.gov') ||
-          urlLower.includes('researchgate.net')) {
+      if (isDomainMatch(url, ['arxiv.org', 'scholar.google.com', 'pubmed.ncbi.nlm.nih.gov', 'researchgate.net'])) {
         return 'article';
       }
       
@@ -1013,9 +1047,7 @@ class SmarTrackPopup {
         // Check if it's a blog post
         if (urlLower.includes('/blog/') ||
             urlLower.includes('/post/') ||
-            urlLower.includes('medium.com') ||
-            urlLower.includes('wordpress.com') ||
-            urlLower.includes('blogspot.com') ||
+            isDomainMatch(url, ['medium.com', 'wordpress.com', 'blogspot.com']) ||
             document.querySelector('[itemtype*="BlogPosting"]')) {
           return 'blog';
         }
@@ -1025,10 +1057,7 @@ class SmarTrackPopup {
       // Check for article/blog structure
       if (document.querySelector('article')) {
         if (urlLower.match(/\/(blog|post|article|news)\//) ||
-            urlLower.includes('medium.com') ||
-            urlLower.includes('wordpress.com') ||
-            urlLower.includes('blogspot.com') ||
-            urlLower.includes('tumblr.com')) {
+            isDomainMatch(url, ['medium.com', 'wordpress.com', 'blogspot.com', 'tumblr.com'])) {
           return 'blog';
         }
       }
@@ -2035,11 +2064,7 @@ class SmarTrackPopup {
     if (urlLower.includes('.pdf') || urlLower.endsWith('.pdf')) return 'pdf';
     
     // Video platforms
-    if (urlLower.includes('youtube.com') || 
-        urlLower.includes('youtu.be') ||
-        urlLower.includes('vimeo.com') ||
-        urlLower.includes('dailymotion.com') ||
-        urlLower.includes('twitch.tv')) {
+    if (isDomainMatch(url, ['youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com', 'twitch.tv'])) {
       return 'video';
     }
     
@@ -2050,10 +2075,7 @@ class SmarTrackPopup {
     if (urlLower.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt|rtf)$/)) return 'document';
     
     // Academic/Research articles
-    if (urlLower.includes('arxiv.org') || 
-        urlLower.includes('scholar.google') ||
-        urlLower.includes('pubmed.ncbi.nlm.nih.gov') ||
-        urlLower.includes('researchgate.net')) {
+    if (isDomainMatch(url, ['arxiv.org', 'scholar.google.com', 'pubmed.ncbi.nlm.nih.gov', 'researchgate.net'])) {
       return 'article';
     }
     
@@ -2076,10 +2098,7 @@ class SmarTrackPopup {
       
       // Check URL patterns for blogs
       if (urlLower.match(/\/(blog|post|article|news)\//) ||
-          urlLower.includes('medium.com') ||
-          urlLower.includes('wordpress.com') ||
-          urlLower.includes('blogspot.com') ||
-          urlLower.includes('tumblr.com')) {
+          isDomainMatch(url, ['medium.com', 'wordpress.com', 'blogspot.com', 'tumblr.com'])) {
         return 'blog';
       }
     } catch (e) {
