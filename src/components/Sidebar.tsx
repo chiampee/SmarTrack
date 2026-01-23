@@ -298,7 +298,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               }`}
             >
               {(location.pathname === '/main' || location.pathname === '/') && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r sidebar-active-indicator" />
               )}
               <Home className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/main' || location.pathname === '/' ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
               <Tooltip content="Feed" disabled={!isTabletMode}>
@@ -326,7 +326,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   }`}
                 >
                   {isActivePath('/?filter=favorites') && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r sidebar-active-indicator" />
                   )}
                   <Star className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${isActivePath('/?filter=favorites') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
                   <Tooltip content="Favorites" disabled={!isTabletMode}>
@@ -347,7 +347,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   }`}
                 >
                   {isActivePath('/?filter=recent') && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r sidebar-active-indicator" />
                   )}
                   <Clock className={`w-4 h-4 flex-shrink-0 ${isActivePath('/?filter=recent') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
                   <Tooltip content="Recents" disabled={!isTabletMode}>
@@ -368,7 +368,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   }`}
                 >
                   {isActivePath('/?filter=archived') && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r sidebar-active-indicator" />
                   )}
                   <Archive className={`w-4 h-4 flex-shrink-0 ${isActivePath('/?filter=archived') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
                   <Tooltip content="Vault" disabled={!isTabletMode}>
@@ -439,7 +439,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                           title={`View collection: ${c.name} (${c.linkCount || 0} links)`}
                         >
                           {active && (
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r sidebar-active-indicator" />
                           )}
                           <Link 
                             to={to} 
@@ -556,7 +556,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                         title={`Filter by ${capitalizeCategoryName(category.name)} (${category.linkCount} links)`}
                       >
                         {active && (
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r sidebar-active-indicator" />
                         )}
                         <Link
                           to={to} 
@@ -627,7 +627,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               }`}
             >
               {isSettingsActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r sidebar-active-indicator" />
               )}
               <Settings className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${isSettingsActive ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={1.5} />
               <Tooltip content="Settings" disabled={!isTabletMode}>
@@ -651,7 +651,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   }`}
                 >
                   {location.pathname === '/analytics' && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r sidebar-active-indicator" />
                   )}
                   <BarChart3 className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/analytics' ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={1.5} />
                   <Tooltip content="Analytics" disabled={!isTabletMode}>

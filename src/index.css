@@ -120,6 +120,12 @@ body.menu-open {
   background: rgba(209, 213, 219, 0.9);
 }
 
+/* Smooth active indicator transition */
+.sidebar-active-indicator {
+  height: 24px;
+  transition: height 200ms ease-out, opacity 200ms ease-out;
+}
+
 /* ===== SAFE AREA INSETS FOR NOTCHED PHONES ===== */
 @supports (padding: env(safe-area-inset-top)) {
   html {
