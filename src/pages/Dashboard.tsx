@@ -143,15 +143,14 @@ export const Dashboard: React.FC = () => {
                                normalizedExtensionVersion === LATEST_EXTENSION_VERSION
   
   // Show update notice ONLY if:
-  // 1. Extension is installed but version is null/undefined/empty (old extension without version reporting)
-  // 2. Extension version is outdated compared to latest
-  // 3. User has extension links but extension isn't detected (likely old extension that doesn't respond)
+  // 1. Extension is currently installed (isExtensionInstalled === true)
+  // 2. Extension is installed but version is null/undefined/empty (old extension without version reporting)
+  // 3. Extension version is outdated compared to latest
   // BUT NOT if extension is up to date
-  // IMPORTANT: If extension is detected and reports a version, prioritize that over likelyHasOldExtension
-  const needsUpdate = !isExtensionUpToDate && (
+  // IMPORTANT: Only show update notice when extension is currently installed - don't use hasExtensionLinks fallback
+  const needsUpdate = isExtensionInstalled && !isExtensionUpToDate && (
     hasOldExtension || 
-    hasOutdatedExtension || 
-    (likelyHasOldExtension && !isExtensionInstalled) // Only use likelyHasOldExtension if extension is truly not detected
+    hasOutdatedExtension
   )
   
   // Clear dismissed state when extension is updated to latest version
@@ -1486,17 +1485,15 @@ export const Dashboard: React.FC = () => {
         {/* Logic: Check if version has been dismissed - if dismissed version matches latest, don't show */}
         {/* CRITICAL: Also check if extension is actually up to date - if so, don't show notice */}
         {(() => {
-          // CRITICAL: Only show update notice for users who HAVE installed the extension
-          // This means: extension is currently detected OR user has extension links (used it before)
-          const hasInstalledExtension = isExtensionInstalled || hasExtensionLinks
-          
-          if (!hasInstalledExtension) {
-            return false // User has never installed extension, don't show update notice
+          // CRITICAL: Only show update notice if extension is CURRENTLY installed
+          // Don't use hasExtensionLinks - that's only for install modal logic
+          // If extension is not currently detected, don't show update notice
+          if (!isExtensionInstalled) {
+            return false // Extension not currently installed, don't show update notice
           }
           
           // First check: Is extension up to date? If yes, never show notice
-          const isUpToDate = isExtensionInstalled && 
-                             normalizedExtensionVersion !== null && 
+          const isUpToDate = normalizedExtensionVersion !== null && 
                              normalizedExtensionVersion !== undefined &&
                              normalizedExtensionVersion !== '' &&
                              normalizedExtensionVersion === LATEST_EXTENSION_VERSION
@@ -1510,8 +1507,8 @@ export const Dashboard: React.FC = () => {
           const isVersionDismissed = dismissedVersion === LATEST_EXTENSION_VERSION
           
           // Only show on desktop (not mobile/tablet) - extensions don't work on mobile
-          // Only show if update is needed AND version hasn't been dismissed AND user has installed extension
-          return needsUpdate && isAuthenticated && !isVersionDismissed && !isMobile && hasInstalledExtension
+          // Only show if update is needed AND version hasn't been dismissed AND extension is currently installed
+          return needsUpdate && isAuthenticated && !isVersionDismissed && !isMobile
         })() && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
