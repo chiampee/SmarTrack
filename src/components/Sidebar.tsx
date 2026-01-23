@@ -5,6 +5,7 @@ import { useAuth0 } from '@auth0/auth0-react'
 import { useBackendApi } from '../hooks/useBackendApi'
 import { isAppError, getUserFriendlyMessage } from '../utils/errorHandler'
 import { capitalizeCategoryName } from '../utils/categoryUtils'
+import { Tooltip } from './Tooltip'
 
 interface Category {
   id: string
@@ -25,10 +26,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
   const [collections, setCollections] = useState<Array<{ id: string; name: string; linkCount?: number }>>([])
   const [isProjectsExpanded, setIsProjectsExpanded] = useState(true)
   const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(true)
-  // isMiniMode removed - sidebar is always full width on desktop (lg:)
-  // On mobile, sidebar is full width when open
-  const isMiniMode = false // Always show full sidebar on desktop
+  const [isLoadingCollections, setIsLoadingCollections] = useState(true)
+  // Tablet mode: collapse to icons only between 768px-1024px
+  const [isTabletMode, setIsTabletMode] = useState(false)
   const [displayName, setDisplayName] = useState<string | null>(null)
+
+  // Detect tablet mode (768px-1024px)
+  useEffect(() => {
+    const checkTabletMode = () => {
+      setIsTabletMode(window.innerWidth >= 768 && window.innerWidth < 1024)
+    }
+    checkTabletMode()
+    window.addEventListener('resize', checkTabletMode)
+    return () => window.removeEventListener('resize', checkTabletMode)
+  }, [])
 
   // Load user profile to get displayName
   useEffect(() => {
@@ -96,7 +107,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
     let isMounted = true
     const load = async () => {
       try {
-        if (!isAuthenticated) return
+        if (!isAuthenticated) {
+          setIsLoadingCollections(false)
+          return
+        }
+        setIsLoadingCollections(true)
         // Wait a bit longer for token to be available and to avoid race conditions with Dashboard
         // This gives Dashboard's initial load priority
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -107,6 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
         
         if (isMounted) {
           setCollections(cols || [])
+          setIsLoadingCollections(false)
         }
       } catch (e) {
         // Silently ignore common errors during initialization
@@ -118,6 +134,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
             !errorMsg.includes('timeout') &&
             isMounted) {
           console.error('Failed to load collections:', error.message)
+        }
+        if (isMounted) {
+          setIsLoadingCollections(false)
         }
       }
     }
@@ -211,8 +230,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
         className={`fixed z-[60] transform transition-all duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:!translate-x-0 lg:!block'
         } ${
-          // Mobile: full sidebar, Desktop: permanent fixed width (256px)
-          'w-[85vw] max-w-[280px] sm:w-64 lg:!w-64 lg:min-w-[256px] lg:left-0 lg:top-0 lg:h-full'
+          // Mobile: full sidebar, Tablet: icons only (w-20), Desktop: permanent fixed width (256px)
+          'w-[85vw] max-w-[280px] sm:w-64 md:w-20 lg:!w-64 lg:min-w-[256px] lg:left-0 lg:top-0 lg:h-full'
         } ${
           // Mobile: full height with border, Desktop: permanent sidebar
           'top-0 left-0 h-full border-r border-gray-100 bg-white shadow-xl shadow-gray-900/5 lg:shadow-none lg:!block'
@@ -222,7 +241,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
         <div className="flex flex-col h-full">
           {/* ✅ Premium Mobile: User Profile Section - Minimalist design */}
           {isAuthenticated && user && (
-            <div className="p-6 sm:p-5 lg:border-b-0 border-b border-slate-200/80 flex items-center gap-4">
+            <div className="p-6 sm:p-5 lg:border-b-0 border-b border-slate-200/80 flex items-center gap-4 flex-shrink-0">
               <div className="relative flex-shrink-0">
                 <img
                   src={user.picture}
@@ -230,13 +249,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   className="w-14 h-14 sm:w-12 sm:h-12 lg:w-12 lg:h-12 rounded-full border-2 border-gray-200/60 shadow-sm"
                 />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-lg sm:text-base lg:text-base font-bold text-gray-900 truncate whitespace-nowrap">
-                  {displayName || user.name || user.email}
-                </p>
-                <p className="text-xs text-gray-400 truncate whitespace-nowrap mt-0.5">
-                  {user.email}
-                </p>
+              <div className="flex-1 min-w-0 md:hidden lg:block">
+                <Tooltip content={displayName || user.name || user.email || ''} disabled={!isTabletMode && !((displayName || user.name || user.email || '').length > 15)}>
+                  <p className="text-lg sm:text-base lg:text-base font-bold text-gray-900 truncate whitespace-nowrap">
+                    {displayName || user.name || user.email}
+                  </p>
+                </Tooltip>
+                <Tooltip content={user.email || ''} disabled={!isTabletMode && !((user.email || '').length > 20)}>
+                  <p className="text-xs text-gray-400 truncate whitespace-nowrap mt-0.5">
+                    {user.email}
+                  </p>
+                </Tooltip>
               </div>
               <button
                 onClick={onClose}
@@ -250,11 +273,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
 
           {/* ✅ Premium Mobile: Header - Minimalist design */}
           <div className="mt-2 sm:mt-0 p-4 sm:p-4 lg:border-b-0 border-b border-slate-200/80 flex items-center justify-between">
-            <h1 className="text-base sm:text-lg lg:text-base font-bold text-gray-900">Navigation</h1>
+            <Tooltip content="Navigation" disabled={!isTabletMode}>
+              <h1 className="text-base sm:text-lg lg:text-base font-bold text-gray-900 md:hidden lg:inline">Navigation</h1>
+            </Tooltip>
           </div>
 
           {/* ✅ MOBILE RESPONSIVE: Navigation with better touch targets - optimized padding for more space */}
-          <nav className="flex-1 p-3 sm:p-4 lg:p-5 space-y-1 overflow-y-auto">
+          <nav className="flex-1 p-3 sm:p-4 lg:p-5 space-y-1 overflow-y-auto custom-scrollbar">
             {/* Main */}
             <Link
               to="/main"
@@ -273,15 +298,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               }`}
             >
               {(location.pathname === '/main' || location.pathname === '/') && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
               )}
               <Home className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/main' || location.pathname === '/' ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
-              <span className="font-medium text-base sm:text-sm flex-shrink-0">Feed</span>
+              <Tooltip content="Feed" disabled={!isTabletMode}>
+                <span className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline">Feed</span>
+              </Tooltip>
             </Link>
 
             {/* ✅ Premium Mobile: Projects Quick Filters - Minimalist design */}
             <div className="mt-6 sm:mt-8 lg:mt-4 pt-4 lg:pt-2">
-              <h3 className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-2 whitespace-nowrap">Projects</h3>
+              <Tooltip content="Projects" disabled={!isTabletMode}>
+                <h3 className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-2 whitespace-nowrap md:hidden lg:inline">Projects</h3>
+              </Tooltip>
               <div className="space-y-1">
                 <Link
                   to="/?filter=favorites"
@@ -297,10 +326,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   }`}
                 >
                   {isActivePath('/?filter=favorites') && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
                   )}
                   <Star className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${isActivePath('/?filter=favorites') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
-                  <span className="font-medium text-base sm:text-sm flex-shrink-0">Favorites</span>
+                  <Tooltip content="Favorites" disabled={!isTabletMode}>
+                    <span className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline">Favorites</span>
+                  </Tooltip>
                 </Link>
                 <Link
                   to="/?filter=recent"
@@ -316,10 +347,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   }`}
                 >
                   {isActivePath('/?filter=recent') && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
                   )}
                   <Clock className={`w-4 h-4 flex-shrink-0 ${isActivePath('/?filter=recent') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
-                  <span className="font-medium text-base sm:text-sm flex-shrink-0">Recents</span>
+                  <Tooltip content="Recents" disabled={!isTabletMode}>
+                    <span className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline">Recents</span>
+                  </Tooltip>
                 </Link>
                 <Link
                   to="/?filter=archived"
@@ -335,38 +368,60 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   }`}
                 >
                   {isActivePath('/?filter=archived') && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
                   )}
                   <Archive className={`w-4 h-4 flex-shrink-0 ${isActivePath('/?filter=archived') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
-                  <span className="font-medium text-base sm:text-sm flex-shrink-0">Vault</span>
+                  <Tooltip content="Vault" disabled={!isTabletMode}>
+                    <span className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline">Vault</span>
+                  </Tooltip>
                 </Link>
               </div>
               {/* My Projects */}
-              {collections.length > 0 && (
+              {isLoadingCollections ? (
                 <div className="mt-4">
                   <div className="flex items-center justify-between mb-2">
-                    <button
-                      onClick={() => setIsProjectsExpanded(!isProjectsExpanded)}
-                      className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors group whitespace-nowrap"
-                    >
-                      {isProjectsExpanded ? (
-                        <ChevronDown className="w-3 h-3 group-hover:text-gray-600" strokeWidth={1.5} />
-                      ) : (
-                        <ChevronUp className="w-3 h-3 group-hover:text-gray-600" strokeWidth={1.5} />
-                      )}
-                      <span>Workspaces</span>
-                    </button>
-                    <Link 
-                      to="/?createCollection=1" 
-                      onClick={() => {
-                        if (window.innerWidth < 1024) {
-                          onClose()
-                        }
-                      }} 
-                      className="text-xs text-blue-600 hover:underline"
-                    >
-                      + New
-                    </Link>
+                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse md:hidden lg:block" />
+                    <div className="h-3 w-12 bg-gray-200 rounded animate-pulse md:hidden lg:block" />
+                  </div>
+                  <div className="space-y-1">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex items-center gap-2 px-2 py-2.5 rounded-lg">
+                        <div className="w-4 h-4 bg-gray-200 rounded animate-pulse flex-shrink-0" />
+                        <div className="h-4 flex-1 bg-gray-200 rounded animate-pulse md:hidden lg:block" />
+                        <div className="w-6 h-4 bg-gray-200 rounded-full animate-pulse md:hidden lg:block" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : collections.length > 0 ? (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <Tooltip content="Workspaces" disabled={!isTabletMode}>
+                      <button
+                        onClick={() => setIsProjectsExpanded(!isProjectsExpanded)}
+                        className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors group whitespace-nowrap md:justify-center"
+                      >
+                        {isProjectsExpanded ? (
+                          <ChevronDown className="w-3 h-3 group-hover:text-gray-600" strokeWidth={1.5} />
+                        ) : (
+                          <ChevronUp className="w-3 h-3 group-hover:text-gray-600" strokeWidth={1.5} />
+                        )}
+                        <span className="md:hidden lg:inline">Workspaces</span>
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Create New Workspace" disabled={!isTabletMode}>
+                      <Link 
+                        to="/?createCollection=1" 
+                        onClick={() => {
+                          if (window.innerWidth < 1024) {
+                            onClose()
+                          }
+                        }} 
+                        className="text-xs text-blue-600 hover:underline md:hidden lg:inline"
+                      >
+                        + New
+                      </Link>
+                    </Tooltip>
                   </div>
                   {isProjectsExpanded && (
                     <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
@@ -384,7 +439,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                           title={`View collection: ${c.name} (${c.linkCount || 0} links)`}
                         >
                           {active && (
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
                           )}
                           <Link 
                             to={to} 
@@ -396,11 +451,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                             className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 flex-1 min-w-0 touch-manipulation"
                           >
                             <Library className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${active ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} />
-                            <span className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium truncate min-w-0">
-                              {c.name}
-                            </span>
+                            <Tooltip content={c.name} disabled={!isTabletMode && !(c.name.length > 15)}>
+                              <span className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium truncate min-w-0 md:hidden lg:inline">
+                                {c.name}
+                              </span>
+                            </Tooltip>
                             {typeof c.linkCount === 'number' && (
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 md:hidden lg:inline ${
                                 active ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600'
                               }`}>
                                 {c.linkCount}
@@ -427,36 +484,46 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                     </div>
                   )}
                 </div>
-              )}
-              {collections.length === 0 && (
-                <Link 
-                  to="/?createCollection=1" 
-                  onClick={() => {
-                    if (window.innerWidth < 1024) {
-                      onClose()
-                    }
-                  }} 
-                  className="mt-3 inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-gradient-to-br hover:from-slate-50 hover:via-blue-50/20 hover:to-indigo-50/10 rounded-xl transition-all duration-300"
-                >
-                  <span>+ Create New Project</span>
-                </Link>
+              ) : (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <Tooltip content="Workspaces" disabled={!isTabletMode}>
+                      <button
+                        onClick={() => setIsProjectsExpanded(!isProjectsExpanded)}
+                        className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors group whitespace-nowrap md:justify-center"
+                      >
+                        {isProjectsExpanded ? (
+                          <ChevronDown className="w-3 h-3 group-hover:text-gray-600" strokeWidth={1.5} />
+                        ) : (
+                          <ChevronUp className="w-3 h-3 group-hover:text-gray-600" strokeWidth={1.5} />
+                        )}
+                        <span className="md:hidden lg:inline">Workspaces</span>
+                      </button>
+                    </Tooltip>
+                  </div>
+                  {isProjectsExpanded && (
+                    <p className="text-xs italic text-gray-400 px-2 py-2 md:hidden lg:block">Create a project to start</p>
+                  )}
+                </div>
               )}
             </div>
 
             {/* ✅ Premium Mobile: Categories Section - Minimalist design */}
             {categories.length > 0 && (
               <div className="mt-4 sm:mt-6 lg:mt-4 pt-4 lg:pt-2">
-                <button
-                  onClick={() => setIsCategoriesExpanded(!isCategoriesExpanded)}
-                  className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-2 hover:text-gray-600 transition-colors group w-full text-left whitespace-nowrap"
-                >
-                  {isCategoriesExpanded ? (
-                    <ChevronDown className="w-3 h-3 group-hover:text-gray-600" strokeWidth={1.5} />
-                  ) : (
-                    <ChevronUp className="w-3 h-3 group-hover:text-gray-600" strokeWidth={1.5} />
-                  )}
-                  <span>Categories</span>
-                </button>
+                <Tooltip content="Categories" disabled={!isTabletMode}>
+                  <button
+                    onClick={() => setIsCategoriesExpanded(!isCategoriesExpanded)}
+                    className="flex items-center gap-1.5 text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-3 px-2 hover:text-gray-600 transition-colors group w-full text-left whitespace-nowrap md:justify-center"
+                  >
+                    {isCategoriesExpanded ? (
+                      <ChevronDown className="w-3 h-3 group-hover:text-gray-600" strokeWidth={1.5} />
+                    ) : (
+                      <ChevronUp className="w-3 h-3 group-hover:text-gray-600" strokeWidth={1.5} />
+                    )}
+                    <span className="md:hidden lg:inline">Categories</span>
+                  </button>
+                </Tooltip>
                 {isCategoriesExpanded && (
                   <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                   {categories.map((category, index) => {
@@ -489,7 +556,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                         title={`Filter by ${capitalizeCategoryName(category.name)} (${category.linkCount} links)`}
                       >
                         {active && (
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
                         )}
                         <Link
                           to={to} 
@@ -503,11 +570,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                           <div className={`p-1.5 sm:p-1 rounded flex-shrink-0 ${getColor()}`}>
                             {getIcon()}
                           </div>
-                          <span className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium truncate min-w-0">
-                            {capitalizeCategoryName(category.name)}
-                          </span>
+                          <Tooltip content={capitalizeCategoryName(category.name)} disabled={!isTabletMode && !(category.name.length > 15)}>
+                            <span className="flex-1 text-left text-base sm:text-sm lg:text-base font-medium truncate min-w-0 md:hidden lg:inline">
+                              {capitalizeCategoryName(category.name)}
+                            </span>
+                          </Tooltip>
                           {typeof category.linkCount === 'number' && (
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 md:hidden lg:inline ${
                               active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'
                             }`}>
                               {category.linkCount}
@@ -558,10 +627,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
               }`}
             >
               {isSettingsActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
               )}
               <Settings className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${isSettingsActive ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={1.5} />
-              <span className="font-medium text-base sm:text-sm flex-shrink-0">Settings</span>
+              <Tooltip content="Settings" disabled={!isTabletMode}>
+                <span className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline">Settings</span>
+              </Tooltip>
               </Link>
               
               {/* Admin Analytics - only show for admins */}
@@ -580,17 +651,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                   }`}
                 >
                   {location.pathname === '/analytics' && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r" />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] bg-blue-600 rounded-r transition-all duration-200 ease-out" style={{ height: '24px' }} />
                   )}
                   <BarChart3 className={`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 ${location.pathname === '/analytics' ? 'text-blue-600' : 'text-gray-500'}`} strokeWidth={1.5} />
-                  <span className="font-medium text-base sm:text-sm flex-shrink-0">Analytics</span>
+                  <Tooltip content="Analytics" disabled={!isTabletMode}>
+                    <span className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline">Analytics</span>
+                  </Tooltip>
                 </Link>
               )}
             </div>
           </nav>
 
-          {/* ✅ Premium Mobile: Footer - Minimalist design with whitespace separation */}
-          <div className="p-4 sm:p-6 lg:p-4 space-y-4 lg:space-y-2">
+          {/* ✅ Premium Mobile: Footer - Minimalist design with whitespace separation - Sticky */}
+          <div className="p-4 sm:p-6 lg:p-4 space-y-4 lg:space-y-2 border-t border-gray-100 bg-white mt-auto">
             {isAuthenticated && (
               <button
                 onClick={() => {
@@ -601,13 +674,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 aria-label="Logout"
               >
                 <LogOut className="w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0" strokeWidth={1.5} />
-                <span className="font-medium text-base sm:text-sm flex-shrink-0">Logout</span>
+                <Tooltip content="Logout" disabled={!isTabletMode}>
+                  <span className="font-medium text-base sm:text-sm flex-shrink-0 truncate md:hidden lg:inline">Logout</span>
+                </Tooltip>
               </button>
             )}
             <div className="px-4 py-3 lg:py-2">
-              <div className="text-[10px] lg:text-[9px] text-gray-400 text-center font-medium whitespace-nowrap">
-                Version 2.0 • Built for Focus
-              </div>
+              <Tooltip content="Version 2.0 • Built for Focus" disabled={!isTabletMode}>
+                <div className="text-[10px] lg:text-[9px] text-gray-400 text-center font-medium whitespace-nowrap md:hidden lg:inline">
+                  Version 2.0 • Built for Focus
+                </div>
+              </Tooltip>
             </div>
           </div>
         </div>

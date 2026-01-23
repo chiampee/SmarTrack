@@ -14,7 +14,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <Header onMenu={toggleSidebar} />
       <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} categories={categories} />
-      <main className="pt-20 transition-all duration-300 lg:ml-64 px-8 lg:px-12 pb-4 sm:pb-10">
+      <main className="pt-20 transition-all duration-300 md:ml-20 lg:ml-64 px-8 lg:px-12 pb-4 sm:pb-10">
         <div className="max-w-[1200px] mx-auto">
           {children}
         </div>
