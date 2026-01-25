@@ -13,6 +13,7 @@ import { AddLinkModal } from '../components/AddLinkModal'
 import { EditLinkModal } from '../components/EditLinkModal'
 import { CreateCollectionModal } from '../components/CreateCollectionModal'
 import { ExtensionInstallModal } from '../components/ExtensionInstallModal'
+import { VisionShoutout, getVisionShoutoutSeen } from '../components/VisionShoutout'
 import { FiltersDropdown } from '../components/FiltersDropdown'
 import { LinkDetailDrawer } from '../components/LinkDetailDrawer'
 import { useBackendApi } from '../hooks/useBackendApi'
@@ -47,6 +48,8 @@ export const Dashboard: React.FC = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [showCreateCollectionModal, setShowCreateCollectionModal] = useState(false)
   const [showExtensionInstallModal, setShowExtensionInstallModal] = useState(false)
+  const [showVisionShoutout, setShowVisionShoutout] = useState(false)
+  const [addLinkHighlight, setAddLinkHighlight] = useState(false)
   const [showBulkMoveModal, setShowBulkMoveModal] = useState(false)
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null)
   const [activeFilterId, setActiveFilterId] = useState<string | null>(null)
@@ -85,25 +88,24 @@ export const Dashboard: React.FC = () => {
 
   // Show extension install modal for first-time users (desktop only)
   // ONLY show if user has NOT installed the extension AND has no extension links
-  // This ensures users who have used the extension before (even if not currently detected) don't see install modal
+  // WalkMe: do NOT show while VisionShoutout may still appear—wait until it has been seen at least once
+  // so we never stack two overlays (VisionShoutout at 800ms, Extension at 2s).
   useEffect(() => {
+    if (!getVisionShoutoutSeen()) return
+
     // Only show install modal if:
     // 1. Extension is not currently detected
     // 2. User has no extension links (never used extension before)
     // 3. User is authenticated and on desktop
-    const shouldShowInstallModal = !isExtensionInstalled && 
-                                   !hasExtensionLinks && 
-                                   isAuthenticated && 
+    const shouldShowInstallModal = !isExtensionInstalled &&
+                                   !hasExtensionLinks &&
+                                   isAuthenticated &&
                                    !isMobile
-    
+
     if (shouldShowInstallModal) {
-      // Check if user has dismissed the modal
       const dismissed = localStorage.getItem('smartrack-extension-install-dismissed')
       if (!dismissed) {
-        // Show modal after a short delay to let detection complete
-        const timer = setTimeout(() => {
-          setShowExtensionInstallModal(true)
-        }, 2000)
+        const timer = setTimeout(() => setShowExtensionInstallModal(true), 2000)
         return () => clearTimeout(timer)
       }
     }
@@ -118,6 +120,13 @@ export const Dashboard: React.FC = () => {
         setGridColumns(columns)
       }
     }
+  }, [])
+
+  // VisionShoutout: delayed 800ms on first visit (only if not seen before)
+  useEffect(() => {
+    if (getVisionShoutoutSeen()) return
+    const t = setTimeout(() => setShowVisionShoutout(true), 800)
+    return () => clearTimeout(t)
   }, [])
 
   // Check if extension update is needed
@@ -1471,8 +1480,10 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-gray-50 ${isMobile ? 'pb-24' : 'pb-8 sm:pb-6 md:pb-0'}`}>
-      <div>
-        
+      <motion.div
+        animate={{ scale: showVisionShoutout ? 0.95 : 1 }}
+        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+      >
         {/* Extension Install Banner - Removed per user request */}
         {false && !isExtensionInstalled && isAuthenticated && !isMobile && (
           <motion.div
@@ -1704,7 +1715,7 @@ export const Dashboard: React.FC = () => {
             {!isMobile && (
               <button 
                 onClick={() => setShowAddModal(true)}
-                className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
+                className={`px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap ${addLinkHighlight ? 'add-link-shimmer' : ''}`}
                 aria-label="Add new link"
               >
                 <Plus className="w-4 h-4" strokeWidth={2} />
@@ -2379,7 +2390,7 @@ export const Dashboard: React.FC = () => {
             )}
           </motion.div>
         </motion.div>
-      </div>
+      </motion.div>
 
       {/* Add Link Modal */}
       <AddLinkModal
@@ -2405,6 +2416,18 @@ export const Dashboard: React.FC = () => {
         isOpen={showExtensionInstallModal}
         onClose={() => setShowExtensionInstallModal(false)}
         onDownload={handleDownloadExtension}
+      />
+
+      {/* VisionShoutout: first-visit "Sanctuary" overlay */}
+      <VisionShoutout
+        isOpen={showVisionShoutout}
+        onEnter={() => setShowVisionShoutout(false)}
+        onEntered={() => {
+          setAddLinkHighlight(true)
+          setTimeout(() => setAddLinkHighlight(false), 2500)
+        }}
+        magneticHover={!isMobile}
+        prefersReducedMotion={prefersReducedMotion}
       />
 
       {/* Create Collection Modal */}
@@ -2497,7 +2520,7 @@ export const Dashboard: React.FC = () => {
       {isMobile && !editingLink && !isSidebarOpen && !expandedLinkId && (
         <button
           onClick={() => setShowAddModal(true)}
-          className="fixed bottom-20 right-4 z-[60] w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 backdrop-blur-md text-white rounded-full shadow-2xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 active:scale-95 transition-all duration-200 flex items-center justify-center touch-manipulation md:hidden"
+          className={`fixed bottom-20 right-4 z-[60] w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 backdrop-blur-md text-white rounded-full shadow-2xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 active:scale-95 transition-all duration-200 flex items-center justify-center touch-manipulation md:hidden ${addLinkHighlight ? 'add-link-shimmer' : ''}`}
           aria-label="Add new link"
         >
           <Plus className="w-6 h-6" strokeWidth={2} />
