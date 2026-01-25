@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Grid, List, Download, Archive, Chrome, Tag, MessageSquare, Globe, File, Trash2, Star, Home, Search, Folder } from 'lucide-react'
+import { Plus, Grid, List, Archive, Chrome, Tag, Trash2, Star, Home, Search, Folder } from 'lucide-react'
 import { LinkedInLogo, XLogo, RedditLogo, WebIcon, PDFIcon, YouTubeLogo } from '../components/BrandLogos'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { useExtensionDetection } from '../hooks/useExtensionDetection'
