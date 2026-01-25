@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- CSP: connect-src must include https://img.youtube.com https://i.ytimg.com, https://www.reddit.com for Reddit JSON API -->
+  <!-- CSP: connect-src for YouTube, Reddit, X/Twitter, LinkedIn, Figma, Pinterest (og:image fetch) -->
+  <!-- CSP: connect-src must include https://img.youtube.com https://i.ytimg.com for any fetch to thumbnail CDN -->
   <meta http-equiv="Content-Security-Policy" 
         content="default-src 'self'; 
                  script-src 'self'; 
                  style-src 'self' 'unsafe-inline'; 
                  img-src 'self' data: https:; 
-                 connect-src 'self' https://smartrack-back.onrender.com https://smar-track.vercel.app https://smartracker.vercel.app https://smartrack.vercel.app https://img.youtube.com https://i.ytimg.com https://www.reddit.com http://127.0.0.1:7242; 
+                 connect-src 'self' https://smartrack-back.onrender.com https://smar-track.vercel.app https://smartracker.vercel.app https://smartrack.vercel.app https://img.youtube.com https://i.ytimg.com https://www.reddit.com https://twitter.com https://x.com https://www.linkedin.com https://www.figma.com https://www.pinterest.com http://127.0.0.1:7242; 
                  font-src 'self' data:;
                  object-src 'none';
                  base-uri 'self';">
@@ -921,6 +922,10 @@
   <script src="utils/config.js"></script>
   <script src="utils/youtubeUtils.js"></script>
   <script src="utils/redditUtils.js"></script>
+  <script src="utils/xUtils.js"></script>
+  <script src="utils/linkedinUtils.js"></script>
+  <script src="utils/figmaUtils.js"></script>
+  <script src="utils/pinterestUtils.js"></script>
   <script src="utils/backendApi.js"></script>
   <script src="popup.js"></script>
 </body>
