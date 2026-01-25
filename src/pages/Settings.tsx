@@ -46,6 +46,7 @@ export const Settings: React.FC = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [profileLoaded, setProfileLoaded] = useState(false)
+  const [gridColumns, setGridColumns] = useState<number>(4)
 
   const handleDownloadExtension = () => {
     const linkElement = document.createElement('a')
@@ -143,6 +144,17 @@ export const Settings: React.FC = () => {
       setDisplayName(firstName.trim())
     }
   }, [firstName, profileLoaded])
+
+  // Load grid columns preference from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('smartrack-grid-columns')
+    if (saved) {
+      const columns = parseInt(saved, 10)
+      if (columns >= 2 && columns <= 6) {
+        setGridColumns(columns)
+      }
+    }
+  }, [])
 
   const handleSaveProfile = async () => {
     setIsSavingProfile(true)
@@ -728,11 +740,38 @@ export const Settings: React.FC = () => {
                         <option>100</option>
                       </select>
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2 sm:mb-2.5">
+                        Grid Columns (Desktop)
+                      </label>
+                      <select
+                        value={gridColumns}
+                        onChange={(e) => setGridColumns(parseInt(e.target.value, 10))}
+                        className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all touch-manipulation min-h-[44px]"
+                      >
+                        <option value={2}>2 Columns</option>
+                        <option value={3}>3 Columns</option>
+                        <option value={4}>4 Columns (Default)</option>
+                        <option value={5}>5 Columns</option>
+                        <option value={6}>6 Columns</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                        Number of columns in Grid view on desktop screens
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 <div className="flex justify-end pt-4">
-                  <button className="w-full sm:w-auto px-6 py-3.5 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-semibold shadow-sm touch-manipulation text-base sm:text-sm min-h-[44px]">
+                  <button
+                    onClick={() => {
+                      localStorage.setItem('smartrack-grid-columns', gridColumns.toString())
+                      toast.success('Preferences saved. Refreshing...')
+                      setTimeout(() => window.location.reload(), 500)
+                    }}
+                    className="w-full sm:w-auto px-6 py-3.5 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 font-semibold shadow-sm touch-manipulation text-base sm:text-sm min-h-[44px]"
+                  >
                     <Save className="w-4 h-4" strokeWidth={2} />
                     Save Preferences
                   </button>

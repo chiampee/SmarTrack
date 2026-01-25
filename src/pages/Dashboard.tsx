@@ -32,6 +32,7 @@ import { useUserStats } from '../hooks/useUserStats'
 export const Dashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [gridColumns, setGridColumns] = useState<number>(4)
   const [links, setLinks] = useState<Link[]>([])
   const [filteredLinks, setFilteredLinks] = useState<Link[]>([])
   const [searchBlur, setSearchBlur] = useState(false)
@@ -107,6 +108,17 @@ export const Dashboard: React.FC = () => {
       }
     }
   }, [isExtensionInstalled, hasExtensionLinks, isAuthenticated, isMobile])
+
+  // Load grid columns preference from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('smartrack-grid-columns')
+    if (saved) {
+      const columns = parseInt(saved, 10)
+      if (columns >= 2 && columns <= 6) {
+        setGridColumns(columns)
+      }
+    }
+  }, [])
 
   // Check if extension update is needed
   // IMPORTANT: Older extensions (v1.0.0, v1.0.1) don't send version info in their response
@@ -1436,6 +1448,17 @@ export const Dashboard: React.FC = () => {
     }
   }
 
+  const getGridColumnsClass = () => {
+    const columnMap: Record<number, string> = {
+      2: 'lg:grid-cols-2',
+      3: 'lg:grid-cols-3',
+      4: 'lg:grid-cols-4',
+      5: 'lg:grid-cols-5',
+      6: 'lg:grid-cols-6'
+    }
+    return `grid grid-cols-1 sm:grid-cols-2 ${columnMap[gridColumns] || 'lg:grid-cols-4'} gap-6 pb-24`
+  }
+
   const staggerItem = {
     hidden: { opacity: 0, y: animationConfig.movementDistance * 0.6 },
     visible: {
@@ -2307,7 +2330,7 @@ export const Dashboard: React.FC = () => {
 
                           {/* Links for this category - enhanced spacing with more breathing room */}
                           <div className={viewMode === 'grid' 
-                            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-24' 
+                            ? getGridColumnsClass()
                             : 'flex flex-col gap-5 sm:gap-4'
                           }>
                             {categoryLinks.map((link, index) => (
