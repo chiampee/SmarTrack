@@ -126,21 +126,22 @@ export const Dashboard: React.FC = () => {
     }
   }, [])
 
-  // VisionShoutout: only for first-timers (no links yet, never seen). Wait for first links load, then:
-  // - has links → not first-timer: setVisionShoutoutSeen(userId) and never show
-  // - no links and !getVisionShoutoutSeen(userId) → show after 800ms
+  // VisionShoutout: show when 0 links in any project (collection). Wait for first links load, then:
+  // - has any link with collectionId → setVisionShoutoutSeen(uid) and never show
+  // - no links in any project and !getVisionShoutoutSeen(uid) → show after 800ms
   // Per-user key so multiple accounts on same browser each get the welcome once.
   useEffect(() => {
     if (!hasCompletedFirstLoad) return
     const uid = backendApi.getUserId()
     if (getVisionShoutoutSeen(uid)) return
-    if (links.length > 0) {
+    const hasLinksInProject = links.some(l => !!l.collectionId)
+    if (hasLinksInProject) {
       setVisionShoutoutSeen(uid)
       return
     }
     const t = setTimeout(() => setShowVisionShoutout(true), 800)
     return () => clearTimeout(t)
-  }, [hasCompletedFirstLoad, links.length])
+  }, [hasCompletedFirstLoad, links])
 
   // Check if extension update is needed
   // IMPORTANT: Older extensions (v1.0.0, v1.0.1) don't send version info in their response

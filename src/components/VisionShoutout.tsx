@@ -2,19 +2,23 @@ import React, { useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Logo } from './Logo'
 
-const STORAGE_KEY = 'smartrack-vision-shoutout-seen'
+const STORAGE_KEY_PREFIX = 'smartrack-vision-shoutout-seen'
 
-export function getVisionShoutoutSeen(): boolean {
+function storageKey(userId: string | null | undefined): string {
+  return `${STORAGE_KEY_PREFIX}-${String(userId ?? 'anon')}`
+}
+
+export function getVisionShoutoutSeen(userId?: string | null): boolean {
   try {
-    return localStorage.getItem(STORAGE_KEY) === 'true'
+    return localStorage.getItem(storageKey(userId)) === 'true'
   } catch {
     return false
   }
 }
 
-export function setVisionShoutoutSeen(): void {
+export function setVisionShoutoutSeen(userId?: string | null): void {
   try {
-    localStorage.setItem(STORAGE_KEY, 'true')
+    localStorage.setItem(storageKey(userId), 'true')
   } catch {
     // ignore
   }
@@ -25,6 +29,8 @@ export interface VisionShoutoutProps {
   onEnter: () => void
   /** Called when the overlay has finished exiting. Use to e.g. trigger Add Link shimmer. */
   onEntered?: () => void
+  /** User id for per-user localStorage (so multiple accounts on same browser each get the welcome once). */
+  userId?: string | null
   /** Whether to enable magnetic hover (desktop only). */
   magneticHover?: boolean
   /** When true, disables breathe animation, magnetic hover, tilt, and button shimmer. */
@@ -37,6 +43,7 @@ export const VisionShoutout: React.FC<VisionShoutoutProps> = ({
   isOpen,
   onEnter,
   onEntered,
+  userId,
   magneticHover = true,
   prefersReducedMotion = false,
 }) => {
@@ -82,7 +89,7 @@ export const VisionShoutout: React.FC<VisionShoutoutProps> = ({
   }, [])
 
   const handleEnter = () => {
-    setVisionShoutoutSeen()
+    setVisionShoutoutSeen(userId)
     onEnter()
   }
 
