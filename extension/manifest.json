@@ -19,7 +19,8 @@
     "https://smartrack.vercel.app/*",
     "https://www.linkedin.com/my-items/saved-posts/*",
     "https://img.youtube.com/*",
-    "https://i.ytimg.com/*"
+    "https://i.ytimg.com/*",
+    "https://www.reddit.com/*"
   ],
   "action": {
     "default_popup": "popup.html",

@@ -10,6 +10,7 @@
 try {
   importScripts('utils/config.js');
   importScripts('utils/youtubeUtils.js');
+  importScripts('utils/redditUtils.js');
 } catch (e) {
   console.error('[SRT] Failed to import scripts in background:', e);
 }
@@ -738,10 +739,13 @@ class SmarTrackBackground {
     }
     
     const isYt = typeof isYoutubeUrl === 'function' && isYoutubeUrl(linkUrl);
-    const contentType = isYt ? 'video' : 'webpage';
+    const isReddit = typeof isRedditUrl === 'function' && isRedditUrl(linkUrl);
+    const contentType = isYt ? 'video' : (isReddit ? 'article' : 'webpage');
     let thumbnail = null;
     if (isYt && typeof getYoutubeThumbnail === 'function') {
       thumbnail = await getYoutubeThumbnail(linkUrl);
+    } else if (isReddit && typeof getRedditThumbnail === 'function') {
+      thumbnail = await getRedditThumbnail(linkUrl);
     }
     
     const linkData = {
@@ -798,8 +802,11 @@ class SmarTrackBackground {
     const pageData = await this.extractPageDataFromTab(tab);
     
     const isYt = typeof isYoutubeUrl === 'function' && isYoutubeUrl(pageData.url);
+    const isReddit = typeof isRedditUrl === 'function' && isRedditUrl(pageData.url);
     if (isYt && typeof getYoutubeThumbnail === 'function') {
       pageData.image = (await getYoutubeThumbnail(pageData.url)) ?? pageData.image;
+    } else if (isReddit && typeof getRedditThumbnail === 'function') {
+      pageData.image = (await getRedditThumbnail(pageData.url)) ?? pageData.image;
     }
     
     const linkData = {
@@ -807,7 +814,7 @@ class SmarTrackBackground {
       title: pageData.title,
       description: pageData.description || '',
       category: 'research',
-      contentType: isYt ? 'video' : 'webpage',
+      contentType: isYt ? 'video' : (isReddit ? 'article' : 'webpage'),
       source: 'extension',
       tags: [],
       thumbnail: pageData.image || null,

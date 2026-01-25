@@ -729,6 +729,9 @@ class SmarTrackPopup {
       if (typeof isYoutubeUrl === 'function' && isYoutubeUrl(currentUrl) && typeof getYoutubeThumbnail === 'function') {
         const thumb = await getYoutubeThumbnail(currentUrl);
         if (thumb !== null) this.pageData.image = thumb;
+      } else if (typeof isRedditUrl === 'function' && isRedditUrl(currentUrl) && typeof getRedditThumbnail === 'function') {
+        const thumb = await getRedditThumbnail(currentUrl);
+        if (thumb !== null) this.pageData.image = thumb;
       }
     } catch (error) {
       // Check if error is due to system page (expected)
@@ -1041,8 +1044,8 @@ class SmarTrackPopup {
       // Documents
       if (urlLower.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt|rtf)$/)) return 'document';
       
-      // Academic/Research articles
-      if (isDomainMatch(url, ['arxiv.org', 'scholar.google.com', 'pubmed.ncbi.nlm.nih.gov', 'researchgate.net'])) {
+      // Academic/Research articles and discussion (Reddit)
+      if (isDomainMatch(url, ['arxiv.org', 'scholar.google.com', 'pubmed.ncbi.nlm.nih.gov', 'researchgate.net', 'reddit.com'])) {
         return 'article';
       }
       
@@ -2080,7 +2083,7 @@ class SmarTrackPopup {
     if (urlLower.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt|rtf)$/)) return 'document';
     
     // Academic/Research articles
-    if (isDomainMatch(url, ['arxiv.org', 'scholar.google.com', 'pubmed.ncbi.nlm.nih.gov', 'researchgate.net'])) {
+    if (isDomainMatch(url, ['arxiv.org', 'scholar.google.com', 'pubmed.ncbi.nlm.nih.gov', 'researchgate.net', 'reddit.com'])) {
       return 'article';
     }
     
