@@ -417,9 +417,9 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     setTypeCounts(
       Object.fromEntries(
-        Object.entries(RESOURCE_TYPE_TO_CONTENT).map(([k, ct]) => [
+        Object.entries(RESOURCE_TYPE_TO_CONTENT).map(([k, contentTypes]) => [
           k,
-          links.filter((l) => l.contentType === ct).length,
+          links.filter((l) => contentTypes.includes(l.contentType)).length,
         ])
       ) as ResourceTypeCounts
     )
@@ -874,7 +874,8 @@ export const Dashboard: React.FC = () => {
 
     // Resource type filter from sidebar (when type= is in URL)
     if (typeParam && typeParam in RESOURCE_TYPE_TO_CONTENT) {
-      filtered = filtered.filter(link => link.contentType === RESOURCE_TYPE_TO_CONTENT[typeParam as ResourceType])
+      const contentTypes = RESOURCE_TYPE_TO_CONTENT[typeParam as ResourceType]
+      filtered = filtered.filter(link => contentTypes.includes(link.contentType))
     }
 
     // Search filter with blur-in effect
