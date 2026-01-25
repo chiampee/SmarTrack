@@ -499,6 +499,13 @@ export const Dashboard: React.FC = () => {
         setFilteredLinks(links.filter(l => l.isArchived))
         break
       }
+      case 'untagged': {
+        setSelectedCollectionId(null)
+        setActiveFilterId('untagged')
+        setCurrentCategoryName(null)
+        setFilteredLinks(links.filter(l => !l.isArchived && (!l.tags || l.tags.length === 0)))
+        break
+      }
         default: {
           if (categoryParam) {
             setSelectedCollectionId(null)
@@ -598,6 +605,7 @@ export const Dashboard: React.FC = () => {
         navigate('/?filter=favorites')
       }
       if (e.key.toLowerCase() === 'r') navigate('/?filter=recent')
+      if (e.key.toLowerCase() === 'u') navigate('/?filter=untagged')
       if (e.key.toLowerCase() === 'a') navigate('/?filter=archived')
       
       // 'e' for edit - open edit modal for first selected link or first visible link
@@ -850,6 +858,9 @@ export const Dashboard: React.FC = () => {
         case 'archived':
           filtered = filtered.filter(link => link.isArchived)
           break
+        case 'untagged':
+          filtered = filtered.filter(link => !link.isArchived && (!link.tags || link.tags.length === 0))
+          break
         default:
           // Exclude archived links from default view
           filtered = filtered.filter(link => !link.isArchived)
@@ -861,7 +872,7 @@ export const Dashboard: React.FC = () => {
           link.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           link.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           link.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          link.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+          (link.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ?? false)
         )
       }
       
@@ -888,7 +899,7 @@ export const Dashboard: React.FC = () => {
         link.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         link.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         link.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        link.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+        (link.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ?? false)
       )
     }
 
@@ -1646,7 +1657,9 @@ export const Dashboard: React.FC = () => {
                       ? 'Favorites'
                       : activeFilterId === 'archived'
                         ? 'Vault'
-                        : 'My Library'
+                        : activeFilterId === 'untagged'
+                          ? 'Untagged'
+                          : 'My Library'
               })()}
             </h2>
             
@@ -2109,16 +2122,20 @@ export const Dashboard: React.FC = () => {
                       <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                         {searchQuery 
                           ? 'No links match your search' 
-                          : activeFilterId === 'archived' 
-                            ? 'No archived links yet'
-                            : activeFilterId === 'favorites'
-                              ? 'No favorites yet'
-                              : 'No links found'
+                          : activeFilterId === 'untagged'
+                            ? 'No untagged links'
+                            : activeFilterId === 'archived' 
+                              ? 'No archived links yet'
+                              : activeFilterId === 'favorites'
+                                ? 'No favorites yet'
+                                : 'No links found'
                         }
                       </h3>
                       <p className="text-base sm:text-lg text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed">
                         {searchQuery ? (
                           'Nothing matches your search—try a broader term?'
+                        ) : activeFilterId === 'untagged' ? (
+                          <>Add tags to your links to organize and find them easily. Links without tags appear here.</>
                         ) : activeFilterId === 'archived' ? (
                           <>Archived links are hidden from your main view. Unarchive them to see them again.</>
                         ) : activeFilterId === 'favorites' ? (

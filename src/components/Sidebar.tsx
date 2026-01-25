@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, Star, Clock, Archive, Library, Edit2, Trash2, Home, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, PlayCircle, PenTool, Mic2 } from 'lucide-react'
+import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, Star, Clock, Archive, Library, Edit2, Trash2, Home, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, PlayCircle, PenTool, Mic2, Tag } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useBackendApi } from '../hooks/useBackendApi'
 import { isAppError, getUserFriendlyMessage } from '../utils/errorHandler'
@@ -8,7 +8,7 @@ import { capitalizeCategoryName } from '../utils/categoryUtils'
 import { Tooltip } from './Tooltip'
 import { useIsTruncated } from '../hooks/useIsTruncated'
 import type { ResourceTypeCounts } from '../context/ResourceTypeCountsContext'
-import { RESOURCE_TYPES, defaultResourceTypeCounts } from '../constants/resourceTypes'
+import { RESOURCE_TYPES, defaultResourceTypeCounts, RESOURCE_TYPE_LABELS } from '../constants/resourceTypes'
 
 const CONTENT_TYPE_ICONS = { Video: PlayCircle, Blog: FileText, PDF: PenTool, Audio: Mic2 } as const
 
@@ -415,7 +415,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       }`}
                     >
                       <Icon className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
-                      <span className="ml-3 md:hidden lg:inline flex-1 text-left">{type}</span>
+                      <span className="ml-3 md:hidden lg:inline flex-1 text-left">{RESOURCE_TYPE_LABELS[type] ?? type}</span>
                       <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded-md ml-auto md:hidden lg:inline">{count}</span>
                     </button>
                   )
@@ -478,6 +478,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       title="Recents"
                     >
                       Recents
+                    </span>
+                  </Tooltip>
+                </Link>
+                <Link
+                  to="/?filter=untagged"
+                  onClick={() => {
+                    if (window.innerWidth < 1024) {
+                      onClose()
+                    }
+                  }}
+                  className={`group flex items-center gap-3 px-3 py-3.5 sm:py-2.5 rounded-lg text-sm sm:text-sm transition-all duration-200 ease-in-out min-h-[44px] sm:min-h-0 touch-manipulation relative whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    isActivePath('/?filter=untagged')
+                      ? 'bg-gray-100 text-gray-900 shadow-md shadow-gray-200/50'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  {isActivePath('/?filter=untagged') && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r sidebar-active-indicator" />
+                  )}
+                  <Tag className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${isActivePath('/?filter=untagged') ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
+                  <Tooltip content="Untagged" disabled={!isTabletMode}>
+                    <span 
+                      className="font-medium text-[15px] sm:text-sm lg:text-[15px] text-gray-900 flex-shrink-0 truncate md:hidden lg:inline"
+                      title="Untagged"
+                    >
+                      Untagged
                     </span>
                   </Tooltip>
                 </Link>
