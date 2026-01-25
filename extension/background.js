@@ -9,6 +9,7 @@
 // Import configuration
 try {
   importScripts('utils/config.js');
+  importScripts('utils/youtubeUtils.js');
 } catch (e) {
   console.error('[SRT] Failed to import scripts in background:', e);
 }
@@ -736,18 +737,24 @@ class SmarTrackBackground {
       return;
     }
     
-    // Prepare link data
+    const isYt = typeof isYoutubeUrl === 'function' && isYoutubeUrl(linkUrl);
+    const contentType = isYt ? 'video' : 'webpage';
+    let thumbnail = null;
+    if (isYt && typeof getYoutubeThumbnail === 'function') {
+      thumbnail = await getYoutubeThumbnail(linkUrl);
+    }
+    
     const linkData = {
       url: linkUrl,
       title: linkText || this.extractTitleFromUrl(linkUrl),
       description: '',
       category: 'research',
-      contentType: 'webpage',
+      contentType,
       source: 'extension',
-      tags: []
+      tags: [],
+      thumbnail
     };
     
-    // Try to save to backend
     try {
       await this.saveLinkToBackend(linkData, token);
       this.showNotification('Link Saved', `"${linkData.title}" saved to SmarTrack`);
@@ -788,16 +795,19 @@ class SmarTrackBackground {
       return;
     }
     
-    // Extract page data
     const pageData = await this.extractPageDataFromTab(tab);
     
-    // Prepare link data
+    const isYt = typeof isYoutubeUrl === 'function' && isYoutubeUrl(pageData.url);
+    if (isYt && typeof getYoutubeThumbnail === 'function') {
+      pageData.image = (await getYoutubeThumbnail(pageData.url)) ?? pageData.image;
+    }
+    
     const linkData = {
       url: pageData.url,
       title: pageData.title,
       description: pageData.description || '',
       category: 'research',
-      contentType: 'webpage',
+      contentType: isYt ? 'video' : 'webpage',
       source: 'extension',
       tags: [],
       thumbnail: pageData.image || null,

@@ -725,6 +725,11 @@ class SmarTrackPopup {
         // Silently fail - duplicates are not critical
       });
       
+      // Override image with YouTube thumbnail when applicable (prioritize over og:image/generic icon)
+      if (typeof isYoutubeUrl === 'function' && isYoutubeUrl(currentUrl) && typeof getYoutubeThumbnail === 'function') {
+        const thumb = await getYoutubeThumbnail(currentUrl);
+        if (thumb !== null) this.pageData.image = thumb;
+      }
     } catch (error) {
       // Check if error is due to system page (expected)
       const errorMessage = error.message || '';

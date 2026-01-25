@@ -17,7 +17,8 @@
     "https://smar-track.vercel.app/*",
     "https://smartracker.vercel.app/*",
     "https://smartrack.vercel.app/*",
-    "https://www.linkedin.com/my-items/saved-posts/*"
+    "https://www.linkedin.com/my-items/saved-posts/*",
+    "https://img.youtube.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
