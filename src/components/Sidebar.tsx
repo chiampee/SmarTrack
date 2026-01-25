@@ -1,12 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, Star, Clock, Archive, Library, Edit2, Trash2, Home, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, Star, Clock, Archive, Library, Edit2, Trash2, Home, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, PlayCircle, PenTool, Mic2 } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useBackendApi } from '../hooks/useBackendApi'
 import { isAppError, getUserFriendlyMessage } from '../utils/errorHandler'
 import { capitalizeCategoryName } from '../utils/categoryUtils'
 import { Tooltip } from './Tooltip'
 import { useIsTruncated } from '../hooks/useIsTruncated'
+import type { ResourceTypeCounts } from '../context/ResourceTypeCountsContext'
+import { RESOURCE_TYPES, defaultResourceTypeCounts } from '../constants/resourceTypes'
+
+const CONTENT_TYPE_ICONS = { Video: PlayCircle, Blog: FileText, PDF: PenTool, Audio: Mic2 } as const
 
 interface Category {
   id: string
@@ -18,9 +22,10 @@ interface SidebarProps {
   isOpen: boolean
   onClose: () => void
   categories?: Category[]
+  typeCounts?: ResourceTypeCounts
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = [] }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = [], typeCounts = defaultResourceTypeCounts }) => {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, isAuthenticated, logout } = useAuth0()
@@ -377,6 +382,46 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                 </span>
               </Tooltip>
             </Link>
+
+            {/* Resources – filter links by type (Video, Blog, PDF, Audio) */}
+            <div className="mt-6 sm:mt-6 lg:mt-4 pt-2">
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-4 md:hidden lg:inline">Resources</div>
+              <div className="space-y-0.5">
+                {RESOURCE_TYPES.map((type) => {
+                  const Icon = CONTENT_TYPE_ICONS[type]
+                  const selectedType = new URLSearchParams(location.search).get('type')
+                  const isActive = selectedType === type
+                  const count = typeCounts[type] ?? 0
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => {
+                        const p = new URLSearchParams(location.search)
+                        p.delete('collection')
+                        p.delete('filter')
+                        p.delete('category')
+                        if (isActive) {
+                          p.delete('type')
+                        } else {
+                          p.set('type', type)
+                        }
+                        const qs = p.toString()
+                        navigate(qs ? `/?${qs}` : '/')
+                        if (window.innerWidth < 1024) onClose()
+                      }}
+                      className={`flex items-center w-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 md:justify-center lg:justify-start rounded-lg transition-all duration-200 ${
+                        isActive ? 'border-l-4 border-blue-600 bg-blue-50/50 text-blue-600' : ''
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-gray-500 opacity-50'}`} strokeWidth={1.5} />
+                      <span className="ml-3 md:hidden lg:inline flex-1 text-left">{type}</span>
+                      <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded-md ml-auto md:hidden lg:inline">{count}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
 
             {/* ✅ Premium Mobile: Projects Quick Filters - Minimalist design */}
             <div className="mt-6 sm:mt-8 lg:mt-4 pt-4 lg:pt-2">

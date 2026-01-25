@@ -3,17 +3,19 @@ import { Header } from './Header'
 import { Sidebar } from './Sidebar'
 import { useCategories } from '../context/CategoriesContext'
 import { useSidebar } from '../context/SidebarContext'
+import { useResourceTypeCounts } from '../context/ResourceTypeCountsContext'
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { isSidebarOpen, toggleSidebar, closeSidebar } = useSidebar()
   const { categories } = useCategories()
+  const { typeCounts } = useResourceTypeCounts()
   
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <Header onMenu={toggleSidebar} />
-      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} categories={categories} />
+      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} categories={categories} typeCounts={typeCounts} />
       <main className="pt-20 transition-all duration-300 md:ml-20 lg:ml-64 px-8 lg:px-12 pb-4 sm:pb-10">
         <div className="max-w-[1200px] mx-auto">
           {children}

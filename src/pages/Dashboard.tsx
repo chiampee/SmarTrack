@@ -13,7 +13,7 @@ import { AddLinkModal } from '../components/AddLinkModal'
 import { EditLinkModal } from '../components/EditLinkModal'
 import { CreateCollectionModal } from '../components/CreateCollectionModal'
 import { ExtensionInstallModal } from '../components/ExtensionInstallModal'
-import { VisionShoutout, getVisionShoutoutSeen } from '../components/VisionShoutout'
+import { VisionShoutout, getVisionShoutoutSeen, setVisionShoutoutSeen } from '../components/VisionShoutout'
 import { FiltersDropdown } from '../components/FiltersDropdown'
 import { LinkDetailDrawer } from '../components/LinkDetailDrawer'
 import { useBackendApi } from '../hooks/useBackendApi'
@@ -21,7 +21,9 @@ import { useBulkOperations } from '../hooks/useBulkOperations'
 import { useToast } from '../components/Toast'
 import { useCategories } from '../context/CategoriesContext'
 import { useSidebar } from '../context/SidebarContext'
+import { useResourceTypeCounts } from '../context/ResourceTypeCountsContext'
 import { Link, Collection, Category } from '../types/Link'
+import { RESOURCE_TYPE_TO_CONTENT, type ResourceType, type ResourceTypeCounts } from '../constants/resourceTypes'
 import { logger } from '../utils/logger'
 import { cacheManager } from '../utils/cacheManager'
 import { DashboardSkeleton } from '../components/LoadingSkeleton'
@@ -50,6 +52,7 @@ export const Dashboard: React.FC = () => {
   const [showExtensionInstallModal, setShowExtensionInstallModal] = useState(false)
   const [showVisionShoutout, setShowVisionShoutout] = useState(false)
   const [addLinkHighlight, setAddLinkHighlight] = useState(false)
+  const [hasCompletedFirstLoad, setHasCompletedFirstLoad] = useState(false)
   const [showBulkMoveModal, setShowBulkMoveModal] = useState(false)
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null)
   const [activeFilterId, setActiveFilterId] = useState<string | null>(null)
@@ -64,6 +67,7 @@ export const Dashboard: React.FC = () => {
   const toast = useToast()
   const { computeCategories, setCategories, categories: contextCategories } = useCategories()
   const { openSidebar, isSidebarOpen } = useSidebar()
+  const { setTypeCounts } = useResourceTypeCounts()
   // Use SWR stats hook to ensure stats are fetched and cached
   // This ensures mutate() calls will trigger updates
   const { stats: userStats, mutate: mutateStats } = useUserStats()
@@ -91,7 +95,7 @@ export const Dashboard: React.FC = () => {
   // WalkMe: do NOT show while VisionShoutout may still appear—wait until it has been seen at least once
   // so we never stack two overlays (VisionShoutout at 800ms, Extension at 2s).
   useEffect(() => {
-    if (!getVisionShoutoutSeen()) return
+    if (!getVisionShoutoutSeen(backendApi.getUserId())) return
 
     // Only show install modal if:
     // 1. Extension is not currently detected
@@ -122,12 +126,21 @@ export const Dashboard: React.FC = () => {
     }
   }, [])
 
-  // VisionShoutout: delayed 800ms on first visit (only if not seen before)
+  // VisionShoutout: only for first-timers (no links yet, never seen). Wait for first links load, then:
+  // - has links → not first-timer: setVisionShoutoutSeen(userId) and never show
+  // - no links and !getVisionShoutoutSeen(userId) → show after 800ms
+  // Per-user key so multiple accounts on same browser each get the welcome once.
   useEffect(() => {
-    if (getVisionShoutoutSeen()) return
+    if (!hasCompletedFirstLoad) return
+    const uid = backendApi.getUserId()
+    if (getVisionShoutoutSeen(uid)) return
+    if (links.length > 0) {
+      setVisionShoutoutSeen(uid)
+      return
+    }
     const t = setTimeout(() => setShowVisionShoutout(true), 800)
     return () => clearTimeout(t)
-  }, [])
+  }, [hasCompletedFirstLoad, links.length])
 
   // Check if extension update is needed
   // IMPORTANT: Older extensions (v1.0.0, v1.0.1) don't send version info in their response
@@ -378,6 +391,7 @@ export const Dashboard: React.FC = () => {
       } finally {
         setLoading(false)
         setSlowLoading(false)
+        setHasCompletedFirstLoad(true)
       }
     }
     
@@ -398,12 +412,25 @@ export const Dashboard: React.FC = () => {
     }
   }, [location.search, showCreateCollectionModal])
 
-  // React to sidebar query params: filter, collection, category
+  // Update resource type counts for sidebar when links change
+  useEffect(() => {
+    setTypeCounts(
+      Object.fromEntries(
+        Object.entries(RESOURCE_TYPE_TO_CONTENT).map(([k, ct]) => [
+          k,
+          links.filter((l) => l.contentType === ct).length,
+        ])
+      ) as ResourceTypeCounts
+    )
+  }, [links, setTypeCounts])
+
+  // React to sidebar query params: filter, collection, category, type
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const filter = params.get('filter')
     const collection = params.get('collection')
     const categoryParam = params.get('category')
+    const typeParam = params.get('type')
 
     // Persist current view for future visits
     try {
@@ -415,6 +442,15 @@ export const Dashboard: React.FC = () => {
         localStorage.setItem('dashboard:lastView', searchString)
       }
     } catch (_) { void 0 }
+
+    // Resource type filter: clears Project, quick filters, and category to avoid "No Results" conflicts.
+    // Filtering is done in the second useEffect.
+    if (typeParam && typeParam in RESOURCE_TYPE_TO_CONTENT) {
+      setSelectedCollectionId(null)
+      setActiveFilterId(null)
+      setCurrentCategoryName(null)
+      return
+    }
 
     if (!filter && !collection && !categoryParam) {
       setSelectedCollectionId(null)
@@ -777,6 +813,7 @@ export const Dashboard: React.FC = () => {
 
   // Filter links based on search and filters
   useEffect(() => {
+    const typeParam = new URLSearchParams(location.search).get('type')
     console.log('🔍 useEffect: Recalculating filteredLinks from links array', {
       selectedCollectionId,
       activeFilterId,
@@ -833,6 +870,11 @@ export const Dashboard: React.FC = () => {
 
     // Default view: exclude archived
     filtered = filtered.filter(link => !link.isArchived)
+
+    // Resource type filter from sidebar (when type= is in URL)
+    if (typeParam && typeParam in RESOURCE_TYPE_TO_CONTENT) {
+      filtered = filtered.filter(link => link.contentType === RESOURCE_TYPE_TO_CONTENT[typeParam as ResourceType])
+    }
 
     // Search filter with blur-in effect
     if (searchQuery) {
@@ -891,7 +933,7 @@ export const Dashboard: React.FC = () => {
     }
 
     setFilteredLinks(filtered)
-  }, [links, searchQuery, filters, selectedCollectionId, activeFilterId])
+  }, [links, searchQuery, filters, selectedCollectionId, activeFilterId, location.search])
 
   // Handle link actions
   const handleLinkAction = async (linkId: string, action: string, data?: any) => {
@@ -2418,7 +2460,7 @@ export const Dashboard: React.FC = () => {
         onDownload={handleDownloadExtension}
       />
 
-      {/* VisionShoutout: first-visit "Sanctuary" overlay */}
+      {/* VisionShoutout: first-visit "Sanctuary" overlay (per-user so new accounts on same browser get it) */}
       <VisionShoutout
         isOpen={showVisionShoutout}
         onEnter={() => setShowVisionShoutout(false)}
@@ -2426,6 +2468,7 @@ export const Dashboard: React.FC = () => {
           setAddLinkHighlight(true)
           setTimeout(() => setAddLinkHighlight(false), 2500)
         }}
+        userId={backendApi.getUserId()}
         magneticHover={!isMobile}
         prefersReducedMotion={prefersReducedMotion}
       />

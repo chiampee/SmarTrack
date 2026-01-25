@@ -17,6 +17,7 @@ import { LoadingSpinner } from './components/LoadingSpinner'
 import { CategoriesProvider } from './context/CategoriesContext'
 import { AdminProvider } from './context/AdminContext'
 import { SidebarProvider } from './context/SidebarContext'
+import { ResourceTypeCountsProvider } from './context/ResourceTypeCountsContext'
 
 // Public routes accessible without authentication
 const publicRoutes = ['/faq', '/privacy', '/terms', '/legal', '/docs']
@@ -58,17 +59,19 @@ function App() {
     <AdminProvider>
       <CategoriesProvider>
         <SidebarProvider>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<MainPage />} />
-              <Route path="/main" element={<MainPage />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/analytics" element={<AdminAnalytics />} />
-              <Route path="/404" element={<NotFoundPage />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </Layout>
+          <ResourceTypeCountsProvider>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<MainPage />} />
+                <Route path="/main" element={<MainPage />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/analytics" element={<AdminAnalytics />} />
+                <Route path="/404" element={<NotFoundPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </Layout>
+          </ResourceTypeCountsProvider>
         </SidebarProvider>
       </CategoriesProvider>
     </AdminProvider>
