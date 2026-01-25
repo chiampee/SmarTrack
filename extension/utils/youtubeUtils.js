@@ -28,6 +28,7 @@ function isYoutubeUrl(url) {
  * @returns {Promise<string|null>} Thumbnail URL or null
  */
 async function getYoutubeThumbnail(url) {
+  // NO fetch: CSP connect-src would block it; <img src="..."> uses img-src (https:) instead.
   if (!url || typeof url !== 'string') return null;
 
   const m = url.match(YOUTUBE_VIDEO_ID_REGEX);
