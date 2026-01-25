@@ -21,8 +21,9 @@ function isYoutubeUrl(url) {
 }
 
 /**
- * Extracts a YouTube video thumbnail URL, with maxresdefault -> hqdefault fallback.
- * Returns null if the URL is not YouTube, no valid video ID, or both thumbnail URLs 404.
+ * Returns a YouTube video thumbnail URL for the given watch/embed URL.
+ * Uses hqdefault.jpg (no fetch) so it works in extension and web contexts without
+ * CORS or CSP connect-src. The <img> tag loads the URL directly.
  * @param {string} url - YouTube page or embed URL
  * @returns {Promise<string|null>} Thumbnail URL or null
  */
@@ -33,24 +34,9 @@ async function getYoutubeThumbnail(url) {
   const videoId = m && m[2] ? m[2].trim() : null;
   if (!videoId) return null;
 
-  const maxres = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-  const hq = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-
-  try {
-    const resMax = await fetch(maxres, { method: 'HEAD' });
-    if (resMax && resMax.ok) return maxres;
-  } catch {
-    // ignore
-  }
-
-  try {
-    const resHq = await fetch(hq, { method: 'HEAD' });
-    if (resHq && resHq.ok) return hq;
-  } catch {
-    // ignore
-  }
-
-  return null;
+  // hqdefault (480x360) exists for virtually all public videos. No fetch — avoid
+  // CORS, 405 from HEAD, and CSP connect-src; <img> loads the URL directly.
+  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 }
 
 // Popup: attach to window
