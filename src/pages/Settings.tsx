@@ -46,8 +46,22 @@ export const Settings: React.FC = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [profileLoaded, setProfileLoaded] = useState(false)
-  const [gridColumns, setGridColumns] = useState<number>(4)
-  const [defaultViewMode, setDefaultViewMode] = useState<'list' | 'grid'>('grid')
+  const [gridColumns, setGridColumns] = useState<number>(() => {
+    // Load grid columns from localStorage on initialization
+    const saved = localStorage.getItem('dashboard:gridColumns')
+    if (saved) {
+      const cols = parseInt(saved, 10)
+      if (cols >= 2 && cols <= 6) {
+        return cols
+      }
+    }
+    return 4
+  })
+  const [defaultViewMode, setDefaultViewMode] = useState<'list' | 'grid'>(() => {
+    // Load default view mode from localStorage on initialization
+    const saved = localStorage.getItem('dashboard:defaultViewMode') as 'list' | 'grid' | null
+    return saved === 'list' || saved === 'grid' ? saved : 'grid'
+  })
 
   const handleDownloadExtension = () => {
     const linkElement = document.createElement('a')
@@ -84,23 +98,25 @@ export const Settings: React.FC = () => {
     }
   }
 
-  // Load preferences on mount
+  // Sync preferences with localStorage on mount (in case they changed elsewhere)
   useEffect(() => {
-    // Load default view mode from localStorage
+    // Sync default view mode from localStorage
     const savedViewMode = localStorage.getItem('dashboard:defaultViewMode') as 'list' | 'grid' | null
     if (savedViewMode === 'list' || savedViewMode === 'grid') {
-      setDefaultViewMode(savedViewMode)
+      if (defaultViewMode !== savedViewMode) {
+        setDefaultViewMode(savedViewMode)
+      }
     }
     
-    // Load grid columns from localStorage
+    // Sync grid columns from localStorage
     const savedGridColumns = localStorage.getItem('dashboard:gridColumns')
     if (savedGridColumns) {
       const cols = parseInt(savedGridColumns, 10)
-      if (cols >= 2 && cols <= 6) {
+      if (cols >= 2 && cols <= 6 && gridColumns !== cols) {
         setGridColumns(cols)
       }
     }
-  }, [])
+  }, [defaultViewMode, gridColumns])
 
   // Load profile on mount and auto-fill from Auth0 on first time
   useEffect(() => {
