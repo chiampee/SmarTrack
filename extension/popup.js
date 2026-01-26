@@ -411,13 +411,15 @@ class SmarTrackPopup {
       // #endregion
       this.renderCategories();
       
-      // Sync categories from backend if authenticated (non-blocking)
+      // Sync categories from backend if authenticated (non-blocking but will update when complete)
+      // The sync logic now aggressively updates to ensure deleted categories are removed
       if (token) {
         // #region agent log
         fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:412',message:'init: Starting async syncCategoriesFromBackend',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
         // #endregion
-        this.syncCategoriesFromBackend().catch(() => {
+        this.syncCategoriesFromBackend().catch((error) => {
           // Silently fail - categories will use local storage
+          console.debug('[SRT] Category sync failed, using cached categories:', error);
         });
       }
       
@@ -579,10 +581,11 @@ class SmarTrackPopup {
       }
       
       // Combine: backend categories (source of truth) + valid custom categories
-      const mergedCategories = [...backendCategories, ...validCustomCategories];
+      // Ensure all categories are strings (handle any object/array edge cases)
+      const mergedCategories = [...backendCategories, ...validCustomCategories].map(c => String(c).trim()).filter(Boolean);
       
       // Normalize all categories to lowercase for comparison (ensure consistent comparison)
-      const mergedNormalized = mergedCategories.map(c => String(c).toLowerCase().trim()).filter(Boolean).sort();
+      const mergedNormalized = mergedCategories.map(c => c.toLowerCase()).sort();
       const currentNormalized = this.categories.map(c => String(c).toLowerCase().trim()).filter(Boolean).sort();
       
       // #region agent log
@@ -616,11 +619,15 @@ class SmarTrackPopup {
       fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:613',message:'syncCategoriesFromBackend: Update decision',data:{shouldUpdate:shouldUpdate,categoriesChanged:categoriesChanged,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,hasCasingMismatch:hasCasingMismatch,countDiffers:mergedCategories.length!==this.categories.length,deletedCategories:deletedCategories,newCategories:newCategories,mergedCount:mergedCategories.length,currentCount:this.categories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
       // #endregion
       
-      // CRITICAL FIX: Always update if there are deleted categories or casing mismatches, even if comparison says no change
-      // This handles edge cases where casing or formatting differences prevent proper detection
-      if (shouldUpdate || hasDeletedCategories || hasCasingMismatch) {
+      // CRITICAL FIX: Always update categories from backend (source of truth) if arrays don't match exactly
+      // This ensures deleted categories are always removed, even if detection logic fails
+      // Compare actual arrays (sorted) to catch any differences in content or order
+      const actualArraysMatch = JSON.stringify([...mergedCategories].sort()) === JSON.stringify([...this.categories].sort());
+      
+      if (!actualArraysMatch || shouldUpdate || hasDeletedCategories || hasCasingMismatch) {
         // Store old categories for logging
         const oldCategories = [...this.categories];
+        // Always use backend categories as source of truth
         this.categories = mergedCategories.length > 0 ? mergedCategories : [...CONSTANTS.DEFAULT_CATEGORIES];
         
         // Log to console for debugging (in addition to instrumentation)
