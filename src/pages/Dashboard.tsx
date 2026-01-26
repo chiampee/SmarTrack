@@ -804,8 +804,9 @@ export const Dashboard: React.FC = () => {
     
     const updateCategoriesFromLinks = async () => {
       // Extract user-created categories from links
+      // Only extract categories from active (non-archived) links to match extension behavior
       const userCreatedCategories = new Set<string>()
-      links.forEach(link => {
+      links.filter(link => !link.isArchived).forEach(link => {
         if (link.category && link.category.trim()) {
           userCreatedCategories.add(link.category.trim())
         }

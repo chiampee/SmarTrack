@@ -31,7 +31,7 @@ const CONSTANTS = {
   },
   
   // Default Categories
-  DEFAULT_CATEGORIES: ['research', 'articles', 'tools', 'references'],
+  DEFAULT_CATEGORIES: ['Research', 'Articles', 'Tools', 'References'],
   
   // DOM Selectors
   SELECTORS: {
@@ -592,6 +592,10 @@ class SmarTrackPopup {
       // Update if categories changed (compare normalized arrays)
       const categoriesChanged = JSON.stringify(mergedNormalized) !== JSON.stringify(currentNormalized);
       
+      // Check for casing mismatch: even if normalized arrays match, actual arrays might differ (e.g., "research" vs "Research")
+      const actualArraysMatch = JSON.stringify(mergedCategories.sort()) === JSON.stringify(this.categories.sort());
+      const hasCasingMismatch = !actualArraysMatch && categoriesChanged === false;
+      
       // Always update to ensure deleted categories are removed (backend is source of truth)
       // Check if any categories were deleted (exist in current but not in merged)
       const deletedCategories = currentNormalized.filter(c => !mergedNormalized.includes(c));
@@ -600,29 +604,31 @@ class SmarTrackPopup {
       const hasNewCategories = newCategories.length > 0;
       
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:595',message:'syncCategoriesFromBackend: Comparison result',data:{categoriesChanged:categoriesChanged,mergedNormalized:mergedNormalized,currentNormalized:currentNormalized,deletedCategories:deletedCategories,newCategories:newCategories,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:595',message:'syncCategoriesFromBackend: Comparison result',data:{categoriesChanged:categoriesChanged,actualArraysMatch:actualArraysMatch,hasCasingMismatch:hasCasingMismatch,mergedNormalized:mergedNormalized,currentNormalized:currentNormalized,deletedCategories:deletedCategories,newCategories:newCategories,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
       // #endregion
       
-      // Force update if: categories changed, deleted categories exist, new categories exist, or count differs
-      // CRITICAL: Always update if there are deleted categories to ensure they're removed
+      // Force update if: categories changed, deleted categories exist, new categories exist, count differs, or casing mismatch
+      // CRITICAL: Always update if there are deleted categories or casing mismatches to ensure they're fixed
       // Also update if arrays don't match exactly (defensive check)
-      const shouldUpdate = categoriesChanged || hasDeletedCategories || hasNewCategories || mergedCategories.length !== this.categories.length || JSON.stringify(mergedNormalized) !== JSON.stringify(currentNormalized);
+      const shouldUpdate = categoriesChanged || hasDeletedCategories || hasNewCategories || hasCasingMismatch || mergedCategories.length !== this.categories.length || JSON.stringify(mergedNormalized) !== JSON.stringify(currentNormalized);
       
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:606',message:'syncCategoriesFromBackend: Update decision',data:{shouldUpdate:shouldUpdate,categoriesChanged:categoriesChanged,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,countDiffers:mergedCategories.length!==this.categories.length,deletedCategories:deletedCategories,newCategories:newCategories,mergedCount:mergedCategories.length,currentCount:this.categories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:613',message:'syncCategoriesFromBackend: Update decision',data:{shouldUpdate:shouldUpdate,categoriesChanged:categoriesChanged,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,hasCasingMismatch:hasCasingMismatch,countDiffers:mergedCategories.length!==this.categories.length,deletedCategories:deletedCategories,newCategories:newCategories,mergedCount:mergedCategories.length,currentCount:this.categories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
       // #endregion
       
-      // CRITICAL FIX: Always update if there are deleted categories, even if comparison says no change
+      // CRITICAL FIX: Always update if there are deleted categories or casing mismatches, even if comparison says no change
       // This handles edge cases where casing or formatting differences prevent proper detection
-      if (shouldUpdate || hasDeletedCategories) {
+      if (shouldUpdate || hasDeletedCategories || hasCasingMismatch) {
         // Store old categories for logging
         const oldCategories = [...this.categories];
         this.categories = mergedCategories.length > 0 ? mergedCategories : [...CONSTANTS.DEFAULT_CATEGORIES];
         
         // Log to console for debugging (in addition to instrumentation)
-        if (hasDeletedCategories) {
-          console.log('[SRT] Deleted categories detected, forcing update:', {
+        if (hasDeletedCategories || hasCasingMismatch) {
+          console.log('[SRT] Categories update triggered:', {
+            reason: hasDeletedCategories ? 'deleted categories' : (hasCasingMismatch ? 'casing mismatch' : 'other'),
             deleted: deletedCategories,
+            hasCasingMismatch: hasCasingMismatch,
             old: oldCategories,
             new: this.categories
           });
@@ -631,7 +637,7 @@ class SmarTrackPopup {
         await this.saveCategories(this.categories);
         this.renderCategories();
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:615',message:'syncCategoriesFromBackend: Categories updated and rendered',data:{oldCategories:oldCategories,newCategories:this.categories,deletedCategories:deletedCategories,newCategoriesList:newCategories,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,shouldUpdate:shouldUpdate,forcedUpdate:hasDeletedCategories&&!shouldUpdate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:639',message:'syncCategoriesFromBackend: Categories updated and rendered',data:{oldCategories:oldCategories,newCategories:this.categories,deletedCategories:deletedCategories,newCategoriesList:newCategories,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,hasCasingMismatch:hasCasingMismatch,shouldUpdate:shouldUpdate,forcedUpdate:(hasDeletedCategories||hasCasingMismatch)&&!shouldUpdate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
         // #endregion
       } else {
         // #region agent log
@@ -1841,9 +1847,11 @@ class SmarTrackPopup {
       const result = await chrome.storage.sync.get([CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES]);
       const customCategories = result?.[CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES] || [];
       
+      // Use lowercase for comparison but store original casing
       const normalized = category.toLowerCase();
-      if (!customCategories.includes(normalized)) {
-        customCategories.push(normalized);
+      const existingNormalized = customCategories.map(c => c.toLowerCase());
+      if (!existingNormalized.includes(normalized)) {
+        customCategories.push(category);  // Store with original casing
         await chrome.storage.sync.set({
           [CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES]: customCategories
         });
