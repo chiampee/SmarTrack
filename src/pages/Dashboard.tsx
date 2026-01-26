@@ -486,7 +486,8 @@ export const Dashboard: React.FC = () => {
       setSelectedCollectionId(collection)
       setActiveFilterId(null)
       setCurrentCategoryName(null)
-      // Show all links (both active and archived) for this collection
+      // Show both active and archived links for this collection
+      // Archived links will be displayed in a separate section with a tag
       setFilteredLinks(links.filter(l => l.collectionId === collection))
       return
     }
@@ -868,7 +869,8 @@ export const Dashboard: React.FC = () => {
 
     // Collection filter (takes precedence)
     if (selectedCollectionId) {
-      // Show all links (both active and archived) for this collection
+      // Show both active and archived links for this collection
+      // Archived links will be displayed in a separate section with a tag
       filtered = filtered.filter(link => link.collectionId === selectedCollectionId)
       setFilteredLinks(filtered)
       return
@@ -2442,8 +2444,13 @@ export const Dashboard: React.FC = () => {
                 
                 {/* Links Display - Grouped by Category */}
                 {(() => {
-                  // Group links by category
-                  const groupedLinks = filteredLinks.reduce((acc, link) => {
+                  // When viewing a collection, separate active and archived links
+                  const isViewingCollection = selectedCollectionId !== null
+                  const activeLinks = isViewingCollection ? filteredLinks.filter(l => !l.isArchived) : filteredLinks
+                  const archivedLinks = isViewingCollection ? filteredLinks.filter(l => l.isArchived) : []
+                  
+                  // Group active links by category
+                  const groupedLinks = activeLinks.reduce((acc, link) => {
                     const category = link.category || 'Uncategorized'
                     if (!acc[category]) {
                       acc[category] = []
@@ -2460,6 +2467,23 @@ export const Dashboard: React.FC = () => {
                     return a[0].localeCompare(b[0])
                   })
 
+                  // Group archived links by category
+                  const groupedArchivedLinks = archivedLinks.reduce((acc, link) => {
+                    const category = link.category || 'Uncategorized'
+                    if (!acc[category]) {
+                      acc[category] = []
+                    }
+                    acc[category].push(link)
+                    return acc
+                  }, {} as Record<string, typeof filteredLinks>)
+
+                  const sortedArchivedCategories = Object.entries(groupedArchivedLinks).sort((a, b) => {
+                    if (b[1].length !== a[1].length) {
+                      return b[1].length - a[1].length
+                    }
+                    return a[0].localeCompare(b[0])
+                  })
+
                   return (
                     <motion.div
                       variants={staggerContainer}
@@ -2469,7 +2493,7 @@ export const Dashboard: React.FC = () => {
                     >
                       {/* Stats removed - now shown in search bar section above */}
 
-                      {/* Category Groups */}
+                      {/* Active Links - Category Groups */}
                       {sortedCategories.map(([category, categoryLinks]) => (
                         <motion.div
                           key={category}
@@ -2538,6 +2562,104 @@ export const Dashboard: React.FC = () => {
                           </div>
                         </motion.div>
                       ))}
+
+                      {/* Archived Links Section - Only shown when viewing a collection */}
+                      {isViewingCollection && archivedLinks.length > 0 && (
+                        <motion.div
+                          variants={staggerItem}
+                          className="mb-6 sm:mb-7 md:mb-8 mt-8 pt-8 border-t-2 border-gray-300"
+                        >
+                          {/* Archived Section Header */}
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                            className="flex items-center gap-3 mb-6 sm:mb-5 pb-3 sm:pb-4 border-b border-gray-200/60"
+                          >
+                            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                              <div className="w-1.5 h-8 sm:h-10 bg-gradient-to-b from-gray-400 via-gray-500 to-gray-600 rounded-full shadow-sm shadow-gray-400/30"></div>
+                              <h3 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-gray-600 via-gray-700 to-gray-600 bg-clip-text text-transparent">
+                                Archived
+                              </h3>
+                              <span className="px-3 sm:px-4 py-1 sm:py-1.5 bg-gradient-to-br from-gray-100 to-gray-200 text-gray-700 rounded-full text-xs sm:text-sm font-bold border border-gray-300 shadow-sm flex items-center gap-2">
+                                <Archive className="w-3.5 h-3.5" strokeWidth={2} />
+                                {archivedLinks.length} {archivedLinks.length === 1 ? 'link' : 'links'}
+                              </span>
+                            </div>
+                          </motion.div>
+
+                          {/* Archived Links - Grouped by Category */}
+                          {sortedArchivedCategories.map(([category, categoryLinks]) => (
+                            <motion.div
+                              key={`archived-${category}`}
+                              variants={staggerItem}
+                              className="mb-6 sm:mb-7 md:mb-8"
+                            >
+                              {/* Category Header for Archived */}
+                              <motion.div
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                                className="flex items-center gap-3 mb-4 sm:mb-3 pb-2 sm:pb-3 border-b border-gray-200/40"
+                              >
+                                <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                                  <div className="w-1 h-6 sm:h-7 bg-gradient-to-b from-gray-300 via-gray-400 to-gray-500 rounded-full"></div>
+                                  <h4 className="text-base sm:text-lg md:text-xl font-semibold text-gray-600">
+                                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                                  </h4>
+                                  <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-gray-100 text-gray-600 rounded-full text-xs sm:text-sm font-medium border border-gray-200">
+                                    {categoryLinks.length} {categoryLinks.length === 1 ? 'link' : 'links'}
+                                  </span>
+                                </div>
+                              </motion.div>
+
+                              {/* Archived Links for this category */}
+                              <div className={viewMode === 'grid' 
+                                ? getGridColumnsClass()
+                                : 'flex flex-col gap-5 sm:gap-4'
+                              }>
+                                {categoryLinks.map((link, index) => (
+                                  <motion.div
+                                    key={link.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ 
+                                      delay: index * 0.05,
+                                      duration: 0.4,
+                                      ease: [0.16, 1, 0.3, 1]
+                                    }}
+                                    className="opacity-75"
+                                  >
+                                    <LinkCard
+                                      link={link}
+                                      viewMode={viewMode}
+                                      isSelected={selectedLinks.has(link.id)}
+                                      onSelect={(e) => toggleSelection(link.id, e)}
+                                      onAction={handleLinkAction}
+                                      collections={collections}
+                                      categories={categories}
+                                      allTags={allTags}
+                                      onCardClick={() => {
+                                        // Open drawer on desktop, expand inline on mobile
+                                        if (!isMobile) {
+                                          setSelectedLink(link)
+                                          setIsDrawerOpen(true)
+                                        } else {
+                                          // Mobile: keep inline expansion
+                                          setEditingLink(link)
+                                        }
+                                      }}
+                                      onExpandedChange={(expanded) => {
+                                        setExpandedLinkId(expanded ? link.id : null)
+                                      }}
+                                    />
+                                  </motion.div>
+                                ))}
+                              </div>
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      )}
                     </motion.div>
                   )
                 })()}

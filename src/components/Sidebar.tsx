@@ -587,6 +587,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                     {collections.map((c) => {
                       const to = `/?collection=${encodeURIComponent(c.id)}`
                       const active = isActivePath(to)
+                      
                       return (
                         <div 
                           key={c.id} 
