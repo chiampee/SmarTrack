@@ -406,10 +406,16 @@ class SmarTrackPopup {
       
       const token = await this.getAuthToken();
       this.setupEventListeners();
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:409',message:'init: renderCategories called before sync',data:{categories:this.categories,hasToken:!!token},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
       this.renderCategories();
       
       // Sync categories from backend if authenticated (non-blocking)
       if (token) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:412',message:'init: Starting async syncCategoriesFromBackend',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         this.syncCategoriesFromBackend().catch(() => {
           // Silently fail - categories will use local storage
         });
@@ -509,10 +515,16 @@ class SmarTrackPopup {
       if (this.lastCategory === 'other') {
         this.lastCategory = null;
       }
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:517',message:'loadCategories: Categories loaded from storage',data:{storedCategories:stored,categoriesAfterFilter:categories,finalCategories:this.categories,lastCategory:this.lastCategory},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
     } catch (error) {
       console.error('[SRT] Failed to load categories:', error);
       this.categories = [...CONSTANTS.DEFAULT_CATEGORIES];
       this.lastCategory = null;
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:517',message:'loadCategories: Error loading categories',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
     }
   }
 
@@ -523,12 +535,21 @@ class SmarTrackPopup {
    * @returns {Promise<void>}
    */
   async syncCategoriesFromBackend() {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:525',message:'syncCategoriesFromBackend: Starting sync',data:{currentCategories:this.categories},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     try {
       const api = new BackendApiService();
       const backendCategories = await api.getCategories();
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:528',message:'syncCategoriesFromBackend: Backend categories fetched',data:{backendCategories:backendCategories,backendCount:backendCategories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       
       if (backendCategories.length === 0) {
         // If backend fetch failed, keep existing categories
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:530',message:'syncCategoriesFromBackend: Backend returned empty, aborting',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         return;
       }
       
@@ -537,6 +558,9 @@ class SmarTrackPopup {
         CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES
       ]);
       const customCategories = result?.[CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES] || [];
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:539',message:'syncCategoriesFromBackend: Custom categories loaded',data:{customCategories:customCategories},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
       
       // Normalize backend categories for comparison
       const backendSet = new Set(backendCategories.map(c => c.toLowerCase()));
@@ -557,15 +581,50 @@ class SmarTrackPopup {
       // Combine: backend categories (source of truth) + valid custom categories
       const mergedCategories = [...backendCategories, ...validCustomCategories];
       
-      // Update if categories changed
-      if (JSON.stringify(mergedCategories.sort()) !== JSON.stringify(this.categories.sort())) {
+      // Normalize all categories to lowercase for comparison (ensure consistent comparison)
+      const mergedNormalized = mergedCategories.map(c => c.toLowerCase()).sort();
+      const currentNormalized = this.categories.map(c => c.toLowerCase()).sort();
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:582',message:'syncCategoriesFromBackend: Merged categories computed',data:{mergedCategories:mergedCategories,mergedNormalized:mergedNormalized,currentCategories:this.categories,currentNormalized:currentNormalized,mergedSorted:JSON.stringify(mergedNormalized),currentSorted:JSON.stringify(currentNormalized)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      
+      // Update if categories changed (compare normalized arrays)
+      const categoriesChanged = JSON.stringify(mergedNormalized) !== JSON.stringify(currentNormalized);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:590',message:'syncCategoriesFromBackend: Comparison result',data:{categoriesChanged:categoriesChanged,mergedNormalized:mergedNormalized,currentNormalized:currentNormalized,deletedCategories:currentNormalized.filter(c=>!mergedNormalized.includes(c)),newCategories:mergedNormalized.filter(c=>!currentNormalized.includes(c))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      
+      // Always update to ensure deleted categories are removed (backend is source of truth)
+      // Check if any categories were deleted (exist in current but not in merged)
+      const deletedCategories = currentNormalized.filter(c => !mergedNormalized.includes(c));
+      const hasDeletedCategories = deletedCategories.length > 0;
+      const newCategories = mergedNormalized.filter(c => !currentNormalized.includes(c));
+      const hasNewCategories = newCategories.length > 0;
+      
+      // Force update if: categories changed, deleted categories exist, new categories exist, or count differs
+      const shouldUpdate = categoriesChanged || hasDeletedCategories || hasNewCategories || mergedCategories.length !== this.categories.length;
+      
+      if (shouldUpdate) {
+        // Store old categories for logging
+        const oldCategories = [...this.categories];
         this.categories = mergedCategories.length > 0 ? mergedCategories : [...CONSTANTS.DEFAULT_CATEGORIES];
         await this.saveCategories(this.categories);
         this.renderCategories();
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:603',message:'syncCategoriesFromBackend: Categories updated and rendered',data:{oldCategories:oldCategories,newCategories:this.categories,deletedCategories:deletedCategories,newCategoriesList:newCategories,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,shouldUpdate:shouldUpdate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
+      } else {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:612',message:'syncCategoriesFromBackend: No changes detected, skipping update',data:{mergedCount:mergedCategories.length,currentCount:this.categories.length,deletedCategories:deletedCategories,newCategories:newCategories,shouldUpdate:shouldUpdate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
       }
     } catch (error) {
       // Non-critical - silently fail and keep existing categories
       console.debug('[SRT] Failed to sync categories from backend:', error);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:566',message:'syncCategoriesFromBackend: Error during sync',data:{error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
     }
   }
 
@@ -731,6 +790,18 @@ class SmarTrackPopup {
         if (thumb !== null) this.pageData.image = thumb;
       } else if (typeof isRedditUrl === 'function' && isRedditUrl(currentUrl) && typeof getRedditThumbnail === 'function') {
         const thumb = await getRedditThumbnail(currentUrl);
+        if (thumb !== null) this.pageData.image = thumb;
+      } else if (typeof isXUrl === 'function' && isXUrl(currentUrl) && typeof getXThumbnail === 'function') {
+        const thumb = await getXThumbnail(currentUrl);
+        if (thumb !== null) this.pageData.image = thumb;
+      } else if (typeof isLinkedInUrl === 'function' && isLinkedInUrl(currentUrl) && typeof getLinkedInThumbnail === 'function') {
+        const thumb = await getLinkedInThumbnail(currentUrl);
+        if (thumb !== null) this.pageData.image = thumb;
+      } else if (typeof isFigmaUrl === 'function' && isFigmaUrl(currentUrl) && typeof getFigmaThumbnail === 'function') {
+        const thumb = await getFigmaThumbnail(currentUrl);
+        if (thumb !== null) this.pageData.image = thumb;
+      } else if (typeof isPinterestUrl === 'function' && isPinterestUrl(currentUrl) && typeof getPinterestThumbnail === 'function') {
+        const thumb = await getPinterestThumbnail(currentUrl);
         if (thumb !== null) this.pageData.image = thumb;
       }
     } catch (error) {
@@ -1044,8 +1115,8 @@ class SmarTrackPopup {
       // Documents
       if (urlLower.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt|rtf)$/)) return 'document';
       
-      // Academic/Research articles and discussion (Reddit)
-      if (isDomainMatch(url, ['arxiv.org', 'scholar.google.com', 'pubmed.ncbi.nlm.nih.gov', 'researchgate.net', 'reddit.com'])) {
+      // Academic/Research articles and discussion (Reddit, X/Twitter, LinkedIn, Figma, Pinterest)
+      if (isDomainMatch(url, ['arxiv.org', 'scholar.google.com', 'pubmed.ncbi.nlm.nih.gov', 'researchgate.net', 'reddit.com', 'twitter.com', 'x.com', 'linkedin.com', 'figma.com', 'pinterest.com'])) {
         return 'article';
       }
       
@@ -2082,8 +2153,8 @@ class SmarTrackPopup {
     // Documents
     if (urlLower.match(/\.(doc|docx|xls|xlsx|ppt|pptx|txt|rtf)$/)) return 'document';
     
-    // Academic/Research articles
-    if (isDomainMatch(url, ['arxiv.org', 'scholar.google.com', 'pubmed.ncbi.nlm.nih.gov', 'researchgate.net', 'reddit.com'])) {
+    // Academic/Research articles and discussion (Reddit, X/Twitter, LinkedIn, Figma, Pinterest)
+    if (isDomainMatch(url, ['arxiv.org', 'scholar.google.com', 'pubmed.ncbi.nlm.nih.gov', 'researchgate.net', 'reddit.com', 'twitter.com', 'x.com', 'linkedin.com', 'figma.com', 'pinterest.com'])) {
       return 'article';
     }
     

@@ -479,29 +479,106 @@ class BackendApiService {
 
   /**
    * Fetches categories from the backend
+   * Includes predefined categories + user-created categories from links (like Dashboard)
    * @async
    * @returns {Promise<Array<string>>} Array of category names
    */
   async getCategories() {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:485',message:'getCategories: Starting fetch',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     try {
-      // Use /api/types endpoint (alias for /api/categories) to match dashboard
-      const categories = await this.makeRequest('/api/types');
+      // Step 1: Fetch predefined categories from /api/types
+      const predefinedCategories = await this.makeRequest('/api/types');
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:492',message:'getCategories: Predefined categories fetched',data:{predefinedCategories:predefinedCategories,isArray:Array.isArray(predefinedCategories),length:Array.isArray(predefinedCategories)?predefinedCategories.length:0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       
-      // Extract category names from CategoryResponse objects
-      if (Array.isArray(categories)) {
-        return categories.map(cat => {
-          // Handle both object format {id, name} and string format
-          if (typeof cat === 'string') {
-            return cat.toLowerCase();
+      // Extract predefined category names
+      const predefinedNames = Array.isArray(predefinedCategories)
+        ? predefinedCategories.map(cat => {
+            if (typeof cat === 'string') {
+              return cat.toLowerCase();
+            }
+            return (cat.name || cat.id || '').toLowerCase();
+          }).filter(Boolean)
+        : [];
+      
+      // Step 2: Fetch links to extract user-created categories (like Dashboard does)
+      // Fetch all pages to get all categories (max limit is 100 per page)
+      let userCreatedCategories = [];
+      try {
+        const allLinks = [];
+        let page = 1;
+        let hasMore = true;
+        const maxPages = 20; // Safety limit to prevent infinite loops
+        
+        while (hasMore && page <= maxPages) {
+          // Explicitly exclude archived links (isArchived=false) - only get active links for categories
+          const linksResponse = await this.makeRequest(`/api/links?page=${page}&limit=100&isArchived=false`);
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:512',message:'getCategories: Links page fetched (active only)',data:{page:page,linksCount:linksResponse?.links?.length||0,hasMore:linksResponse?.hasMore||false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
+          
+          if (linksResponse && Array.isArray(linksResponse.links)) {
+            allLinks.push(...linksResponse.links);
+            hasMore = linksResponse.hasMore === true;
+            page++;
+          } else {
+            hasMore = false;
           }
-          return (cat.name || cat.id || '').toLowerCase();
-        }).filter(Boolean);
+        }
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:525',message:'getCategories: All links fetched',data:{totalLinks:allLinks.length,pagesFetched:page-1},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
+        
+        if (allLinks.length > 0) {
+          // Extract unique categories from ACTIVE links only (exclude archived, like Dashboard does)
+          // Archived links should not contribute to category list
+          const activeLinks = allLinks.filter(link => !link.isArchived);
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:537',message:'getCategories: Filtering archived links',data:{totalLinks:allLinks.length,activeLinks:activeLinks.length,archivedLinks:allLinks.length-activeLinks.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
+          
+          const userCategoriesSet = new Set();
+          activeLinks.forEach(link => {
+            if (link.category && link.category.trim()) {
+              const normalized = link.category.trim().toLowerCase();
+              userCategoriesSet.add(normalized);
+            }
+          });
+          
+          // Filter out predefined categories (case-insensitive)
+          const predefinedSet = new Set(predefinedNames);
+          userCreatedCategories = Array.from(userCategoriesSet).filter(cat => {
+            return !predefinedSet.has(cat);
+          });
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:551',message:'getCategories: User-created categories extracted from active links',data:{userCreatedCategories:userCreatedCategories,userCreatedCount:userCreatedCategories.length,uniqueCategoriesFromLinks:userCategoriesSet.size,activeLinksCount:activeLinks.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
+        }
+      } catch (linksError) {
+        // Non-critical - if links fetch fails, just use predefined categories
+        console.debug('[SRT] Failed to fetch links for categories:', linksError.message || linksError);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:545',message:'getCategories: Links fetch failed, using predefined only',data:{error:linksError.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
       }
       
-      return [];
+      // Step 3: Combine predefined + user-created categories
+      const allCategories = [...predefinedNames, ...userCreatedCategories];
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:530',message:'getCategories: Final combined categories',data:{allCategories:allCategories,totalCount:allCategories.length,predefinedCount:predefinedNames.length,userCreatedCount:userCreatedCategories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      
+      return allCategories;
     } catch (error) {
       // Non-critical operation, return empty array on failure
       console.debug('[SRT] Failed to fetch categories from backend:', error.message || error);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:535',message:'getCategories: Error fetching',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       return [];
     }
   }
