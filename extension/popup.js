@@ -543,25 +543,42 @@ class SmarTrackPopup {
       ]);
       const customCategories = result?.[CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES] || [];
       
+      console.log('[SRT] Custom categories from storage:', customCategories);
+      
       // Normalize backend categories for comparison
       const backendSet = new Set(backendCategories.map(c => c.toLowerCase()));
       
-      // Only keep custom categories that aren't in backend (user-created in extension)
+      // CRITICAL FIX: Only keep custom categories that aren't in backend AND are not deleted
+      // If a category is not in backend, it means it was deleted from dashboard, so remove it
+      // Only keep truly extension-created categories that haven't been synced to backend yet
       const validCustomCategories = customCategories.filter(cat => {
         const normalized = cat.toLowerCase();
-        return !backendSet.has(normalized) && normalized !== 'other';
+        // Remove if it's in backend (now synced) OR if it's a reserved name
+        if (backendSet.has(normalized) || normalized === 'other') {
+          return false;
+        }
+        // Keep only if it's a valid extension-created category
+        return true;
       });
       
-      // Clean up stored custom categories list (remove ones now in backend)
+      // Always clean up stored custom categories to remove deleted ones
+      // This ensures deleted categories are removed from storage
       if (validCustomCategories.length !== customCategories.length) {
+        console.log('[SRT] Cleaning up custom categories:', {
+          before: customCategories,
+          after: validCustomCategories,
+          removed: customCategories.filter(c => !validCustomCategories.includes(c))
+        });
         await chrome.storage.sync.set({
           [CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES]: validCustomCategories
         });
       }
       
-      // Combine: backend categories (source of truth) + valid custom categories
-      // Ensure all categories are strings (handle any object/array edge cases)
-      const mergedCategories = [...backendCategories, ...validCustomCategories].map(c => String(c).trim()).filter(Boolean);
+      // CRITICAL: Use ONLY backend categories as source of truth
+      // Don't merge with customCategories - backend is the single source of truth
+      // Custom categories will be added back when user creates them in extension
+      // This ensures deleted categories are always removed
+      const mergedCategories = [...backendCategories].map(c => String(c).trim()).filter(Boolean);
       
       // Normalize all categories to lowercase for comparison (ensure consistent comparison)
       const mergedNormalized = mergedCategories.map(c => c.toLowerCase()).sort();
