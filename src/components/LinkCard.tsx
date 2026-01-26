@@ -1480,39 +1480,32 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   {copied && <span className="text-xs text-green-600 font-medium">Copied!</span>}
                 </div>
 
-                {/* Info-Cluster: Horizontal Metadata Row */}
-                <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-gray-500 mb-3">
-                  <div className="flex items-center gap-1">
+                {/* Info-Cluster: Content type and category badges */}
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1 ${contentTypeInfo.color}`}>
                     <contentTypeInfo.icon size={14} strokeWidth={1.5} />
-                    <span>{contentTypeInfo.label}</span>
-                  </div>
+                    {contentTypeInfo.label}
+                  </span>
                   {link.category && (
-                    <>
-                      <span>•</span>
-                      <div className="flex items-center gap-1">
-                        <Tag size={14} strokeWidth={1.5} />
-                        <span>{capitalizeCategoryName(link.category)}</span>
-                      </div>
-                    </>
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full border border-gray-200">
+                      {capitalizeCategoryName(link.category)}
+                    </span>
                   )}
                   {link.collectionId && (
-                    <>
-                      <span>•</span>
-                      <div className="flex items-center gap-1">
-                        <Folder size={14} strokeWidth={1.5} />
-                        <span>{getCollectionName(link.collectionId)}</span>
-                      </div>
-                    </>
+                    <span className="px-2 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full flex items-center gap-1 border border-green-200">
+                      <Folder size={14} strokeWidth={1.5} />
+                      {getCollectionName(link.collectionId)}
+                    </span>
                   )}
                 </div>
 
                 {/* Date and Clicks - Single horizontal row */}
-                <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-gray-500 mb-3">
+                <div className="flex flex-wrap items-center gap-2 text-[12px] text-gray-500 mb-3">
                   <div className="flex items-center gap-1">
                     <Clock size={14} strokeWidth={1.5} />
-                    <span>Captured {formatRelativeTime(link.createdAt)}</span>
+                    <span>{formatDate(link.createdAt)}</span>
                   </div>
-                  <span>•</span>
+                  <span className="text-gray-300">•</span>
                   <div className="flex items-center gap-1">
                     <MousePointer size={14} strokeWidth={1.5} />
                     <span>{localClickCount} {localClickCount === 1 ? 'visit' : 'visits'}</span>
