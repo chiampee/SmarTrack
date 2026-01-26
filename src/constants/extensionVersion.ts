@@ -4,7 +4,7 @@
  * 
  * Validation: Must be semantic version format (e.g., "1.0.5")
  */
-export const LATEST_EXTENSION_VERSION = '1.0.6'
+export const LATEST_EXTENSION_VERSION = '1.0.7'
 
 /**
  * Validates if a version string is in correct semantic version format
