@@ -438,6 +438,9 @@ export const Dashboard: React.FC = () => {
     const collection = params.get('collection')
     const categoryParam = params.get('category')
     const typeParam = params.get('type')
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:439',message:'First useEffect: URL params detected',data:{categoryParam,filter,collection,typeParam,search:location.search},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
 
     // Persist current view for future visits
     try {
@@ -519,11 +522,15 @@ export const Dashboard: React.FC = () => {
             const catLower = categoryParam.toLowerCase()
             // Find the actual category name (preserve capitalization)
             const actualCategory = links.find(l => (l.category || '').toLowerCase() === catLower)?.category || categoryParam
+            const matchingLinks = links.filter(l => 
+              (l.category || '').toLowerCase() === catLower && !l.isArchived
+            )
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:516',message:'First useEffect: Setting category filter',data:{categoryParam,catLower,actualCategory,matchingCount:matchingLinks.length,totalLinks:links.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
             setCurrentCategoryName(actualCategory)
             // Exclude archived links from category view (unless already archived)
-            setFilteredLinks(links.filter(l => 
-              (l.category || '').toLowerCase() === catLower && !l.isArchived
-            ))
+            setFilteredLinks(matchingLinks)
           } else {
             setSelectedCollectionId(null)
             setActiveFilterId(null)
@@ -829,6 +836,10 @@ export const Dashboard: React.FC = () => {
   // Filter links based on search and filters
   useEffect(() => {
     const typeParam = new URLSearchParams(location.search).get('type')
+    const categoryParam = new URLSearchParams(location.search).get('category')
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:831',message:'Second useEffect: Starting filter',data:{selectedCollectionId,activeFilterId,currentCategoryName,categoryParam,filtersCategory:filters.category,typeParam,totalLinks:links.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     console.log('🔍 useEffect: Recalculating filteredLinks from links array', {
       selectedCollectionId,
       activeFilterId,
@@ -914,11 +925,21 @@ export const Dashboard: React.FC = () => {
       )
     }
 
-    // Category filter
-    if (filters.category) {
+    // Category filter - check both filters.category (from FiltersDropdown) and currentCategoryName/URL param (from sidebar)
+    const categoryToFilter = currentCategoryName || (categoryParam ? categoryParam : filters.category)
+    if (categoryToFilter) {
+      const catLower = categoryToFilter.toLowerCase()
+      const beforeCount = filtered.length
       filtered = filtered.filter(link => 
-        link.category && link.category.toLowerCase() === filters.category.toLowerCase()
+        link.category && link.category.toLowerCase() === catLower
       )
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:917',message:'Second useEffect: Applying category filter',data:{categoryToFilter,catLower,beforeCount,afterCount:filtered.length,currentCategoryName,categoryParam,filtersCategory:filters.category},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+    } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:917',message:'Second useEffect: No category filter applied',data:{currentCategoryName,categoryParam,filtersCategory:filters.category},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
     }
 
     // Date filter
@@ -956,6 +977,9 @@ export const Dashboard: React.FC = () => {
       )
     }
 
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:980',message:'Second useEffect: Final filteredLinks count',data:{finalCount:filtered.length,totalLinks:links.length,currentCategoryName,categoryParam},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     setFilteredLinks(filtered)
   }, [links, searchQuery, filters, selectedCollectionId, activeFilterId, location.search])
 

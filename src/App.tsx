@@ -9,6 +9,7 @@ import { TermsPage } from './pages/TermsPage'
 import { DocsPage } from './pages/DocsPage'
 import { Dashboard } from './pages/Dashboard'
 import { MainPage } from './pages/MainPage'
+import { LobbyPage } from './pages/LobbyPage'
 import { Settings } from './pages/Settings'
 import { AdminAnalytics } from './pages/AdminAnalytics'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -60,17 +61,25 @@ function App() {
       <CategoriesProvider>
         <SidebarProvider>
           <ResourceTypeCountsProvider>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<MainPage />} />
-                <Route path="/main" element={<MainPage />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/analytics" element={<AdminAnalytics />} />
-                <Route path="/404" element={<NotFoundPage />} />
-                <Route path="*" element={<NotFoundPage />} />
-              </Routes>
-            </Layout>
+            <Routes>
+              <Route path="/lobby" element={<LobbyPage />} />
+              <Route
+                path="/*"
+                element={
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<MainPage />} />
+                      <Route path="/main" element={<MainPage />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/analytics" element={<AdminAnalytics />} />
+                      <Route path="/404" element={<NotFoundPage />} />
+                      <Route path="*" element={<NotFoundPage />} />
+                    </Routes>
+                  </Layout>
+                }
+              />
+            </Routes>
           </ResourceTypeCountsProvider>
         </SidebarProvider>
       </CategoriesProvider>
