@@ -17,7 +17,6 @@ const CONSTANTS = {
   TOAST_DISPLAY_DURATION: 3000, // ms
   AUTO_CLOSE_DELAY: 2000, // ms
   SELECTED_TEXT_MIN_LENGTH: 20,
-  CATEGORY_CACHE_DURATION: 5000, // 5 seconds (low dedupingInterval)
   
   // Storage Keys
   STORAGE_KEYS: {
@@ -380,14 +379,11 @@ class SmarTrackPopup {
     /** @type {string} */
     this.selectedText = '';
     
-    /** @type {Array<{id: string, name: string, color: string, icon: string, isDefault: boolean, linkCount?: number}>|string[]} */
+    /** @type {string[]} */
     this.categories = [];
     
     /** @type {string|null} */
     this.lastCategory = null;
-    
-    /** @type {boolean} */
-    this.isSyncingCategories = false;
     
     /** @type {number|null} */
     this.tokenCheckInterval = null;
@@ -412,22 +408,13 @@ class SmarTrackPopup {
       this.setupEventListeners();
       this.renderCategories();
       
-      // Sync categories from backend if authenticated
-      // Show spinner for 200ms minimum
+      // Sync categories from backend if authenticated (non-blocking but will update when complete)
+      // The sync logic now aggressively updates to ensure deleted categories are removed
       if (token) {
-        this.showCategorySyncSpinner();
-        
-        const syncPromise = this.syncCategoriesFromBackend().catch((error) => {
-          // Silently fail - categories will use local storage
-          console.debug('[SRT] Category sync failed, using cached categories:', error);
-        });
-        
-        // Hide spinner after 200ms minimum or when sync completes
-        Promise.all([
-          syncPromise,
-          new Promise(resolve => setTimeout(resolve, 200))
-        ]).then(() => {
-          this.hideCategorySyncSpinner();
+        // Force sync immediately to ensure deleted categories are removed
+        this.syncCategoriesFromBackend().catch((error) => {
+          // Log error for debugging
+          console.error('[SRT] Category sync failed:', error);
         });
       }
       
@@ -503,71 +490,6 @@ class SmarTrackPopup {
    * @async
    * @returns {Promise<void>}
    */
-  /**
-   * Converts old string-based categories to new Category object format
-   * @param {Array<string|Object>} categories - Categories in old or new format
-   * @returns {Array<Object>} Categories in new Category object format
-   */
-  normalizeCategoriesToObjects(categories) {
-    if (!Array.isArray(categories) || categories.length === 0) {
-      return this.getDefaultCategoryObjects();
-    }
-    
-    return categories.map(cat => {
-      // If already a Category object, return as-is
-      if (typeof cat === 'object' && cat !== null && cat.name) {
-        return {
-          id: cat.id || cat.name.toLowerCase().replace(/\s+/g, '-'),
-          name: cat.name,
-          color: cat.color || '#3B82F6',
-          icon: cat.icon || 'book-open',
-          isDefault: cat.isDefault !== undefined ? cat.isDefault : false,
-          linkCount: cat.linkCount || 0
-        };
-      }
-      
-      // If string, convert to Category object
-      if (typeof cat === 'string') {
-        const name = cat.trim();
-        if (!name || name === 'other') return null;
-        
-        // Map to predefined category if it matches
-        const predefined = this.getDefaultCategoryObjects().find(c => 
-          c.name.toLowerCase() === name.toLowerCase()
-        );
-        
-        if (predefined) {
-          return predefined;
-        }
-        
-        // User-created category
-        return {
-          id: name.toLowerCase().replace(/\s+/g, '-'),
-          name: name,
-          color: '#64748b',
-          icon: 'book-open',
-          isDefault: false,
-          linkCount: 0
-        };
-      }
-      
-      return null;
-    }).filter(Boolean);
-  }
-
-  /**
-   * Gets default Category objects for predefined categories
-   * @returns {Array<Object>} Default Category objects
-   */
-  getDefaultCategoryObjects() {
-    return [
-      { id: 'research', name: 'Research', color: '#3B82F6', icon: 'book-open', isDefault: true, linkCount: 0 },
-      { id: 'articles', name: 'Articles', color: '#10B981', icon: 'file-text', isDefault: true, linkCount: 0 },
-      { id: 'tools', name: 'Tools', color: '#F59E0B', icon: 'wrench', isDefault: true, linkCount: 0 },
-      { id: 'references', name: 'References', color: '#8B5CF6', icon: 'bookmark', isDefault: true, linkCount: 0 }
-    ];
-  }
-
   async loadCategories() {
     try {
       const result = await chrome.storage.sync.get([
@@ -578,11 +500,12 @@ class SmarTrackPopup {
       const stored = result?.[CONSTANTS.STORAGE_KEYS.SETTINGS]?.categories;
       let categories = Array.isArray(stored) && stored.length > 0
         ? stored
-        : this.getDefaultCategoryObjects();
+        : [...CONSTANTS.DEFAULT_CATEGORIES];
       
-      // Normalize to Category objects (handles backward compatibility)
-      this.categories = this.normalizeCategoriesToObjects(categories);
+      // Filter out "other" if it exists (legacy cleanup)
+      categories = categories.filter(cat => cat !== 'other');
       
+      this.categories = categories.length > 0 ? categories : [...CONSTANTS.DEFAULT_CATEGORIES];
       this.lastCategory = result?.[CONSTANTS.STORAGE_KEYS.LAST_CATEGORY] || null;
       
       // If last category was "other", reset it
@@ -591,7 +514,7 @@ class SmarTrackPopup {
       }
     } catch (error) {
       console.error('[SRT] Failed to load categories:', error);
-      this.categories = this.getDefaultCategoryObjects();
+      this.categories = [...CONSTANTS.DEFAULT_CATEGORIES];
       this.lastCategory = null;
     }
   }
@@ -603,65 +526,16 @@ class SmarTrackPopup {
    * @returns {Promise<void>}
    */
   async syncCategoriesFromBackend() {
-    // Check cache first (dedupingInterval logic)
-    const cacheKey = 'categorySyncCache';
-    try {
-      const cached = await chrome.storage.local.get(cacheKey);
-      const now = Date.now();
-      
-      // Use cache if within dedupingInterval
-      if (cached[cacheKey] && (now - cached[cacheKey].timestamp) < CONSTANTS.CATEGORY_CACHE_DURATION) {
-        const cachedCategories = cached[cacheKey].data;
-        if (Array.isArray(cachedCategories) && cachedCategories.length > 0) {
-          console.log('[SRT] Using cached categories');
-          this.categories = this.normalizeCategoriesToObjects(cachedCategories);
-          await this.saveCategories(this.categories);
-          this.renderCategories();
-          return;
-        }
-      }
-    } catch (cacheError) {
-      console.debug('[SRT] Cache check failed, fetching fresh:', cacheError);
-    }
-    
     console.log('[SRT] Starting category sync, current categories:', this.categories);
-    this.isSyncingCategories = true;
-    
     try {
       const api = new BackendApiService();
       const backendCategories = await api.getCategories();
       console.log('[SRT] Backend categories fetched:', backendCategories);
       
-      if (!Array.isArray(backendCategories) || backendCategories.length === 0) {
+      if (backendCategories.length === 0) {
         // If backend fetch failed, keep existing categories
-        this.isSyncingCategories = false;
         return;
       }
-      
-      // Ensure all categories are Category objects
-      const normalizedBackendCategories = backendCategories.map(cat => {
-        if (typeof cat === 'object' && cat !== null && cat.name) {
-          return {
-            id: cat.id || cat.name.toLowerCase().replace(/\s+/g, '-'),
-            name: cat.name,
-            color: cat.color || '#3B82F6',
-            icon: cat.icon || 'book-open',
-            isDefault: cat.isDefault !== undefined ? cat.isDefault : false,
-            linkCount: cat.linkCount || 0
-          };
-        }
-        return null;
-      }).filter(Boolean);
-      
-      // Filter out categories with 0 active links (except predefined categories)
-      const filteredCategories = normalizedBackendCategories.filter(cat => {
-        // Always include predefined categories
-        if (cat.isDefault) {
-          return true;
-        }
-        // User-created categories: only include if they have active links
-        return (cat.linkCount || 0) > 0;
-      });
       
       // Get extension-created custom categories (tracked separately)
       const result = await chrome.storage.sync.get([
@@ -669,91 +543,74 @@ class SmarTrackPopup {
       ]);
       const customCategories = result?.[CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES] || [];
       
-      // Normalize backend category names for comparison
-      const backendSet = new Set(filteredCategories.map(c => c.name.toLowerCase()));
+      // Normalize backend categories for comparison
+      const backendSet = new Set(backendCategories.map(c => c.toLowerCase()));
       
       // Only keep custom categories that aren't in backend (user-created in extension)
-      const validCustomCategories = customCategories
-        .filter(cat => {
-          const normalized = typeof cat === 'string' ? cat.toLowerCase() : (cat.name || '').toLowerCase();
-          return !backendSet.has(normalized) && normalized !== 'other';
-        })
-        .map(cat => {
-          // Convert custom category strings to Category objects
-          if (typeof cat === 'string') {
-            return {
-              id: cat.toLowerCase().replace(/\s+/g, '-'),
-              name: cat,
-              color: '#64748b',
-              icon: 'book-open',
-              isDefault: false,
-              linkCount: 0
-            };
-          }
-          return cat;
-        });
+      const validCustomCategories = customCategories.filter(cat => {
+        const normalized = cat.toLowerCase();
+        return !backendSet.has(normalized) && normalized !== 'other';
+      });
       
       // Clean up stored custom categories list (remove ones now in backend)
       if (validCustomCategories.length !== customCategories.length) {
         await chrome.storage.sync.set({
-          [CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES]: validCustomCategories.map(c => 
-            typeof c === 'string' ? c : c.name
-          )
+          [CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES]: validCustomCategories
         });
       }
       
       // Combine: backend categories (source of truth) + valid custom categories
-      const mergedCategories = [...filteredCategories, ...validCustomCategories];
+      // Ensure all categories are strings (handle any object/array edge cases)
+      const mergedCategories = [...backendCategories, ...validCustomCategories].map(c => String(c).trim()).filter(Boolean);
       
-      // Check if lastCategory was deleted
+      // Normalize all categories to lowercase for comparison (ensure consistent comparison)
+      const mergedNormalized = mergedCategories.map(c => c.toLowerCase()).sort();
+      const currentNormalized = this.categories.map(c => String(c).toLowerCase().trim()).filter(Boolean).sort();
+      
+      // Update if categories changed (compare normalized arrays)
+      const categoriesChanged = JSON.stringify(mergedNormalized) !== JSON.stringify(currentNormalized);
+      
+      // Check for casing mismatch: even if normalized arrays match, actual arrays might differ (e.g., "research" vs "Research")
+      // Compare actual arrays (sorted) to catch any differences in content or order (use spread to avoid mutating)
+      const actualArraysMatch = JSON.stringify([...mergedCategories].sort()) === JSON.stringify([...this.categories].sort());
+      const hasCasingMismatch = !actualArraysMatch && categoriesChanged === false;
+      
+      // Always update to ensure deleted categories are removed (backend is source of truth)
+      // Check if any categories were deleted (exist in current but not in merged)
+      const deletedCategories = currentNormalized.filter(c => !mergedNormalized.includes(c));
+      const hasDeletedCategories = deletedCategories.length > 0;
+      const newCategories = mergedNormalized.filter(c => !currentNormalized.includes(c));
+      const hasNewCategories = newCategories.length > 0;
+      
+      // Force update if: categories changed, deleted categories exist, new categories exist, count differs, or casing mismatch
+      // CRITICAL: Always update if there are deleted categories or casing mismatches to ensure they're fixed
+      // Also update if arrays don't match exactly (defensive check)
+      const shouldUpdate = categoriesChanged || hasDeletedCategories || hasNewCategories || hasCasingMismatch || mergedCategories.length !== this.categories.length || JSON.stringify(mergedNormalized) !== JSON.stringify(currentNormalized);
+      
+      // CRITICAL FIX: Always update categories from backend (source of truth)
+      // Backend is the single source of truth - always sync to match it exactly
+      // This ensures deleted categories are always removed immediately
       const oldCategories = [...this.categories];
-      const oldCategoryNames = oldCategories.map(c => 
-        typeof c === 'string' ? c : c.name
-      );
-      const newCategoryNames = mergedCategories.map(c => c.name);
-      
-      const lastCategoryName = typeof this.lastCategory === 'string' 
-        ? this.lastCategory 
-        : (this.lastCategory?.name || null);
-      
-      const lastCategoryExists = lastCategoryName && newCategoryNames.some(name => 
-        name.toLowerCase() === lastCategoryName.toLowerCase()
-      );
-      
-      if (lastCategoryName && !lastCategoryExists) {
-        // Show toast notification
-        this.showToast('Category no longer available', 'warning');
-        // Reset to Research
-        this.lastCategory = 'Research';
-        await this.saveLastCategory('Research');
-      }
       
       // Always update from backend (source of truth) - no conditions
-      this.categories = mergedCategories.length > 0 
-        ? mergedCategories 
-        : this.getDefaultCategoryObjects();
-      
-      // Update cache
-      try {
-        await chrome.storage.local.set({
-          [cacheKey]: { 
-            data: this.categories, 
-            timestamp: Date.now() 
-          }
-        });
-      } catch (cacheError) {
-        console.debug('[SRT] Failed to update cache:', cacheError);
-      }
+      this.categories = mergedCategories.length > 0 ? mergedCategories : [...CONSTANTS.DEFAULT_CATEGORIES];
       
       // Check if there were actual changes for logging
-      const hadChanges = JSON.stringify([...oldCategoryNames].sort()) !== JSON.stringify([...newCategoryNames].sort());
+      const hadChanges = JSON.stringify([...oldCategories].sort()) !== JSON.stringify([...this.categories].sort());
       
       if (hadChanges) {
+        // Log category updates for debugging
         console.log('[SRT] Categories sync update (backend is source of truth):', {
+          reason: hasDeletedCategories ? 'deleted categories' : (hasCasingMismatch ? 'casing mismatch' : (hasNewCategories ? 'new categories' : 'sync to backend')),
+          deleted: deletedCategories,
+          new: newCategories,
+          hasCasingMismatch: hasCasingMismatch,
+          actualArraysMatch: actualArraysMatch,
+          shouldUpdate: shouldUpdate,
           oldCount: oldCategories.length,
           newCount: this.categories.length,
-          old: oldCategoryNames,
-          new: newCategoryNames
+          old: oldCategories,
+          new: this.categories
         });
       } else {
         console.log('[SRT] Categories already in sync with backend');
@@ -762,11 +619,19 @@ class SmarTrackPopup {
       // Always save and render (even if no changes, ensures consistency)
       await this.saveCategories(this.categories);
       this.renderCategories();
+      
+      // Log final state for debugging
+      console.log('[SRT] Category sync complete:', {
+        backendCategories: backendCategories,
+        mergedCategories: mergedCategories,
+        finalCategories: this.categories,
+        customCategoriesKept: validCustomCategories,
+        deletedCategories: deletedCategories,
+        hadChanges: hadChanges
+      });
     } catch (error) {
       // Non-critical - silently fail and keep existing categories
       console.debug('[SRT] Failed to sync categories from backend:', error);
-    } finally {
-      this.isSyncingCategories = false;
     }
   }
 
@@ -785,8 +650,6 @@ class SmarTrackPopup {
       const result = await chrome.storage.sync.get([CONSTANTS.STORAGE_KEYS.SETTINGS]);
       const settings = result[CONSTANTS.STORAGE_KEYS.SETTINGS] || {};
       const oldCategories = settings.categories || [];
-      
-      // Store as Category objects (not strings)
       settings.categories = categories;
       
       await chrome.storage.sync.set({ [CONSTANTS.STORAGE_KEYS.SETTINGS]: settings });
@@ -794,28 +657,6 @@ class SmarTrackPopup {
     } catch (error) {
       console.error('[SRT] Failed to save categories:', error);
       // Non-critical, continue execution
-    }
-  }
-
-  /**
-   * Shows the category sync spinner
-   * @returns {void}
-   */
-  showCategorySyncSpinner() {
-    const spinner = document.getElementById('categorySyncSpinner');
-    if (spinner) {
-      spinner.classList.remove('hidden');
-    }
-  }
-
-  /**
-   * Hides the category sync spinner
-   * @returns {void}
-   */
-  hideCategorySyncSpinner() {
-    const spinner = document.getElementById('categorySyncSpinner');
-    if (spinner) {
-      spinner.classList.add('hidden');
     }
   }
 
@@ -832,62 +673,18 @@ class SmarTrackPopup {
     // Security: Safe innerHTML usage - only clearing element, no user data inserted
     select.innerHTML = '';
 
-    // Determine which category to select
-    const categoryName = selectedValue || this.lastCategory;
-    const categoryToSelect = typeof categoryName === 'string' ? categoryName : (categoryName?.name || null);
-
-    // Add stored categories with icons
+    // Add stored categories
     this.categories.forEach((category) => {
-      const categoryObj = typeof category === 'object' && category !== null ? category : {
-        id: category.toLowerCase().replace(/\s+/g, '-'),
-        name: category,
-        color: '#3B82F6',
-        icon: 'book-open',
-        isDefault: false
-      };
-      
       const option = document.createElement('option');
-      option.value = categoryObj.name; // Use name as value for compatibility
-      option.setAttribute('data-category-id', categoryObj.id);
-      option.setAttribute('data-category-color', categoryObj.color);
-      option.setAttribute('data-category-icon', categoryObj.icon);
-      
-      // Add category name only (no icons)
-      option.textContent = categoryObj.name;
-      
-      // Check if this is the last-used category (premium active state)
-      const isLastUsed = categoryToSelect && 
-        categoryObj.name.toLowerCase() === categoryToSelect.toLowerCase();
-      
-      if (isLastUsed) {
-        option.setAttribute('data-active', 'true');
-        option.classList.add('category-option-active');
-      }
-      
+      option.value = category;
+      option.textContent = capitalize(category);
       select.appendChild(option);
     });
 
     // Determine selection: explicit > lastCategory > default
-    const fallback = this.categories.length > 0 
-      ? (typeof this.categories[0] === 'object' ? this.categories[0].name : this.categories[0])
-      : 'Research';
-    
-    const toSelect = categoryToSelect || this.lastCategory || fallback;
-    const categoryExists = this.categories.some(c => {
-      const name = typeof c === 'object' ? c.name : c;
-      return name.toLowerCase() === toSelect.toLowerCase();
-    });
-    
-    select.value = categoryExists ? toSelect : fallback;
-    
-    // Apply premium active state styling to select element if last-used category is selected
-    if (categoryToSelect && categoryExists) {
-      select.classList.add('category-select-active');
-      select.setAttribute('data-active-category', categoryToSelect);
-    } else {
-      select.classList.remove('category-select-active');
-      select.removeAttribute('data-active-category');
-    }
+    const fallback = this.categories[0] || CONSTANTS.DEFAULT_CATEGORIES[0];
+    const toSelect = selectedValue || this.lastCategory || fallback;
+    select.value = this.categories.includes(toSelect) ? toSelect : fallback;
   }
 
   /**
@@ -1868,10 +1665,7 @@ class SmarTrackPopup {
       const handleCategoryChange = () => {
         if (categorySelect.value) {
           this.saveLastCategory(categorySelect.value);
-          // Update premium active state to reflect new selection
-          this.renderCategories(categorySelect.value);
         }
-        this.updateCustomCategoryVisibility();
       };
       categorySelect.addEventListener('change', handleCategoryChange);
       this.cleanupFunctions.push(() => {
@@ -2260,13 +2054,7 @@ class SmarTrackPopup {
     // Create new toast
     const toast = document.createElement('div');
     toast.id = 'toast';
-    let toastClass = 'toast';
-    if (type === 'error') {
-      toastClass += ' toast-error';
-    } else if (type === 'warning') {
-      toastClass += ' toast-warning';
-    }
-    toast.className = toastClass;
+    toast.className = `toast ${type === 'error' ? 'toast-error' : ''}`;
     toast.textContent = message;
     toast.setAttribute('role', 'alert');
     toast.setAttribute('aria-live', 'assertive');
@@ -2288,7 +2076,7 @@ class SmarTrackPopup {
     const content = this.selectedText || this.pageData.description || '';
     
     // Get category
-    let category = 'Research'; // Default to Research
+    let category = CONSTANTS.DEFAULT_CATEGORIES[0];
     try {
       const select = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
       
