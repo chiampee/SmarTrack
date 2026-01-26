@@ -1179,21 +1179,33 @@ class SmarTrackPopup {
    * @returns {Promise<void>}
    */
   async fetchDuplicates() {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1181',message:'fetchDuplicates: Starting duplicate search',data:{url:this.pageData.url||this.currentTab?.url||''},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     try {
       const api = new BackendApiService();
       const url = this.pageData.url || this.currentTab?.url || '';
       
       // Skip duplicate search for system URLs or invalid URLs
       if (!url || isSystemUrl(url)) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1187',message:'fetchDuplicates: Skipping search (system/invalid URL)',data:{url:url,isSystem:isSystemUrl(url)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         return;
       }
       
       const duplicates = await api.searchDuplicates(url);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1191',message:'fetchDuplicates: Duplicates received from API',data:{duplicates:duplicates,duplicateCount:duplicates?.length||0,duplicateIds:duplicates?.map(d=>d.id)||[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       this.renderDuplicates(duplicates || []);
     } catch (error) {
       // Silently fail - duplicates are non-critical
       // Use debug level to avoid console noise for expected network failures
       console.debug('[SRT] Duplicate search failed (non-critical):', error.message || error);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1194',message:'fetchDuplicates: Error during search',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
     }
   }
 

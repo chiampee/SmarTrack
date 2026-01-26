@@ -226,8 +226,33 @@ async def search_links(
         
         # Build search query
         search_query = build_user_filter(user_id)
+        
+        # For duplicate detection (when q looks like a URL), prefer exact URL match
+        # This prevents false positives from partial URL matches
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(q)
+            # If q is a valid URL, check for exact match first, then fall back to regex
+            if parsed.scheme and parsed.netloc:
+                # Try exact URL match first (more accurate for duplicate detection)
+                exact_match = await db.links.find_one(
+                    build_user_filter(user_id, {"url": q, "isArchived": False}),
+                    {"_id": 1, "url": 1, "title": 1}
+                )
+                if exact_match:
+                    # Found exact match, return it
+                    normalized = normalize_document(exact_match)
+                    return {"links": [normalized]}
+        except:
+            # If URL parsing fails, continue with regex search
+            pass
+        
+        # Fall back to regex search for partial matches
         search_filter = build_search_filter(q, ["title", "description", "url"])
         search_query.update(search_filter)
+        
+        # Exclude archived links from search results (archived links shouldn't show as duplicates)
+        search_query["isArchived"] = False
         
         # Add additional filters
         if category:
@@ -242,6 +267,11 @@ async def search_links(
         
         # Execute search with limit
         links = await db.links.find(search_query).limit(20).to_list(20)
+        
+        # Log search results for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.debug(f"[SEARCH] Query: {q}, Found {len(links)} links, Archived filter: isArchived=False")
         
         # Normalize documents
         normalized_links = normalize_documents(links)
@@ -689,10 +719,21 @@ async def delete_link(
         # Validate ObjectId format
         object_id = validate_object_id(link_id, "Link")
         
+        # Get link info before deletion for logging
+        link_before_delete = await db.links.find_one(
+            build_user_filter(user_id, {"_id": object_id}),
+            {"url": 1, "title": 1, "_id": 0}
+        )
+        
         # Delete the link
         result = await db.links.delete_one(
             build_user_filter(user_id, {"_id": object_id})
         )
+        
+        # Log deletion for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"[DELETE] Link {link_id} deleted: deleted_count={result.deleted_count}, url={link_before_delete.get('url') if link_before_delete else 'N/A'}")
         
         if result.deleted_count == 0:
             # ✅ SECURITY: Strict user isolation - only check if link exists for current user

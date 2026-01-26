@@ -458,6 +458,9 @@ class BackendApiService {
    * @returns {Promise<Array<Object>>}
    */
   async searchDuplicates(url) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:460',message:'searchDuplicates: Starting search',data:{url:url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     if (!url || typeof url !== 'string') {
       return [];
     }
@@ -467,12 +470,18 @@ class BackendApiService {
       const response = await this.makeRequest(
         `${API_CONSTANTS.LINKS_ENDPOINT}/search?q=${encodedUrl}`
       );
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:468',message:'searchDuplicates: Response received',data:{linksCount:response?.links?.length||0,links:response?.links?.map(l=>({id:l.id,url:l.url,title:l.title,isArchived:l.isArchived}))||[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       
       return Array.isArray(response.links) ? response.links : [];
     } catch (error) {
       // Non-critical operation, return empty array on failure
       // Use debug level to avoid console noise for expected network failures
       console.debug('[SRT] Duplicate search failed (non-critical):', error.message || error);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:475',message:'searchDuplicates: Error during search',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       return [];
     }
   }
