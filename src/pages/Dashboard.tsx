@@ -486,15 +486,8 @@ export const Dashboard: React.FC = () => {
       setSelectedCollectionId(collection)
       setActiveFilterId(null)
       setCurrentCategoryName(null)
-      // Check if user wants to see archived links for this collection
-      const showArchived = params.get('archived') === 'true'
-      if (showArchived) {
-        // Show only archived links for this collection
-        setFilteredLinks(links.filter(l => l.collectionId === collection && l.isArchived))
-      } else {
-        // Exclude archived links from collection view (default)
-        setFilteredLinks(links.filter(l => l.collectionId === collection && !l.isArchived))
-      }
+      // Show all links (both active and archived) for this collection
+      setFilteredLinks(links.filter(l => l.collectionId === collection))
       return
     }
 
@@ -875,14 +868,8 @@ export const Dashboard: React.FC = () => {
 
     // Collection filter (takes precedence)
     if (selectedCollectionId) {
-      // Check if user wants to see archived links for this collection
-      const params = new URLSearchParams(location.search)
-      const showArchived = params.get('archived') === 'true'
-      if (showArchived) {
-        filtered = filtered.filter(link => link.collectionId === selectedCollectionId && link.isArchived)
-      } else {
-        filtered = filtered.filter(link => link.collectionId === selectedCollectionId && !link.isArchived)
-      }
+      // Show all links (both active and archived) for this collection
+      filtered = filtered.filter(link => link.collectionId === selectedCollectionId)
       setFilteredLinks(filtered)
       return
     }
