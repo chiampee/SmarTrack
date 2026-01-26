@@ -596,7 +596,8 @@ class SmarTrackPopup {
       const categoriesChanged = JSON.stringify(mergedNormalized) !== JSON.stringify(currentNormalized);
       
       // Check for casing mismatch: even if normalized arrays match, actual arrays might differ (e.g., "research" vs "Research")
-      const actualArraysMatch = JSON.stringify(mergedCategories.sort()) === JSON.stringify(this.categories.sort());
+      // Compare actual arrays (sorted) to catch any differences in content or order (use spread to avoid mutating)
+      const actualArraysMatch = JSON.stringify([...mergedCategories].sort()) === JSON.stringify([...this.categories].sort());
       const hasCasingMismatch = !actualArraysMatch && categoriesChanged === false;
       
       // Always update to ensure deleted categories are removed (backend is source of truth)
@@ -621,9 +622,7 @@ class SmarTrackPopup {
       
       // CRITICAL FIX: Always update categories from backend (source of truth) if arrays don't match exactly
       // This ensures deleted categories are always removed, even if detection logic fails
-      // Compare actual arrays (sorted) to catch any differences in content or order
-      const actualArraysMatch = JSON.stringify([...mergedCategories].sort()) === JSON.stringify([...this.categories].sort());
-      
+      // actualArraysMatch is already declared above, reuse it here
       if (!actualArraysMatch || shouldUpdate || hasDeletedCategories || hasCasingMismatch) {
         // Store old categories for logging
         const oldCategories = [...this.categories];
