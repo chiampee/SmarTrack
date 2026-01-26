@@ -54,6 +54,10 @@ export const CategoriesProvider: React.FC<{ children: ReactNode }> = ({ children
       name: capitalizeCategoryName(name), // Ensure first letter is capitalized
       linkCount: count
     }))
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CategoriesContext.tsx:52',message:'computeCategories: Computed categories',data:{linkCount:links.length,categoryCount:categoriesArray.length,categories:categoriesArray.map(c=>({name:c.name,count:c.linkCount})),sampleLinkCategories:links.slice(0,5).map(l=>l.category)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
 
     // Sort by link count descending, then alphabetically
     categoriesArray.sort((a, b) => {

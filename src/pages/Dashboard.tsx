@@ -520,17 +520,14 @@ export const Dashboard: React.FC = () => {
             setSelectedCollectionId(null)
             setActiveFilterId(null)
             const catLower = categoryParam.toLowerCase()
-            // Find the actual category name (preserve capitalization)
-            const actualCategory = links.find(l => (l.category || '').toLowerCase() === catLower)?.category || categoryParam
-            const matchingLinks = links.filter(l => 
-              (l.category || '').toLowerCase() === catLower && !l.isArchived
-            )
+            // Find the actual category name from links (backend stores lowercase, but we need to match)
+            // The actualCategory will be the lowercase version from the link, which matches what's stored
+            const actualCategory = links.find(l => (l.category || '').toLowerCase() === catLower)?.category || categoryParam.toLowerCase()
             // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:516',message:'First useEffect: Setting category filter',data:{categoryParam,catLower,actualCategory,matchingCount:matchingLinks.length,totalLinks:links.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:519',message:'First useEffect: Setting category state',data:{categoryParam,catLower,actualCategory,totalLinks:links.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
             // #endregion
             setCurrentCategoryName(actualCategory)
-            // Exclude archived links from category view (unless already archived)
-            setFilteredLinks(matchingLinks)
+            // Don't set filteredLinks here - let the second useEffect handle filtering with all criteria
           } else {
             setSelectedCollectionId(null)
             setActiveFilterId(null)
@@ -828,10 +825,17 @@ export const Dashboard: React.FC = () => {
       // Combine predefined and user-created categories
       const allCategories = [...predefinedCats, ...userCategories]
       setCategoriesState(allCategories)
+      
+      // Also update context categories (used by Sidebar) with proper link counts
+      const computedCategories = computeCategories(links)
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:830',message:'useEffect: Updating context categories from links',data:{linkCount:links.length,computedCategoryCount:computedCategories.length,categories:computedCategories.map(c=>c.name)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      setCategories(computedCategories)
     }
     
     updateCategoriesFromLinks()
-  }, [links, makeRequest])
+  }, [links, makeRequest, computeCategories, setCategories])
 
   // Filter links based on search and filters
   useEffect(() => {
@@ -926,19 +930,34 @@ export const Dashboard: React.FC = () => {
     }
 
     // Category filter - check both filters.category (from FiltersDropdown) and currentCategoryName/URL param (from sidebar)
-    const categoryToFilter = currentCategoryName || (categoryParam ? categoryParam : filters.category)
+    // IMPORTANT: 
+    // - categoryParam comes from URL (capitalized from sidebar, e.g. "My Category")
+    // - currentCategoryName is set to the actual lowercase category from links (e.g. "my category")
+    // - links have lowercase categories from backend (e.g. "my category")
+    // - We need to match case-insensitively
+    const categoryToFilter = currentCategoryName || (categoryParam ? categoryParam.toLowerCase() : filters.category)
     if (categoryToFilter) {
-      const catLower = categoryToFilter.toLowerCase()
+      const catLower = categoryToFilter.toLowerCase().trim()
       const beforeCount = filtered.length
-      filtered = filtered.filter(link => 
-        link.category && link.category.toLowerCase() === catLower
-      )
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:917',message:'Second useEffect: Applying category filter',data:{categoryToFilter,catLower,beforeCount,afterCount:filtered.length,currentCategoryName,categoryParam,filtersCategory:filters.category},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:934',message:'Second useEffect: Before category filter',data:{categoryToFilter,catLower,beforeCount,currentCategoryName,categoryParam,filtersCategory:filters.category,sampleLinkCategories:filtered.slice(0,3).map(l=>l.category)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+      // #endregion
+      filtered = filtered.filter(link => {
+        const linkCatLower = (link.category || '').toLowerCase().trim()
+        const matches = linkCatLower === catLower
+        // #region agent log
+        if (filtered.indexOf(link) < 3) { // Log first 3 links for debugging
+          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:942',message:'Category filter: Checking link',data:{linkCategory:link.category,linkCatLower,catLower,matches},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+        }
+        // #endregion
+        return matches
+      })
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:950',message:'Second useEffect: After category filter',data:{afterCount:filtered.length,filteredCategories:filtered.map(l=>l.category)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
       // #endregion
     } else {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:917',message:'Second useEffect: No category filter applied',data:{currentCategoryName,categoryParam,filtersCategory:filters.category},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:953',message:'Second useEffect: No category filter applied',data:{currentCategoryName,categoryParam,filtersCategory:filters.category},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
       // #endregion
     }
 
@@ -981,7 +1000,7 @@ export const Dashboard: React.FC = () => {
     fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:980',message:'Second useEffect: Final filteredLinks count',data:{finalCount:filtered.length,totalLinks:links.length,currentCategoryName,categoryParam},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
     // #endregion
     setFilteredLinks(filtered)
-  }, [links, searchQuery, filters, selectedCollectionId, activeFilterId, location.search])
+  }, [links, searchQuery, filters, selectedCollectionId, activeFilterId, location.search, currentCategoryName])
 
   // Handle link actions
   const handleLinkAction = async (linkId: string, action: string, data?: any) => {
@@ -1226,9 +1245,19 @@ export const Dashboard: React.FC = () => {
       })
       
       // ✅ Update links array - useEffect will automatically recalculate filteredLinks
-      setLinks(links.map(l =>
+      const updatedLinks = links.map(l =>
         l.id === linkId ? { ...l, ...response, updatedAt: new Date(response.updatedAt) } : l
-      ))
+      )
+      setLinks(updatedLinks)
+      
+      // Update categories if category was changed (to include new categories or update counts)
+      if (updates.category !== undefined && updates.category !== originalLink?.category) {
+        const computedCategories = computeCategories(updatedLinks)
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:1232',message:'handleEditLink: Category changed, recomputing categories',data:{oldCategory:originalLink?.category,newCategory:updates.category,computedCount:computedCategories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
+        setCategories(computedCategories)
+      }
 
       // ✅ FIX: Refetch collections if either old or new collection is involved
       // This ensures counts are updated correctly in all scenarios:
@@ -1459,7 +1488,16 @@ export const Dashboard: React.FC = () => {
       })
       // Refresh links from backend - useEffect will handle filteredLinks based on active view
       const refreshedLinks = await getLinks()
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:1461',message:'handleAddLink: Refreshed links after save',data:{newCategory:linkData.category,savedLinkCategory:savedLink.category,refreshedCount:refreshedLinks.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       setLinks(refreshedLinks)
+      // Update categories context with new links (including any new categories)
+      const computedCategories = computeCategories(refreshedLinks)
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:1464',message:'handleAddLink: Computed categories',data:{categoryCount:computedCategories.length,categories:computedCategories.map(c=>c.name)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      setCategories(computedCategories)
       
       // Haptic feedback for mobile
       if (navigator.vibrate) {
