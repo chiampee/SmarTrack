@@ -38,7 +38,7 @@ jobs:
           VITE_AUTH0_DOMAIN: "test-domain"
           VITE_AUTH0_CLIENT_ID: "test-client"
           VITE_AUTH0_AUDIENCE: "test-audience"
-          VITE_API_URL: "https://test-api.com"
+          VITE_BACKEND_URL: "https://test-api.com"
 
   build-frontend:
     name: Build Frontend
@@ -64,7 +64,7 @@ jobs:
           VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
           VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
           VITE_AUTH0_AUDIENCE: ${{ secrets.VITE_AUTH0_AUDIENCE }}
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
 
       - name: Upload frontend build artifacts
         uses: actions/upload-artifact@v4
@@ -101,7 +101,7 @@ jobs:
   #         VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
   #         VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
   #         VITE_AUTH0_AUDIENCE: ${{ secrets.VITE_AUTH0_AUDIENCE }}
-  #         VITE_API_URL: ${{ secrets.VITE_API_URL }}
+  #         VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
   #
   #     - name: Deployment Status
   #       if: always()
