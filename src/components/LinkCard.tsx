@@ -526,39 +526,31 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 onClick={(e) => {
                   handleLinkClick(e);
                 }}
-                className="font-semibold text-gray-900 hover:text-blue-600 active:text-blue-700 text-[15px] sm:text-sm cursor-pointer w-full mb-1 touch-manipulation line-clamp-2 leading-relaxed"
+                className="font-semibold text-gray-900 hover:text-blue-600 active:text-blue-700 text-[15px] sm:text-sm cursor-pointer w-full mb-2 sm:mb-1.5 touch-manipulation line-clamp-2 leading-relaxed"
                 title={link.title}
               >
                 {link.title}
               </h3>
             </Tooltip>
-            {/* Domain and Category - Same line with dot separator */}
-            <Tooltip content={`${getCleanDomain(link.url) || link.url}${link.category ? ` • ${capitalizeCategoryName(link.category)}` : ''}`} disabled={!link.category && (getCleanDomain(link.url) || link.url).length < 30}>
-              <p className="text-[12px] text-gray-400 truncate" title={`${getCleanDomain(link.url) || link.url}${link.category ? ` • ${capitalizeCategoryName(link.category)}` : ''}`}>
+            {/* Domain only - Category removed from here (shown as badge instead) */}
+            <Tooltip content={getCleanDomain(link.url) || link.url} disabled={(getCleanDomain(link.url) || link.url).length < 30}>
+              <p className="text-[12px] sm:text-xs text-gray-500 truncate mb-2 sm:mb-1.5" title={getCleanDomain(link.url) || link.url}>
                 {getCleanDomain(link.url) || link.url}
-                {link.category && (
-                  <span> • {capitalizeCategoryName(link.category)}</span>
-                )}
               </p>
             </Tooltip>
             
             {/* Icons and metadata row - Hidden on mobile */}
-            <div className="hidden sm:flex items-center gap-2 flex-wrap mt-1">
+            <div className="hidden sm:flex items-center gap-2 flex-wrap mt-0.5">
               {/* Icons */}
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 {link.description && <span title="Has notes"><StickyNote className="w-3.5 h-3.5 text-amber-400" strokeWidth={1.5} /></span>}
                 {link.isFavorite && <Star className="w-3.5 h-3.5 text-amber-400 fill-current" strokeWidth={1.5} />}
                 {link.isArchived && <Archive className="w-3.5 h-3.5 text-gray-400" strokeWidth={1.5} />}
               </div>
-              {/* Date display on desktop */}
-              <span className="hidden md:flex items-center gap-1 text-xs text-gray-400 ml-auto">
-                <Clock className="w-3 h-3" />
-                {formatDate(link.createdAt)}
-              </span>
             </div>
           </div>
 
-          {/* Desktop: Badges - Vertically centered */}
+          {/* Desktop: Badges and Date - Vertically centered */}
           <div className="hidden sm:flex items-center gap-2 flex-shrink-0 self-center">
             <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1 ${contentTypeInfo.color}`}>
               <contentTypeInfo.icon className="w-3 h-3" />{contentTypeInfo.label}
@@ -569,11 +561,11 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 <Folder className="w-3 h-3" strokeWidth={1.5} />{getCollectionName(link.collectionId)}
               </span>
             )}
-          </div>
-
-          {/* Date - hide on small screens */}
-          <div className="hidden lg:flex items-center gap-1 text-xs text-gray-400 flex-shrink-0">
-            <Clock className="w-3 h-3" strokeWidth={1.5} />{formatDate(link.createdAt)}
+            {/* Single date display - only on large screens */}
+            <div className="hidden lg:flex items-center gap-1 text-xs text-gray-400 ml-1">
+              <Clock className="w-3 h-3" strokeWidth={1.5} />
+              <span>{formatDate(link.createdAt)}</span>
+            </div>
           </div>
 
           {/* Expand/Collapse - Hidden on mobile, shown on desktop */}
@@ -1021,6 +1013,16 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       role="article"
       onClick={handleCardClick}
     >
+      {/* Collection tag - Positioned at top-left, inside card (not overlapping) */}
+      {link.collectionId && (
+        <div className="absolute top-2 left-2 z-10">
+          <span className="px-2 py-1 bg-green-600 text-white text-[10px] sm:text-xs font-medium rounded-md shadow-md flex items-center gap-1">
+            <Folder className="w-3 h-3" strokeWidth={1.5} />
+            {getCollectionName(link.collectionId)}
+          </span>
+        </div>
+      )}
+      
       {/* Edge-to-edge image with rounded top corners */}
       {link.thumbnail && link.thumbnail.startsWith('http') ? (
         <div className="aspect-video w-full overflow-hidden bg-gray-100 relative">
@@ -1129,12 +1131,25 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         
         {/* Context Preview - Desktop hover only */}
         {link.description && viewMode === 'grid' && (
-          <div className="hidden lg:block opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-2">
+          <div className="hidden lg:block opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-3">
             <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
               {link.description}
             </p>
           </div>
         )}
+        
+        {/* Badges row - Content type and category only (no collection here to avoid overlap) */}
+        <div className="flex items-center gap-2 flex-wrap mt-auto pt-2">
+          <span className={`px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1 ${contentTypeInfo.color}`}>
+            <contentTypeInfo.icon className="w-3 h-3" />
+            {contentTypeInfo.label}
+          </span>
+          {link.category && (
+            <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full border border-gray-200">
+              {capitalizeCategoryName(link.category)}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Expanded Content - Minimal for grid view */}
