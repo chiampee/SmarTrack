@@ -430,11 +430,61 @@
       display: flex;
       gap: 8px;
       align-items: center;
+      position: relative;
     }
 
     .category-select {
       flex: 1;
     }
+
+    /* Premium Active State for Category Select */
+    .category-select.category-select-active {
+      border-left: 4px solid #3b82f6;
+      background: rgba(59, 130, 246, 0.05);
+      padding-left: 12px;
+    }
+
+    /* Category Options with Icons */
+    .category-select option {
+      padding: 8px 12px;
+    }
+
+    .category-select option[data-active="true"],
+    .category-select option.category-option-active {
+      font-weight: 600;
+      color: #3b82f6;
+    }
+
+    /* Category Sync Spinner */
+    .category-sync-spinner {
+      position: absolute;
+      top: -28px;
+      right: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #64748b;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 4px 8px;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      z-index: 10;
+    }
+
+    .category-sync-spinner.hidden {
+      display: none;
+    }
+
+    .spinner-mini {
+      width: 12px;
+      height: 12px;
+      border: 2px solid #e2e8f0;
+      border-top: 2px solid #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
 
     .btn-add-category {
       width: 48px;
@@ -725,6 +775,18 @@
       animation: pulse 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.3s both;
     }
 
+    .toast-warning {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      box-shadow: 
+        0 20px 60px rgba(245, 158, 11, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    }
+
+    .toast-warning::after {
+      content: '⚠';
+      animation: pulse 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.3s both;
+    }
+
     @keyframes pulse {
       0%, 100% {
         transform: scale(1);
@@ -883,6 +945,10 @@
         <div class="form-group">
           <label class="label" for="category">Category</label>
           <div class="category-select-wrapper">
+            <div id="categorySyncSpinner" class="category-sync-spinner hidden">
+              <div class="spinner-mini"></div>
+              <span>Syncing...</span>
+            </div>
             <select id="category" class="select category-select">
               <!-- Options populated by JavaScript -->
             </select>

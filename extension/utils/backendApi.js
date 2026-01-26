@@ -483,74 +483,166 @@ class BackendApiService {
    * @async
    * @returns {Promise<Array<string>>} Array of category names
    */
-  async getCategories() {
-    try {
-      // Step 1: Fetch predefined categories from /api/types
-      const predefinedCategories = await this.makeRequest('/api/types');
+  /**
+   * Fetches all active links (non-archived) for category extraction
+   * @async
+   * @returns {Promise<Array>} Array of active links
+   */
+  async fetchAllActiveLinks() {
+    const allLinks = [];
+    let page = 1;
+    let hasMore = true;
+    const maxPages = 20; // Safety limit to prevent infinite loops
+    
+    while (hasMore && page <= maxPages) {
+      // Explicitly exclude archived links (isArchived=false) - only get active links for categories
+      const linksResponse = await this.makeRequest(`/api/links?page=${page}&limit=100&isArchived=false`);
       
-      // Extract predefined category names (preserve original casing to match dashboard)
-      const predefinedNames = Array.isArray(predefinedCategories)
-        ? predefinedCategories.map(cat => {
-            if (typeof cat === 'string') {
-              return cat; // Preserve original casing
-            }
-            return cat.name || cat.id || '';
-          }).filter(Boolean)
-        : [];
-      
-      // Step 2: Fetch links to extract user-created categories (like Dashboard does)
-      // Fetch all pages to get all categories (max limit is 100 per page)
-      let userCreatedCategories = [];
-      try {
-        const allLinks = [];
-        let page = 1;
-        let hasMore = true;
-        const maxPages = 20; // Safety limit to prevent infinite loops
+      if (linksResponse && Array.isArray(linksResponse.links)) {
+        allLinks.push(...linksResponse.links);
+        hasMore = linksResponse.hasMore === true;
+        page++;
+      } else {
+        hasMore = false;
+      }
+    }
+    
+    // Filter to ensure only active links (double-check)
+    return allLinks.filter(link => !link.isArchived);
+  }
+
+  /**
+   * Extracts user-created categories from links with link counts
+   * @param {Array} activeLinks - Array of active links
+   * @param {Array} predefinedCategories - Array of predefined Category objects
+   * @returns {Array} Array of user-created Category objects with link counts
+   */
+  extractUserCategories(activeLinks, predefinedCategories) {
+    // Create set of predefined category names (case-insensitive)
+    const predefinedSet = new Set(
+      predefinedCategories.map(cat => (cat.name || cat.id || '').toLowerCase())
+    );
+    
+    // Count links per category
+    const categoryCounts = new Map(); // lowercase -> {name, count}
+    
+    activeLinks.forEach(link => {
+      if (link.category && link.category.trim()) {
+        const categoryName = link.category.trim();
+        const normalized = categoryName.toLowerCase();
         
-        while (hasMore && page <= maxPages) {
-          // Explicitly exclude archived links (isArchived=false) - only get active links for categories
-          const linksResponse = await this.makeRequest(`/api/links?page=${page}&limit=100&isArchived=false`);
-          
-          if (linksResponse && Array.isArray(linksResponse.links)) {
-            allLinks.push(...linksResponse.links);
-            hasMore = linksResponse.hasMore === true;
-            page++;
-          } else {
-            hasMore = false;
-          }
+        // Skip predefined categories
+        if (predefinedSet.has(normalized)) {
+          return;
         }
         
-        if (allLinks.length > 0) {
-          // Extract unique categories from ACTIVE links only (exclude archived, like Dashboard does)
-          // Archived links should not contribute to category list
-          const activeLinks = allLinks.filter(link => !link.isArchived);
-          
-          // Use Map to preserve original casing while deduplicating (lowercase -> originalCase)
-          const categoryMap = new Map(); // lowercase -> originalCase
-          activeLinks.forEach(link => {
-            if (link.category && link.category.trim()) {
-              const original = link.category.trim();
-              const normalized = original.toLowerCase();
-              // Only add if we haven't seen this category before (case-insensitive)
-              if (!categoryMap.has(normalized)) {
-                categoryMap.set(normalized, original);
-              }
+        // Count links per category
+        if (categoryCounts.has(normalized)) {
+          const existing = categoryCounts.get(normalized);
+          categoryCounts.set(normalized, {
+            name: existing.name, // Keep original casing
+            count: existing.count + 1
+          });
+        } else {
+          categoryCounts.set(normalized, {
+            name: categoryName, // Preserve original casing
+            count: 1
+          });
+        }
+      }
+    });
+    
+    // Convert to Category objects (filter out categories with 0 links)
+    return Array.from(categoryCounts.values())
+      .filter(cat => cat.count > 0)
+      .map((cat, index) => ({
+        id: cat.name.toLowerCase().replace(/\s+/g, '-'),
+        name: cat.name,
+        color: '#64748b', // Default gray color for user-created categories
+        icon: 'book-open', // Default icon
+        isDefault: false,
+        linkCount: cat.count
+      }));
+  }
+
+  /**
+   * Filters categories to exclude those with 0 active links (except predefined)
+   * @param {Array} predefinedCategories - Predefined Category objects
+   * @param {Array} userCategories - User-created Category objects
+   * @param {Array} activeLinks - Active links for counting
+   * @returns {Array} Filtered Category objects
+   */
+  filterCategoriesWithCounts(predefinedCategories, userCategories, activeLinks) {
+    // Count links per predefined category
+    const predefinedCounts = new Map();
+    activeLinks.forEach(link => {
+      if (link.category && link.category.trim()) {
+        const normalized = link.category.trim().toLowerCase();
+        predefinedCounts.set(normalized, (predefinedCounts.get(normalized) || 0) + 1);
+      }
+    });
+    
+    // Add link counts to predefined categories
+    const predefinedWithCounts = predefinedCategories.map(cat => {
+      const normalized = (cat.name || cat.id || '').toLowerCase();
+      return {
+        ...cat,
+        linkCount: predefinedCounts.get(normalized) || 0
+      };
+    });
+    
+    // Combine: predefined (always include) + user-created (only if count > 0)
+    return [...predefinedWithCounts, ...userCategories];
+  }
+
+  async getCategories() {
+    try {
+      // Step 1: Fetch predefined categories from /api/categories
+      const predefinedCategories = await this.makeRequest('/api/categories');
+      
+      // Ensure we have an array of Category objects
+      const predefined = Array.isArray(predefinedCategories)
+        ? predefinedCategories.map(cat => {
+            // Handle both object and string formats
+            if (typeof cat === 'string') {
+              return {
+                id: cat.toLowerCase().replace(/\s+/g, '-'),
+                name: cat,
+                color: '#3B82F6',
+                icon: 'book-open',
+                isDefault: true
+              };
             }
-          });
-          
-          // Filter out predefined categories (case-insensitive comparison)
-          const predefinedSet = new Set(predefinedNames.map(name => name.toLowerCase()));
-          userCreatedCategories = Array.from(categoryMap.values()).filter(cat => {
-            return !predefinedSet.has(cat.toLowerCase());
-          });
+            // Ensure all required fields
+            return {
+              id: cat.id || cat.name?.toLowerCase().replace(/\s+/g, '-') || '',
+              name: cat.name || cat.id || '',
+              color: cat.color || '#3B82F6',
+              icon: cat.icon || 'book-open',
+              isDefault: cat.isDefault !== undefined ? cat.isDefault : true,
+              linkCount: cat.linkCount || 0
+            };
+          }).filter(cat => cat.id && cat.name)
+        : [];
+      
+      // Step 2: Fetch links to extract user-created categories with link counts
+      let userCreatedCategories = [];
+      try {
+        const activeLinks = await this.fetchAllActiveLinks();
+        
+        if (activeLinks.length > 0) {
+          // Extract user-created categories (exclude predefined)
+          userCreatedCategories = this.extractUserCategories(activeLinks, predefined);
         }
       } catch (linksError) {
         // Non-critical - if links fetch fails, just use predefined categories
         console.debug('[SRT] Failed to fetch links for categories:', linksError.message || linksError);
       }
       
-      // Step 3: Combine predefined + user-created categories
-      const allCategories = [...predefinedNames, ...userCreatedCategories];
+      // Step 3: Filter categories with counts and combine
+      // Note: We'll filter in syncCategoriesFromBackend to have access to activeLinks there
+      // For now, return all categories (filtering happens in popup.js)
+      const allCategories = [...predefined, ...userCreatedCategories];
       
       return allCategories;
     } catch (error) {
