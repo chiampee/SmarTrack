@@ -553,7 +553,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
           {/* Desktop: Badges and Date - Vertically centered */}
           <div className="hidden sm:flex items-center gap-2 flex-shrink-0 self-center">
             <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1 ${contentTypeInfo.color}`}>
-              <contentTypeInfo.icon className="w-3 h-3" />{contentTypeInfo.label}
+              {contentTypeInfo.label}
             </span>
             {link.category && <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-full border border-gray-200">{capitalizeCategoryName(link.category)}</span>}
             {link.collectionId && (
@@ -1141,7 +1141,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
         {/* Badges row - Content type and category only (no collection here to avoid overlap) */}
         <div className="flex items-center gap-2 flex-wrap mt-auto pt-2">
           <span className={`px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1 ${contentTypeInfo.color}`}>
-            <contentTypeInfo.icon className="w-3 h-3" />
             {contentTypeInfo.label}
           </span>
           {link.category && (
@@ -1483,7 +1482,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 {/* Info-Cluster: Content type and category badges */}
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1 ${contentTypeInfo.color}`}>
-                    <contentTypeInfo.icon size={14} strokeWidth={1.5} />
                     {contentTypeInfo.label}
                   </span>
                   {link.category && (
