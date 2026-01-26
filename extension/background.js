@@ -11,6 +11,10 @@ try {
   importScripts('utils/config.js');
   importScripts('utils/youtubeUtils.js');
   importScripts('utils/redditUtils.js');
+  importScripts('utils/xUtils.js');
+  importScripts('utils/linkedinUtils.js');
+  importScripts('utils/figmaUtils.js');
+  importScripts('utils/pinterestUtils.js');
 } catch (e) {
   console.error('[SRT] Failed to import scripts in background:', e);
 }
@@ -740,12 +744,24 @@ class SmarTrackBackground {
     
     const isYt = typeof isYoutubeUrl === 'function' && isYoutubeUrl(linkUrl);
     const isReddit = typeof isRedditUrl === 'function' && isRedditUrl(linkUrl);
-    const contentType = isYt ? 'video' : (isReddit ? 'article' : 'webpage');
+    const isX = typeof isXUrl === 'function' && isXUrl(linkUrl);
+    const isLinkedIn = typeof isLinkedInUrl === 'function' && isLinkedInUrl(linkUrl);
+    const isFigma = typeof isFigmaUrl === 'function' && isFigmaUrl(linkUrl);
+    const isPinterest = typeof isPinterestUrl === 'function' && isPinterestUrl(linkUrl);
+    const contentType = isYt ? 'video' : (isReddit || isX || isLinkedIn || isFigma || isPinterest ? 'article' : 'webpage');
     let thumbnail = null;
     if (isYt && typeof getYoutubeThumbnail === 'function') {
       thumbnail = await getYoutubeThumbnail(linkUrl);
     } else if (isReddit && typeof getRedditThumbnail === 'function') {
       thumbnail = await getRedditThumbnail(linkUrl);
+    } else if (isX && typeof getXThumbnail === 'function') {
+      thumbnail = await getXThumbnail(linkUrl);
+    } else if (isLinkedIn && typeof getLinkedInThumbnail === 'function') {
+      thumbnail = await getLinkedInThumbnail(linkUrl);
+    } else if (isFigma && typeof getFigmaThumbnail === 'function') {
+      thumbnail = await getFigmaThumbnail(linkUrl);
+    } else if (isPinterest && typeof getPinterestThumbnail === 'function') {
+      thumbnail = await getPinterestThumbnail(linkUrl);
     }
     
     const linkData = {
@@ -803,10 +819,22 @@ class SmarTrackBackground {
     
     const isYt = typeof isYoutubeUrl === 'function' && isYoutubeUrl(pageData.url);
     const isReddit = typeof isRedditUrl === 'function' && isRedditUrl(pageData.url);
+    const isX = typeof isXUrl === 'function' && isXUrl(pageData.url);
+    const isLinkedIn = typeof isLinkedInUrl === 'function' && isLinkedInUrl(pageData.url);
+    const isFigma = typeof isFigmaUrl === 'function' && isFigmaUrl(pageData.url);
+    const isPinterest = typeof isPinterestUrl === 'function' && isPinterestUrl(pageData.url);
     if (isYt && typeof getYoutubeThumbnail === 'function') {
       pageData.image = (await getYoutubeThumbnail(pageData.url)) ?? pageData.image;
     } else if (isReddit && typeof getRedditThumbnail === 'function') {
       pageData.image = (await getRedditThumbnail(pageData.url)) ?? pageData.image;
+    } else if (isX && typeof getXThumbnail === 'function') {
+      pageData.image = (await getXThumbnail(pageData.url)) ?? pageData.image;
+    } else if (isLinkedIn && typeof getLinkedInThumbnail === 'function') {
+      pageData.image = (await getLinkedInThumbnail(pageData.url)) ?? pageData.image;
+    } else if (isFigma && typeof getFigmaThumbnail === 'function') {
+      pageData.image = (await getFigmaThumbnail(pageData.url)) ?? pageData.image;
+    } else if (isPinterest && typeof getPinterestThumbnail === 'function') {
+      pageData.image = (await getPinterestThumbnail(pageData.url)) ?? pageData.image;
     }
     
     const linkData = {
@@ -814,7 +842,7 @@ class SmarTrackBackground {
       title: pageData.title,
       description: pageData.description || '',
       category: 'research',
-      contentType: isYt ? 'video' : (isReddit ? 'article' : 'webpage'),
+      contentType: isYt ? 'video' : (isReddit || isX || isLinkedIn || isFigma || isPinterest ? 'article' : 'webpage'),
       source: 'extension',
       tags: [],
       thumbnail: pageData.image || null,

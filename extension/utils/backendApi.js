@@ -458,9 +458,6 @@ class BackendApiService {
    * @returns {Promise<Array<Object>>}
    */
   async searchDuplicates(url) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:460',message:'searchDuplicates: Starting search',data:{url:url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     if (!url || typeof url !== 'string') {
       return [];
     }
@@ -470,18 +467,12 @@ class BackendApiService {
       const response = await this.makeRequest(
         `${API_CONSTANTS.LINKS_ENDPOINT}/search?q=${encodedUrl}`
       );
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:468',message:'searchDuplicates: Response received',data:{linksCount:response?.links?.length||0,links:response?.links?.map(l=>({id:l.id,url:l.url,title:l.title,isArchived:l.isArchived}))||[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       
       return Array.isArray(response.links) ? response.links : [];
     } catch (error) {
       // Non-critical operation, return empty array on failure
       // Use debug level to avoid console noise for expected network failures
       console.debug('[SRT] Duplicate search failed (non-critical):', error.message || error);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:475',message:'searchDuplicates: Error during search',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       return [];
     }
   }
@@ -493,15 +484,9 @@ class BackendApiService {
    * @returns {Promise<Array<string>>} Array of category names
    */
   async getCategories() {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:485',message:'getCategories: Starting fetch',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     try {
       // Step 1: Fetch predefined categories from /api/types
       const predefinedCategories = await this.makeRequest('/api/types');
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:492',message:'getCategories: Predefined categories fetched',data:{predefinedCategories:predefinedCategories,isArray:Array.isArray(predefinedCategories),length:Array.isArray(predefinedCategories)?predefinedCategories.length:0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       
       // Extract predefined category names (preserve original casing to match dashboard)
       const predefinedNames = Array.isArray(predefinedCategories)
@@ -525,9 +510,6 @@ class BackendApiService {
         while (hasMore && page <= maxPages) {
           // Explicitly exclude archived links (isArchived=false) - only get active links for categories
           const linksResponse = await this.makeRequest(`/api/links?page=${page}&limit=100&isArchived=false`);
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:512',message:'getCategories: Links page fetched (active only)',data:{page:page,linksCount:linksResponse?.links?.length||0,hasMore:linksResponse?.hasMore||false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-          // #endregion
           
           if (linksResponse && Array.isArray(linksResponse.links)) {
             allLinks.push(...linksResponse.links);
@@ -538,17 +520,10 @@ class BackendApiService {
           }
         }
         
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:525',message:'getCategories: All links fetched',data:{totalLinks:allLinks.length,pagesFetched:page-1},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
-        
         if (allLinks.length > 0) {
           // Extract unique categories from ACTIVE links only (exclude archived, like Dashboard does)
           // Archived links should not contribute to category list
           const activeLinks = allLinks.filter(link => !link.isArchived);
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:537',message:'getCategories: Filtering archived links',data:{totalLinks:allLinks.length,activeLinks:activeLinks.length,archivedLinks:allLinks.length-activeLinks.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-          // #endregion
           
           // Use Map to preserve original casing while deduplicating (lowercase -> originalCase)
           const categoryMap = new Map(); // lowercase -> originalCase
@@ -568,31 +543,19 @@ class BackendApiService {
           userCreatedCategories = Array.from(categoryMap.values()).filter(cat => {
             return !predefinedSet.has(cat.toLowerCase());
           });
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:551',message:'getCategories: User-created categories extracted from active links',data:{userCreatedCategories:userCreatedCategories,userCreatedCount:userCreatedCategories.length,uniqueCategoriesFromLinks:userCategoriesSet.size,activeLinksCount:activeLinks.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-          // #endregion
         }
       } catch (linksError) {
         // Non-critical - if links fetch fails, just use predefined categories
         console.debug('[SRT] Failed to fetch links for categories:', linksError.message || linksError);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:545',message:'getCategories: Links fetch failed, using predefined only',data:{error:linksError.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
       }
       
       // Step 3: Combine predefined + user-created categories
       const allCategories = [...predefinedNames, ...userCreatedCategories];
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:530',message:'getCategories: Final combined categories',data:{allCategories:allCategories,totalCount:allCategories.length,predefinedCount:predefinedNames.length,userCreatedCount:userCreatedCategories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       
       return allCategories;
     } catch (error) {
       // Non-critical operation, return empty array on failure
       console.debug('[SRT] Failed to fetch categories from backend:', error.message || error);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:535',message:'getCategories: Error fetching',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       return [];
     }
   }

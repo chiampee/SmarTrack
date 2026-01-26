@@ -1,16 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import { capitalizeCategoryName } from '../utils/categoryUtils'
 
-// Debug logging helper (only in development)
-const debugLog = (location: string, message: string, data: any, hypothesisId?: string) => {
-  if (import.meta.env.DEV) {
-    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ location, message, data, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId })
-    }).catch(() => {})
-  }
-}
 
 interface Category {
   id: string
@@ -68,10 +58,6 @@ export const CategoriesProvider: React.FC<{ children: ReactNode }> = ({ children
       name: capitalizeCategoryName(name), // Ensure first letter is capitalized
       linkCount: count
     }))
-    
-    // #region agent log
-    debugLog('CategoriesContext.tsx:52', 'computeCategories: Computed categories', { totalLinks: links.length, activeLinks: activeLinks.length, archivedLinks: links.length - activeLinks.length, categoryCount: categoriesArray.length, categories: categoriesArray.map(c => ({ name: c.name, count: c.linkCount })), sampleLinkCategories: activeLinks.slice(0, 5).map(l => l.category) }, 'E')
-    // #endregion
 
     // Sort by link count descending, then alphabetically
     categoriesArray.sort((a, b) => {

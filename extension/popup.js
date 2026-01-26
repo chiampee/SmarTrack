@@ -406,17 +406,11 @@ class SmarTrackPopup {
       
       const token = await this.getAuthToken();
       this.setupEventListeners();
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:409',message:'init: renderCategories called before sync',data:{categories:this.categories,hasToken:!!token},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
       this.renderCategories();
       
       // Sync categories from backend if authenticated (non-blocking but will update when complete)
       // The sync logic now aggressively updates to ensure deleted categories are removed
       if (token) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:412',message:'init: Starting async syncCategoriesFromBackend',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-        // #endregion
         this.syncCategoriesFromBackend().catch((error) => {
           // Silently fail - categories will use local storage
           console.debug('[SRT] Category sync failed, using cached categories:', error);
@@ -517,16 +511,10 @@ class SmarTrackPopup {
       if (this.lastCategory === 'other') {
         this.lastCategory = null;
       }
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:517',message:'loadCategories: Categories loaded from storage',data:{storedCategories:stored,categoriesAfterFilter:categories,finalCategories:this.categories,lastCategory:this.lastCategory},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
     } catch (error) {
       console.error('[SRT] Failed to load categories:', error);
       this.categories = [...CONSTANTS.DEFAULT_CATEGORIES];
       this.lastCategory = null;
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:517',message:'loadCategories: Error loading categories',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
     }
   }
 
@@ -538,22 +526,13 @@ class SmarTrackPopup {
    */
   async syncCategoriesFromBackend() {
     console.log('[SRT] Starting category sync, current categories:', this.categories);
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:525',message:'syncCategoriesFromBackend: Starting sync',data:{currentCategories:this.categories},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     try {
       const api = new BackendApiService();
       const backendCategories = await api.getCategories();
       console.log('[SRT] Backend categories fetched:', backendCategories);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:528',message:'syncCategoriesFromBackend: Backend categories fetched',data:{backendCategories:backendCategories,backendCount:backendCategories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       
       if (backendCategories.length === 0) {
         // If backend fetch failed, keep existing categories
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:530',message:'syncCategoriesFromBackend: Backend returned empty, aborting',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         return;
       }
       
@@ -562,9 +541,6 @@ class SmarTrackPopup {
         CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES
       ]);
       const customCategories = result?.[CONSTANTS.STORAGE_KEYS.CUSTOM_CATEGORIES] || [];
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:539',message:'syncCategoriesFromBackend: Custom categories loaded',data:{customCategories:customCategories},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
       
       // Normalize backend categories for comparison
       const backendSet = new Set(backendCategories.map(c => c.toLowerCase()));
@@ -590,10 +566,6 @@ class SmarTrackPopup {
       const mergedNormalized = mergedCategories.map(c => c.toLowerCase()).sort();
       const currentNormalized = this.categories.map(c => String(c).toLowerCase().trim()).filter(Boolean).sort();
       
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:585',message:'syncCategoriesFromBackend: Merged categories computed',data:{mergedCategories:mergedCategories,mergedNormalized:mergedNormalized,currentCategories:this.categories,currentNormalized:currentNormalized,mergedSorted:JSON.stringify(mergedNormalized),currentSorted:JSON.stringify(currentNormalized),backendCategories:backendCategories,validCustomCategories:validCustomCategories},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
-      
       // Update if categories changed (compare normalized arrays)
       const categoriesChanged = JSON.stringify(mergedNormalized) !== JSON.stringify(currentNormalized);
       
@@ -609,18 +581,10 @@ class SmarTrackPopup {
       const newCategories = mergedNormalized.filter(c => !currentNormalized.includes(c));
       const hasNewCategories = newCategories.length > 0;
       
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:595',message:'syncCategoriesFromBackend: Comparison result',data:{categoriesChanged:categoriesChanged,actualArraysMatch:actualArraysMatch,hasCasingMismatch:hasCasingMismatch,mergedNormalized:mergedNormalized,currentNormalized:currentNormalized,deletedCategories:deletedCategories,newCategories:newCategories,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
-      
       // Force update if: categories changed, deleted categories exist, new categories exist, count differs, or casing mismatch
       // CRITICAL: Always update if there are deleted categories or casing mismatches to ensure they're fixed
       // Also update if arrays don't match exactly (defensive check)
       const shouldUpdate = categoriesChanged || hasDeletedCategories || hasNewCategories || hasCasingMismatch || mergedCategories.length !== this.categories.length || JSON.stringify(mergedNormalized) !== JSON.stringify(currentNormalized);
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:613',message:'syncCategoriesFromBackend: Update decision',data:{shouldUpdate:shouldUpdate,categoriesChanged:categoriesChanged,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,hasCasingMismatch:hasCasingMismatch,countDiffers:mergedCategories.length!==this.categories.length,deletedCategories:deletedCategories,newCategories:newCategories,mergedCount:mergedCategories.length,currentCount:this.categories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
       
       // CRITICAL FIX: Always update categories from backend (source of truth)
       // Backend is the single source of truth - always sync to match it exactly
@@ -654,15 +618,9 @@ class SmarTrackPopup {
       // Always save and render (even if no changes, ensures consistency)
       await this.saveCategories(this.categories);
       this.renderCategories();
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:639',message:'syncCategoriesFromBackend: Categories synced from backend (always update)',data:{oldCategories:oldCategories,newCategories:this.categories,deletedCategories:deletedCategories,newCategoriesList:newCategories,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,hasCasingMismatch:hasCasingMismatch,hadChanges:hadChanges},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
     } catch (error) {
       // Non-critical - silently fail and keep existing categories
       console.debug('[SRT] Failed to sync categories from backend:', error);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:566',message:'syncCategoriesFromBackend: Error during sync',data:{error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
     }
   }
 
@@ -685,15 +643,8 @@ class SmarTrackPopup {
       
       await chrome.storage.sync.set({ [CONSTANTS.STORAGE_KEYS.SETTINGS]: settings });
       this.categories = categories;
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:648',message:'saveCategories: Categories saved to storage',data:{oldCategories:oldCategories,newCategories:categories,oldCount:oldCategories.length,newCount:categories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
     } catch (error) {
       console.error('[SRT] Failed to save categories:', error);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:651',message:'saveCategories: Error saving categories',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       // Non-critical, continue execution
     }
   }
@@ -710,10 +661,6 @@ class SmarTrackPopup {
     // Clear existing options
     // Security: Safe innerHTML usage - only clearing element, no user data inserted
     select.innerHTML = '';
-
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:675',message:'renderCategories: Rendering categories',data:{categories:this.categories,categoryCount:this.categories.length,selectedValue:selectedValue},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
 
     // Add stored categories
     this.categories.forEach((category) => {
@@ -1229,33 +1176,21 @@ class SmarTrackPopup {
    * @returns {Promise<void>}
    */
   async fetchDuplicates() {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1181',message:'fetchDuplicates: Starting duplicate search',data:{url:this.pageData.url||this.currentTab?.url||''},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     try {
       const api = new BackendApiService();
       const url = this.pageData.url || this.currentTab?.url || '';
       
       // Skip duplicate search for system URLs or invalid URLs
       if (!url || isSystemUrl(url)) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1187',message:'fetchDuplicates: Skipping search (system/invalid URL)',data:{url:url,isSystem:isSystemUrl(url)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         return;
       }
       
       const duplicates = await api.searchDuplicates(url);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1191',message:'fetchDuplicates: Duplicates received from API',data:{duplicates:duplicates,duplicateCount:duplicates?.length||0,duplicateIds:duplicates?.map(d=>d.id)||[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       this.renderDuplicates(duplicates || []);
     } catch (error) {
       // Silently fail - duplicates are non-critical
       // Use debug level to avoid console noise for expected network failures
       console.debug('[SRT] Duplicate search failed (non-critical):', error.message || error);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1194',message:'fetchDuplicates: Error during search',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
     }
   }
 
@@ -1405,38 +1340,20 @@ class SmarTrackPopup {
     if (thumbnailEl) {
       // Debug logging removed to reduce console noise
       
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:985',message:'populateUI thumbnail section entry',data:{hasImage:!!this.pageData.image,imageUrl:this.pageData.image,thumbnailElExists:!!thumbnailEl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      
       if (this.pageData.image) {
         try {
           let imageUrl = this.pageData.image;
-          
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:992',message:'Before URL conversion',data:{originalUrl:imageUrl,isAbsolute:imageUrl.startsWith('http://')||imageUrl.startsWith('https://')||imageUrl.startsWith('data:')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-          // #endregion
           
           // Ensure absolute URL
           if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://') && !imageUrl.startsWith('data:')) {
             try {
               imageUrl = new URL(imageUrl, url).href;
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:996',message:'URL converted to absolute',data:{convertedUrl:imageUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-              // #endregion
             } catch (e) {
               console.error('[SRT] Failed to convert image URL to absolute:', e);
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:998',message:'URL conversion failed',data:{error:e?.message,errorType:typeof e},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-              // #endregion
             }
           }
           
           // Image URL ready for thumbnail
-          
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1002',message:'About to create img element',data:{finalImageUrl:imageUrl,urlLength:imageUrl?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-          // #endregion
           
           // Clear any existing content
           // Security: Safe innerHTML usage - only clearing element, no user data inserted
@@ -1469,9 +1386,6 @@ class SmarTrackPopup {
           `;
           
           img.onerror = () => {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1051',message:'img.onerror triggered',data:{imageUrl:imageUrl,imgSrc:img.src,imgComplete:img.complete,imgNaturalWidth:img.naturalWidth,imgNaturalHeight:img.naturalHeight},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
-            // #endregion
             // Image failed to load (CORS, 404, invalid format, etc.)
             // Silently handle - this is expected behavior for many images
             // Do NOT log to console to avoid noise - gracefully fall back to favicon
@@ -1487,9 +1401,6 @@ class SmarTrackPopup {
           };
           
           img.onload = () => {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1047',message:'img.onload triggered',data:{imageUrl:imageUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-            // #endregion
             // Thumbnail image loaded successfully
             // Image loaded, ensure it's visible
             thumbnailEl.classList.add('has-image');
@@ -1503,14 +1414,7 @@ class SmarTrackPopup {
           
           thumbnailEl.appendChild(img);
           
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1059',message:'img element appended to DOM',data:{imageUrl:imageUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-          // #endregion
-          
         } catch (error) {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:1061',message:'catch block triggered',data:{errorMessage:error?.message,errorType:typeof error,errorName:error?.name,hasStack:!!error?.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-          // #endregion
           console.error('[SRT] Failed to set thumbnail:', error, error.stack);
           thumbnailEl.classList.remove('has-image');
           thumbnailEl.style.display = 'none';

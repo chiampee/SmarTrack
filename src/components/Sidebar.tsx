@@ -709,9 +709,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                       }
 
                     const to = `/?category=${encodeURIComponent(category.name)}`
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Sidebar.tsx:710',message:'Sidebar: Category link created',data:{categoryName:category.name,url:to,linkCount:category.linkCount},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-                    // #endregion
                     const active = isActivePath(to)
                     return (
                         <div 
@@ -727,9 +724,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                         <Link
                           to={to}
                           onClick={() => {
-                            // #region agent log
-                            fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Sidebar.tsx:723',message:'Sidebar: Category clicked',data:{categoryName:category.name,url:to,linkCount:category.linkCount},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
-                            // #endregion
                             if (window.innerWidth < 1024) {
                               onClose()
                             }
