@@ -1,4 +1,5 @@
 import React, { useState, memo, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { logger } from '../utils/logger'
 import { capitalizeCategoryName, autoCapitalizeCategoryInput } from '../utils/categoryUtils'
 import { 
@@ -573,14 +574,31 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             className="hidden sm:flex flex-shrink-0 p-2 -m-1 rounded-lg hover:bg-gray-100 active:bg-gray-200 touch-manipulation min-h-[44px] min-w-[44px] items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
             onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded) }}
           >
-            {isExpanded ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4 text-gray-500" strokeWidth={1.5} /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4 text-gray-400" strokeWidth={1.5} />}
+            <motion.div
+              animate={{ rotate: isExpanded ? 180 : 0 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4 text-gray-500" strokeWidth={1.5} />
+            </motion.div>
           </button>
         </div>
 
         {/* Expanded Content */}
-        {isExpanded && (
-        <div className="px-3 sm:px-4 pb-4 pt-0 border-t border-gray-100 animate-in slide-in-from-top-2 duration-200" onClick={(e) => e.stopPropagation()}>
-          <div className="pt-4 space-y-4">
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ 
+                duration: 0.3, 
+                ease: [0.4, 0, 0.2, 1],
+                opacity: { duration: 0.2 }
+              }}
+              className="overflow-hidden"
+            >
+              <div className="px-3 sm:px-4 pb-4 pt-0 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+                <div className="pt-4 space-y-4">
               {isEditing ? (
                 /* ===== EDIT MODE ===== */
                 <>
@@ -993,9 +1011,11 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   </div>
                 </>
               )}
-            </div>
-          </div>
-        )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     )
   }
@@ -1151,9 +1171,21 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       </div>
 
       {/* Expanded Content - Minimal for grid view */}
-      {isExpanded && (
-        <div className="px-3 pb-4 border-t border-gray-100 animate-in slide-in-from-top-2 duration-200" onClick={(e) => e.stopPropagation()}>
-          <div className="pt-5 sm:pt-4 space-y-5 sm:space-y-4">
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ 
+              duration: 0.3, 
+              ease: [0.4, 0, 0.2, 1],
+              opacity: { duration: 0.2 }
+            }}
+            className="overflow-hidden"
+          >
+            <div className="px-3 pb-4 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+              <div className="pt-5 sm:pt-4 space-y-5 sm:space-y-4">
             {isEditing ? (
               /* ===== EDIT MODE ===== */
               <>
@@ -1557,11 +1589,13 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 </div>
               </>
             )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    )
+  }
 
 export const LinkCard = memo(LinkCardComponent)
