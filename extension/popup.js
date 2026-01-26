@@ -824,29 +824,6 @@ class SmarTrackPopup {
    * @param {string|null} selectedValue - Value to pre-select
    * @returns {void}
    */
-  /**
-   * Gets the icon emoji/symbol for a category (matching Dashboard sidebar visually)
-   * @param {Object} category - Category object
-   * @returns {string} Emoji or symbol for the category
-   */
-  getCategoryIcon(category) {
-    const iconName = category.icon || 'book-open';
-    const name = (category.name || '').toLowerCase();
-    
-    // Match Dashboard sidebar icon mapping with emojis/symbols
-    if (name.includes('research') || iconName === 'book-open') {
-      return '📚'; // Book icon
-    } else if (name.includes('article') || iconName === 'file-text') {
-      return '📄'; // Document icon
-    } else if (name.includes('tool') || iconName === 'wrench') {
-      return '🔧'; // Wrench icon
-    } else if (name.includes('reference') || iconName === 'bookmark') {
-      return '🔖'; // Bookmark icon
-    } else {
-      return '📚'; // Default: book icon
-    }
-  }
-
   renderCategories(selectedValue = null) {
     const select = getElement(CONSTANTS.SELECTORS.CATEGORY_SELECT);
     if (!select) return;
@@ -875,9 +852,8 @@ class SmarTrackPopup {
       option.setAttribute('data-category-color', categoryObj.color);
       option.setAttribute('data-category-icon', categoryObj.icon);
       
-      // Add icon emoji and category name
-      const icon = this.getCategoryIcon(categoryObj);
-      option.textContent = `${icon} ${categoryObj.name}`;
+      // Add category name only (no icons)
+      option.textContent = categoryObj.name;
       
       // Check if this is the last-used category (premium active state)
       const isLastUsed = categoryToSelect && 
