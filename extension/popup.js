@@ -537,12 +537,14 @@ class SmarTrackPopup {
    * @returns {Promise<void>}
    */
   async syncCategoriesFromBackend() {
+    console.log('[SRT] Starting category sync, current categories:', this.categories);
     // #region agent log
     fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:525',message:'syncCategoriesFromBackend: Starting sync',data:{currentCategories:this.categories},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
     // #endregion
     try {
       const api = new BackendApiService();
       const backendCategories = await api.getCategories();
+      console.log('[SRT] Backend categories fetched:', backendCategories);
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:528',message:'syncCategoriesFromBackend: Backend categories fetched',data:{backendCategories:backendCategories,backendCount:backendCategories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
       // #endregion
@@ -622,23 +624,29 @@ class SmarTrackPopup {
       
       // CRITICAL FIX: Always update categories from backend (source of truth) if arrays don't match exactly
       // This ensures deleted categories are always removed, even if detection logic fails
+      // Always update if arrays don't match (backend is source of truth)
       // actualArraysMatch is already declared above, reuse it here
-      if (!actualArraysMatch || shouldUpdate || hasDeletedCategories || hasCasingMismatch) {
+      const needsUpdate = !actualArraysMatch || shouldUpdate || hasDeletedCategories || hasCasingMismatch;
+      
+      if (needsUpdate) {
         // Store old categories for logging
         const oldCategories = [...this.categories];
         // Always use backend categories as source of truth
         this.categories = mergedCategories.length > 0 ? mergedCategories : [...CONSTANTS.DEFAULT_CATEGORIES];
         
-        // Log to console for debugging (in addition to instrumentation)
-        if (hasDeletedCategories || hasCasingMismatch) {
-          console.log('[SRT] Categories update triggered:', {
-            reason: hasDeletedCategories ? 'deleted categories' : (hasCasingMismatch ? 'casing mismatch' : 'other'),
-            deleted: deletedCategories,
-            hasCasingMismatch: hasCasingMismatch,
-            old: oldCategories,
-            new: this.categories
-          });
-        }
+        // Always log category updates for debugging
+        console.log('[SRT] Categories sync update:', {
+          reason: hasDeletedCategories ? 'deleted categories' : (hasCasingMismatch ? 'casing mismatch' : (hasNewCategories ? 'new categories' : 'arrays differ')),
+          deleted: deletedCategories,
+          new: newCategories,
+          hasCasingMismatch: hasCasingMismatch,
+          actualArraysMatch: actualArraysMatch,
+          shouldUpdate: shouldUpdate,
+          oldCount: oldCategories.length,
+          newCount: this.categories.length,
+          old: oldCategories,
+          new: this.categories
+        });
         
         await this.saveCategories(this.categories);
         this.renderCategories();
@@ -646,6 +654,16 @@ class SmarTrackPopup {
         fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:639',message:'syncCategoriesFromBackend: Categories updated and rendered',data:{oldCategories:oldCategories,newCategories:this.categories,deletedCategories:deletedCategories,newCategoriesList:newCategories,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,hasCasingMismatch:hasCasingMismatch,shouldUpdate:shouldUpdate,forcedUpdate:(hasDeletedCategories||hasCasingMismatch)&&!shouldUpdate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
         // #endregion
       } else {
+        // Log when no update is needed (for debugging)
+        console.log('[SRT] Categories sync: No changes detected', {
+          mergedCount: mergedCategories.length,
+          currentCount: this.categories.length,
+          actualArraysMatch: actualArraysMatch,
+          shouldUpdate: shouldUpdate,
+          hasDeletedCategories: hasDeletedCategories,
+          hasNewCategories: hasNewCategories,
+          hasCasingMismatch: hasCasingMismatch
+        });
         // #region agent log
         fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:625',message:'syncCategoriesFromBackend: No changes detected, skipping update',data:{mergedCount:mergedCategories.length,currentCount:this.categories.length,deletedCategories:deletedCategories,newCategories:newCategories,shouldUpdate:shouldUpdate,hasDeletedCategories:hasDeletedCategories,mergedNormalized:mergedNormalized,currentNormalized:currentNormalized},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
         // #endregion
