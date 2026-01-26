@@ -1,6 +1,17 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import { capitalizeCategoryName } from '../utils/categoryUtils'
 
+// Debug logging helper (only in development)
+const debugLog = (location: string, message: string, data: any, hypothesisId?: string) => {
+  if (import.meta.env.DEV) {
+    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ location, message, data, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId })
+    }).catch(() => {})
+  }
+}
+
 interface Category {
   id: string
   name: string
@@ -56,7 +67,7 @@ export const CategoriesProvider: React.FC<{ children: ReactNode }> = ({ children
     }))
     
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CategoriesContext.tsx:52',message:'computeCategories: Computed categories',data:{linkCount:links.length,categoryCount:categoriesArray.length,categories:categoriesArray.map(c=>({name:c.name,count:c.linkCount})),sampleLinkCategories:links.slice(0,5).map(l=>l.category)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    debugLog('CategoriesContext.tsx:52', 'computeCategories: Computed categories', { linkCount: links.length, categoryCount: categoriesArray.length, categories: categoriesArray.map(c => ({ name: c.name, count: c.linkCount })), sampleLinkCategories: links.slice(0, 5).map(l => l.category) }, 'E')
     // #endregion
 
     // Sort by link count descending, then alphabetically

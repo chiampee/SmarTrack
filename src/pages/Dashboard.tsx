@@ -24,6 +24,17 @@ import { useSidebar } from '../context/SidebarContext'
 import { useResourceTypeCounts } from '../context/ResourceTypeCountsContext'
 import { Link, Collection, Category } from '../types/Link'
 import { RESOURCE_TYPE_TO_CONTENT, NON_BLOG_CONTENT_TYPES, type ResourceType, type ResourceTypeCounts } from '../constants/resourceTypes'
+
+// Debug logging helper (only in development)
+const debugLog = (location: string, message: string, data: any, hypothesisId?: string) => {
+  if (import.meta.env.DEV) {
+    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ location, message, data, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId })
+    }).catch(() => {})
+  }
+}
 import { logger } from '../utils/logger'
 import { cacheManager } from '../utils/cacheManager'
 import { DashboardSkeleton } from '../components/LoadingSkeleton'
@@ -439,7 +450,7 @@ export const Dashboard: React.FC = () => {
     const categoryParam = params.get('category')
     const typeParam = params.get('type')
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:439',message:'First useEffect: URL params detected',data:{categoryParam,filter,collection,typeParam,search:location.search},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    debugLog('Dashboard.tsx:439', 'First useEffect: URL params detected', { categoryParam, filter, collection, typeParam, search: location.search }, 'A')
     // #endregion
 
     // Persist current view for future visits
@@ -524,7 +535,7 @@ export const Dashboard: React.FC = () => {
             // The actualCategory will be the lowercase version from the link, which matches what's stored
             const actualCategory = links.find(l => (l.category || '').toLowerCase() === catLower)?.category || categoryParam.toLowerCase()
             // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:519',message:'First useEffect: Setting category state',data:{categoryParam,catLower,actualCategory,totalLinks:links.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+            debugLog('Dashboard.tsx:519', 'First useEffect: Setting category state', { categoryParam, catLower, actualCategory, totalLinks: links.length }, 'F')
             // #endregion
             setCurrentCategoryName(actualCategory)
             // Don't set filteredLinks here - let the second useEffect handle filtering with all criteria
@@ -862,7 +873,8 @@ export const Dashboard: React.FC = () => {
       return
     }
 
-    // Special filters
+    // Special filters (only if activeFilterId is explicitly set to a non-null value)
+    // Category filters from sidebar should NOT trigger this - they use currentCategoryName instead
     if (activeFilterId) {
       switch (activeFilterId) {
         case 'favorites':
@@ -897,12 +909,19 @@ export const Dashboard: React.FC = () => {
         )
       }
       
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:866',message:'Second useEffect: Using activeFilterId, skipping category filter',data:{activeFilterId,filteredCount:filtered.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+      // #endregion
       setFilteredLinks(filtered)
       return
     }
 
     // Default view: exclude archived
     filtered = filtered.filter(link => !link.isArchived)
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:904',message:'Second useEffect: After archived filter, before category filter',data:{filteredCount:filtered.length,currentCategoryName,categoryParam,activeFilterId,selectedCollectionId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+    // #endregion
 
     // Resource type filter from sidebar (when type= is in URL)
     if (typeParam && typeParam in RESOURCE_TYPE_TO_CONTENT) {
@@ -935,8 +954,9 @@ export const Dashboard: React.FC = () => {
     // - currentCategoryName is set to the actual lowercase category from links (e.g. "my category")
     // - links have lowercase categories from backend (e.g. "my category")
     // - We need to match case-insensitively
-    const categoryToFilter = currentCategoryName || (categoryParam ? categoryParam.toLowerCase() : filters.category)
-    if (categoryToFilter) {
+    // Priority: currentCategoryName (from first useEffect) > categoryParam (from URL) > filters.category (from FiltersDropdown)
+    const categoryToFilter = (currentCategoryName && currentCategoryName.trim()) || (categoryParam ? categoryParam.toLowerCase().trim() : (filters.category ? filters.category.toLowerCase().trim() : null))
+    if (categoryToFilter && categoryToFilter.trim()) {
       const catLower = categoryToFilter.toLowerCase().trim()
       const beforeCount = filtered.length
       // #region agent log

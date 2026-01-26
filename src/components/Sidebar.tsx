@@ -724,8 +724,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, categories = 
                           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-blue-600 rounded-r sidebar-active-indicator" />
                         )}
                         <Link
-                          to={to} 
+                          to={to}
                           onClick={() => {
+                            // #region agent log
+                            fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Sidebar.tsx:723',message:'Sidebar: Category clicked',data:{categoryName:category.name,url:to,linkCount:category.linkCount},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+                            // #endregion
                             if (window.innerWidth < 1024) {
                               onClose()
                             }
