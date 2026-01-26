@@ -582,18 +582,15 @@ class SmarTrackPopup {
       const mergedCategories = [...backendCategories, ...validCustomCategories];
       
       // Normalize all categories to lowercase for comparison (ensure consistent comparison)
-      const mergedNormalized = mergedCategories.map(c => c.toLowerCase()).sort();
-      const currentNormalized = this.categories.map(c => c.toLowerCase()).sort();
+      const mergedNormalized = mergedCategories.map(c => String(c).toLowerCase().trim()).filter(Boolean).sort();
+      const currentNormalized = this.categories.map(c => String(c).toLowerCase().trim()).filter(Boolean).sort();
       
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:582',message:'syncCategoriesFromBackend: Merged categories computed',data:{mergedCategories:mergedCategories,mergedNormalized:mergedNormalized,currentCategories:this.categories,currentNormalized:currentNormalized,mergedSorted:JSON.stringify(mergedNormalized),currentSorted:JSON.stringify(currentNormalized)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:585',message:'syncCategoriesFromBackend: Merged categories computed',data:{mergedCategories:mergedCategories,mergedNormalized:mergedNormalized,currentCategories:this.categories,currentNormalized:currentNormalized,mergedSorted:JSON.stringify(mergedNormalized),currentSorted:JSON.stringify(currentNormalized),backendCategories:backendCategories,validCustomCategories:validCustomCategories},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
       // #endregion
       
       // Update if categories changed (compare normalized arrays)
       const categoriesChanged = JSON.stringify(mergedNormalized) !== JSON.stringify(currentNormalized);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:590',message:'syncCategoriesFromBackend: Comparison result',data:{categoriesChanged:categoriesChanged,mergedNormalized:mergedNormalized,currentNormalized:currentNormalized,deletedCategories:currentNormalized.filter(c=>!mergedNormalized.includes(c)),newCategories:mergedNormalized.filter(c=>!currentNormalized.includes(c))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
       
       // Always update to ensure deleted categories are removed (backend is source of truth)
       // Check if any categories were deleted (exist in current but not in merged)
@@ -602,21 +599,43 @@ class SmarTrackPopup {
       const newCategories = mergedNormalized.filter(c => !currentNormalized.includes(c));
       const hasNewCategories = newCategories.length > 0;
       
-      // Force update if: categories changed, deleted categories exist, new categories exist, or count differs
-      const shouldUpdate = categoriesChanged || hasDeletedCategories || hasNewCategories || mergedCategories.length !== this.categories.length;
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:595',message:'syncCategoriesFromBackend: Comparison result',data:{categoriesChanged:categoriesChanged,mergedNormalized:mergedNormalized,currentNormalized:currentNormalized,deletedCategories:deletedCategories,newCategories:newCategories,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       
-      if (shouldUpdate) {
+      // Force update if: categories changed, deleted categories exist, new categories exist, or count differs
+      // CRITICAL: Always update if there are deleted categories to ensure they're removed
+      // Also update if arrays don't match exactly (defensive check)
+      const shouldUpdate = categoriesChanged || hasDeletedCategories || hasNewCategories || mergedCategories.length !== this.categories.length || JSON.stringify(mergedNormalized) !== JSON.stringify(currentNormalized);
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:606',message:'syncCategoriesFromBackend: Update decision',data:{shouldUpdate:shouldUpdate,categoriesChanged:categoriesChanged,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,countDiffers:mergedCategories.length!==this.categories.length,deletedCategories:deletedCategories,newCategories:newCategories,mergedCount:mergedCategories.length,currentCount:this.categories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      
+      // CRITICAL FIX: Always update if there are deleted categories, even if comparison says no change
+      // This handles edge cases where casing or formatting differences prevent proper detection
+      if (shouldUpdate || hasDeletedCategories) {
         // Store old categories for logging
         const oldCategories = [...this.categories];
         this.categories = mergedCategories.length > 0 ? mergedCategories : [...CONSTANTS.DEFAULT_CATEGORIES];
+        
+        // Log to console for debugging (in addition to instrumentation)
+        if (hasDeletedCategories) {
+          console.log('[SRT] Deleted categories detected, forcing update:', {
+            deleted: deletedCategories,
+            old: oldCategories,
+            new: this.categories
+          });
+        }
+        
         await this.saveCategories(this.categories);
         this.renderCategories();
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:603',message:'syncCategoriesFromBackend: Categories updated and rendered',data:{oldCategories:oldCategories,newCategories:this.categories,deletedCategories:deletedCategories,newCategoriesList:newCategories,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,shouldUpdate:shouldUpdate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:615',message:'syncCategoriesFromBackend: Categories updated and rendered',data:{oldCategories:oldCategories,newCategories:this.categories,deletedCategories:deletedCategories,newCategoriesList:newCategories,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,shouldUpdate:shouldUpdate,forcedUpdate:hasDeletedCategories&&!shouldUpdate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
         // #endregion
       } else {
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:612',message:'syncCategoriesFromBackend: No changes detected, skipping update',data:{mergedCount:mergedCategories.length,currentCount:this.categories.length,deletedCategories:deletedCategories,newCategories:newCategories,shouldUpdate:shouldUpdate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:625',message:'syncCategoriesFromBackend: No changes detected, skipping update',data:{mergedCount:mergedCategories.length,currentCount:this.categories.length,deletedCategories:deletedCategories,newCategories:newCategories,shouldUpdate:shouldUpdate,hasDeletedCategories:hasDeletedCategories,mergedNormalized:mergedNormalized,currentNormalized:currentNormalized},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
         // #endregion
       }
     } catch (error) {
@@ -642,12 +661,20 @@ class SmarTrackPopup {
     try {
       const result = await chrome.storage.sync.get([CONSTANTS.STORAGE_KEYS.SETTINGS]);
       const settings = result[CONSTANTS.STORAGE_KEYS.SETTINGS] || {};
+      const oldCategories = settings.categories || [];
       settings.categories = categories;
       
       await chrome.storage.sync.set({ [CONSTANTS.STORAGE_KEYS.SETTINGS]: settings });
       this.categories = categories;
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:648',message:'saveCategories: Categories saved to storage',data:{oldCategories:oldCategories,newCategories:categories,oldCount:oldCategories.length,newCount:categories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
     } catch (error) {
       console.error('[SRT] Failed to save categories:', error);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:651',message:'saveCategories: Error saving categories',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       // Non-critical, continue execution
     }
   }
@@ -664,6 +691,10 @@ class SmarTrackPopup {
     // Clear existing options
     // Security: Safe innerHTML usage - only clearing element, no user data inserted
     select.innerHTML = '';
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:675',message:'renderCategories: Rendering categories',data:{categories:this.categories,categoryCount:this.categories.length,selectedValue:selectedValue},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
 
     // Add stored categories
     this.categories.forEach((category) => {
