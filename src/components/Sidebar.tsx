@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, Star, Clock, Archive, Library, Edit2, Trash2, Home, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, PlayCircle, PenTool, Mic2, Tag } from 'lucide-react'
+import { X, BarChart3, Settings, BookOpen, FileText, Wrench, Bookmark, LogOut, Star, Clock, Archive, Library, Edit2, Trash2, Home, ChevronDown, ChevronUp, PlayCircle, PenTool, Mic2, Tag, Image } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useBackendApi } from '../hooks/useBackendApi'
 import { isAppError, getUserFriendlyMessage } from '../utils/errorHandler'
@@ -8,9 +8,10 @@ import { capitalizeCategoryName } from '../utils/categoryUtils'
 import { Tooltip } from './Tooltip'
 import { useIsTruncated } from '../hooks/useIsTruncated'
 import type { ResourceTypeCounts } from '../context/ResourceTypeCountsContext'
-import { RESOURCE_TYPES, defaultResourceTypeCounts, RESOURCE_TYPE_LABELS } from '../constants/resourceTypes'
+import { RESOURCE_TYPES, defaultResourceTypeCounts, RESOURCE_TYPE_LABELS, type ResourceType } from '../constants/resourceTypes'
+import type { LucideIcon } from 'lucide-react'
 
-const CONTENT_TYPE_ICONS = { Video: PlayCircle, Blog: FileText, PDF: PenTool, Audio: Mic2 } as const
+const CONTENT_TYPE_ICONS: Record<ResourceType, LucideIcon> = { Video: PlayCircle, Blog: FileText, PDF: PenTool, Images: Image, Audio: Mic2 }
 
 interface Category {
   id: string
