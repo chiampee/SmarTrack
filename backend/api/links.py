@@ -448,9 +448,9 @@ async def create_link(
         # Validate and sanitize URL
         validated_url = validate_url(link_data.url, "URL")
         
-        # Check for duplicate URL
+        # Check for duplicate URL (exclude archived links - archived links shouldn't prevent creating new links)
         existing_link = await db.links.find_one(
-            build_user_filter(user_id, {"url": validated_url})
+            build_user_filter(user_id, {"url": validated_url, "isArchived": False})
         )
         
         if existing_link:
