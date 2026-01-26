@@ -38,10 +38,13 @@ export const CategoriesProvider: React.FC<{ children: ReactNode }> = ({ children
   const [categories, setCategories] = useState<Category[]>([])
 
   const computeCategories = useCallback((links: any[]): Category[] => {
+    // Exclude archived links (vault) from category counts - they should not appear in workspace/category views
+    const activeLinks = links.filter(link => !link.isArchived)
+    
     // Count links per category (normalize to lowercase for grouping)
     const categoryMap = new Map<string, { name: string, count: number }>()
     
-    links.forEach(link => {
+    activeLinks.forEach(link => {
       const categoryName = link.category || 'Uncategorized'
       const normalizedKey = categoryName.toLowerCase().trim()
       
@@ -67,7 +70,7 @@ export const CategoriesProvider: React.FC<{ children: ReactNode }> = ({ children
     }))
     
     // #region agent log
-    debugLog('CategoriesContext.tsx:52', 'computeCategories: Computed categories', { linkCount: links.length, categoryCount: categoriesArray.length, categories: categoriesArray.map(c => ({ name: c.name, count: c.linkCount })), sampleLinkCategories: links.slice(0, 5).map(l => l.category) }, 'E')
+    debugLog('CategoriesContext.tsx:52', 'computeCategories: Computed categories', { totalLinks: links.length, activeLinks: activeLinks.length, archivedLinks: links.length - activeLinks.length, categoryCount: categoriesArray.length, categories: categoriesArray.map(c => ({ name: c.name, count: c.linkCount })), sampleLinkCategories: activeLinks.slice(0, 5).map(l => l.category) }, 'E')
     // #endregion
 
     // Sort by link count descending, then alphabetically
