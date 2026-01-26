@@ -98,25 +98,8 @@ export const Settings: React.FC = () => {
     }
   }
 
-  // Sync preferences with localStorage on mount (in case they changed elsewhere)
-  useEffect(() => {
-    // Sync default view mode from localStorage
-    const savedViewMode = localStorage.getItem('dashboard:defaultViewMode') as 'list' | 'grid' | null
-    if (savedViewMode === 'list' || savedViewMode === 'grid') {
-      if (defaultViewMode !== savedViewMode) {
-        setDefaultViewMode(savedViewMode)
-      }
-    }
-    
-    // Sync grid columns from localStorage
-    const savedGridColumns = localStorage.getItem('dashboard:gridColumns')
-    if (savedGridColumns) {
-      const cols = parseInt(savedGridColumns, 10)
-      if (cols >= 2 && cols <= 6 && gridColumns !== cols) {
-        setGridColumns(cols)
-      }
-    }
-  }, [defaultViewMode, gridColumns])
+  // Note: Preferences are now loaded in useState initializers above
+  // This ensures they're available immediately on first render
 
   // Load profile on mount and auto-fill from Auth0 on first time
   useEffect(() => {
