@@ -35,8 +35,22 @@ import { useUserStats } from '../hooks/useUserStats'
 
 export const Dashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [gridColumns, setGridColumns] = useState<number>(4)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    // Load default view mode from localStorage
+    const saved = localStorage.getItem('dashboard:defaultViewMode') as 'list' | 'grid' | null
+    return saved === 'list' || saved === 'grid' ? saved : 'grid'
+  })
+  const [gridColumns, setGridColumns] = useState<number>(() => {
+    // Load grid columns from localStorage
+    const saved = localStorage.getItem('dashboard:gridColumns')
+    if (saved) {
+      const cols = parseInt(saved, 10)
+      if (cols >= 2 && cols <= 6) {
+        return cols
+      }
+    }
+    return 4
+  })
   const [links, setLinks] = useState<Link[]>([])
   const [filteredLinks, setFilteredLinks] = useState<Link[]>([])
   const [searchBlur, setSearchBlur] = useState(false)

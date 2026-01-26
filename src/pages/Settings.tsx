@@ -47,6 +47,7 @@ export const Settings: React.FC = () => {
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [profileLoaded, setProfileLoaded] = useState(false)
   const [gridColumns, setGridColumns] = useState<number>(4)
+  const [defaultViewMode, setDefaultViewMode] = useState<'list' | 'grid'>('grid')
 
   const handleDownloadExtension = () => {
     const linkElement = document.createElement('a')
@@ -82,6 +83,24 @@ export const Settings: React.FC = () => {
       setIsDeleting(false)
     }
   }
+
+  // Load preferences on mount
+  useEffect(() => {
+    // Load default view mode from localStorage
+    const savedViewMode = localStorage.getItem('dashboard:defaultViewMode') as 'list' | 'grid' | null
+    if (savedViewMode === 'list' || savedViewMode === 'grid') {
+      setDefaultViewMode(savedViewMode)
+    }
+    
+    // Load grid columns from localStorage
+    const savedGridColumns = localStorage.getItem('dashboard:gridColumns')
+    if (savedGridColumns) {
+      const cols = parseInt(savedGridColumns, 10)
+      if (cols >= 2 && cols <= 6) {
+        setGridColumns(cols)
+      }
+    }
+  }, [])
 
   // Load profile on mount and auto-fill from Auth0 on first time
   useEffect(() => {
@@ -723,9 +742,18 @@ export const Settings: React.FC = () => {
                       <label className="block text-sm font-semibold text-gray-900 mb-2 sm:mb-2.5">
                         Default View Mode
                       </label>
-                      <select className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all touch-manipulation min-h-[44px]">
-                        <option>List View</option>
-                        <option>Grid View</option>
+                      <select 
+                        value={defaultViewMode}
+                        onChange={(e) => {
+                          const newMode = e.target.value as 'list' | 'grid'
+                          setDefaultViewMode(newMode)
+                          localStorage.setItem('dashboard:defaultViewMode', newMode)
+                          toast.success(`Default view mode set to ${newMode === 'list' ? 'List' : 'Grid'}`)
+                        }}
+                        className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-sm rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all touch-manipulation min-h-[44px]"
+                      >
+                        <option value="list">List View</option>
+                        <option value="grid">Grid View</option>
                       </select>
                     </div>
                     
