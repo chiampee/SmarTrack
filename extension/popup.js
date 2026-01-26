@@ -622,21 +622,21 @@ class SmarTrackPopup {
       fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:613',message:'syncCategoriesFromBackend: Update decision',data:{shouldUpdate:shouldUpdate,categoriesChanged:categoriesChanged,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,hasCasingMismatch:hasCasingMismatch,countDiffers:mergedCategories.length!==this.categories.length,deletedCategories:deletedCategories,newCategories:newCategories,mergedCount:mergedCategories.length,currentCount:this.categories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
       // #endregion
       
-      // CRITICAL FIX: Always update categories from backend (source of truth) if arrays don't match exactly
-      // This ensures deleted categories are always removed, even if detection logic fails
-      // Always update if arrays don't match (backend is source of truth)
-      // actualArraysMatch is already declared above, reuse it here
-      const needsUpdate = !actualArraysMatch || shouldUpdate || hasDeletedCategories || hasCasingMismatch;
+      // CRITICAL FIX: Always update categories from backend (source of truth)
+      // Backend is the single source of truth - always sync to match it exactly
+      // This ensures deleted categories are always removed immediately
+      const oldCategories = [...this.categories];
       
-      if (needsUpdate) {
-        // Store old categories for logging
-        const oldCategories = [...this.categories];
-        // Always use backend categories as source of truth
-        this.categories = mergedCategories.length > 0 ? mergedCategories : [...CONSTANTS.DEFAULT_CATEGORIES];
-        
-        // Always log category updates for debugging
-        console.log('[SRT] Categories sync update:', {
-          reason: hasDeletedCategories ? 'deleted categories' : (hasCasingMismatch ? 'casing mismatch' : (hasNewCategories ? 'new categories' : 'arrays differ')),
+      // Always update from backend (source of truth) - no conditions
+      this.categories = mergedCategories.length > 0 ? mergedCategories : [...CONSTANTS.DEFAULT_CATEGORIES];
+      
+      // Check if there were actual changes for logging
+      const hadChanges = JSON.stringify([...oldCategories].sort()) !== JSON.stringify([...this.categories].sort());
+      
+      if (hadChanges) {
+        // Log category updates for debugging
+        console.log('[SRT] Categories sync update (backend is source of truth):', {
+          reason: hasDeletedCategories ? 'deleted categories' : (hasCasingMismatch ? 'casing mismatch' : (hasNewCategories ? 'new categories' : 'sync to backend')),
           deleted: deletedCategories,
           new: newCategories,
           hasCasingMismatch: hasCasingMismatch,
@@ -647,27 +647,16 @@ class SmarTrackPopup {
           old: oldCategories,
           new: this.categories
         });
-        
-        await this.saveCategories(this.categories);
-        this.renderCategories();
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:639',message:'syncCategoriesFromBackend: Categories updated and rendered',data:{oldCategories:oldCategories,newCategories:this.categories,deletedCategories:deletedCategories,newCategoriesList:newCategories,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,hasCasingMismatch:hasCasingMismatch,shouldUpdate:shouldUpdate,forcedUpdate:(hasDeletedCategories||hasCasingMismatch)&&!shouldUpdate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-        // #endregion
       } else {
-        // Log when no update is needed (for debugging)
-        console.log('[SRT] Categories sync: No changes detected', {
-          mergedCount: mergedCategories.length,
-          currentCount: this.categories.length,
-          actualArraysMatch: actualArraysMatch,
-          shouldUpdate: shouldUpdate,
-          hasDeletedCategories: hasDeletedCategories,
-          hasNewCategories: hasNewCategories,
-          hasCasingMismatch: hasCasingMismatch
-        });
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:625',message:'syncCategoriesFromBackend: No changes detected, skipping update',data:{mergedCount:mergedCategories.length,currentCount:this.categories.length,deletedCategories:deletedCategories,newCategories:newCategories,shouldUpdate:shouldUpdate,hasDeletedCategories:hasDeletedCategories,mergedNormalized:mergedNormalized,currentNormalized:currentNormalized},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion
+        console.log('[SRT] Categories already in sync with backend');
       }
+      
+      // Always save and render (even if no changes, ensures consistency)
+      await this.saveCategories(this.categories);
+      this.renderCategories();
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'popup.js:639',message:'syncCategoriesFromBackend: Categories synced from backend (always update)',data:{oldCategories:oldCategories,newCategories:this.categories,deletedCategories:deletedCategories,newCategoriesList:newCategories,hasDeletedCategories:hasDeletedCategories,hasNewCategories:hasNewCategories,hasCasingMismatch:hasCasingMismatch,hadChanges:hadChanges},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
     } catch (error) {
       // Non-critical - silently fail and keep existing categories
       console.debug('[SRT] Failed to sync categories from backend:', error);
