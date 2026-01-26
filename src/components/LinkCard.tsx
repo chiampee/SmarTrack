@@ -910,7 +910,6 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 {/* Info-Cluster: Horizontal Metadata Row */}
                 <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-gray-500 mb-3">
                   <div className="flex items-center gap-1">
-                    <contentTypeInfo.icon size={14} strokeWidth={1.5} />
                     <span>{contentTypeInfo.label}</span>
                   </div>
                   {link.category && (
