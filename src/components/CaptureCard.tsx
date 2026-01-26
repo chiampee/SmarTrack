@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Sparkles, Globe } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 
 interface CaptureCardProps {
   onCaptureClick: () => void
