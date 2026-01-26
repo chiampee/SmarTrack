@@ -15,7 +15,6 @@ import {
   Globe,
   StickyNote,
   ChevronDown,
-  ChevronUp,
   MousePointer,
   Save,
   X,
