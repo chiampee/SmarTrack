@@ -503,13 +503,13 @@ class BackendApiService {
       fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:492',message:'getCategories: Predefined categories fetched',data:{predefinedCategories:predefinedCategories,isArray:Array.isArray(predefinedCategories),length:Array.isArray(predefinedCategories)?predefinedCategories.length:0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
       // #endregion
       
-      // Extract predefined category names
+      // Extract predefined category names (preserve original casing to match dashboard)
       const predefinedNames = Array.isArray(predefinedCategories)
         ? predefinedCategories.map(cat => {
             if (typeof cat === 'string') {
-              return cat.toLowerCase();
+              return cat; // Preserve original casing
             }
-            return (cat.name || cat.id || '').toLowerCase();
+            return cat.name || cat.id || '';
           }).filter(Boolean)
         : [];
       
@@ -550,18 +550,23 @@ class BackendApiService {
           fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:537',message:'getCategories: Filtering archived links',data:{totalLinks:allLinks.length,activeLinks:activeLinks.length,archivedLinks:allLinks.length-activeLinks.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
           // #endregion
           
-          const userCategoriesSet = new Set();
+          // Use Map to preserve original casing while deduplicating (lowercase -> originalCase)
+          const categoryMap = new Map(); // lowercase -> originalCase
           activeLinks.forEach(link => {
             if (link.category && link.category.trim()) {
-              const normalized = link.category.trim().toLowerCase();
-              userCategoriesSet.add(normalized);
+              const original = link.category.trim();
+              const normalized = original.toLowerCase();
+              // Only add if we haven't seen this category before (case-insensitive)
+              if (!categoryMap.has(normalized)) {
+                categoryMap.set(normalized, original);
+              }
             }
           });
           
-          // Filter out predefined categories (case-insensitive)
-          const predefinedSet = new Set(predefinedNames);
-          userCreatedCategories = Array.from(userCategoriesSet).filter(cat => {
-            return !predefinedSet.has(cat);
+          // Filter out predefined categories (case-insensitive comparison)
+          const predefinedSet = new Set(predefinedNames.map(name => name.toLowerCase()));
+          userCreatedCategories = Array.from(categoryMap.values()).filter(cat => {
+            return !predefinedSet.has(cat.toLowerCase());
           });
           // #region agent log
           fetch('http://127.0.0.1:7242/ingest/b003c73b-405c-4cc3-b4ac-91a97cc46a70',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'backendApi.js:551',message:'getCategories: User-created categories extracted from active links',data:{userCreatedCategories:userCreatedCategories,userCreatedCount:userCreatedCategories.length,uniqueCategoriesFromLinks:userCategoriesSet.size,activeLinksCount:activeLinks.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
