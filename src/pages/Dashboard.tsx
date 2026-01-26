@@ -23,7 +23,7 @@ import { useCategories } from '../context/CategoriesContext'
 import { useSidebar } from '../context/SidebarContext'
 import { useResourceTypeCounts } from '../context/ResourceTypeCountsContext'
 import { Link, Collection, Category } from '../types/Link'
-import { RESOURCE_TYPE_TO_CONTENT, type ResourceType, type ResourceTypeCounts } from '../constants/resourceTypes'
+import { RESOURCE_TYPE_TO_CONTENT, NON_BLOG_CONTENT_TYPES, type ResourceType, type ResourceTypeCounts } from '../constants/resourceTypes'
 import { logger } from '../utils/logger'
 import { cacheManager } from '../utils/cacheManager'
 import { DashboardSkeleton } from '../components/LoadingSkeleton'
@@ -414,15 +414,21 @@ export const Dashboard: React.FC = () => {
   }, [location.search, showCreateCollectionModal])
 
   // Update resource type counts for sidebar when links change
+  // Blog (Articles & pages) is a catch-all for any contentType not in Video, PDF, Images, or Audio
   useEffect(() => {
-    setTypeCounts(
-      Object.fromEntries(
-        Object.entries(RESOURCE_TYPE_TO_CONTENT).map(([k, contentTypes]) => [
-          k,
-          links.filter((l) => contentTypes.includes(l.contentType)).length,
-        ])
-      ) as ResourceTypeCounts
-    )
+    const counts: Partial<ResourceTypeCounts> = {}
+    
+    // Count Video, PDF, Images, Audio explicitly
+    for (const [type, contentTypes] of Object.entries(RESOURCE_TYPE_TO_CONTENT)) {
+      if (type !== 'Blog') {
+        counts[type as ResourceType] = links.filter((l) => contentTypes.includes(l.contentType)).length
+      }
+    }
+    
+    // Blog is catch-all: count all links that don't match Video, PDF, Images, or Audio
+    counts.Blog = links.filter((l) => !NON_BLOG_CONTENT_TYPES.includes(l.contentType)).length
+    
+    setTypeCounts(counts as ResourceTypeCounts)
   }, [links, setTypeCounts])
 
   // React to sidebar query params: filter, collection, category, type
@@ -885,8 +891,13 @@ export const Dashboard: React.FC = () => {
 
     // Resource type filter from sidebar (when type= is in URL)
     if (typeParam && typeParam in RESOURCE_TYPE_TO_CONTENT) {
-      const contentTypes = RESOURCE_TYPE_TO_CONTENT[typeParam as ResourceType]
-      filtered = filtered.filter(link => contentTypes.includes(link.contentType))
+      if (typeParam === 'Blog') {
+        // Blog is catch-all: show all links that don't match Video, PDF, Images, or Audio
+        filtered = filtered.filter(link => !NON_BLOG_CONTENT_TYPES.includes(link.contentType))
+      } else {
+        const contentTypes = RESOURCE_TYPE_TO_CONTENT[typeParam as ResourceType]
+        filtered = filtered.filter(link => contentTypes.includes(link.contentType))
+      }
     }
 
     // Search filter with blur-in effect
