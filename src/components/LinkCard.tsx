@@ -965,35 +965,39 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                   </a>
 
                   {/* Thumb-Friendly Actions - 4 icons with labels */}
-                  <div className="flex flex-row justify-around items-center gap-2 pt-2 border-t border-gray-100">
+                  <div className="flex flex-row justify-around items-center gap-1 sm:gap-2 pt-2 border-t border-gray-100">
                     <button 
                       onClick={startEditing} 
-                      className="flex flex-col items-center justify-center gap-1 p-2 text-gray-600 hover:text-gray-900 rounded-lg touch-manipulation"
+                      className="flex flex-col items-center justify-center gap-1.5 px-4 py-3 sm:px-5 sm:py-4 min-h-[64px] sm:min-h-[72px] min-w-[64px] sm:min-w-[72px] text-gray-600 hover:text-gray-900 hover:bg-gray-50 active:bg-gray-100 rounded-lg transition-all duration-150 touch-manipulation"
+                      aria-label="Edit link"
                     >
-                      <Edit className="w-5 h-5" strokeWidth={1.5} />
-                      <span className="text-xs font-medium">Edit</span>
+                      <Edit className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
+                      <span className="text-xs sm:text-sm font-medium">Edit</span>
                     </button>
                     <button 
                       onClick={() => handleAction('toggleFavorite')} 
-                      className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-colors touch-manipulation ${link.isFavorite ? 'text-amber-600' : 'text-gray-600 hover:text-gray-900'}`}
+                      className={`flex flex-col items-center justify-center gap-1.5 px-4 py-3 sm:px-5 sm:py-4 min-h-[64px] sm:min-h-[72px] min-w-[64px] sm:min-w-[72px] rounded-lg transition-all duration-150 touch-manipulation hover:bg-gray-50 active:bg-gray-100 ${link.isFavorite ? 'text-amber-600 hover:text-amber-700' : 'text-gray-600 hover:text-gray-900'}`}
+                      aria-label={link.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                     >
-                      <Star className={`w-5 h-5 ${link.isFavorite ? 'fill-current' : ''}`} strokeWidth={1.5} />
-                      <span className="text-xs font-medium">{link.isFavorite ? 'Favorited' : 'Favorite'}</span>
+                      <Star className={`w-5 h-5 sm:w-6 sm:h-6 ${link.isFavorite ? 'fill-current' : ''}`} strokeWidth={1.5} />
+                      <span className="text-xs sm:text-sm font-medium">{link.isFavorite ? 'Favorited' : 'Favorite'}</span>
                     </button>
                     <button 
                       onClick={() => handleAction('toggleArchive')} 
-                      className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-colors touch-manipulation ${link.isArchived ? 'text-green-600' : 'text-gray-600 hover:text-gray-900'}`}
+                      className={`flex flex-col items-center justify-center gap-1.5 px-4 py-3 sm:px-5 sm:py-4 min-h-[64px] sm:min-h-[72px] min-w-[64px] sm:min-w-[72px] rounded-lg transition-all duration-150 touch-manipulation hover:bg-gray-50 active:bg-gray-100 ${link.isArchived ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-900'}`}
                       title={link.isArchived ? 'Unarchive this link' : 'Archive this link'}
+                      aria-label={link.isArchived ? 'Unarchive link' : 'Archive link'}
                     >
-                      <Archive className="w-5 h-5" strokeWidth={1.5} />
-                      <span className="text-xs font-medium">{link.isArchived ? 'Unarchive' : 'Archive'}</span>
+                      <Archive className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
+                      <span className="text-xs sm:text-sm font-medium">{link.isArchived ? 'Unarchive' : 'Archive'}</span>
                     </button>
                     <button 
                       onClick={() => handleAction('delete')} 
-                      className="flex flex-col items-center justify-center gap-1 p-2 text-gray-600 hover:text-red-600 rounded-lg touch-manipulation"
+                      className="flex flex-col items-center justify-center gap-1.5 px-4 py-3 sm:px-5 sm:py-4 min-h-[64px] sm:min-h-[72px] min-w-[64px] sm:min-w-[72px] text-gray-600 hover:text-red-600 hover:bg-red-50 active:bg-red-100 rounded-lg transition-all duration-150 touch-manipulation"
+                      aria-label="Delete link"
                     >
-                      <Trash2 className="w-5 h-5" strokeWidth={1.5} />
-                      <span className="text-xs font-medium">Delete</span>
+                      <Trash2 className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
+                      <span className="text-xs sm:text-sm font-medium">Delete</span>
                     </button>
                   </div>
                 </>
@@ -1511,35 +1515,39 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                 </a>
 
                 {/* Thumb-Friendly Actions - 4 icons with labels */}
-                <div className="flex flex-row justify-around items-center gap-2 pt-2 border-t border-gray-100">
+                <div className="flex flex-row justify-around items-center gap-1 sm:gap-2 pt-2 border-t border-gray-100">
                   <button 
                     onClick={startEditing} 
-                    className="flex flex-col items-center justify-center gap-1 p-2 text-gray-600 hover:text-gray-900 rounded-lg touch-manipulation"
+                    className="flex flex-col items-center justify-center gap-1.5 px-4 py-3 sm:px-5 sm:py-4 min-h-[64px] sm:min-h-[72px] min-w-[64px] sm:min-w-[72px] text-gray-600 hover:text-gray-900 hover:bg-gray-50 active:bg-gray-100 rounded-lg transition-all duration-150 touch-manipulation"
+                    aria-label="Edit link"
                   >
-                    <Edit className="w-5 h-5" strokeWidth={1.5} />
-                    <span className="text-xs font-medium">Edit</span>
+                    <Edit className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
+                    <span className="text-xs sm:text-sm font-medium">Edit</span>
                   </button>
                   <button 
                     onClick={() => handleAction('toggleFavorite')} 
-                    className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-colors touch-manipulation ${link.isFavorite ? 'text-amber-600' : 'text-gray-600 hover:text-gray-900'}`}
+                    className={`flex flex-col items-center justify-center gap-1.5 px-4 py-3 sm:px-5 sm:py-4 min-h-[64px] sm:min-h-[72px] min-w-[64px] sm:min-w-[72px] rounded-lg transition-all duration-150 touch-manipulation hover:bg-gray-50 active:bg-gray-100 ${link.isFavorite ? 'text-amber-600 hover:text-amber-700' : 'text-gray-600 hover:text-gray-900'}`}
+                    aria-label={link.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                   >
-                    <Star className={`w-5 h-5 ${link.isFavorite ? 'fill-current' : ''}`} strokeWidth={1.5} />
-                    <span className="text-xs font-medium">{link.isFavorite ? 'Favorited' : 'Favorite'}</span>
+                    <Star className={`w-5 h-5 sm:w-6 sm:h-6 ${link.isFavorite ? 'fill-current' : ''}`} strokeWidth={1.5} />
+                    <span className="text-xs sm:text-sm font-medium">{link.isFavorite ? 'Favorited' : 'Favorite'}</span>
                   </button>
                   <button 
                     onClick={() => handleAction('toggleArchive')} 
-                    className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-colors touch-manipulation ${link.isArchived ? 'text-green-600' : 'text-gray-600 hover:text-gray-900'}`}
+                    className={`flex flex-col items-center justify-center gap-1.5 px-4 py-3 sm:px-5 sm:py-4 min-h-[64px] sm:min-h-[72px] min-w-[64px] sm:min-w-[72px] rounded-lg transition-all duration-150 touch-manipulation hover:bg-gray-50 active:bg-gray-100 ${link.isArchived ? 'text-green-600 hover:text-green-700' : 'text-gray-600 hover:text-gray-900'}`}
                     title={link.isArchived ? 'Unarchive this link' : 'Archive this link'}
+                    aria-label={link.isArchived ? 'Unarchive link' : 'Archive link'}
                   >
-                    <Archive className="w-5 h-5" strokeWidth={1.5} />
-                    <span className="text-xs font-medium">{link.isArchived ? 'Unarchive' : 'Archive'}</span>
+                    <Archive className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
+                    <span className="text-xs sm:text-sm font-medium">{link.isArchived ? 'Unarchive' : 'Archive'}</span>
                   </button>
                   <button 
                     onClick={() => handleAction('delete')} 
-                    className="flex flex-col items-center justify-center gap-1 p-2 text-gray-600 hover:text-red-600 rounded-lg touch-manipulation"
+                    className="flex flex-col items-center justify-center gap-1.5 px-4 py-3 sm:px-5 sm:py-4 min-h-[64px] sm:min-h-[72px] min-w-[64px] sm:min-w-[72px] text-gray-600 hover:text-red-600 hover:bg-red-50 active:bg-red-100 rounded-lg transition-all duration-150 touch-manipulation"
+                    aria-label="Delete link"
                   >
-                    <Trash2 className="w-5 h-5" strokeWidth={1.5} />
-                    <span className="text-xs font-medium">Delete</span>
+                    <Trash2 className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} />
+                    <span className="text-xs sm:text-sm font-medium">Delete</span>
                   </button>
                 </div>
               </>
