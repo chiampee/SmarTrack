@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Grid, List, Archive, Chrome, Tag, Trash2, Star, Home, Search, Folder } from 'lucide-react'
 import { LinkedInLogo, XLogo, RedditLogo, WebIcon, PDFIcon, YouTubeLogo } from '../components/BrandLogos'
 import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
@@ -1584,6 +1584,45 @@ export const Dashboard: React.FC = () => {
     }
   }
 
+  // Enhanced desktop animations
+  const desktopCardVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: isMobile ? 15 : 20,
+      scale: isMobile ? 0.97 : 0.95
+    },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: isMobile ? 0.35 : 0.4,
+        ease: [0.16, 1, 0.3, 1]
+      }
+    },
+    exit: {
+      opacity: 0,
+      scale: isMobile ? 0.95 : 0.9,
+      y: isMobile ? -5 : -10,
+      transition: {
+        duration: isMobile ? 0.25 : 0.3,
+        ease: [0.4, 0, 0.2, 1]
+      }
+    }
+  }
+
+  // Enhanced stagger for desktop and mobile
+  const desktopStaggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: isMobile ? animationConfig.staggerDelay : 0.03,
+        delayChildren: isMobile ? 0.03 : 0.05
+      }
+    }
+  }
+
   const shouldAnimate = !prefersReducedMotion
 
   return (
@@ -1823,14 +1862,21 @@ export const Dashboard: React.FC = () => {
 
             {/* Add Link Button - Top-right corner */}
             {!isMobile && (
-              <button 
+              <motion.button 
                 onClick={() => setShowAddModal(true)}
                 className={`px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap ${addLinkHighlight ? 'add-link-shimmer' : ''}`}
                 aria-label="Add new link"
+                whileHover={{ 
+                  scale: 1.02, 
+                  y: -2,
+                  boxShadow: '0 20px 25px -5px rgba(59, 130, 246, 0.4), 0 10px 10px -5px rgba(59, 130, 246, 0.2)',
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
               >
                 <Plus className="w-4 h-4" strokeWidth={2} />
                 <span>Capture New</span>
-              </button>
+              </motion.button>
             )}
           </div>
         </motion.div>
@@ -1846,7 +1892,7 @@ export const Dashboard: React.FC = () => {
           >
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2">
               {/* My Library button */}
-              <button
+              <motion.button
                 onClick={() => {
                   setFilters(prev => ({ ...prev, category: '' }))
                   setActiveFilterId(null)
@@ -1856,13 +1902,16 @@ export const Dashboard: React.FC = () => {
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm'
                 }`}
+                whileHover={!isMobile ? { scale: 1.05, y: -2 } : {}}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2 }}
               >
                 My Library
-              </button>
+              </motion.button>
               
               {/* Category badges */}
               {contextCategories.map((category) => (
-                <button
+                <motion.button
                   key={category.id}
                   onClick={() => {
                     setFilters(prev => ({ ...prev, category: category.name }))
@@ -1873,6 +1922,9 @@ export const Dashboard: React.FC = () => {
                       ? 'bg-blue-600 text-white shadow-md'
                       : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm'
                   }`}
+                  whileHover={!isMobile ? { scale: 1.05, y: -2 } : {}}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
                 >
                   {category.name}
                   {category.linkCount > 0 && (
@@ -1882,7 +1934,7 @@ export const Dashboard: React.FC = () => {
                       ({category.linkCount})
                     </span>
                   )}
-                </button>
+                </motion.button>
               ))}
             </div>
           </motion.div>
@@ -1898,36 +1950,45 @@ export const Dashboard: React.FC = () => {
         >
 
           {/* View Toggle - optimized for mobile with larger touch areas */}
-          <div className="flex items-center gap-1 bg-gray-100/80 backdrop-blur-sm rounded-xl p-1 border border-gray-200/60 shadow-sm">
-            <button
+          <motion.div 
+            className="flex items-center gap-1 bg-gray-100/80 backdrop-blur-sm rounded-xl p-1 border border-gray-200/60 shadow-sm"
+            layout
+          >
+            <motion.button
               onClick={() => setViewMode('list')}
-              className={`px-3.5 sm:px-4 md:px-4 py-2.5 sm:py-2 md:py-2 rounded-lg transition-all duration-200 text-sm sm:text-sm font-bold sm:font-semibold flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[40px] md:min-h-[38px] touch-manipulation active:scale-[0.96] ${
+              className={`px-3.5 sm:px-4 md:px-4 py-2.5 sm:py-2 md:py-2 rounded-lg transition-all duration-200 text-sm sm:text-sm font-bold sm:font-semibold flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[40px] md:min-h-[38px] touch-manipulation ${
                 viewMode === 'list' 
                   ? 'bg-white text-blue-600 shadow-md shadow-blue-500/10' 
                   : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
               }`}
               aria-label="List view"
               aria-pressed={viewMode === 'list'}
+              whileHover={!isMobile ? { scale: 1.05, y: -1 } : {}}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2 }}
             >
               <List className="w-5 h-5 sm:w-4.5 sm:h-4.5" />
               <span className="sm:hidden">List</span>
               <span className="hidden sm:inline">List</span>
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               onClick={() => setViewMode('grid')}
-              className={`px-3.5 sm:px-4 md:px-4 py-2.5 sm:py-2 md:py-2 rounded-lg transition-all duration-200 text-sm sm:text-sm font-bold sm:font-semibold flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[40px] md:min-h-[38px] touch-manipulation active:scale-[0.96] ${
+              className={`px-3.5 sm:px-4 md:px-4 py-2.5 sm:py-2 md:py-2 rounded-lg transition-all duration-200 text-sm sm:text-sm font-bold sm:font-semibold flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[40px] md:min-h-[38px] touch-manipulation ${
                 viewMode === 'grid' 
                   ? 'bg-white text-blue-600 shadow-md shadow-blue-500/10' 
                   : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
               }`}
               aria-label="Grid view"
               aria-pressed={viewMode === 'grid'}
+              whileHover={!isMobile ? { scale: 1.05, y: -1 } : {}}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2 }}
             >
               <Grid className="w-5 h-5 sm:w-4.5 sm:h-4.5" />
               <span className="sm:hidden">Grid</span>
               <span className="hidden sm:inline">Grid</span>
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         </motion.div>
 
         {/* Main Content */}
@@ -1937,6 +1998,7 @@ export const Dashboard: React.FC = () => {
           variants={fadeInUp}
           transition={{ delay: shouldAnimate ? 0.1 : 0, duration: animationConfig.duration, ease: "easeOut" }}
           className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 lg:gap-8"
+          layout
         >
           {/* Content */}
           <motion.div>
@@ -2210,7 +2272,7 @@ export const Dashboard: React.FC = () => {
                           </button>
                         )}
                         {(filters.category || filters.tags.length > 0 || filters.dateRange !== 'all_time' || searchQuery) && (
-                          <button 
+                          <motion.button 
                             onClick={() => {
                               setSearchQuery('')
                               handleCollectionSelect('all')
@@ -2224,19 +2286,23 @@ export const Dashboard: React.FC = () => {
                             }}
                             className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-md shadow-blue-500/25"
                             aria-label="Clear all filters"
+                            whileHover={!isMobile ? { scale: 1.02, y: -2 } : {}}
+                            whileTap={{ scale: 0.98 }}
                           >
                             Clear All Filters
-                          </button>
+                          </motion.button>
                         )}
                         {links.length > 0 && (
-                          <button 
+                          <motion.button 
                             onClick={() => setShowAddModal(true)}
                             className="px-5 py-2.5 text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center gap-2 shadow-sm"
                             aria-label="Add new link"
+                            whileHover={!isMobile ? { scale: 1.02, y: -2 } : {}}
+                            whileTap={{ scale: 0.98 }}
                           >
                             <Plus className="w-4 h-4" />
                             Add New Link
-                          </button>
+                          </motion.button>
                         )}
                       </div>
                     </>
@@ -2443,10 +2509,13 @@ export const Dashboard: React.FC = () => {
 
                   return (
                     <motion.div
-                      variants={staggerContainer}
-                      className={`relative z-0 space-y-6 sm:space-y-7 md:space-y-8 transition-all duration-200 ${
+                      variants={desktopStaggerContainer}
+                      initial="hidden"
+                      animate="visible"
+                      className={`relative z-0 space-y-6 sm:space-y-7 md:space-y-8 transition-all duration-300 ${
                         searchBlur ? 'blur-sm opacity-50' : 'blur-0 opacity-100'
                       }`}
+                      layout
                     >
                       {/* Stats removed - now shown in search bar section above */}
 
@@ -2455,7 +2524,12 @@ export const Dashboard: React.FC = () => {
                         <motion.div
                           key={category}
                           variants={staggerItem}
+                          initial="hidden"
+                          animate="visible"
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.3 }}
                           className="mb-6 sm:mb-7 md:mb-8"
+                          layout
                         >
                           {/* Enhanced Category Header */}
                           <motion.div
@@ -2476,47 +2550,65 @@ export const Dashboard: React.FC = () => {
                           </motion.div>
 
                           {/* Links for this category - enhanced spacing with more breathing room */}
-                          <div className={viewMode === 'grid' 
-                            ? getGridColumnsClass()
-                            : 'flex flex-col gap-5 sm:gap-4'
-                          }>
-                            {categoryLinks.map((link, index) => (
-                              <motion.div
-                                key={link.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ 
-                                  delay: index * 0.05,
-                                  duration: 0.4,
-                                  ease: [0.16, 1, 0.3, 1]
-                                }}
-                              >
-                                <LinkCard
-                                  link={link}
-                                  viewMode={viewMode}
-                                  isSelected={selectedLinks.has(link.id)}
-                                  onSelect={(e) => toggleSelection(link.id, e)}
-                                  onAction={handleLinkAction}
-                                  collections={collections}
-                                  categories={categories}
-                                  allTags={allTags}
-                                  onCardClick={() => {
-                                    // Open drawer on desktop, expand inline on mobile
-                                    if (!isMobile) {
-                                      setSelectedLink(link)
-                                      setIsDrawerOpen(true)
-                                    } else {
-                                      // Mobile: keep inline expansion
-                                      setEditingLink(link)
-                                    }
+                          <motion.div 
+                            className={viewMode === 'grid' 
+                              ? getGridColumnsClass()
+                              : 'flex flex-col gap-5 sm:gap-4'
+                            }
+                            variants={desktopStaggerContainer}
+                            initial="hidden"
+                            animate="visible"
+                            layout
+                          >
+                            <AnimatePresence mode="popLayout">
+                              {categoryLinks.map((link, index) => (
+                                <motion.div
+                                  key={link.id}
+                                  layout
+                                  variants={desktopCardVariants}
+                                  initial="hidden"
+                                  animate="visible"
+                                  exit="exit"
+                                  whileHover={!isMobile ? {
+                                    y: -4,
+                                    scale: 1.02,
+                                    transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] }
+                                  } : {}}
+                                  whileTap={isMobile ? {
+                                    scale: 0.96,
+                                    transition: { duration: 0.15, ease: [0.4, 0, 0.2, 1] }
+                                  } : {}}
+                                  transition={{
+                                    layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] }
                                   }}
-                                  onExpandedChange={(expanded) => {
-                                    setExpandedLinkId(expanded ? link.id : null)
-                                  }}
-                                />
-                              </motion.div>
-                            ))}
-                          </div>
+                                >
+                                  <LinkCard
+                                    link={link}
+                                    viewMode={viewMode}
+                                    isSelected={selectedLinks.has(link.id)}
+                                    onSelect={(e) => toggleSelection(link.id, e)}
+                                    onAction={handleLinkAction}
+                                    collections={collections}
+                                    categories={categories}
+                                    allTags={allTags}
+                                    onCardClick={() => {
+                                      // Open drawer on desktop, expand inline on mobile
+                                      if (!isMobile) {
+                                        setSelectedLink(link)
+                                        setIsDrawerOpen(true)
+                                      } else {
+                                        // Mobile: keep inline expansion
+                                        setEditingLink(link)
+                                      }
+                                    }}
+                                    onExpandedChange={(expanded) => {
+                                      setExpandedLinkId(expanded ? link.id : null)
+                                    }}
+                                  />
+                                </motion.div>
+                              ))}
+                            </AnimatePresence>
+                          </motion.div>
                         </motion.div>
                       ))}
 
@@ -2571,48 +2663,62 @@ export const Dashboard: React.FC = () => {
                               </motion.div>
 
                               {/* Archived Links for this category */}
-                              <div className={viewMode === 'grid' 
-                                ? getGridColumnsClass()
-                                : 'flex flex-col gap-5 sm:gap-4'
-                              }>
-                                {categoryLinks.map((link, index) => (
-                                  <motion.div
-                                    key={link.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ 
-                                      delay: index * 0.05,
-                                      duration: 0.4,
-                                      ease: [0.16, 1, 0.3, 1]
-                                    }}
-                                    className="opacity-75"
-                                  >
-                                    <LinkCard
-                                      link={link}
-                                      viewMode={viewMode}
-                                      isSelected={selectedLinks.has(link.id)}
-                                      onSelect={(e) => toggleSelection(link.id, e)}
-                                      onAction={handleLinkAction}
-                                      collections={collections}
-                                      categories={categories}
-                                      allTags={allTags}
-                                      onCardClick={() => {
-                                        // Open drawer on desktop, expand inline on mobile
-                                        if (!isMobile) {
-                                          setSelectedLink(link)
-                                          setIsDrawerOpen(true)
-                                        } else {
-                                          // Mobile: keep inline expansion
-                                          setEditingLink(link)
-                                        }
+                              <motion.div 
+                                className={viewMode === 'grid' 
+                                  ? getGridColumnsClass()
+                                  : 'flex flex-col gap-5 sm:gap-4'
+                                }
+                                variants={desktopStaggerContainer}
+                                initial="hidden"
+                                animate="visible"
+                                layout
+                              >
+                                <AnimatePresence mode="popLayout">
+                                  {categoryLinks.map((link, index) => (
+                                    <motion.div
+                                      key={link.id}
+                                      layout
+                                      variants={desktopCardVariants}
+                                      initial="hidden"
+                                      animate="visible"
+                                      exit="exit"
+                                      whileHover={!isMobile ? {
+                                        y: -4,
+                                        scale: 1.02,
+                                        transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] }
+                                      } : {}}
+                                      transition={{
+                                        layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] }
                                       }}
-                                      onExpandedChange={(expanded) => {
-                                        setExpandedLinkId(expanded ? link.id : null)
-                                      }}
-                                    />
-                                  </motion.div>
-                                ))}
-                              </div>
+                                      className="opacity-75"
+                                    >
+                                      <LinkCard
+                                        link={link}
+                                        viewMode={viewMode}
+                                        isSelected={selectedLinks.has(link.id)}
+                                        onSelect={(e) => toggleSelection(link.id, e)}
+                                        onAction={handleLinkAction}
+                                        collections={collections}
+                                        categories={categories}
+                                        allTags={allTags}
+                                        onCardClick={() => {
+                                          // Open drawer on desktop, expand inline on mobile
+                                          if (!isMobile) {
+                                            setSelectedLink(link)
+                                            setIsDrawerOpen(true)
+                                          } else {
+                                            // Mobile: keep inline expansion
+                                            setEditingLink(link)
+                                          }
+                                        }}
+                                        onExpandedChange={(expanded) => {
+                                          setExpandedLinkId(expanded ? link.id : null)
+                                        }}
+                                      />
+                                    </motion.div>
+                                  ))}
+                                </AnimatePresence>
+                              </motion.div>
                             </motion.div>
                           ))}
                         </motion.div>
@@ -2688,7 +2794,7 @@ export const Dashboard: React.FC = () => {
           <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md flex md:hidden">
             <div className="flex items-center justify-around w-full h-16">
               {/* Home Button */}
-              <button
+              <motion.button
                 onClick={() => {
                   navigate('/')
                   setSearchQuery('')
@@ -2706,14 +2812,28 @@ export const Dashboard: React.FC = () => {
                 }}
                 className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50/50 transition-colors"
                 aria-label="Home"
+                whileTap={{ scale: 0.92 }}
+                transition={{ duration: 0.15 }}
               >
-                <Home className={`w-6 h-6 ${isHomeActive ? 'text-blue-600' : 'text-gray-600'}`} strokeWidth={1.5} />
+                <motion.div
+                  animate={isHomeActive ? { scale: [1, 1.1, 1] } : {}}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Home className={`w-6 h-6 ${isHomeActive ? 'text-blue-600' : 'text-gray-600'}`} strokeWidth={1.5} />
+                </motion.div>
                 <span className={`text-xs font-medium ${isHomeActive ? 'text-blue-600' : 'text-gray-600'}`}>Home</span>
-                {isHomeActive && <div className="w-[3px] h-[3px] bg-blue-600 rounded-full mt-[4px]" />}
-              </button>
+                {isHomeActive && (
+                  <motion.div 
+                    className="w-[3px] h-[3px] bg-blue-600 rounded-full mt-[4px]"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.2 }}
+                  />
+                )}
+              </motion.button>
 
               {/* Search Button */}
-              <button
+              <motion.button
                 onClick={() => {
                   // Focus the search input
                   const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement
@@ -2721,14 +2841,28 @@ export const Dashboard: React.FC = () => {
                 }}
                 className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50/50 transition-colors"
                 aria-label="Search"
+                whileTap={{ scale: 0.92 }}
+                transition={{ duration: 0.15 }}
               >
-                <Search className={`w-6 h-6 ${isSearchActive ? 'text-blue-600' : 'text-gray-600'}`} strokeWidth={1.5} />
+                <motion.div
+                  animate={isSearchActive ? { scale: [1, 1.1, 1] } : {}}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Search className={`w-6 h-6 ${isSearchActive ? 'text-blue-600' : 'text-gray-600'}`} strokeWidth={1.5} />
+                </motion.div>
                 <span className={`text-xs font-medium ${isSearchActive ? 'text-blue-600' : 'text-gray-600'}`}>Search</span>
-                {isSearchActive && <div className="w-[3px] h-[3px] bg-blue-600 rounded-full mt-[4px]" />}
-              </button>
+                {isSearchActive && (
+                  <motion.div 
+                    className="w-[3px] h-[3px] bg-blue-600 rounded-full mt-[4px]"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.2 }}
+                  />
+                )}
+              </motion.button>
 
               {/* Folders Button */}
-              <button
+              <motion.button
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
@@ -2741,11 +2875,25 @@ export const Dashboard: React.FC = () => {
                 className="flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] flex-1 touch-manipulation active:bg-gray-50/50 transition-colors"
                 aria-label="Folders"
                 type="button"
+                whileTap={{ scale: 0.92 }}
+                transition={{ duration: 0.15 }}
               >
-                <Folder className={`w-6 h-6 ${isFoldersActive ? 'text-blue-600' : 'text-gray-600'}`} strokeWidth={1.5} />
+                <motion.div
+                  animate={isFoldersActive ? { scale: [1, 1.1, 1] } : {}}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Folder className={`w-6 h-6 ${isFoldersActive ? 'text-blue-600' : 'text-gray-600'}`} strokeWidth={1.5} />
+                </motion.div>
                 <span className={`text-xs font-medium ${isFoldersActive ? 'text-blue-600' : 'text-gray-600'}`}>Folders</span>
-                {isFoldersActive && <div className="w-[3px] h-[3px] bg-blue-600 rounded-full mt-[4px]" />}
-              </button>
+                {isFoldersActive && (
+                  <motion.div 
+                    className="w-[3px] h-[3px] bg-blue-600 rounded-full mt-[4px]"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.2 }}
+                  />
+                )}
+              </motion.button>
             </div>
           </div>
         )
@@ -2755,7 +2903,24 @@ export const Dashboard: React.FC = () => {
       {isMobile && !editingLink && !isSidebarOpen && !expandedLinkId && (
         <button
           onClick={() => setShowAddModal(true)}
-          className={`fixed bottom-20 right-4 z-[60] w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 backdrop-blur-md text-white rounded-full shadow-2xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 active:scale-95 transition-all duration-200 flex items-center justify-center touch-manipulation md:hidden ${addLinkHighlight ? 'add-link-shimmer' : ''}`}
+          className={`fixed bottom-20 right-4 z-[60] w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 backdrop-blur-md text-white rounded-full shadow-2xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-200 flex items-center justify-center touch-manipulation md:hidden ${addLinkHighlight ? 'add-link-shimmer' : ''}`}
+          whileHover={{ 
+            scale: 1.1,
+            boxShadow: '0 25px 50px -12px rgba(59, 130, 246, 0.5)',
+            transition: { duration: 0.2 }
+          }}
+          whileTap={{ 
+            scale: 0.9,
+            transition: { duration: 0.15 }
+          }}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ 
+            type: "spring",
+            stiffness: 300,
+            damping: 20,
+            delay: 0.2
+          }}
           aria-label="Add new link"
         >
           <Plus className="w-6 h-6" strokeWidth={2} />

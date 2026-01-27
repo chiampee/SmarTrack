@@ -2,6 +2,7 @@ import React, { useState, memo, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { logger } from '../utils/logger'
 import { capitalizeCategoryName, autoCapitalizeCategoryInput } from '../utils/categoryUtils'
+import { useMobileOptimizations } from '../hooks/useMobileOptimizations'
 import { 
   ExternalLink, 
   Tag, 
@@ -59,6 +60,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
     console.log('[ClickTrack] LinkCard rendered:', {linkId:link.id,title:link.title,clickCount:link.clickCount});
   }, [link.id]);
   // #endregion
+  const { isMobile } = useMobileOptimizations()
   const [copied, setCopied] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -443,16 +445,31 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
   // ============ LIST VIEW ============
   if (viewMode === 'list') {
     return (
-      <div 
+      <motion.div 
         data-link-id={link.id}
-        className={`group bg-white rounded-2xl transition-all duration-200 cursor-pointer relative touch-manipulation ${
-          isSelected ? 'ring-2 ring-blue-500 bg-blue-50/30 shadow-md' : 'hover:shadow-lg hover:scale-[1.02] active:scale-95'
+        className={`group bg-white rounded-2xl cursor-pointer relative touch-manipulation ${
+          isSelected ? 'ring-2 ring-blue-500 bg-blue-50/30 shadow-md' : ''
         }`}
         style={{
           boxShadow: isSelected ? undefined : '0 10px 15px -3px rgba(0, 0, 0, 0.05)'
         }}
         role="article"
         onClick={handleCardClick}
+        layout
+        whileHover={!isMobile ? {
+          y: -2,
+          scale: 1.01,
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+          transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] }
+        } : {}}
+        whileTap={{ 
+          scale: isMobile ? 0.96 : 0.98,
+          transition: { duration: isMobile ? 0.15 : 0.2, ease: [0.4, 0, 0.2, 1] }
+        }}
+        transition={{
+          layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+          default: { duration: 0.2 }
+        }}
       >
         {/* Main Row - Content First Design for Mobile */}
         <div className="flex items-center gap-4 sm:gap-5 p-3 sm:p-4 relative">
@@ -1015,21 +1032,36 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     )
   }
 
   // ============ GRID VIEW - Instagram-inspired Post Style ============
   return (
-    <div 
-      className={`group bg-white rounded-2xl overflow-hidden cursor-pointer relative touch-manipulation transition-all duration-200 ${
-        isSelected ? 'ring-2 ring-blue-500' : 'hover:shadow-md'
-      } active:scale-95`}
+    <motion.div 
+      className={`group bg-white rounded-2xl overflow-hidden cursor-pointer relative touch-manipulation ${
+        isSelected ? 'ring-2 ring-blue-500' : ''
+      }`}
       style={{
         boxShadow: isSelected ? undefined : '0 10px 15px -3px rgba(0, 0, 0, 0.05)'
       }}
       role="article"
       onClick={handleCardClick}
+      layout
+      whileHover={!isMobile ? {
+        y: -6,
+        scale: 1.02,
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] }
+      } : {}}
+      whileTap={{ 
+        scale: 0.96,
+        transition: { duration: 0.15, ease: [0.4, 0, 0.2, 1] }
+      }}
+      transition={{
+        layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+        default: { duration: 0.2 }
+      }}
     >
       {/* Collection tag - Positioned at top-left, inside card (not overlapping) */}
       {link.collectionId && (
@@ -1044,13 +1076,15 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
       {/* Edge-to-edge image with rounded top corners */}
       {link.thumbnail && link.thumbnail.startsWith('http') ? (
         <div className="aspect-video w-full overflow-hidden bg-gray-100 relative">
-          <img 
+          <motion.img 
             src={link.thumbnail} 
             alt="Post thumbnail" 
-            className="w-full h-full object-cover rounded-t-2xl transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-full object-cover rounded-t-2xl"
             style={{ border: '1px solid rgba(0, 0, 0, 0.05)' }}
             referrerPolicy="no-referrer-when-downgrade"
             loading="lazy"
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             onError={(e) => {
               e.currentTarget.style.display = 'none';
               console.warn('[LinkCard] Failed to load thumbnail:', link.thumbnail);
@@ -1593,7 +1627,7 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     )
   }
 
