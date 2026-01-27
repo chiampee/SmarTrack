@@ -97,6 +97,31 @@ To enable security scanning, you need to configure the following secrets in your
    ggshield auth login
    ```
 
+### 6. JF_URL and JF_ACCESS_TOKEN (Optional for JFrog SAST)
+
+**Purpose**: Authenticates with JFrog Advanced Security for SAST (Static Application Security Testing) scanning.
+
+**When needed**: Only required if you want to use JFrog SAST scanning. The workflow will automatically skip if these secrets are not configured.
+
+**How to obtain**:
+1. Sign up for JFrog Advanced Security at [https://jfrog.com](https://jfrog.com)
+2. Set up a JFrog platform instance with Advanced Security subscription
+3. Navigate to your JFrog platform
+4. Go to **Administration** → **Identity and Access** → **Access Tokens**
+5. Create a new access token with appropriate permissions
+6. Copy your JFrog platform URL (e.g., `https://your-instance.jfrog.io`)
+
+**How to add to GitHub**:
+1. Go to your repository on GitHub
+2. Navigate to **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+4. Name: `JF_URL`
+5. Value: Your JFrog platform URL (e.g., `https://your-instance.jfrog.io`)
+6. Click **Add secret**
+7. Repeat for `JF_ACCESS_TOKEN` with your access token
+
+**Note**: If these secrets are not configured, the JFrog SAST workflow will automatically skip with a notice message. This is safe and will not cause workflow failures.
+
 ## Workflows
 
 ### Security Scanning (`security.yml`)
@@ -112,6 +137,21 @@ This workflow runs:
 - Pull requests to `main`, `master`, or `develop` branches
 - Weekly schedule (Mondays at 00:00 UTC)
 - Manual trigger via workflow_dispatch
+
+### JFrog SAST Scan (`jfrog-sast.yml`)
+
+This workflow runs:
+- **Static Application Security Testing (SAST)**: Scans source code for security vulnerabilities
+- **Code Analysis**: Identifies security issues, code smells, and potential vulnerabilities
+- **SARIF Output**: Generates SARIF format reports for GitHub Security tab integration
+
+**Triggers**:
+- Push to `main` branch
+- Pull requests to `main` branch
+- Weekly schedule (Thursdays at 05:23 UTC)
+- Manual trigger via workflow_dispatch
+
+**Note**: This workflow will automatically skip if `JF_URL` and `JF_ACCESS_TOKEN` secrets are not configured. No action required if you don't have a JFrog account.
 
 ### CodeQL SAST Analysis (`codeql.yml`)
 
