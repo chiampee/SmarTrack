@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import { Auth0Provider } from '@auth0/auth0-react'
+import { AUTH0_SCOPES } from './constants/auth0Scopes'
 import { BrowserRouter } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ToastProvider } from './components/Toast'
@@ -61,7 +62,7 @@ if (!auth0Domain || !auth0ClientId || !auth0Audience) {
               authorizationParams={{
                 redirect_uri: window.location.origin + '/dashboard', // Redirect to dashboard after login
                 audience: auth0Audience,
-                scope: 'openid profile email'
+                scope: AUTH0_SCOPES
               }}
             >
               <BrowserRouter

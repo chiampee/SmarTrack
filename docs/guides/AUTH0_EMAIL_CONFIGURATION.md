@@ -19,8 +19,11 @@ The Auth0 token doesn't include the email claim, causing admin access to fail wi
 
 ## Frontend Configuration ✅
 The frontend is correctly requesting the `email` scope:
-- `src/main.tsx`: `scope: 'openid profile email'`
+- `src/main.tsx`: Uses `AUTH0_SCOPES` constant (`openid profile email`)
 - `src/pages/AdminAnalytics.tsx`: Explicitly requests email scope when refreshing tokens
+- All authentication flows use centralized `AUTH0_SCOPES` from `src/constants/auth0Scopes.ts`
+
+**Note**: For minimal permissions configuration (especially removing Google Drive permissions), see [AUTH0_MINIMAL_PERMISSIONS.md](./AUTH0_MINIMAL_PERMISSIONS.md).
 
 ## What to Check in Auth0 Dashboard
 
@@ -46,6 +49,8 @@ Go to: https://manage.auth0.com/dashboard
   - ✅ `openid` (always available)
   - ✅ `profile` (always available) 
   - ✅ `email` (needs to be explicitly added)
+
+**Important**: These are the minimal scopes needed. For information on configuring Google social connection to avoid requesting unnecessary permissions (like Google Drive), see [AUTH0_MINIMAL_PERMISSIONS.md](./AUTH0_MINIMAL_PERMISSIONS.md).
 
 **If `email` scope doesn't exist:**
 1. Click **Add Scope**

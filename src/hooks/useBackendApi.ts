@@ -4,6 +4,7 @@ import { parseError, logError, withErrorHandling, ErrorType } from '../utils/err
 import { validateApiResponse } from '../utils/validation'
 import { Link } from '../types/Link'
 import { jwtDecode } from 'jwt-decode'
+import { AUTH0_SCOPES } from '../constants/auth0Scopes'
 
 interface JWTPayload {
   exp: number
@@ -131,7 +132,7 @@ export const useBackendApi = () => {
           // Always request email scope to ensure email is in token
           const accessToken = await getAccessTokenSilently({
             authorizationParams: {
-              scope: 'openid profile email',
+              scope: AUTH0_SCOPES,
             },
             cacheMode: existingToken ? 'off' : 'on' // Force refresh if we had an expired token
           })
@@ -183,7 +184,7 @@ export const useBackendApi = () => {
           const newToken = await getAccessTokenSilently({ 
             cacheMode: 'off',
             authorizationParams: {
-              scope: 'openid profile email',
+              scope: AUTH0_SCOPES,
             }
           })
           
@@ -228,7 +229,7 @@ export const useBackendApi = () => {
         // Always request email scope to ensure email is in token
         requestToken = await getAccessTokenSilently({
           authorizationParams: {
-            scope: 'openid profile email',
+            scope: AUTH0_SCOPES,
           }
         })
         setToken(requestToken)
@@ -251,7 +252,7 @@ export const useBackendApi = () => {
         requestToken = await getAccessTokenSilently({
           cacheMode: 'off',
           authorizationParams: {
-            scope: 'openid profile email',
+            scope: AUTH0_SCOPES,
           }
         })
         const duration = Date.now() - startTime
@@ -359,7 +360,7 @@ export const useBackendApi = () => {
                 authorizationParams: {
                   redirect_uri: window.location.origin + '/dashboard',
                   audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-                  scope: 'openid profile email',
+                  scope: AUTH0_SCOPES,
                   prompt: 'login', // Force login screen
                 }
               })

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { Logo } from '../components/Logo'
+import { AUTH0_SCOPES } from '../constants/auth0Scopes'
 import { SiloVsHubVisualization } from '../components/SiloVsHubVisualization'
 import { DashboardListView } from '../components/DashboardListView'
 import { ExtensionPopupPreview } from '../components/ExtensionPopupPreview'
@@ -61,13 +62,23 @@ export const LoginPage = () => {
                 FAQ
               </Link>
               <button 
-                onClick={() => loginWithRedirect()}
+                onClick={() => loginWithRedirect({
+                  authorizationParams: {
+                    scope: AUTH0_SCOPES,
+                    audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+                  }
+                })}
                 className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
               >
                 Sign In
               </button>
               <button 
-                onClick={() => loginWithRedirect()}
+                onClick={() => loginWithRedirect({
+                  authorizationParams: {
+                    scope: AUTH0_SCOPES,
+                    audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+                  }
+                })}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-full transition-all shadow-sm hover:shadow-md active:transform active:scale-95"
               >
                 <Chrome className="w-4 h-4" />
@@ -108,7 +119,12 @@ export const LoginPage = () => {
              <button 
                 onClick={() => {
                   setIsMobileMenuOpen(false)
-                  loginWithRedirect()
+                  loginWithRedirect({
+                    authorizationParams: {
+                      scope: AUTH0_SCOPES,
+                      audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+                    }
+                  })
                 }}
                 className="block w-full text-left px-4 py-3 text-slate-600 font-medium rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors touch-manipulation"
               >
@@ -117,7 +133,12 @@ export const LoginPage = () => {
               <button 
                 onClick={() => {
                   setIsMobileMenuOpen(false)
-                  loginWithRedirect()
+                  loginWithRedirect({
+                    authorizationParams: {
+                      scope: AUTH0_SCOPES,
+                      audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+                    }
+                  })
                 }}
                 className="block w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg text-center hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation"
               >
@@ -152,7 +173,12 @@ export const LoginPage = () => {
             
             <motion.div variants={fadeIn} className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-8 sm:mb-12 md:mb-16 px-4">
               <button 
-                onClick={() => loginWithRedirect()}
+                onClick={() => loginWithRedirect({
+                  authorizationParams: {
+                    scope: AUTH0_SCOPES,
+                    audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+                  }
+                })}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-full text-base sm:text-lg shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-1 active:translate-y-0 touch-manipulation"
               >
                 Sign In
@@ -315,7 +341,12 @@ export const LoginPage = () => {
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 sm:mb-6 tracking-tight px-2">Reclaim Your Digital Memory.</h2>
           <p className="text-base sm:text-lg md:text-xl text-slate-600 mb-6 sm:mb-8 md:mb-10 px-2">Join the researchers who have stopped bookmarking and started capturing.</p>
           <button 
-            onClick={() => loginWithRedirect()}
+            onClick={() => loginWithRedirect({
+              authorizationParams: {
+                scope: AUTH0_SCOPES,
+                audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+              }
+            })}
             className="inline-flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-full text-base sm:text-lg shadow-xl shadow-blue-600/30 transition-transform hover:-translate-y-1 active:translate-y-0 touch-manipulation"
           >
             <Chrome className="w-5 h-5 sm:w-6 sm:h-6" />

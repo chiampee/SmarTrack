@@ -11,6 +11,7 @@ import { useToast } from '../components/Toast'
 import { LoadingSpinner } from '../components/LoadingSpinner'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useBackendApi } from '../hooks/useBackendApi'
+import { AUTH0_SCOPES } from '../constants/auth0Scopes'
 
 type TabType = 'analytics' | 'users' | 'logs' | 'categories' | 'settings' | 'gdpr'
 
@@ -86,7 +87,7 @@ export const AdminAnalytics: React.FC = () => {
         const token = await getAccessTokenSilently({
           cacheMode: 'off',
           authorizationParams: {
-            scope: 'openid profile email',
+            scope: AUTH0_SCOPES,
           }
         })
         localStorage.setItem('authToken', token)
@@ -162,7 +163,7 @@ export const AdminAnalytics: React.FC = () => {
       const token = await getAccessTokenSilently({
         cacheMode: 'off',
         authorizationParams: {
-          scope: 'openid profile email',
+          scope: AUTH0_SCOPES,
         }
       })
       localStorage.setItem('authToken', token)
@@ -186,7 +187,7 @@ export const AdminAnalytics: React.FC = () => {
         authorizationParams: {
           redirect_uri: window.location.origin + '/dashboard',
           audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-          scope: 'openid profile email',
+          scope: AUTH0_SCOPES,
           prompt: 'login', // Force login screen
         }
       })
