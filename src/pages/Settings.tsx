@@ -531,24 +531,24 @@ export const Settings: React.FC = () => {
                                 className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-sm rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all touch-manipulation min-h-[44px]"
                                 autoFocus
                               />
-                              <div className="flex flex-col sm:flex-row gap-3">
-                                <button
-                                  onClick={() => {
-                                    setShowDeleteConfirm(false)
-                                    setConfirmText('')
-                                  }}
-                                  className="flex-1 px-5 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all font-semibold touch-manipulation"
-                                >
-                                  Cancel
-                                </button>
+                            <div className="flex flex-col sm:flex-row gap-4">
+                              <button
+                                onClick={() => {
+                                  setShowDeleteConfirm(false)
+                                  setConfirmText('')
+                                }}
+                                className="flex-1 px-6 py-3 min-h-[44px] bg-white text-gray-700 border-2 border-gray-300 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-all font-semibold touch-manipulation shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                              >
+                                Cancel
+                              </button>
                                 <button
                                   onClick={handleDeleteAll}
                                   disabled={isDeleting || confirmText !== 'DELETE'}
-                                  className="flex-1 px-5 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold touch-manipulation"
+                                  className="flex-1 px-6 py-3 min-h-[44px] bg-gray-600 text-white rounded-xl hover:bg-gray-700 active:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold touch-manipulation shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                                 >
                                   {isDeleting ? 'Deleting...' : 'Confirm Delete'}
                                 </button>
-                              </div>
+                            </div>
                             </div>
                           )}
                         </div>
@@ -603,20 +603,20 @@ export const Settings: React.FC = () => {
                               className="w-full px-4 py-3.5 sm:py-3 text-base sm:text-sm rounded-xl border border-red-400 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all touch-manipulation min-h-[44px]"
                               autoFocus
                             />
-                            <div className="flex flex-col sm:flex-row gap-3">
+                            <div className="flex flex-col sm:flex-row gap-4">
                               <button
                                 onClick={() => {
                                   setShowDeleteAccountConfirm(false)
                                   setAccountConfirmText('')
                                 }}
-                                className="flex-1 px-5 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all font-semibold touch-manipulation"
+                                className="flex-1 px-6 py-3 min-h-[44px] bg-white text-gray-700 border-2 border-gray-300 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-all font-semibold touch-manipulation shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
                               >
                                 Cancel
                               </button>
                               <button
                                 onClick={handleDeleteAccount}
                                 disabled={isDeletingAccount || accountConfirmText !== 'DELETE ACCOUNT'}
-                                className="flex-1 px-5 py-3 bg-red-700 text-white rounded-xl hover:bg-red-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold touch-manipulation"
+                                className="flex-1 px-6 py-3 min-h-[44px] bg-red-700 text-white rounded-xl hover:bg-red-800 active:bg-red-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold touch-manipulation shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                               >
                                 {isDeletingAccount ? 'Deleting Account...' : 'Confirm Account Deletion'}
                               </button>

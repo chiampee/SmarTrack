@@ -214,8 +214,8 @@ export const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
+          {/* Actions - Improved clickability */}
+          <div className="flex items-center justify-end gap-4 mt-6 pt-6 border-t border-gray-200">
             <button
               type="button"
               onClick={handleClose}

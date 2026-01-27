@@ -401,18 +401,18 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
             </div>
           </div>
 
-          {/* Actions - Always visible on mobile with better mobile UX */}
-          <div className="sticky bottom-0 left-0 right-0 z-10 bg-white border-t-2 border-gray-200 px-4 sm:px-6 py-4 sm:py-4 flex items-center justify-between sm:justify-end gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] sm:shadow-none flex-shrink-0 safe-area-inset-bottom">
+          {/* Actions - Always visible on mobile with improved clickability */}
+          <div className="sticky bottom-0 left-0 right-0 z-10 bg-white border-t-2 border-gray-200 px-4 sm:px-6 py-4 sm:py-4 flex items-center justify-between sm:justify-end gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] sm:shadow-none flex-shrink-0 safe-area-inset-bottom">
             <button
               type="button"
               onClick={handleClose}
-              className="px-5 py-3 text-base sm:text-sm font-semibold sm:font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl sm:rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-all min-h-[48px] sm:min-h-0 flex-1 sm:flex-initial touch-manipulation"
+              className="px-6 py-3 text-base font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-all min-h-[44px] flex-1 sm:flex-initial touch-manipulation shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-3 text-base sm:text-sm font-semibold sm:font-medium text-white bg-blue-600 rounded-xl sm:rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-all shadow-lg sm:shadow-sm min-h-[48px] sm:min-h-0 flex-1 sm:flex-initial touch-manipulation"
+              className="px-6 py-3 text-base font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-all shadow-lg hover:shadow-xl min-h-[44px] flex-1 sm:flex-initial touch-manipulation focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               Capture New
             </button>

@@ -870,21 +870,21 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                     </div>
                   </div>
 
-                  {/* Action buttons - full width on mobile */}
-                  <div className="pt-3 border-t border-gray-200">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  {/* Action buttons - full width on mobile with improved clickability */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                       <button 
                         onClick={saveEdits} 
-                        className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-lg touch-manipulation transition-all shadow-md hover:shadow-lg"
+                        className="flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-base font-semibold rounded-lg touch-manipulation transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                       >
-                        <Save className="w-4 h-4" /> 
+                        <Save className="w-5 h-5" /> 
                         Save Changes
                       </button>
                       <button 
                         onClick={cancelEditing} 
-                        className="flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 border border-gray-300 text-sm font-medium rounded-lg touch-manipulation transition-all"
+                        className="flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 border-2 border-gray-300 text-base font-medium rounded-lg touch-manipulation transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
                       >
-                        <X className="w-4 h-4" /> 
+                        <X className="w-5 h-5" /> 
                         Cancel
                       </button>
                     </div>
@@ -1455,21 +1455,21 @@ const LinkCardComponent: React.FC<LinkCardProps> = ({
                     </div>
                   </div>
 
-                  {/* Action buttons - full width on mobile */}
-                  <div className="pt-3 border-t border-gray-200">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  {/* Action buttons - full width on mobile with improved clickability */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                       <button 
                         onClick={saveEdits} 
-                        className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-lg touch-manipulation transition-all shadow-md hover:shadow-lg"
+                        className="flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-base font-semibold rounded-lg touch-manipulation transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                       >
-                        <Save className="w-4 h-4" /> 
+                        <Save className="w-5 h-5" /> 
                         Save Changes
                       </button>
                       <button 
                         onClick={cancelEditing} 
-                        className="flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 border border-gray-300 text-sm font-medium rounded-lg touch-manipulation transition-all"
+                        className="flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] bg-white hover:bg-gray-50 active:bg-gray-100 text-gray-700 border-2 border-gray-300 text-base font-medium rounded-lg touch-manipulation transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
                       >
-                        <X className="w-4 h-4" /> 
+                        <X className="w-5 h-5" /> 
                         Cancel
                       </button>
                     </div>

@@ -162,8 +162,19 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
   if (!isOpen || !link) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col m-2 sm:m-0">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4"
+      onClick={(e) => {
+        // Close modal when clicking backdrop
+        if (e.target === e.currentTarget) {
+          handleClose()
+        }
+      }}
+    >
+      <div 
+        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col m-2 sm:m-0 pointer-events-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* ✅ ENHANCED: Header with better styling */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
           <div>
@@ -179,206 +190,209 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
           </button>
         </div>
 
-        {/* ✅ ENHANCED: Form with better spacing */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1">
-          <div className="space-y-5">
-            {/* URL (read-only) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <LinkIcon className="w-4 h-4 inline mr-1" />
-                URL
-              </label>
-              <input
-                type="text"
-                value={link.url}
-                disabled
-                className="input-field w-full bg-gray-50"
-              />
-            </div>
-
-            {/* Title */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <FileText className="w-4 h-4 inline mr-1" />
-                Title *
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter link title"
-                className={`input-field w-full ${errors.title ? 'border-red-500' : ''}`}
-              />
-              {errors.title && (
-                <p className="mt-1 text-sm text-red-600">{errors.title}</p>
-              )}
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter link description"
-                rows={3}
-                className="input-field w-full resize-none"
-              />
-            </div>
-
-            {/* ✅ ENHANCED: Category and Content Type */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="relative">
+        {/* ✅ ENHANCED: Form with better spacing - scrollable content area */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="p-6 overflow-y-auto flex-1">
+            <div className="space-y-5">
+              {/* URL (read-only) */}
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Globe className="w-4 h-4 inline mr-1" />
-                  Category
+                  <LinkIcon className="w-4 h-4 inline mr-1" />
+                  URL
                 </label>
-                <div className="relative">
-                  <input
-                    ref={categoryInputRef}
-                    type="text"
-                    value={category}
-                    onChange={(e) => handleCategoryChange(e.target.value)}
-                    onFocus={() => setShowCategorySuggestions(true)}
-                    placeholder="Type or select a category"
-                    className="input-field w-full pr-10"
-                    list="category-suggestions"
-                  />
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  
-                  {/* ✅ NEW: Category Suggestions Dropdown */}
-                  {showCategorySuggestions && categorySuggestions.length > 0 && (
-                    <div
-                      ref={categoryDropdownRef}
-                      className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
-                    >
-                      {categorySuggestions.map((suggestion) => (
-                        <button
-                          key={suggestion}
-                          type="button"
-                          onClick={() => handleCategorySelect(suggestion)}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors first:rounded-t-lg last:rounded-b-lg"
-                        >
-                          {capitalizeCategoryName(suggestion)}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* ✅ NEW: Show message when no suggestions match */}
-                  {showCategorySuggestions && category && categorySuggestions.length === 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm text-gray-500">
-                      Press Enter to create "{category}"
-                    </div>
-                  )}
-                </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Type to search or create a new category
-                </p>
+                <input
+                  type="text"
+                  value={link.url}
+                  disabled
+                  className="input-field w-full bg-gray-50"
+                />
               </div>
 
+              {/* Title */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <FileText className="w-4 h-4 inline mr-1" />
-                  Content Type
+                  Title *
                 </label>
-                <select
-                  value={contentType}
-                  onChange={(e) => setContentType(e.target.value as Link['contentType'])}
-                  className="input-field w-full"
-                >
-                  {contentTypes.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Enter link title"
+                  className={`input-field w-full ${errors.title ? 'border-red-500' : ''}`}
+                />
+                {errors.title && (
+                  <p className="mt-1 text-sm text-red-600">{errors.title}</p>
+                )}
               </div>
-            </div>
 
-            {/* ✅ ENHANCED: Tags with better UX */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Tag className="w-4 h-4 inline mr-1" />
-                Tags
-              </label>
-              <input
-                type="text"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="research, article, example"
-                className="input-field w-full"
-              />
-              <p className="mt-1.5 text-xs text-gray-500 flex items-center gap-1">
-                <span>💡</span>
-                <span>Separate tags with commas. Tags help organize and find your links.</span>
-              </p>
-            </div>
+              {/* Context */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Context
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Add your thoughts, key takeaways, or summary..."
+                  rows={3}
+                  className="input-field w-full resize-none"
+                />
+                <p className="mt-1.5 text-xs text-gray-500">Optional: Add context to help you remember why you saved this link</p>
+              </div>
 
-            {/* Project/Collection */}
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                <Folder className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1" />
-                Project
-              </label>
-              {collections.length > 0 ? (
-                <select
-                  value={collectionId}
-                  onChange={(e) => setCollectionId(e.target.value)}
-                  className="input-field w-full text-base sm:text-sm py-3 sm:py-3"
-                >
-                  <option value="">None - Remove from project</option>
-                  {collections.map((collection) => (
-                    <option key={collection.id} value={collection.id}>
-                      {collection.name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="input-field w-full bg-gray-50 text-gray-500 py-3 px-4 rounded-lg border border-gray-200 text-sm sm:text-sm">
-                  <p>No projects yet. Create one from the sidebar to organize your links.</p>
+              {/* ✅ ENHANCED: Category and Content Type */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Globe className="w-4 h-4 inline mr-1" />
+                    Category
+                  </label>
+                  <div className="relative">
+                    <input
+                      ref={categoryInputRef}
+                      type="text"
+                      value={category}
+                      onChange={(e) => handleCategoryChange(e.target.value)}
+                      onFocus={() => setShowCategorySuggestions(true)}
+                      placeholder="Type or select a category"
+                      className="input-field w-full pr-10"
+                      list="category-suggestions"
+                    />
+                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    
+                    {/* ✅ NEW: Category Suggestions Dropdown */}
+                    {showCategorySuggestions && categorySuggestions.length > 0 && (
+                      <div
+                        ref={categoryDropdownRef}
+                        className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                      >
+                        {categorySuggestions.map((suggestion) => (
+                          <button
+                            key={suggestion}
+                            type="button"
+                            onClick={() => handleCategorySelect(suggestion)}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                          >
+                            {capitalizeCategoryName(suggestion)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* ✅ NEW: Show message when no suggestions match */}
+                    {showCategorySuggestions && category && categorySuggestions.length === 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm text-gray-500">
+                        Press Enter to create "{category}"
+                      </div>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Type to search or create a new category
+                  </p>
                 </div>
-              )}
-            </div>
 
-            {/* Checkboxes */}
-            <div className="flex items-center gap-6">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isFavorite}
-                  onChange={(e) => setIsFavorite(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700">Mark as favorite</span>
-              </label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <FileText className="w-4 h-4 inline mr-1" />
+                    Content Type
+                  </label>
+                  <select
+                    value={contentType}
+                    onChange={(e) => setContentType(e.target.value as Link['contentType'])}
+                    className="input-field w-full"
+                  >
+                    {contentTypes.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-              <label className="flex items-center gap-2 cursor-pointer">
+              {/* ✅ ENHANCED: Tags with better UX */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Tag className="w-4 h-4 inline mr-1" />
+                  Tags
+                </label>
                 <input
-                  type="checkbox"
-                  checked={isArchived}
-                  onChange={(e) => setIsArchived(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  type="text"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  placeholder="research, article, example"
+                  className="input-field w-full"
                 />
-                <span className="text-sm font-medium text-gray-700">Archive immediately</span>
-              </label>
+                <p className="mt-1.5 text-xs text-gray-500 flex items-center gap-1">
+                  <span>💡</span>
+                  <span>Separate tags with commas. Tags help organize and find your links.</span>
+                </p>
+              </div>
+
+              {/* Project/Collection */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                  <Folder className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1" />
+                  Project
+                </label>
+                {collections.length > 0 ? (
+                  <select
+                    value={collectionId}
+                    onChange={(e) => setCollectionId(e.target.value)}
+                    className="input-field w-full text-base sm:text-sm py-3 sm:py-3"
+                  >
+                    <option value="">None - Remove from project</option>
+                    {collections.map((collection) => (
+                      <option key={collection.id} value={collection.id}>
+                        {collection.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="input-field w-full bg-gray-50 text-gray-500 py-3 px-4 rounded-lg border border-gray-200 text-sm sm:text-sm">
+                    <p>No projects yet. Create one from the sidebar to organize your links.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Checkboxes */}
+              <div className="flex items-center gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isFavorite}
+                    onChange={(e) => setIsFavorite(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Mark as favorite</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isArchived}
+                    onChange={(e) => setIsArchived(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Archive immediately</span>
+                </label>
+              </div>
             </div>
           </div>
 
-          {/* ✅ ENHANCED: Actions with better styling */}
-          <div className="flex items-center justify-end gap-3 mt-6 pt-6 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 pb-6">
+          {/* ✅ FIXED: Actions outside scrollable area - always visible and clickable */}
+          <div className="flex items-center justify-end gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50 flex-shrink-0 z-10">
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-6 py-3 min-h-[44px] text-base font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-all touch-manipulation shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 pointer-events-auto cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+              className="px-6 py-3 min-h-[44px] text-base font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 touch-manipulation pointer-events-auto cursor-pointer"
             >
               Save Changes
             </button>
