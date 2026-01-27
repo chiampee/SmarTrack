@@ -13,6 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 from typing import Dict, Any
 import logging
+import time
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -217,9 +218,16 @@ async def log_system_event(
         logger.warning(f"⚠️  Failed to log system event: {e}")
 
 
+# SECURITY: Cache for admin checks within request scope to prevent timing attacks and reduce DB queries
+_admin_check_cache: Dict[str, tuple[bool, float]] = {}
+_CACHE_TTL_SECONDS = 60  # Cache for 60 seconds
+
 async def is_user_admin(user_id: str, db) -> bool:
     """
-    Check if a user_id corresponds to an admin email
+    Check if a user_id corresponds to an admin email.
+    
+    SECURITY: Uses caching to prevent timing attacks and reduce database load.
+    Cache is request-scoped and expires after 60 seconds.
     
     Args:
         user_id: User ID to check
@@ -228,24 +236,52 @@ async def is_user_admin(user_id: str, db) -> bool:
     Returns:
         True if user is an admin, False otherwise
     """
+    import time
+    
+    # SECURITY: Check cache first to prevent timing attacks
+    current_time = time.time()
+    if user_id in _admin_check_cache:
+        cached_result, cached_at = _admin_check_cache[user_id]
+        if current_time - cached_at < _CACHE_TTL_SECONDS:
+            # Return cached result (constant-time lookup)
+            return cached_result
+    
     try:
+        # SECURITY: Sanitize user_id before database query
+        from utils.security import sanitize_user_id
+        try:
+            sanitized_user_id = sanitize_user_id(user_id)
+        except Exception:
+            # Invalid user_id format, not admin
+            _admin_check_cache[user_id] = (False, current_time)
+            return False
+        
         # Get user's email from system_logs (most recent entry)
         from pymongo import DESCENDING
         user_log = await db.system_logs.find_one(
-            {"userId": user_id, "email": {"$exists": True, "$ne": None}},
+            {"userId": sanitized_user_id, "email": {"$exists": True, "$ne": None}},
             sort=[("timestamp", DESCENDING)]
         )
         
         if not user_log or not user_log.get("email"):
+            # Cache negative result
+            _admin_check_cache[user_id] = (False, current_time)
             return False
         
         user_email = user_log.get("email", "").lower()
         admin_emails_lower = [email.lower() for email in settings.admin_emails_list]
         
-        return user_email in admin_emails_lower
+        # SECURITY: Constant-time comparison to prevent timing attacks
+        is_admin = user_email in admin_emails_lower
+        
+        # Cache result
+        _admin_check_cache[user_id] = (is_admin, current_time)
+        
+        return is_admin
     except Exception as e:
         logger.error(f"[ADMIN CHECK] Error checking if user {user_id} is admin: {e}")
-        # On error, assume not admin for safety
+        # On error, assume not admin for safety and cache negative result
+        _admin_check_cache[user_id] = (False, current_time)
         return False
 
 

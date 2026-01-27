@@ -187,18 +187,65 @@ export function sanitizeString(input: string): string {
  */
 export function sanitizeUrl(url: string): string {
   try {
+    // SECURITY: Prevent path traversal in URLs
+    if (url.includes('..')) {
+      throw createError(
+        ErrorType.VALIDATION_ERROR,
+        'Invalid URL: contains path traversal sequence'
+      )
+    }
+
+    // SECURITY: Prevent null bytes
+    if (url.includes('\0')) {
+      throw createError(
+        ErrorType.VALIDATION_ERROR,
+        'Invalid URL: contains null byte'
+      )
+    }
+
     const urlObj = new URL(url)
     // Only allow http and https
     if (!['http:', 'https:'].includes(urlObj.protocol)) {
       throw new Error('Invalid protocol')
     }
     return urlObj.toString()
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid protocol') {
+      throw error
+    }
     throw createError(
       ErrorType.VALIDATION_ERROR,
       'Invalid URL format'
     )
   }
+}
+
+/**
+ * Validate path to prevent path traversal attacks
+ * @param path - Path string to validate
+ * @returns {boolean} True if path is safe
+ */
+export function validatePath(path: string): boolean {
+  if (!path || typeof path !== 'string') {
+    return false
+  }
+
+  // SECURITY: Prevent path traversal sequences
+  if (path.includes('..')) {
+    return false
+  }
+
+  // SECURITY: Prevent null bytes
+  if (path.includes('\0')) {
+    return false
+  }
+
+  // SECURITY: Prevent absolute paths (if relative paths are required)
+  if (path.startsWith('/') || (path.length > 1 && path[1] === ':')) {
+    return false
+  }
+
+  return true
 }
 
 /**

@@ -13,6 +13,7 @@ from services.admin import check_admin_access, log_system_event, validate_no_adm
 from services.auth import security
 from services.analytics import AnalyticsService
 from core.config import settings
+from utils.security import sanitize_user_id
 from pymongo import DESCENDING
 import time
 import asyncio
@@ -1641,26 +1642,16 @@ def validate_user_ids(user_ids: List[str]) -> tuple[bool, str]:
     if len(user_ids) > MAX_BATCH_SIZE:
         return False, f"Maximum batch size is {MAX_BATCH_SIZE} users per request"
     
-    # Validate each user_id
+    # Validate each user_id using security sanitization
     for user_id in user_ids:
-        if not isinstance(user_id, str):
-            return False, f"All user_ids must be strings, found: {type(user_id)}"
-        
-        if not user_id or not user_id.strip():
-            return False, "user_ids cannot be empty or whitespace"
-        
-        # Reasonable length limit (Auth0 format: provider|id, typically < 100 chars)
-        if len(user_id) > 200:
-            return False, f"user_id too long (max 200 chars): {user_id[:50]}..."
-        
-        # Basic format validation (should contain alphanumeric, pipe, dash, underscore)
-        # ✅ SECURITY: Reject MongoDB operators to prevent NoSQL injection
-        if any(op in user_id for op in ['$', '{', '}', '[', ']']):
-            return False, f"Invalid user_id format: contains MongoDB operators"
-        
-        # Allow only safe characters (alphanumeric, pipe, dash, underscore, @, dot)
-        if not all(c.isalnum() or c in '|_-@.' for c in user_id):
-            return False, f"Invalid user_id format: {user_id[:50]}..."
+        try:
+            # SECURITY: Use sanitize_user_id to validate and prevent NoSQL injection
+            sanitize_user_id(user_id)
+        except HTTPException as e:
+            # Return validation error message
+            return False, str(e.detail)
+        except Exception as e:
+            return False, f"Invalid user_id format: {str(e)}"
     
     return True, ""
 
@@ -1679,14 +1670,22 @@ async def verify_users_exist(user_ids: List[str], db) -> tuple[List[str], List[s
     
     # Check each user_id in system_logs
     for user_id in user_ids:
+        # SECURITY: Sanitize user_id before MongoDB query to prevent NoSQL injection
+        try:
+            sanitized_user_id = sanitize_user_id(user_id)
+        except HTTPException:
+            # Invalid user_id format, treat as non-existent
+            non_existing.append(user_id)
+            continue
+        
         user_log = await db.system_logs.find_one(
-            {"userId": user_id},
+            {"userId": sanitized_user_id},
             sort=[("timestamp", DESCENDING)]
         )
         if user_log:
-            existing.append(user_id)
+            existing.append(sanitized_user_id)
         else:
-            non_existing.append(user_id)
+            non_existing.append(sanitized_user_id)
     
     return existing, non_existing
 
@@ -1698,6 +1697,13 @@ async def verify_deletion_complete(user_id: str, db) -> tuple[bool, Dict[str, An
     Returns:
         Tuple of (is_complete, verification_details)
     """
+    # SECURITY: Sanitize user_id before MongoDB queries to prevent NoSQL injection
+    try:
+        sanitized_user_id = sanitize_user_id(user_id)
+    except HTTPException:
+        # Invalid user_id, return incomplete status
+        return False, {"error": "Invalid user_id format"}
+    
     verification = {
         "linksRemaining": 0,
         "collectionsRemaining": 0,
@@ -1707,24 +1713,25 @@ async def verify_deletion_complete(user_id: str, db) -> tuple[bool, Dict[str, An
     }
     
     try:
+        # SECURITY: Use sanitized user_id in all MongoDB queries
         # Check links
-        links_count = await db.links.count_documents({"userId": user_id})
+        links_count = await db.links.count_documents({"userId": sanitized_user_id})
         verification["linksRemaining"] = links_count
         
         # Check collections
-        collections_count = await db.collections.count_documents({"userId": user_id})
+        collections_count = await db.collections.count_documents({"userId": sanitized_user_id})
         verification["collectionsRemaining"] = collections_count
         
         # Check user limits
-        limits_count = await db.user_limits.count_documents({"userId": user_id})
+        limits_count = await db.user_limits.count_documents({"userId": sanitized_user_id})
         verification["userLimitsRemaining"] = limits_count
         
         # Check user profiles
-        profiles_count = await db.user_profiles.count_documents({"userId": user_id})
+        profiles_count = await db.user_profiles.count_documents({"userId": sanitized_user_id})
         verification["userProfilesRemaining"] = profiles_count
         
         # Check system logs (should be anonymized, not deleted)
-        logs_count = await db.system_logs.count_documents({"userId": user_id})
+        logs_count = await db.system_logs.count_documents({"userId": sanitized_user_id})
         verification["systemLogsWithUserId"] = logs_count
         
         # Deletion is complete if all user data is gone (except logs which are anonymized)
@@ -1808,6 +1815,7 @@ async def bulk_delete_users(
         existing_user_ids, non_existing_user_ids = await verify_users_exist(request.user_ids, db)
         
         if len(non_existing_user_ids) > 0:
+            # SECURITY: Log detailed info server-side only, don't expose in response
             logger.warning(f"[BULK DELETE] {len(non_existing_user_ids)} user_ids do not exist: {non_existing_user_ids[:5]}")
         
         if len(existing_user_ids) == 0:
@@ -1831,6 +1839,9 @@ async def bulk_delete_users(
             "timestamp": datetime.now(timezone.utc).isoformat()
         }, current_user.get("sub"), "warning")
         
+        # SECURITY: Store nonExistentUserIds separately for logging only, not in response
+        non_existent_count = len(non_existing_user_ids)
+        
         deletion_summary = {
             "usersDeleted": 0,
             "linksDeleted": 0,
@@ -1839,61 +1850,79 @@ async def bulk_delete_users(
             "userProfilesDeleted": 0,
             "systemLogsAnonymized": 0,
             "errors": [],
-            "partialFailures": [],
-            "nonExistentUserIds": non_existing_user_ids
+            "partialFailures": []
+            # SECURITY: Removed nonExistentUserIds from response to prevent user enumeration
         }
         
         # Step 5: Delete users (only existing ones)
-        # ✅ SECURITY: Re-verify admin status immediately before each deletion to prevent race conditions
+        # ✅ SECURITY: Cache admin check results for request duration to prevent race conditions
+        admin_check_cache = {}
         for user_id in existing_user_ids:
-            # Double-check admin status right before deletion (prevents race condition)
-            if await is_user_admin(user_id, db):
-                logger.error(f"[BULK DELETE SECURITY] Admin user {user_id} detected during deletion - blocking")
-                deletion_summary["errors"].append(f"User {user_id} is an admin and cannot be deleted")
+            # SECURITY: Sanitize user_id before any operations
+            try:
+                sanitized_user_id = sanitize_user_id(user_id)
+            except HTTPException as e:
+                deletion_summary["errors"].append(f"Invalid user_id format: {str(e.detail)}")
+                continue
+            
+            # ✅ SECURITY: Cache admin check to prevent repeated database queries and race conditions
+            if sanitized_user_id not in admin_check_cache:
+                admin_check_cache[sanitized_user_id] = await is_user_admin(sanitized_user_id, db)
+            
+            # ✅ SECURITY: Re-verify admin status immediately before deletion (prevents race condition)
+            # Double-check even if cached (admin status could change between cache and deletion)
+            is_admin = admin_check_cache.get(sanitized_user_id, False) or await is_user_admin(sanitized_user_id, db)
+            
+            if is_admin:
+                logger.error(f"[BULK DELETE SECURITY] Admin user {sanitized_user_id} detected during deletion - blocking")
+                # SECURITY: Don't expose user_id in error message (information disclosure)
+                deletion_summary["errors"].append("Cannot delete admin users")
                 continue
             
             try:
+                # SECURITY: Use sanitized user_id in all MongoDB queries to prevent NoSQL injection
                 # Delete all links
-                links_result = await db.links.delete_many({"userId": user_id})
+                links_result = await db.links.delete_many({"userId": sanitized_user_id})
                 deletion_summary["linksDeleted"] += links_result.deleted_count
                 
                 # Delete all collections
-                collections_result = await db.collections.delete_many({"userId": user_id})
+                collections_result = await db.collections.delete_many({"userId": sanitized_user_id})
                 deletion_summary["collectionsDeleted"] += collections_result.deleted_count
                 
                 # Delete user limits
-                limits_result = await db.user_limits.delete_one({"userId": user_id})
+                limits_result = await db.user_limits.delete_one({"userId": sanitized_user_id})
                 if limits_result.deleted_count > 0:
                     deletion_summary["userLimitsDeleted"] += 1
                 
                 # Delete user profiles
-                profile_result = await db.user_profiles.delete_one({"userId": user_id})
+                profile_result = await db.user_profiles.delete_one({"userId": sanitized_user_id})
                 if profile_result.deleted_count > 0:
                     deletion_summary["userProfilesDeleted"] += 1
                 
                 # Anonymize system logs (set userId to null, keep for audit)
                 logs_result = await db.system_logs.update_many(
-                    {"userId": user_id},
+                    {"userId": sanitized_user_id},
                     {"$set": {"userId": None}}
                 )
                 deletion_summary["systemLogsAnonymized"] += logs_result.modified_count
                 
                 # Step 6: Verify deletion completeness
-                is_complete, verification = await verify_deletion_complete(user_id, db)
+                is_complete, verification = await verify_deletion_complete(sanitized_user_id, db)
                 if not is_complete:
+                    # SECURITY: Don't expose user_id in response (information disclosure)
                     error_details = {
-                        "userId": user_id,
                         "verification": verification
                     }
                     deletion_summary["partialFailures"].append(error_details)
-                    logger.error(f"[BULK DELETE] Partial deletion detected for user {user_id}: {verification}")
+                    logger.error(f"[BULK DELETE] Partial deletion detected for user {sanitized_user_id}: {verification}")
                 else:
                     deletion_summary["usersDeleted"] += 1
                 
             except Exception as e:
-                error_msg = f"Error deleting user {user_id}: {str(e)}"
+                # SECURITY: Generic error message, log details server-side only
+                error_msg = "Error deleting user"
                 deletion_summary["errors"].append(error_msg)
-                logger.error(f"[BULK DELETE ERROR] {error_msg}")
+                logger.error(f"[BULK DELETE ERROR] Error deleting user {sanitized_user_id}: {str(e)}")
         
         # Step 7: Log the bulk deletion event (AFTER anonymization, but log entry itself won't be anonymized)
         # ✅ AUDIT TRAIL: This log entry preserves:
@@ -1910,7 +1939,7 @@ async def bulk_delete_users(
             "systemLogsAnonymized": deletion_summary["systemLogsAnonymized"],
             "errors": deletion_summary["errors"],
             "partialFailures": deletion_summary["partialFailures"],
-            "nonExistentUserIds": deletion_summary["nonExistentUserIds"],
+            "nonExistentUserIds": non_existing_user_ids,  # SECURITY: Only in server logs, not client response
             "adminEmail": current_user.get("email"),
             "adminUserId": current_user.get("sub"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -1921,8 +1950,8 @@ async def bulk_delete_users(
         response_message = f"Bulk deletion completed. {deletion_summary['usersDeleted']} users deleted."
         if deletion_summary["partialFailures"]:
             response_message += f" Warning: {len(deletion_summary['partialFailures'])} users had partial deletion failures."
-        if deletion_summary["nonExistentUserIds"]:
-            response_message += f" Note: {len(deletion_summary['nonExistentUserIds'])} user_ids did not exist."
+        if non_existent_count > 0:
+            response_message += f" Note: {non_existent_count} user_ids did not exist."
         
         # ✅ SECURITY: Sanitize response to prevent information disclosure
         # Don't expose nonExistentUserIds, detailed errors, or partial failures to client
@@ -1935,7 +1964,7 @@ async def bulk_delete_users(
             "systemLogsAnonymized": deletion_summary["systemLogsAnonymized"],
             "hasErrors": len(deletion_summary["errors"]) > 0,
             "hasPartialFailures": len(deletion_summary["partialFailures"]) > 0,
-            "nonExistentCount": len(deletion_summary["nonExistentUserIds"])
+            "nonExistentCount": non_existent_count
         }
         
         # Log detailed info server-side only
@@ -1943,8 +1972,8 @@ async def bulk_delete_users(
             logger.error(f"[BULK DELETE] Errors occurred: {deletion_summary['errors']}")
         if deletion_summary["partialFailures"]:
             logger.error(f"[BULK DELETE] Partial failures: {deletion_summary['partialFailures']}")
-        if deletion_summary["nonExistentUserIds"]:
-            logger.warning(f"[BULK DELETE] Non-existent user_ids: {deletion_summary['nonExistentUserIds'][:10]}")
+        if non_existent_count > 0:
+            logger.warning(f"[BULK DELETE] Non-existent user_ids: {non_existing_user_ids[:10]}")
         
         return {
             "message": response_message,

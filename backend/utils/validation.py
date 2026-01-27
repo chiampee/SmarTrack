@@ -5,11 +5,12 @@ Input validation utility functions
 from typing import List, Optional
 from urllib.parse import urlparse
 from fastapi import HTTPException
+import re
 
 
 def validate_url(url: str, field_name: str = "URL") -> str:
     """
-    Validates URL format
+    Validates URL format and prevents path traversal attacks
 
     Args:
         url: URL string to validate
@@ -35,6 +36,20 @@ def validate_url(url: str, field_name: str = "URL") -> str:
             detail=f"{field_name} cannot be empty"
         )
 
+    # SECURITY: Prevent path traversal in URLs
+    if '..' in url:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid {field_name.lower()}: contains path traversal sequence '..'"
+        )
+
+    # SECURITY: Prevent null bytes
+    if '\0' in url:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid {field_name.lower()}: contains null byte"
+        )
+
     try:
         parsed = urlparse(url)
         if not parsed.scheme or not parsed.netloc:
@@ -53,7 +68,7 @@ def validate_url(url: str, field_name: str = "URL") -> str:
     return url
 
 
-def sanitize_string(value: str, max_length: Optional[int] = None, field_name: str = "Field") -> str:
+def sanitize_string(value: str, max_length: Optional[int] = None, field_name: str = "Field", reject_mongodb_operators: bool = False) -> str:
     """
     Sanitizes and validates a string value
 
@@ -61,6 +76,7 @@ def sanitize_string(value: str, max_length: Optional[int] = None, field_name: st
         value: String to sanitize
         max_length: Optional maximum length
         field_name: Name of the field for error messages
+        reject_mongodb_operators: If True, reject MongoDB operator characters ($, {, }, [, ])
 
     Returns:
         Sanitized string
@@ -78,6 +94,16 @@ def sanitize_string(value: str, max_length: Optional[int] = None, field_name: st
         )
 
     sanitized = value.strip()
+
+    # SECURITY: Reject MongoDB operators if requested (prevents NoSQL injection)
+    if reject_mongodb_operators:
+        dangerous_chars = ['$', '{', '}', '[', ']']
+        for char in dangerous_chars:
+            if char in sanitized:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"{field_name} contains invalid character: '{char}'"
+                )
 
     if max_length and len(sanitized) > max_length:
         raise HTTPException(
