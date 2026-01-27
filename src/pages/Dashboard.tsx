@@ -1597,7 +1597,7 @@ export const Dashboard: React.FC = () => {
       scale: 1,
       transition: {
         duration: isMobile ? 0.35 : 0.4,
-        ease: [0.16, 1, 0.3, 1]
+        ease: "easeOut" as const
       }
     },
     exit: {
@@ -1606,7 +1606,7 @@ export const Dashboard: React.FC = () => {
       y: isMobile ? -5 : -10,
       transition: {
         duration: isMobile ? 0.25 : 0.3,
-        ease: [0.4, 0, 0.2, 1]
+        ease: "easeInOut" as const
       }
     }
   }
@@ -2901,9 +2901,9 @@ export const Dashboard: React.FC = () => {
 
       {/* Floating Action Button - Mobile Only with Glassmorphism - Hidden when sidebar or link details are open */}
       {isMobile && !editingLink && !isSidebarOpen && !expandedLinkId && (
-        <button
+        <motion.button
           onClick={() => setShowAddModal(true)}
-          className={`fixed bottom-20 right-4 z-[60] w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 backdrop-blur-md text-white rounded-full shadow-2xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-200 flex items-center justify-center touch-manipulation md:hidden ${addLinkHighlight ? 'add-link-shimmer' : ''}`}
+          className={`fixed bottom-20 right-4 z-[60] w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 backdrop-blur-md text-white rounded-full shadow-2xl shadow-blue-500/30 transition-all duration-200 flex items-center justify-center touch-manipulation md:hidden ${addLinkHighlight ? 'add-link-shimmer' : ''}`}
           whileHover={{ 
             scale: 1.1,
             boxShadow: '0 25px 50px -12px rgba(59, 130, 246, 0.5)',
@@ -2923,8 +2923,16 @@ export const Dashboard: React.FC = () => {
           }}
           aria-label="Add new link"
         >
-          <Plus className="w-6 h-6" strokeWidth={2} />
-        </button>
+          <motion.div
+            animate={addLinkHighlight ? { 
+              rotate: [0, 10, -10, 0],
+              scale: [1, 1.1, 1]
+            } : {}}
+            transition={{ duration: 0.5 }}
+          >
+            <Plus className="w-6 h-6" strokeWidth={2} />
+          </motion.div>
+        </motion.button>
       )}
 
       {/* Bulk Move Modal */}
