@@ -245,6 +245,9 @@ async def get_current_user_from_token(token: str) -> dict:
                 token_age_seconds = current_time - token_issued_at
                 # Consider tokens issued within last 10 minutes as fresh logins
                 is_fresh_login = token_age_seconds < 600  # 10 minutes
+                logger.info(f"Token age check for user {user_id}: iat={token_issued_at}, age={token_age_seconds:.1f}s, is_fresh={is_fresh_login}")
+            else:
+                logger.warning(f"Token missing 'iat' claim for user {user_id}. Available claims: {list(unverified_payload.keys())}")
             
             is_active, last_activity = await check_user_activity(user_id, db)
             
