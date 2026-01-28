@@ -232,39 +232,58 @@ async def get_current_user_from_token(token: str) -> dict:
         try:
             from services.user_activity import check_user_activity, update_user_activity
             from services.mongodb import get_database
+            import time
             
             db = get_database()
+            
+            # Check if this is a fresh login (token issued recently)
+            # If token was issued within last 10 minutes, treat as fresh login and allow access
+            token_issued_at = unverified_payload.get("iat")
+            is_fresh_login = False
+            if token_issued_at:
+                current_time = time.time()
+                token_age_seconds = current_time - token_issued_at
+                # Consider tokens issued within last 10 minutes as fresh logins
+                is_fresh_login = token_age_seconds < 600  # 10 minutes
+            
             is_active, last_activity = await check_user_activity(user_id, db)
             
             if not is_active:
-                # User inactive for > 5 days - require reauthentication
-                logger.warning(f"User {user_id} inactive for > 5 days, requiring reauthentication. Last activity: {last_activity}")
-                
-                # Log reauthentication requirement
-                try:
-                    from services.admin import log_system_event
-                    await log_system_event(
-                        "inactivity_reauth_required",
-                        {
-                            "userId": user_id,
-                            "lastActivity": last_activity.isoformat() if last_activity else None,
-                            "reason": "User inactive for more than 5 days"
-                        },
-                        user_id=user_id,
-                        severity="info"
+                # User inactive for > 5 days
+                if is_fresh_login:
+                    # Fresh login after inactivity - allow access and update activity
+                    logger.info(f"User {user_id} logged in after inactivity (>5 days). Allowing fresh login. Last activity: {last_activity}")
+                    # Update activity immediately for fresh login
+                    await update_user_activity(user_id, db)
+                else:
+                    # Not a fresh login - require reauthentication
+                    logger.warning(f"User {user_id} inactive for > 5 days, requiring reauthentication. Last activity: {last_activity}")
+                    
+                    # Log reauthentication requirement
+                    try:
+                        from services.admin import log_system_event
+                        await log_system_event(
+                            "inactivity_reauth_required",
+                            {
+                                "userId": user_id,
+                                "lastActivity": last_activity.isoformat() if last_activity else None,
+                                "reason": "User inactive for more than 5 days"
+                            },
+                            user_id=user_id,
+                            severity="info"
+                        )
+                    except Exception as log_error:
+                        logger.warning(f"Failed to log inactivity reauth event: {log_error}")
+                    
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Reauthentication required after 5 days of inactivity"
                     )
-                except Exception as log_error:
-                    logger.warning(f"Failed to log inactivity reauth event: {log_error}")
-                
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Reauthentication required after 5 days of inactivity"
-                )
-            
-            # User is active - update activity timestamp asynchronously (non-blocking)
-            # Don't await to avoid blocking the request
-            import asyncio
-            asyncio.create_task(update_user_activity(user_id, db))
+            else:
+                # User is active - update activity timestamp asynchronously (non-blocking)
+                # Don't await to avoid blocking the request
+                import asyncio
+                asyncio.create_task(update_user_activity(user_id, db))
             
         except HTTPException:
             # Re-raise HTTP exceptions (like the inactivity reauth requirement)

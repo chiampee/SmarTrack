@@ -347,26 +347,51 @@ export const useBackendApi = () => {
                                   errorMessage.includes('5 days')
           
           if (requiresReauth) {
-            console.warn('[AUTH] ⏰ Reauthentication required due to inactivity (>5 days)')
-            console.warn('[AUTH] Clearing token and redirecting to login...')
-            
-            // Clear stored token
-            setToken(null)
-            localStorage.removeItem('authToken')
-            
-            // Redirect to login with prompt to force reauthentication
-            try {
-              await loginWithRedirect({
-                authorizationParams: {
-                  redirect_uri: window.location.origin + '/dashboard',
-                  audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-                  scope: AUTH0_SCOPES,
-                  prompt: 'login', // Force login screen
+            // Check if this is a fresh login (token issued recently)
+            // If so, don't redirect - backend should have allowed it, so this might be a race condition
+            let isFreshLogin = false
+            if (requestToken) {
+              try {
+                const decoded = jwtDecode<JWTPayload & { iat?: number }>(requestToken)
+                if (decoded.iat) {
+                  const tokenAgeSeconds = Math.floor(Date.now() / 1000) - decoded.iat
+                  // If token was issued within last 10 minutes, treat as fresh login
+                  isFreshLogin = tokenAgeSeconds < 600 // 10 minutes
                 }
-              })
-            } catch (loginError) {
-              console.error('[AUTH ERROR] Failed to redirect to login:', loginError)
-              // Fall through to throw the original error
+              } catch (e) {
+                // If we can't decode, assume not fresh
+                console.debug('[AUTH] Could not decode token to check age:', e)
+              }
+            }
+            
+            if (isFreshLogin) {
+              // Fresh login but got inactivity error - might be a race condition
+              // Wait a moment and let the error propagate (don't redirect)
+              console.warn('[AUTH] ⚠️ Fresh login but got inactivity error - may be race condition')
+              console.warn('[AUTH] Token age:', Math.floor(Date.now() / 1000) - (jwtDecode<JWTPayload & { iat?: number }>(requestToken!).iat || 0), 'seconds')
+              // Don't redirect - just throw the error and let caller handle it
+            } else {
+              console.warn('[AUTH] ⏰ Reauthentication required due to inactivity (>5 days)')
+              console.warn('[AUTH] Clearing token and redirecting to login...')
+              
+              // Clear stored token
+              setToken(null)
+              localStorage.removeItem('authToken')
+              
+              // Redirect to login with prompt to force reauthentication
+              try {
+                await loginWithRedirect({
+                  authorizationParams: {
+                    redirect_uri: window.location.origin + '/dashboard',
+                    audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+                    scope: AUTH0_SCOPES,
+                    prompt: 'login', // Force login screen
+                  }
+                })
+              } catch (loginError) {
+                console.error('[AUTH ERROR] Failed to redirect to login:', loginError)
+                // Fall through to throw the original error
+              }
             }
           } else if (requestToken) {
             try {
