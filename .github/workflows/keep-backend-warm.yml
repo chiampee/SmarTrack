@@ -21,13 +21,13 @@ jobs:
       - name: Ping Backend Health Endpoint
         run: |
           echo "Pinging backend at $(date)"
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://smartrack-back.onrender.com/api/health)
-          if [ $response -eq 200 ]; then
+          response=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 30 https://smartrack-back.onrender.com/api/health || echo "000")
+          if [ "${response}" = "200" ]; then
             echo "✅ Backend is warm (HTTP $response)"
           else
-            echo "⚠️ Backend returned HTTP $response"
+            echo "⚠️ Backend returned HTTP ${response:-no response}"
           fi
       
       - name: Ping Root Endpoint
         run: |
-          curl -s https://smartrack-back.onrender.com/ || echo "Root endpoint ping failed"
+          curl -s --connect-timeout 10 --max-time 30 https://smartrack-back.onrender.com/ || echo "Root endpoint ping failed"
