@@ -17,9 +17,6 @@ jobs:
     timeout-minutes: 2
     # Don't fail the workflow when GitHub has runner/infra issues (you'll still see the job as failed)
     continue-on-error: true
-    strategy:
-      fail-fast: false
-      max-retries: 2
     steps:
       - name: Ping Backend Health Endpoint
         run: |
