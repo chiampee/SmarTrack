@@ -2,8 +2,8 @@ name: Keep Backend Warm
 
 on:
   schedule:
-    # Run every 10 minutes
-    - cron: '*/10 * * * *'
+    # Run every 15 minutes (less load on GitHub runners = fewer "runner not acquired" errors)
+    - cron: '*/15 * * * *'
   workflow_dispatch: # Allow manual trigger
 
 # Cancel in-progress runs when a new one starts (avoid queue buildup)
@@ -13,9 +13,10 @@ concurrency:
 
 jobs:
   ping-backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 2
-    # Retry on runner acquisition failure or GitHub internal errors
+    # Don't fail the workflow when GitHub has runner/infra issues (you'll still see the job as failed)
+    continue-on-error: true
     strategy:
       fail-fast: false
       max-retries: 2
