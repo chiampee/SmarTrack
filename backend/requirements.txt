@@ -33,3 +33,4 @@ h11>=0.16.0  # Fixes CVE-2025-43859 (request smuggling)
 idna>=3.7  # Fixes CVE-2024-3651 (DoS vulnerability)
 anyio>=4.4.0  # Fixes thread race condition in multi-threaded environments
 certifi>=2024.0.0  # Updates CA certificate bundle
+pyasn1>=0.6.2 # not directly required, pinned by Snyk to avoid a vulnerability
